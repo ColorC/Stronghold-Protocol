@@ -61,8 +61,26 @@ export function installPrototypeBattleAugments(battle,state,catalog){
 
   battle.on('battleStart',()=>{
     for(const augment of entries('quickstriker_burst')){
-      const pulse=()=>{for(const unit of members(augment.traitId))addBuff(unit,augment,'burst',{aspd:Number(augment.variables.AttackSpeed??0)*100},Number(augment.variables.BuffDuration??2.5));metric(augment,'bursts');};
-      battle.every(Number(augment.variables.TimeBetweenProcs??6),pulse,{owner:battle,immediate:true});
+      const burst=(unit)=>addBuff(unit,augment,'burst',{aspd:Number(augment.variables.AttackSpeed??0)*100},Number(augment.variables.BuffDuration??2.5));
+      const every=Number(augment.variables.TimeBetweenProcs??6);
+      if(Number(augment.variables.StartOnFirstAttack)>0){
+        // season 2: the field is empty when the battle starts, so each member's bursts count from its first attack
+        const next=new Map();
+        battle.on('hit',(event)=>{
+          const unit=event?.source;
+          if(next.has(unit)||event.target?.side!=='enemy'||!(event.dmg?.isAttack||event.dmg?.isSkill)||!hasTrait(unit,augment.traitId))return;
+          next.set(unit,battle.time+every);burst(unit);metric(augment,'bursts');
+        },{owner:battle});
+        battle.every(.25,()=>{
+          for(const [unit,due] of next){
+            if(!unit.alive||!unit.deployed||battle.time+1e-9<due)continue;
+            next.set(unit,due+every);burst(unit);metric(augment,'bursts');
+          }
+        },{owner:battle});
+        continue;
+      }
+      const pulse=()=>{for(const unit of members(augment.traitId))burst(unit);metric(augment,'bursts');};
+      battle.every(every,pulse,{owner:battle,immediate:true});
     }
     for(const augment of entries('bruiser_health_strike')){
       const arm=()=>{for(const unit of members(augment.traitId))unit.mem.prototypeBruiserAugmentReady=true;metric(augment,'readyWindows');};

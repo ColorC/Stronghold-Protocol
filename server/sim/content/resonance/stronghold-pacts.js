@@ -25,6 +25,7 @@ const num = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(val
 const hasTag = (dmg, tag) => Array.isArray(dmg?.tags) && dmg.tags.includes(tag);
 const chebyshev = (a, b) => Math.max(Math.abs(a.tileR - b.tileR), Math.abs(a.tileC - b.tileC));
 const isEliteRank = (e) => e?.isBoss ? 2 : (e?.def?.rank === 'ELITE' || e?.def?.rank === 'BOSS') ? 1 : 0;
+const siracusaStealthKey = (unit) => `stronghold:siracusa-stealth:${unit.id}`;
 
 /** The member's attack range as flat [dRow, dCol, …] offsets turned by its direction (bonds/addon raidReach). */
 function reachOf(unit) {
@@ -89,24 +90,33 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
     ? battle.dealDamage(source, target, { amount, type, canDodge: false, tags: ['resonance', TAG] }) : 0;
 
   // ---------------------------------------------------------------------------------------------------------------
-  // 拉特兰 — 通缉 (the 蕾缪安 state), bullets and durations, SP on a wanted knock-out
-  let wantedShort = false;
-  const markWanted = () => {
+  // 拉特兰 — 通缉 (the 蕾缪安 state), bullets and durations, SP on a wanted knock-out. The field is empty when the battle
+  // starts, so the marks follow the field: the toughest enemies on it hold them, re-ranked as enemies arrive and fall.
+  const isWanted = (enemy) => !!enemy?.buffs?.some((buff) => buff.key === WANTED_KEY);
+  const updateWanted = () => {
     const a = v('academy');
     if (!a || !members('academy').length) return;
-    const live = enemies();
-    const marked = live.filter((enemy) => enemy.mem.strongholdWanted).length;
-    const picks = live.filter((enemy) => !enemy.mem.strongholdWanted)
-      .sort((x, y) => isEliteRank(y) - isEliteRank(x) || y.s.maxHp - x.s.maxHp || x.id - y.id)
-      .slice(0, Math.max(0, num(a.wantedCount, 1) - marked));
-    for (const enemy of picks) {
+    const ranked = enemies().sort((x, y) => isEliteRank(y) - isEliteRank(x) || y.s.maxHp - x.s.maxHp
+      || Number(!!y.mem.strongholdWanted) - Number(!!x.mem.strongholdWanted) || x.id - y.id);
+    const keep = new Set(ranked.slice(0, Math.max(0, Math.floor(num(a.wantedCount, 1)))));
+    for (const enemy of battle.enemies) {
+      if (!enemy?.mem?.strongholdWanted || keep.has(enemy)) continue;
+      enemy.mem.strongholdWanted = false;
+      // a mark 蕾缪安 placed herself stays when the pact's moves on
+      if (enemy.alive) {
+        if (!enemy.mem.strongholdWantedShared) battle.removeBuff(enemy, WANTED_KEY);
+        metric('academy', 'wantedMoved');
+      }
+      enemy.mem.strongholdWantedShared = false;
+    }
+    for (const enemy of keep) {
+      if (enemy.mem.strongholdWanted) continue;
       enemy.mem.strongholdWanted = true;
-      battle.addBuff(enemy, { key: WANTED_KEY, visible: true, duration: Infinity });
+      enemy.mem.strongholdWantedShared = isWanted(enemy);
+      if (!enemy.mem.strongholdWantedShared) battle.addBuff(enemy, { key: WANTED_KEY, visible: true, duration: Infinity });
       battle.fx('wanted', { x: enemy.x, y: enemy.y, id: enemy.id });
       metric('academy', 'wanted');
     }
-    // nothing on the field yet at the scheduled time: the next arrivals are marked as they spawn
-    wantedShort = marked + picks.length < num(a.wantedCount, 1);
   };
   // 蕾缪安's own increase applies to bond-holding sources only; the higher of the two counts once
   const lemuenIncrease = (source) => {
@@ -242,14 +252,12 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
         if (pct > 0) standing(unit, 'victoria-equipment', { atkPct: pct });
       }
     }
+    // 叙拉古: the opening speed, the 隐匿 and the fear window count from each member's first attack (see 'hit')
     const s = v('risk');
     if (s) for (const unit of members('risk')) {
-      if (num(s.openingDuration) > 0) timed(unit, 'siracusa-opening', { aspd: num(s.openingAspd) }, num(s.openingDuration));
-      else standing(unit, 'siracusa-opening', { aspd: num(s.openingAspd) });
-      if (num(s.stealthDuration) > 0) {
-        battle.applyStatus(unit, 'stealth', { duration: num(s.stealthDuration), source: unit });
-        unit.mem.strongholdFearUntil = battle.time + num(s.stealthDuration) + num(s.fearWindow);
-        battle.after(num(s.stealthDuration), () => { if (unit.alive) unit.mem.strongholdAmbush = true; }, { owner: battle });
+      if (!(num(s.openingDuration) > 0)) standing(unit, 'siracusa-opening', { aspd: num(s.openingAspd) });
+      if (num(s.stealth) > 0) {
+        battle.addBuff(unit, { key: siracusaStealthKey(unit), status: 'stealth', flags: { stealth: true }, duration: Infinity, source: unit, tags: ['resonance', TAG] });
         metric('risk', 'stealthed');
       }
     }
@@ -272,7 +280,6 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
       summonGuardians();
       for (const token of battle.allyUnits.filter((row) => row?.kind === 'token' && row.alive)) boostSummon(token);
     }
-    if (v('academy')) markWanted();
   }, { owner: battle });
 
   battle.on('deploy', (event) => {
@@ -285,13 +292,19 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
   // ---------------------------------------------------------------------------------------------------------------
   // periodic effects
   if (v('academy')) {
-    battle.every(num(v('academy').wantedInterval, 15), markWanted, { owner: battle });
-    battle.on('enemySpawn', () => { if (wantedShort) markWanted(); }, { owner: battle });
+    battle.on('enemySpawn', updateWanted, { owner: battle });
+    battle.on('death', (event) => { if (event?.unit?.side === 'enemy') updateWanted(); }, { owner: battle });
+    battle.every(0.5, updateWanted, { owner: battle });   // enemies that hide, leave or are revealed
   }
   if (num(v('creation')?.windInterval) > 0) {
-    battle.every(num(v('creation').windInterval), () => {
+    // the wind's clock runs only while enemies are on the field
+    let windClock = 0;
+    battle.every(0.25, () => {
       const k = v('creation'), source = members('creation')[0];
-      if (!source) return;
+      if (!source || !enemies().length) return;
+      windClock += 0.25;
+      if (windClock + 1e-9 < num(k.windInterval)) return;
+      windClock = 0;
       const hitTiles = new Map();
       for (const enemy of enemies()) {
         battle.applyStatus(enemy, 'cold', { duration: num(k.windDuration), source });
@@ -303,12 +316,14 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
     }, { owner: battle });
   }
   if (num(v('sui')?.flameInterval) > 0) {
-    battle.every(num(v('sui').flameInterval), () => {
+    // 祛恶之焰 as soon as an enemy comes near a 炎佑, then at most once per interval
+    battle.every(0.25, () => {
       const y = v('sui');
       for (const guardian of guardians) {
-        if (!guardian.alive || !guardian.deployed) continue;
+        if (!guardian.alive || !guardian.deployed || battle.time + 1e-9 < num(guardian.mem.strongholdFlameAt, -Infinity)) continue;
         const near = battle.foesInRadius(guardian.x, guardian.y, num(y.flameRadius, 1.5));
         if (!near.length) continue;
+        guardian.mem.strongholdFlameAt = battle.time + num(y.flameInterval, 15);
         for (const enemy of near) {
           battle.dealDamage(guardian, enemy, { amount: guardian.s.atk * num(y.flameDamage), type: 'arts', isSkill: true, canDodge: false, tags: ['resonance', TAG, 'flame'] });
           if (enemy.alive) battle.applyStatus(enemy, 'elemFragile', { duration: num(y.flameFragileDuration), value: num(y.flameFragile), source: guardian });
@@ -373,7 +388,7 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
     const source = event?.source, target = event?.target, dmg = event?.dmg;
     if (source?.side !== 'ally' || source.kind !== 'op' || target?.side !== 'enemy' || !dmg || dmg.type === 'element' || hasTag(dmg, TAG)) return;
     const a = v('academy');
-    if (a && target.mem.strongholdWanted && isMember(source, 'academy')) {
+    if (a && isWanted(target) && isMember(source, 'academy')) {
       const extra = num(a.wantedDamage) - lemuenIncrease(source);
       if (extra > 0) { applyDamageIncrease(battle, source, dmg, 1 + extra); metric('academy', 'wantedHits'); }
     }
@@ -383,10 +398,15 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
     if (num(f?.huntDamage) > 0 && target.hpRatio < num(f.huntThreshold) && isMember(source, 'flight')) applyDamageIncrease(battle, source, dmg, 1 + num(f.huntDamage));
     const s = v('risk');
     if (s && isMember(source, 'risk')) {
-      if (source.mem.strongholdAmbush && dmg.isAttack) {
-        source.mem.strongholdAmbush = false;
-        applyDamageIncrease(battle, source, dmg, 1 + num(s.ambushDamage));
-        metric('risk', 'ambushes');
+      if ((dmg.isAttack || dmg.isSkill) && !source.mem.strongholdEngaged) {
+        // the first attack: leaves 隐匿 as an ambush and starts the opening speed and the fear window
+        source.mem.strongholdEngaged = true;
+        if (num(s.openingDuration) > 0) timed(source, 'siracusa-opening', { aspd: num(s.openingAspd) }, num(s.openingDuration));
+        if (num(s.fearWindow) > 0) source.mem.strongholdFearUntil = battle.time + num(s.fearWindow);
+        if (battle.removeBuff(source, siracusaStealthKey(source)) > 0 && num(s.ambushDamage) > 0) {
+          applyDamageIncrease(battle, source, dmg, 1 + num(s.ambushDamage));
+          metric('risk', 'ambushes');
+        }
       }
       if (num(s.fearDamage) > 0 && target.s.flags.fear) applyDamageIncrease(battle, source, dmg, 1 + num(s.fearDamage));
     }
@@ -472,7 +492,7 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
     const killer = event?.killer, victim = event?.victim;
     if (victim?.side !== 'enemy') return;
     const a = v('academy');
-    if (num(a?.wantedKillSp) > 0 && victim.mem?.strongholdWanted) {
+    if (num(a?.wantedKillSp) > 0 && (victim.mem?.strongholdWanted || isWanted(victim))) {
       for (const unit of members('academy')) gainSp(unit, num(a.wantedKillSp), 'strongholdWanted');
       metric('academy', 'wantedKills');
     }

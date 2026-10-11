@@ -11,6 +11,7 @@ import { factionSeason } from '../../shared/resonance/faction-season.js';
 import { factionSeasonV2 } from '../../shared/resonance/faction-season-v2.js';
 import { STRONGHOLD_PACT_IDS, STRONGHOLD_RETIRED_AUGMENTS } from '../../shared/resonance/stronghold-pacts.js';
 import { enemyRec } from '../helpers/battleHarness.js';
+import { COLS } from '../../server/sim/constants.js';
 
 const data = loadData(process.env.SP_DATA_DIR ?? 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native', { log: { warn() {}, error() {} } });
 const catalog = getResonanceCatalog(data, { rulesVersion: 3, seasonId: factionSeasonV2.id, seed: 21 });
@@ -22,9 +23,9 @@ const close = (actual, expected, message, tolerance = 1e-6) => assert.ok(Math.ab
 const SOURCE_TERMS = ['微光', '黑市', '征服', '战利品', '实验格', '实验室', '晶体', '信号', '冲刺', 'Sion', '赞助', '卫灵', '全能吸血', '法术强度', '护甲', '魔抗', '法力', '暴击', '护盾', '火箭', '每叠加', '层数'];
 
 /** A real Native Battle (preview: no scheduled waves) with the given operators on legal tiles. */
-function arena(operators, { star = 1, equipment = {}, extraPacts = {}, seed = 21, cat = catalog, history = [] } = {}) {
+function arena(operators, { star = 1, equipment = {}, extraPacts = {}, seed = 21, cat = catalog, history = [], strategies = [], idle = false } = {}) {
   const catalog = cat;
-  const base = { seed, difficulty: 'NORMAL', round: 2, roundLimit: 28, rulesVersion: 3, pieces: [], history };
+  const base = { seed, difficulty: 'NORMAL', round: 2, roundLimit: 28, rulesVersion: 3, pieces: [], history, strategies };
   const field = getResonanceField(base, { data, catalog });
   const tiles = [...field.deployMap].map(([key]) => key.split(',').map(Number)).sort((a, b) => a[1] - b[1] || a[0] - b[0]);
   assert.ok(tiles.length >= operators.length, 'enough legal tiles');
@@ -32,6 +33,8 @@ function arena(operators, { star = 1, equipment = {}, extraPacts = {}, seed = 21
     equipment: (equipment[row.name] ?? []).map((itemId, item) => ({ uid: `i${index}-${item}`, itemId })), extraPacts: [...(extraPacts[row.name] ?? [])] }));
   const state = { ...base, pieces };
   const { battle } = buildResonanceBattle(state, { data, catalog, recording: false, preview: true });
+  // `idle`: an empty field does not end the battle, so a test can wait for the first enemy
+  if (idle) battle.autoFinish = false;
   battle.start();
   const unit = (name) => battle.allyUnits.find((entry) => entry.uid === pieces[operators.findIndex((row) => row.name === name)]?.uid);
   let serial = 0;
@@ -175,21 +178,32 @@ test('维多利亚 earns one hammer every three battles and the session hands it
   assert.equal(claimed.state.prototypeMeta.economy.victoria.claimed, 1);
 });
 
-test('拉特兰 marks the 蕾缪安 通缉 state, prefers elites, adds damage, bullets, duration and SP on a wanted knock-out', () => {
-  const three = arena([...ops('送葬人', '见行者', '空弦'), op('角峰')]);
+test('拉特兰 marks the toughest enemy on the field with the 蕾缪安 通缉 state, moves the mark, adds damage, bullets, duration and SP', () => {
+  const three = arena([...ops('送葬人', '见行者', '空弦'), op('角峰')], { idle: true });
   const { battle } = three;
-  const first = three.enemy([10, 9]);
-  assert.ok(first.mem.strongholdWanted && first.buffs.some((buff) => buff.key === 'lemuen:wanted'), 'the first arrival is wanted at once');
-  const elite = three.enemy([11, 9], { hp: 20000, rank: 'ELITE' }), heavy = three.enemy([12, 9], { hp: 90000 });
-  assert.ok(!elite.mem.strongholdWanted && !heavy.mem.strongholdWanted, 'only one wanted at three members');
-  trueHit(battle, three.unit('送葬人'), first, first.hp + 10);
-  three.advance(15.1);
-  assert.equal(elite.mem.strongholdWanted, true, 'the next mark prefers the elite over a healthier normal enemy');
-  assert.ok(!heavy.mem.strongholdWanted);
+  const marked = (enemy) => enemy.buffs.some((buff) => buff.key === 'lemuen:wanted');
+  three.advance(20);
+  assert.ok(!three.tier('academy').wanted, 'nothing is marked while the field is empty');
+  const first = three.enemy([10, 9], { hp: 50000 });
+  assert.ok(first.mem.strongholdWanted && marked(first), 'the first arrival is wanted at once');
+  const elite = three.enemy([11, 9], { hp: 20000, rank: 'ELITE' });
+  assert.ok(marked(elite) && !marked(first), 'an elite arriving takes the mark from a normal enemy');
+  const heavy = three.enemy([12, 9], { hp: 90000 });
+  assert.ok(marked(elite) && !marked(heavy), 'only one wanted at three members, elites first');
   const member = three.unit('空弦'), other = three.unit('角峰');
   const bonus = lost(elite, () => trueHit(battle, member, elite)) / lost(heavy, () => trueHit(battle, member, heavy));
   close(bonus, 1.2, 'wanted damage +20%');
   close(lost(elite, () => trueHit(battle, other, elite)), lost(heavy, () => trueHit(battle, other, heavy)), 'non-members gain nothing');
+  trueHit(battle, three.unit('送葬人'), elite, elite.hp + 10);
+  assert.ok(marked(heavy) && !marked(first), 'when the wanted enemy falls the mark goes to the highest max HP left');
+  // a mark 蕾缪安's talent placed stays when the pact's moves on, and it counts as wanted for the pact
+  battle.addBuff(first, { key: 'lemuen:wanted', visible: true });
+  close(lost(first, () => trueHit(battle, member, first)) / lost(heavy, () => trueHit(battle, member, heavy)), 1, 'both wanted');
+  trueHit(battle, three.unit('送葬人'), heavy, heavy.hp + 10);
+  assert.equal(first.mem.strongholdWanted, true, 'the pact takes over the already wanted enemy');
+  const boss = three.enemy([13, 9], { hp: 30000, rank: 'ELITE' });
+  assert.ok(marked(boss) && marked(first), 'the pact mark moves on, 蕾缪安\'s own mark stays');
+  assert.ok(three.tier('academy').wantedMoved >= 2);
   assert.equal(battle.errorCount, 0);
 
   const five = arena(ops('送葬人', '见行者', '隐现', '空弦', '蕾缪安'));
@@ -219,10 +233,14 @@ test('谢拉格 attacks chill with a per-target cooldown, the cold wind chills e
   close(lost(cold, () => trueHit(two.battle, member, cold)) / lost(warm, () => trueHit(two.battle, member, warm)), 1.15, 'damage +15% to a cold enemy');
   assert.equal(two.battle.errorCount, 0);
 
-  const four = arena(ops('角峰', '耶拉', '银灰', '灵知'));
+  const four = arena(ops('角峰', '耶拉', '银灰', '灵知'), { idle: true });
+  four.advance(30);
+  assert.ok(!four.tier('creation').winds, 'the wind waits while the field is empty');
   const a = four.enemy(four.far()), b = four.enemy([four.battle.rect.r0 + 1, four.battle.rect.c1]);
-  four.advance(20.1);
-  assert.ok(a.s.flags.cold && b.s.flags.cold, 'the cold wind chills the whole field');
+  four.advance(19.5);
+  assert.ok(!four.tier('creation').winds, 'the clock only runs with enemies on the field');
+  four.advance(0.8);
+  assert.ok(a.s.flags.cold && b.s.flags.cold, 'the cold wind chills the whole field after 20 seconds with enemies');
   four.battle.dealDamage(four.unit('银灰'), a, { amount: 1, type: 'phys', isAttack: true });
   assert.equal(a.s.flags.freeze, true, 'an attack on a wind-chilled enemy freezes it');
   assert.ok(four.tier('creation').winds >= 1 && four.tier('creation').freezes >= 1);
@@ -247,10 +265,17 @@ test('炎 summons a visible native 炎佑 that attacks, flames, and doubles at s
   assert.ok(target.elem.burn > 0 || target.hp < target.s.maxHp, 'its hits carry 灼燃损伤');
   assert.equal(three.battle.errorCount, 0);
 
-  const five = arena(ops('九色鹿', '惊蛰', '仇白', '夕', '令'));
-  const near = five.enemy([10, 8]);
-  five.advance(15.2);
-  assert.ok(five.tier('sui').flames >= 1, '祛恶之焰 fires every 15 seconds');
+  const five = arena(ops('九色鹿', '惊蛰', '仇白', '夕', '令'), { idle: true });
+  five.advance(20);
+  assert.ok(!five.tier('sui').flames, 'no 祛恶之焰 while no enemy is near');
+  const flier = five.battle.allyUnits.find((unit) => unit.mem?.strongholdGuardian);
+  const near = five.enemy([Math.round(flier.y), Math.round(flier.x) + 1], { hp: 10000000 });
+  five.advance(0.5);
+  assert.equal(five.tier('sui').flames, 1, '祛恶之焰 as soon as an enemy is near');
+  five.advance(14);
+  assert.equal(five.tier('sui').flames, 1, 'at most once per 15 seconds');
+  five.advance(1);
+  assert.equal(five.tier('sui').flames, 2);
   assert.ok(near.buffs.some((buff) => buff.status === 'elemFragile') || !near.alive, 'flamed enemies take 元素脆弱');
   assert.equal(five.battle.errorCount, 0);
 
@@ -310,31 +335,85 @@ test('维多利亚 scales ATK by carried items and lends the temporary hammer to
   assert.equal(ten.battle.errorCount, 0);
 });
 
-test('叙拉古 opens fast, hides in 隐匿, ambushes once and fears from the shadows', () => {
-  const four = arena(ops('红云', '贾维', '布洛卡', '巫恋'));
-  const brocca = four.unit('布洛卡'), shooter = four.enemy([10, 9], { range: 3 });
+test('叙拉古 hides in 隐匿 until its first attack, ambushes with it, then speeds up and fears', () => {
+  const four = arena(ops('红云', '贾维', '布洛卡', '巫恋'), { idle: true });
+  const opening = (unit) => unit.buffs.find((buff) => buff.key.startsWith('stronghold:siracusa-opening'));
+  const brocca = four.unit('布洛卡');
   assert.equal(brocca.s.flags.stealth, true, 'members start in 隐匿');
+  assert.ok(!opening(brocca), 'the opening speed waits for the first attack');
+  four.advance(30);
+  assert.equal(brocca.s.flags.stealth, true, '隐匿 lasts while there is nothing to attack');
+  const shooter = four.enemy([10, 9], { range: 3 }), control = four.enemy([11, 9]);
   assert.equal(canTargetAlly(shooter, brocca, true), false, 'a ranged enemy cannot target a hidden member');
-  assert.ok(brocca.buffs.some((buff) => buff.key.startsWith('stronghold:siracusa-opening') && buff.timeLeft <= 20));
-  four.advance(6.1);
-  assert.ok(!brocca.s.flags.stealth, '隐匿 ends after 6 seconds');
-  assert.equal(canTargetAlly(shooter, brocca, true), true);
   four.battle.rng = () => 0.99;
-  const control = four.enemy([11, 9]);
   const ambush = lost(shooter, () => trueHit(four.battle, brocca, shooter, 1000, { isAttack: true }));
   const plain = lost(control, () => trueHit(four.battle, brocca, control, 1000, { isAttack: true }));
-  close(ambush / plain, 1.5, 'the first attack after 隐匿 deals +50%');
+  close(ambush / plain, 1.5, 'the first attack leaves 隐匿 with +50%');
+  assert.ok(!brocca.s.flags.stealth && canTargetAlly(shooter, brocca, true), '隐匿 ends with the first attack');
+  close(opening(brocca).timeLeft, 20, 'attack speed for 20 seconds from the first attack', 1e-3);
+  close(opening(brocca).mods.aspd, 25, 'attack speed +25');
   assert.equal(four.tier('risk').ambushes, 1);
   assert.equal(four.battle.errorCount, 0);
 
-  const six = arena(ops('红云', '贾维', '布洛卡', '巫恋', '拉普兰德', '荒芜拉普兰德'));
+  const six = arena(ops('红云', '贾维', '布洛卡', '巫恋', '拉普兰德', '荒芜拉普兰德'), { idle: true });
+  six.advance(15);
   const member = six.unit('拉普兰德'), feared = six.enemy([10, 9]), calm = six.enemy([11, 9]);
   six.battle.rng = () => 0;
   six.battle.dealDamage(member, feared, { amount: 1, type: 'phys', isAttack: true });
-  assert.equal(feared.s.flags.fear, true, 'an attack in the 隐匿 window fears');
+  assert.equal(feared.s.flags.fear, true, 'the first attack opens the fear window');
   six.battle.rng = () => 0.99;
   close(lost(feared, () => trueHit(six.battle, member, feared)) / lost(calm, () => trueHit(six.battle, member, calm)), 1.3, '+30% against a feared enemy');
+  six.advance(10.5);
+  const late = six.enemy([12, 9]);
+  six.battle.rng = () => 0;
+  six.battle.dealDamage(member, late, { amount: 1, type: 'phys', isAttack: true });
+  assert.ok(!late.s.flags.fear, 'no fear 10 seconds after the first attack');
   assert.equal(six.battle.errorCount, 0);
+});
+
+test('掌控 gets its 屏障 when an enemy first enters a member\'s attack range in season 2 and at the start in season 1', () => {
+  const shield = (unit) => unit.buffs.find((buff) => buff.key.startsWith('resonance:v3:dominator-shield'));
+  const two = arena(ops('耶拉', '多萝西'), { idle: true });
+  const kjera = two.unit('耶拉'), dorothy = two.unit('多萝西');
+  two.advance(20);
+  assert.ok(!shield(kjera) && !shield(dorothy), 'no 屏障 while the field is empty');
+  const far = two.enemy(two.far());
+  two.advance(0.3);
+  assert.ok(!shield(kjera) && !shield(dorothy), 'an enemy outside every range brings nothing');
+  two.battle.dealDamage(kjera, far, { amount: 1, type: 'arts', isAttack: true });
+  close(shield(kjera)?.shield, 1400, 'striking an enemy counts as contact');
+  close(shield(kjera).timeLeft, 15, 'for 15 seconds', 1e-3);
+  assert.ok(!shield(dorothy), 'per member');
+  const near = [...dorothy.rangeKeys][0];
+  two.enemy([Math.floor(near / COLS), near % COLS]);
+  two.advance(0.3);
+  assert.ok(shield(dorothy), 'each member on its own contact');
+  assert.equal(two.battle.errorCount, 0);
+  const first = arena(ops('耶拉', '夕'), { cat: firstCatalog });
+  assert.ok(shield(first.unit('耶拉')), 'season 1 keeps the start-of-battle shield');
+});
+
+test('迅击爆发 counts each member\'s bursts from its first attack in season 2', () => {
+  const id = 'prototype_set13_quickstriker';
+  assert.match(catalog.strategies[id].description, /首次攻击时及之后每6秒，攻击速度\+85，持续2\.5秒/);
+  assert.match(firstCatalog.strategies[id].description, /战斗开始/, 'season 1 keeps its own rule');
+  const burst = (unit) => unit.buffs.find((buff) => buff.key.includes(':burst:'));
+  const two = arena(ops('谜图', '焰尾'), { strategies: [id], idle: true });
+  const a = two.unit('谜图'), b = two.unit('焰尾');
+  two.advance(10);
+  assert.ok(!burst(a) && !burst(b), 'no burst while the field is empty');
+  const foe = two.enemy([10, 9]);
+  two.battle.dealDamage(a, foe, { amount: 1, type: 'phys', isAttack: true });
+  close(burst(a)?.mods.aspd, 85, 'the first attack bursts at once');
+  assert.ok(!burst(b), 'per member');
+  two.advance(3);
+  assert.ok(!burst(a), 'the burst lasts 2.5 seconds');
+  two.advance(3.2);
+  assert.ok(burst(a), 'and comes back 6 seconds after the first');
+  assert.equal(two.battle.errorCount, 0);
+  const first = arena(ops('谜图', '焰尾'), { strategies: [id], cat: firstCatalog });
+  first.advance(0.1);
+  assert.ok(burst(first.unit('谜图')), 'season 1 bursts at the start');
 });
 
 test('卡西米尔 attacks carry true damage and blocking members pulse true damage and stun', () => {

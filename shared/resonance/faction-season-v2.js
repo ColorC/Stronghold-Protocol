@@ -1,10 +1,16 @@
 import {factionSeason} from './faction-season.js';
 import {STRONGHOLD_PACT_TIERS,STRONGHOLD_PACT_TUNING,STRONGHOLD_PACT_IDS,STRONGHOLD_RETIRED_ECONOMY_TRAITS,
-  STRONGHOLD_RETIRED_AUGMENTS,STRONGHOLD_REWARD_ITEM_SUBSTITUTIONS} from './stronghold-pacts.js';
+  STRONGHOLD_RETIRED_AUGMENTS,STRONGHOLD_REWARD_ITEM_SUBSTITUTIONS,STRONGHOLD_STRATEGY_OVERRIDES} from './stronghold-pacts.js';
 
 const clone=value=>structuredClone(value);
 const requireValue=(condition,message)=>{if(!condition)throw new Error(message);};
 const retiredAugments=new Set(STRONGHOLD_RETIRED_AUGMENTS);
+const corrected=row=>{
+  const fix=STRONGHOLD_STRATEGY_OVERRIDES[row.apiName];
+  if(!fix)return row;
+  const effects={...clone(row.effects??{}),...clone(fix.variables??{})};
+  return {...clone(row),effects,...(fix.adaptation?{adaptation:fix.adaptation(effects)}:{})};
+};
 
 // Same heroes, members, thresholds, fees and emblems as faction season 1; only tier effects change.
 const traits=factionSeason.traits.map(trait=>{
@@ -32,7 +38,7 @@ export const factionSeasonV2=Object.freeze({...factionSeason,
   strongholdPacts:Object.freeze([...STRONGHOLD_PACT_IDS]),
   retiredEconomyTraits:Object.freeze([...STRONGHOLD_RETIRED_ECONOMY_TRAITS]),
   rewardItemSubstitutions:Object.freeze({...STRONGHOLD_REWARD_ITEM_SUBSTITUTIONS}),
-  augmentCandidates:factionSeason.augmentCandidates.filter(row=>!retiredAugments.has(row.apiName)),
-  strategyCandidates:factionSeason.strategyCandidates.filter(row=>!retiredAugments.has(row.apiName)),
+  augmentCandidates:factionSeason.augmentCandidates.filter(row=>!retiredAugments.has(row.apiName)).map(corrected),
+  strategyCandidates:factionSeason.strategyCandidates.filter(row=>!retiredAugments.has(row.apiName)).map(corrected),
   source:{...factionSeason.source,pactDesign:'Faction season 2: members and activation tiers of faction season 1; non-stacking Stronghold Protocol pact effects (shared/resonance/stronghold-pacts.js).'},
 });

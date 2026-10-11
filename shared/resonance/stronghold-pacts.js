@@ -14,10 +14,10 @@ const tiers = (rows) => freeze(Object.fromEntries(Object.entries(rows).map(([min
 
 export const STRONGHOLD_PACT_TIERS = freeze({
   academy: freeze({ mechanic: 'wanted_ammo', tiers: tiers({
-    3: { wantedCount: 1, wantedInterval: 15, wantedDamage: 0.2 },
-    4: { wantedCount: 1, wantedInterval: 15, wantedDamage: 0.3, ammoBonus: 0.3, durationBonus: 0.2 },
-    5: { wantedCount: 2, wantedInterval: 15, wantedDamage: 0.3, ammoBonus: 0.3, durationBonus: 0.2, wantedKillSp: 4 },
-    6: { wantedCount: 3, wantedInterval: 15, wantedDamage: 0.45, ammoBonus: 0.5, durationBonus: 0.3, wantedKillSp: 6 },
+    3: { wantedCount: 1, wantedDamage: 0.2 },
+    4: { wantedCount: 1, wantedDamage: 0.3, ammoBonus: 0.3, durationBonus: 0.2 },
+    5: { wantedCount: 2, wantedDamage: 0.3, ammoBonus: 0.3, durationBonus: 0.2, wantedKillSp: 4 },
+    6: { wantedCount: 3, wantedDamage: 0.45, ammoBonus: 0.5, durationBonus: 0.3, wantedKillSp: 6 },
   }) }),
   creation: freeze({ mechanic: 'cold_freeze_wind', tiers: tiers({
     2: { chillDuration: 1, chillCooldown: 4, coldDamage: 0.15 },
@@ -45,10 +45,10 @@ export const STRONGHOLD_PACT_TIERS = freeze({
   }) }),
   risk: freeze({ mechanic: 'stealth_ambush_fear', tiers: tiers({
     3: { openingAspd: 25, openingDuration: 20 },
-    4: { openingAspd: 25, openingDuration: 20, stealthDuration: 6, ambushDamage: 0.5 },
-    5: { openingAspd: 35, openingDuration: 25, stealthDuration: 6, ambushDamage: 0.5, fearChance: 0.15, fearDuration: 2, fearWindow: 10 },
-    6: { openingAspd: 35, openingDuration: 25, stealthDuration: 8, ambushDamage: 0.5, fearChance: 0.2, fearDuration: 2, fearWindow: 10, fearDamage: 0.3 },
-    7: { openingAspd: 50, openingDuration: 0, stealthDuration: 8, ambushDamage: 0.5, fearChance: 0.25, fearDuration: 3, fearWindow: 10, fearDamage: 0.3 },
+    4: { openingAspd: 25, openingDuration: 20, stealth: 1, ambushDamage: 0.5 },
+    5: { openingAspd: 35, openingDuration: 25, stealth: 1, ambushDamage: 0.5, fearChance: 0.15, fearDuration: 2, fearWindow: 10 },
+    6: { openingAspd: 35, openingDuration: 25, stealth: 1, ambushDamage: 0.5, fearChance: 0.2, fearDuration: 2, fearWindow: 10, fearDamage: 0.3 },
+    7: { openingAspd: 50, openingDuration: 0, stealth: 1, ambushDamage: 0.5, fearChance: 0.25, fearDuration: 3, fearWindow: 10, fearDamage: 0.3 },
   }) }),
   conqueror: freeze({ mechanic: 'true_damage_block', tiers: tiers({
     2: { attackTrue: 0.08 },
@@ -115,7 +115,8 @@ export const STRONGHOLD_PACT_TUNING = freeze({
   combo: tiers({ 2: { MinBonusAS: 0.15, MaxBonusAS: 0.4 }, 3: { MinBonusAS: 0.2, MaxBonusAS: 0.5 }, 4: { MinBonusAS: 0.25, MaxBonusAS: 0.6 } }),
   artillery: tiers({ 2: { AD: 0.1 }, 4: { AD: 0.18 }, 6: { AD: 0.25 } }),
   formSwap: tiers({ 2: { DA: 0.15, DR: 0.1 }, 4: { DA: 0.25, DR: 0.2 } }),
-  dominator: tiers({ 2: { APCapPercent: 25 }, 4: { APCapPercent: 35 }, 6: { APCapPercent: 45 } }),
+  // the field is empty when the battle starts: the 屏障 comes when an enemy first enters the member's attack range
+  dominator: tiers({ 2: { APCapPercent: 25, ShieldOnFirstContact: 1 }, 4: { APCapPercent: 35, ShieldOnFirstContact: 1 }, 6: { APCapPercent: 45, ShieldOnFirstContact: 1 } }),
   breaker: tiers({ 8: { TrueDamagePercent: 0.35 } }),
   // 号角: a fixed native DEF% / RES share replaces the win-count armor rating (no growth across battles)
   emissary: tiers({ 1: { AmbessaDefPct: 0.08, AmbessaResFlat: 8 }, 4: { AmbessaDefPct: 0.08, AmbessaResFlat: 8 } }),
@@ -127,6 +128,16 @@ export const STRONGHOLD_RETIRED_ECONOMY_TRAITS = freeze(['academy', 'risk', 'con
 export const STRONGHOLD_RETIRED_AUGMENTS = freeze(['TFT13_Augment_AcademyCrown', 'TFT13_Augment_Automata']);
 /** Reward items whose season-1 item no longer exists in season 2, by source item name → the native item granted instead. */
 export const STRONGHOLD_REWARD_ITEM_SUBSTITUTIONS = freeze({ Guardbreaker: 'hurricane' });
+/**
+ * Season-2 strategy corrections by source augment: extra variables for the battle adapter and the player copy. The
+ * field is empty when the battle starts, so 迅击爆发 counts its bursts from each member's first attack.
+ */
+export const STRONGHOLD_STRATEGY_OVERRIDES = freeze({
+  TFT13_Augment_Quickstriker: freeze({
+    variables: freeze({ StartOnFirstAttack: 1 }),
+    adaptation: (v) => `【迅击】干员首次攻击时及之后每${Number(v.TimeBetweenProcs)}秒，攻击速度+${Math.round(Number(v.AttackSpeed) * 100)}，持续${Number(v.BuffDuration)}秒。`,
+  }),
+});
 /** The one equipment slot count the temporary 维式重锤 fills up to. */
 export const STRONGHOLD_EQUIPMENT_SLOTS = 3;
 /** The component the 维多利亚 pact hands out (its display name comes from the equipment catalogue). */
@@ -140,19 +151,19 @@ export function strongholdPactCopy(trait, season, { itemName = (id) => id } = {}
   const hero = (api) => season.heroes.find((row) => row.apiName === api)?.operatorName ?? '';
   const hammer = itemName(STRONGHOLD_HAMMER_ITEM_ID);
   const table = {
-    academy: ['开战时及之后每15秒，通缉生命最高的敌人（精英、领袖优先）。', (v) => [
+    academy: ['敌人出场后，场上生命上限最高的敌人（精英、领袖优先）被通缉；更强的敌人出场或被通缉的敌人倒下时，通缉随之转移。', (v) => [
       `同时通缉${v.wantedCount}名；【拉特兰】干员对被通缉的敌人伤害+${p(v.wantedDamage)}。`,
       v.ammoBonus ? `技能获得的弹药+${p(v.ammoBonus)}，没有弹药的技能持续时间+${p(v.durationBonus)}。` : '',
       v.wantedKillSp ? `被通缉的敌人被击倒时，所有【拉特兰】干员回复${v.wantedKillSp}点技力。` : '',
     ]],
     creation: ['【谢拉格】干员的攻击使目标寒冷；已寒冷的敌人再次寒冷时会被冻结。', (v) => [
       `攻击使目标寒冷${n(v.chillDuration)}秒（同一目标每${n(v.chillCooldown)}秒至多一次）；对寒冷或冻结的敌人伤害+${p(v.coldDamage)}。`,
-      v.windInterval ? `每${n(v.windInterval)}秒刮起寒风，使全场敌人寒冷${n(v.windDuration)}秒。` : '',
+      v.windInterval ? `场上有敌人时，每${n(v.windInterval)}秒刮起寒风，使全场敌人寒冷${n(v.windDuration)}秒。` : '',
     ]],
     sui: ['开战时在【炎】干员附近召唤“炎佑”。炎佑追踪威胁最大的敌人，攻击附带攻击力20%的灼燃损伤，附近的敌人受到元素脆弱。', (v) => [
       `${v.guardianCount > 1 ? `召唤${v.guardianCount}只炎佑，` : ''}炎佑的攻击力、生命上限为【炎】干员开战时总和的${p(v.guardianShare)}，同时攻击${v.guardianTargets}个目标${v.guardianDamageTaken ? `，受到的伤害-${p(v.guardianDamageTaken)}` : ''}。`,
       v.summonAttack ? `【炎】干员的召唤物攻击力+${p(v.summonAttack)}。` : '',
-      v.flameInterval ? `炎佑每${n(v.flameInterval)}秒使用“祛恶之焰”，对周围敌人造成攻击力${p(v.flameDamage)}的法术伤害，并使其受到${p(v.flameFragile)}的元素脆弱，持续${n(v.flameFragileDuration)}秒。` : '',
+      v.flameInterval ? `炎佑身边有敌人时使用“祛恶之焰”（每${n(v.flameInterval)}秒至多一次），对周围敌人造成攻击力${p(v.flameDamage)}的法术伤害，并使其受到${p(v.flameFragile)}的元素脆弱，持续${n(v.flameFragileDuration)}秒。` : '',
     ]],
     flight: ['【深海猎人】干员生命上限提升，并持续回复生命。', (v) => [
       `生命上限+${p(v.hpBonus)}，每秒回复${p(v.regenRatio)}最大生命。`,
@@ -165,10 +176,10 @@ export function strongholdPactCopy(trait, season, { itemName = (id) => id } = {}
       v.temporaryHammer ? `开战时，装备未满的【维多利亚】干员临时携带1件${hammer}，战斗结束后消失。` : '',
       v.othersShare ? `其他干员获得一半效果。` : '',
     ]],
-    risk: ['【叙拉古】干员开战后攻击速度提升；高档开战时进入隐匿，并使敌人恐惧。', (v) => [
-      v.openingDuration > 0 ? `开战后${n(v.openingDuration)}秒内攻击速度+${v.openingAspd}。` : `攻击速度+${v.openingAspd}，持续整场战斗。`,
-      v.stealthDuration ? `开战时进入隐匿${n(v.stealthDuration)}秒，脱离隐匿后的首次攻击伤害+${p(v.ambushDamage)}。` : '',
-      v.fearChance ? `隐匿期间及脱离后${n(v.fearWindow)}秒内，攻击有${p(v.fearChance)}概率使目标恐惧${n(v.fearDuration)}秒。` : '',
+    risk: ['【叙拉古】干员首次攻击后攻击速度提升；高档时开战即进入隐匿，以首次攻击伏击敌人，并使敌人恐惧。', (v) => [
+      v.openingDuration > 0 ? `首次攻击后${n(v.openingDuration)}秒内攻击速度+${v.openingAspd}。` : `攻击速度+${v.openingAspd}，持续整场战斗。`,
+      v.stealth ? `开战时进入隐匿，首次攻击时脱离隐匿，这次攻击伤害+${p(v.ambushDamage)}。` : '',
+      v.fearChance ? `首次攻击后${n(v.fearWindow)}秒内，攻击有${p(v.fearChance)}概率使目标恐惧${n(v.fearDuration)}秒。` : '',
       v.fearDamage ? `对恐惧中的敌人伤害+${p(v.fearDamage)}。` : '',
     ]],
     conqueror: ['【卡西米尔】干员的攻击附带真实伤害；阻挡敌人时冲击周围。', (v) => [
@@ -220,8 +231,8 @@ export function strongholdPactCopy(trait, season, { itemName = (id) => id } = {}
     watcher: ['【守望】干员受到的伤害降低；生命高于一半时效果更强。', (v) => [
       `受到的伤害-${p(v.BaseDR)}；生命高于${p(v.HealthBreakpoint)}时改为-${p(v.IncreasedDR)}。`,
     ]],
-    dominator: ['开战时【掌控】干员获得屏障；开启技能消耗的技力会提升其法术伤害。', (v) => [
-      `开战获得${Math.round(v.ShieldAmount)}点屏障，持续${n(v.ShieldDuration)}秒；每消耗1点技力，法术伤害+${n(v.APPercent)}%，至多+${n(v.APCapPercent)}%。`,
+    dominator: ['敌人首次进入【掌控】干员的攻击范围时，该干员获得屏障；开启技能消耗的技力会提升其法术伤害。', (v) => [
+      `敌人首次进入攻击范围时获得${Math.round(v.ShieldAmount)}点屏障，持续${n(v.ShieldDuration)}秒；每消耗1点技力，法术伤害+${n(v.APPercent)}%，至多+${n(v.APCapPercent)}%。`,
     ]],
     breaker: ['【决斗】干员造成伤害时回复生命并追加真实伤害；首次生命低于一半时迅速回复。', (v) => [
       `造成伤害的${p(v.OmnivampPercent)}回复为生命，并追加${p(v.TrueDamagePercent)}的真实伤害；首次生命低于${p(v.HealthThreshold)}时，${n(v.Duration)}秒内回复${p(v.HealPercent)}最大生命。`,

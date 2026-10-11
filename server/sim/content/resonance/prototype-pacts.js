@@ -486,7 +486,17 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
       if(id==='creation') for(const unit of members)applyRating(unit,'automata',Number(v.Resists??0),Number(v.Resists??0));
       if(id==='artillery') for(const unit of members)buff(unit,'artillerist-ad',{atkPct:Number(v.AD??0)});
       if(id==='dominator'){
-        for(const unit of members)battle.addBuff(unit,{key:`resonance:v3:dominator-shield:${unit.id}`,shield:Number(v.ShieldAmount??0),duration:Number(v.ShieldDuration??15),tags:['resonance','prototype-trait']});
+        const give=(unit)=>battle.addBuff(unit,{key:`resonance:v3:dominator-shield:${unit.id}`,shield:Number(v.ShieldAmount??0),duration:Number(v.ShieldDuration??15),tags:['resonance','prototype-trait']});
+        if(Number(v.ShieldOnFirstContact)>0){
+          // season 2: the field is empty when the battle starts, so each member's 屏障 comes when an enemy first enters its
+          // attack range (members that never attack, such as a trapmaster, included)
+          const waiting=new Set(members);
+          const contact=(unit)=>{if(!waiting.delete(unit))return;give(unit);metric('dominator','contactShields');};
+          battle.every(.25,()=>{
+            for(const unit of waiting)if(unit.alive&&unit.deployed&&battle.enemiesInKeys(unit.rangeKeys||[],unit,unit.profile).length)contact(unit);
+          },{owner:battle});
+          battle.on('hit',(event)=>{if(waiting.has(event?.source)&&event.target?.side==='enemy')contact(event.source);},{owner:battle});
+        }else for(const unit of members)give(unit);
       }
       if(id==='emissary'){
         const emissaryUnits=all.filter((unit)=>isActiveMember(unit,'emissary'));
