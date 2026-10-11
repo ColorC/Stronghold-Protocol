@@ -12,6 +12,7 @@ import { GIcon } from '../ui/gameComponents.js';
 import { GameChrome } from './gameChrome.js';
 import { mountUnitItemOverlay } from './unitItems.js';
 import { resonanceItemIconUrl } from './itemIcon.js';
+import { StrategyIcon } from './strategyIcon.js';
 
 export function GameScreen({id,initial,catalog,onLeave,onState}) {
  const [state,setState]=useState(initial); const stateRef=useRef(state);stateRef.current=state;
@@ -94,7 +95,7 @@ export function GameScreen({id,initial,catalog,onLeave,onState}) {
         onClick=${()=>{if(choice.type==='strategy'){setChoiceSelections({...choiceSelections,[choice.uid]:[option]});setDetail({kind:'strategy',id:option});return}
           setChoiceSelections({...choiceSelections,[choice.uid]:selected.includes(option)?selected.filter(x=>x!==option):selected.length<choice.remaining?[...selected,option]:selected});
           const target=catalog.operators?.[option]?{kind:'operator',id:option}:catalog.pacts?.[option]?{kind:'pact',id:option}:catalog.equipment?.[option]?{kind:'item',id:option}:null;if(target)setDetail(target)}}>
-        <span class="spcard__glow"></span><span class="spcard__head"><span class="spcard__icon"><${GIcon} name="bolt"/></span><span class="spcard__title"><b class="spcard__name">${choiceLabel(choice,option,state,catalog)}</b></span></span>
+        <span class="spcard__glow"></span><span class="spcard__head"><span class="spcard__icon">${choice.type==='strategy'?html`<${StrategyIcon} catalog=${catalog} id=${option} size="lg"/>`:html`<${GIcon} name="bolt"/>`}</span><span class="spcard__title"><b class="spcard__name">${choiceLabel(choice,option,state,catalog)}</b></span></span>
         <span class="spcard__desc">${choiceDescription(choice,option,state,catalog)}</span></button>
         ${needsPair?html`<label>相邻干员<select value=${pair} onChange=${e=>setStrategyTargets({...strategyTargets,[option]:e.target.value})}><option value="">选择一组相邻干员</option>${pairs.map(([a,b])=>html`<option value=${`${a.uid}|${b.uid}`}>${a.operator?.name||catalog.operators[a.operatorId]?.name} + ${b.operator?.name||catalog.operators[b.operatorId]?.name}</option>`)}</select></label>`:null}
         ${choice.type==='strategy'?html``:choice.type==='recipe'?html``:null}</article>`})}</div></section>`};

@@ -35,7 +35,7 @@ export function filterOperators(operators, activeIds, {query='',cost='',pact='',
   return Object.entries(operators||{}).filter(([id,op])=>(!onlyActive||active.has(id))&&(!needle||`${id} ${op.name||''}`.toLocaleLowerCase().includes(needle))&&(!cost||Number(op.cost)===Number(cost))&&(!pact||(op.pacts||[]).includes(pact))&&(!role||op.role===role));
 }
 export function choiceDescription(choice, option, state, catalog) {
-  if(choice?.type==='strategy') {const s=catalog.strategies?.[option];return [s?.description,s?.condition&&`条件：${strategyConditionText(s.condition)}`,s?.timing&&`时点：${strategyTimingText(s.timing)}`].filter(Boolean).join(' · ')||'策略效果将在详情中显示';}
+  if(choice?.type==='strategy') {const s=catalog.strategies?.[option],condition=strategyConditionNote(s);return [s?.description,condition&&`条件：${condition}`].filter(Boolean).join(' · ')||'策略效果将在详情中显示';}
   if(choice?.type==='pact_tag'||choice?.type==='identity_transfer')return catalog.pacts?.[option]?.description||'获得该盟约身份';
   if(choice?.type==='disassemble') {const found=[...(state.inventory||[]),...(state.pieces||[]).flatMap(p=>p.equipment||[])].find(x=>x.uid===option);return found?`${catalog.equipment?.[found.itemId]?.description||''} · 拆解为基础组件`:'拆解这件装备';}
   if(choice?.type==='recipe') {const recipe=(catalog.recipes||[]).find(entry=>entry.resultId===option);return recipe?`${recipe.names.join(' + ')} → ${recipe.resultName}`:'选择这件装备后将按配方合成';}
@@ -47,6 +47,12 @@ export function choiceDescription(choice, option, state, catalog) {
 export function strategyConditionText(condition) {
  if(typeof condition==='string'&&condition.trim())return condition;if(!condition)return '按策略说明生效';const p=condition.params||{};
  switch(condition.kind){case'always':return '无额外条件';case'metric_threshold':return `达成${p.metric||'指定目标'} ${p.threshold??''}次`;case'current_hp_above':return `目标生命高于${p.value??p.threshold??'指定值'}`;case'no_owned_cost':return `尚未拥有${p.cost??'指定费用'}费干员`;case'gold_min':return `至少持有${p.value??p.amount??'指定数量'}金币可选`;case'start_of_run':return '开局时生效';case'formation_count':return `阵容中至少有${p.count??p.value??'指定数量'}名符合条件的干员`;case'choose_adjacent_pair':return '选择相邻的两名干员';default:return '需满足策略条件';}
+}
+/** A strategy's 条件 text, or '' when it has none (always): the description already says when it works. */
+export function strategyConditionNote(strategy) {
+ const kind=strategy?.conditionKind??(typeof strategy?.condition==='object'?strategy?.condition?.kind:null);
+ if(!strategy?.condition||kind==='always')return '';
+ return strategyConditionText(strategy.condition);
 }
 export function strategyTimingText(timing) {
  if(typeof timing==='string'&&timing.trim()&&!['on-pick','run-or-node','battle-metric','node-delay','battle-start','on-node-start','on-battle-start','on-battle-end','delayed','task'].includes(timing))return timing;const known={'on-pick':'选择后立即','run-or-node':'每场开局或节点开始','battle-metric':'达成战斗目标后','node-delay':'延后若干节点','battle-start':'战斗开始时','on-node-start':'节点开始时','on-battle-start':'战斗开始时','on-battle-end':'战斗结算时','delayed':'延后生效','task':'完成目标后'};return known[timing]||'按节点规则生效';

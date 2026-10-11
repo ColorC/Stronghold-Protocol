@@ -35,9 +35,9 @@ test('catalog filters combine active pool, cost, pact, role, and text constraint
  assert.deepEqual(filterOperators(ops,['a'],{onlyActive:true}).map(([id])=>id),['a']);
 });
 
-test('choice cards expose strategy condition and timing, and player-safe action errors',()=>{
+test('choice cards expose a real strategy condition (never a timing line), and player-safe action errors',()=>{
  const catalog={strategies:{s:{name:'战后补给',description:'战胜后获得组件',timing:'on-battle-end',condition:{kind:'metric_threshold',params:{metric:'胜利',threshold:3}}}},pacts:{},equipment:{},operators:{}};
- assert.equal(choiceDescription({type:'strategy'},'s',{},catalog),'战胜后获得组件 · 条件：达成胜利 3次 · 时点：战斗结算时');
+ assert.equal(choiceDescription({type:'strategy'},'s',{},catalog),'战胜后获得组件 · 条件：达成胜利 3次');
  assert.equal(strategyConditionText({kind:'choose_adjacent_pair'}),'选择相邻的两名干员');
  assert.equal(strategyConditionText({kind:'gold_min',params:{value:8}}),'至少持有8金币可选');
  assert.equal(strategyTimingText('on-pick'),'选择后立即');
@@ -45,7 +45,9 @@ test('choice cards expose strategy condition and timing, and player-safe action 
  assert.equal(strategyConditionText('至少持有8金币可选'),'至少持有8金币可选');
  assert.equal(strategyTimingText('本局或经营节点期间'),'本局或经营节点期间');
  const displayed={strategies:{gold:{description:'支付金币后获得增益',condition:'至少持有8金币可选',timing:'本局或经营节点期间'}}};
- assert.equal(choiceDescription({type:'strategy'},'gold',{},displayed),'支付金币后获得增益 · 条件：至少持有8金币可选 · 时点：本局或经营节点期间');
+ assert.equal(choiceDescription({type:'strategy'},'gold',{},displayed),'支付金币后获得增益 · 条件：至少持有8金币可选');
+ const always={strategies:{a:{description:'立即获得8金币',condition:'无额外前提',conditionKind:'always',timing:'本局或经营节点期间'}}};
+ assert.equal(choiceDescription({type:'strategy'},'a',{},always),'立即获得8金币');
  assert.equal(roleLabel('summoner'),'召唤');
  assert.equal(actionErrorText({code:'STALE_REVISION',message:'internal detail'}),'对局状态已变化，正在同步');
  assert.equal(actionErrorText({code:'INTERNAL_ERROR',message:'blackboard key'}),'操作没有完成，请检查当前阶段后重试');

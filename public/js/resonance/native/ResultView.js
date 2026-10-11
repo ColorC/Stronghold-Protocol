@@ -8,6 +8,7 @@ import { uiUrl } from '../../ui/assetUrls.js';
 import { data, useData } from '../../data.js';
 import { assets } from '../../assets.js';
 import { ResonanceItemIcon } from '../itemIcon.js';
+import { StrategyIcon } from '../strategyIcon.js';
 
 export function ResultView({ state, catalog, onLeave, onReport, onDetail }) {
   useData('assets','items');
@@ -32,7 +33,7 @@ export function ResultView({ state, catalog, onLeave, onReport, onDetail }) {
         <div class="rcard__round"><${MicroLabel}>NODES</${MicroLabel}><b class="num">${state.round}</b></div></header>
         <div class="rcard__stats">${stats.map(([label,value])=>html`<div class="rstat" key=${label}><span>${label}</span>${label==='剩余生命'?html`<${LpTower} value=${value} size="sm"/>`:html`<b class="num">${value}</b>`}</div>`)}</div>
       </article>
-      ${(state.strategies||[]).length?html`<details class="rs-result-strategies"><summary>本局策略</summary><div>${state.strategies.map(entry=>{const id=typeof entry==='string'?entry:entry.id;return html`<button key=${id} onClick=${()=>onDetail({kind:'strategy',id})}>${catalog.strategies?.[id]?.name||'策略'}</button>`})}</div></details>`:null}
+      ${(state.strategies||[]).length?html`<details class="rs-result-strategies"><summary>本局策略</summary><div>${state.strategies.map(entry=>{const id=typeof entry==='string'?entry:entry.id;return html`<button key=${id} onClick=${()=>onDetail({kind:'strategy',id})}><${StrategyIcon} catalog=${catalog} id=${id} size="sm"/>${catalog.strategies?.[id]?.name||'策略'}</button>`})}</div></details>`:null}
     </section></main>
   </div>`;
 }

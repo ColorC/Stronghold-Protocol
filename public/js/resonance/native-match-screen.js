@@ -129,6 +129,7 @@ import { ResonanceItemIcon, resonanceItemIconUrl } from './itemIcon.js';
 import { firstAvailableLegalTile, resonanceShortcutFor, RESONANCE_SHORTCUT_LABEL } from './nativeControls.js';
 import { dispatchNativeSellDrop, nativeSellTargetRect } from './nativeSell.js';
 import { pactIconUrl, PactIcon } from './pactIcon.js';
+import { StrategyIcon, strategyIconUrl } from './strategyIcon.js';
 import { pactTierSummary } from './pactTierSummary.js';
 import { pactReadableCopy } from './pactPresentation.js';
 import { CoinGlyph } from '../ui/gameComponents.js';
@@ -302,7 +303,7 @@ function NativeMatchInfo({ state, catalog, onDetail, onSettlement, showHelp = fa
     <div class="rs-native-match-info__round"><${GIcon} name="flag" /><b>第 ${state.round} 回合</b><span>${settled ? '可查看最近一场结果' : '准备阵容，迎接下一场战斗'}</span></div>
     <section><h3>本局策略</h3><div class="rs-native-list">${state.strategies?.length ? state.strategies.map(entry => {
       const id = typeof entry === 'string' ? entry : entry.id, strategy = catalog.strategies?.[id];
-      return html`<article key=${id}><${Icon} name="key" /><button type="button" onClick=${() => onDetail({ kind: 'strategy', id })}><b>${strategy?.name || '策略'}</b><span>${strategy?.description || ''}</span></button></article>`;
+      return html`<article key=${id}><${StrategyIcon} catalog=${catalog} id=${id} size="sm" /><button type="button" onClick=${() => onDetail({ kind: 'strategy', id })}><b>${strategy?.name || '策略'}</b><span>${strategy?.description || ''}</span></button></article>`;
     }) : html`<p>尚未选择策略</p>`}</div></section>
     <button type="button" class="btn btn--ghost" aria-label="本场结算" disabled=${!settled} title=${settled ? '查看最近一场收入与战斗图表' : '完成首场战斗后可查看'} onClick=${onSettlement}><${Icon} name="signal" />本场结算</button>
     <details class="rs-native-controls-help" open=${showHelp}><summary><${Icon} name="book" />操作说明</summary><p>拖动干员部署或调换位置；右键查看详情。</p><p>拖动组件到干员或另一组件上，预览装备或合成结果。</p><dl><dt>D</dt><dd>刷新商店</dd><dt>F</dt><dd>购买经验</dd><dt>W</dt><dd>部署／撤回选中的干员</dd><dt>E</dt><dd>出售选中的干员</dd><dt>空格</dt><dd>开始战斗／暂停</dd></dl></details>
@@ -351,13 +352,19 @@ function NativeSpecialEntityList({ state, catalog, editable, busy, onRecall }) {
   </section>`;
 }
 
+// A chosen strategy in the effects column: its own icon and the 策略 label (the server sends it as a generic 'choice').
+function resonanceStrategyEffects(effects, catalog) {
+  if (!Array.isArray(effects) || !catalog?.strategies) return effects;
+  return effects.map(effect => catalog.strategies[effect?.id] ? { ...effect, iconKind: 'band', iconUrl: strategyIconUrl(catalog, effect.id) } : effect);
+}
+
 const ECONOMY_CHOICE_PACT = Object.freeze({
   academy_sponsor: 'academy', chem_market: 'risk', war_chest: 'conqueror',
   family_heist: 'family', junker_armory: 'armory',
 });
 
 function ChoiceOptionIcon({ choice, option, state, catalog, detail, strategy }) {
-  if (strategy) return html`<${GIcon} name="bolt"/>`;
+  if (strategy) return html`<${StrategyIcon} catalog=${catalog} id=${option} size="lg"/>`;
   const grants = Array.isArray(detail?.grant) ? detail.grant : [];
   const grantedItem = grants.find((grant) => grant && ['item', 'component'].includes(grant.kind)
     && typeof grant.id === 'string' && catalog?.equipment?.[grant.id]);
@@ -1685,6 +1692,18 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
     }
     setResonanceDetail(target);
   };
+  // the operator under a dragged component: the piece on the tile under the pointer, else the operator whose drawn body
+  // the pointer is over (the tile test alone only answers at the operator's feet)
+  const equipmentPieceAt = (event) => {
+    if (!event.target?.closest?.('.gm__field')) return null;
+    const hit = view?.pieceAtClient?.(event.clientX, event.clientY);
+    const onTile = hit && resonanceState?.pieces?.find((candidate) => Number(candidate.nativeUid) === Number(hit.uid));
+    if (onTile) return onTile;
+    return resonanceState?.pieces?.find((candidate) => {
+      const rect = candidate.nativeUid != null ? view?.pieceScreenRect?.(candidate.nativeUid) : null;
+      return !!rect && event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
+    }) ?? null;
+  };
   const equipmentDropOver = (event) => {
     if (event.dataTransfer?.types?.includes('application/x-resonance-special')) {
       if (!editable) return;
@@ -1695,8 +1714,7 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
     }
     if (!event.dataTransfer?.types?.includes('application/x-stronghold-equipment')) return;
     event.preventDefault();
-    const hit = event.target?.closest?.('.gm__field') ? view?.pieceAtClient?.(event.clientX, event.clientY) : null;
-    const piece = hit && resonanceState?.pieces?.find((candidate) => Number(candidate.nativeUid) === Number(hit.uid));
+    const piece = equipmentPieceAt(event);
     setEquipmentDropTarget(piece?.nativeUid ?? null);
   };
   const equipmentDrop = async (event) => {
@@ -1714,8 +1732,7 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
     if (!event.dataTransfer?.types?.includes('application/x-stronghold-equipment')) return;
     event.preventDefault();
     const itemUid = Number(event.dataTransfer.getData('application/x-stronghold-equipment'));
-    const hit = event.target?.closest?.('.gm__field') ? view?.pieceAtClient?.(event.clientX, event.clientY) : null;
-    const target = hit && resonanceState?.pieces?.find((candidate) => Number(candidate.nativeUid) === Number(hit.uid));
+    const target = equipmentPieceAt(event);
     const item = resonanceState?.inventory?.find((candidate) => Number(candidate.nativeUid) === itemUid);
     setEquipmentDropTarget(null);
     if (!editable || !item || !target) { toast('请把装备拖到一名可操作的干员身上', 'info'); return; }
@@ -2009,11 +2026,14 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
   const draggedSellValue = drag?.kind === 'chess' && editable && showPrep
     ? underframeActions(placeCtx, drag.uid)?.sell : null;
 
+  // the operator a dragged component would go to, on screen: its merge preview is drawn beside it
+  const equipmentFieldUid = equipmentDropTarget ?? sel?.uid ?? null;
+  const equipmentFieldAnchor = equipmentFieldUid != null ? view?.pieceScreenRect?.(equipmentFieldUid) ?? null : null;
   return html`<div class=${cx('screen', 'gm', `gm--${mode}`, drag && 'is-dragging', collapsed && 'is-collapsed', (sp || hasPersonalChoice) && 'has-sp', pen && 'is-pen', readyWhy && 'has-readywhy', equipmentDropTarget != null && 'has-equipment-drop')}
       data-camera=${pen ? 'pen' : camKind} onDragOver=${equipmentDropOver} onDrop=${equipmentDrop} onDragLeave=${(event) => { if (!event.currentTarget.contains(event.relatedTarget)) { setEquipmentDropTarget(null); setSpecialDropTile(null); } }}>
     <div class="gm__field" ref=${hostRef} onContextMenu=${(e) => e.preventDefault()}></div>
     ${resonanceDockState && resonanceCatalog ? html`<${InventoryDock} className="rs-native-equipment-rail" state=${resonanceDockState} catalog=${resonanceCatalog}
-      busy=${!editable} fieldTargetUid=${equipmentDropTarget ?? sel?.uid ?? null} onOpen=${() => toggleResonancePanel('equipment')}
+      busy=${!editable} fieldTargetUid=${equipmentDropTarget ?? sel?.uid ?? null} fieldAnchor=${equipmentFieldAnchor} onOpen=${() => toggleResonancePanel('equipment')}
       onDetail=${openNativeResonanceDetail} onCombine=${combineResonanceItems} />` : null}
     ${draggedSellValue != null && sellRect ? html`<div ref=${sellZoneRef} class="rs-native-sell-zone" aria-live="polite"
       style=${`left:${sellRect.left}px;top:${sellRect.top}px;width:${sellRect.width}px;height:${sellRect.height}px`}>
@@ -2063,7 +2083,7 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
         self=${Number.isFinite(priv?.lp) ? { lp: priv.lp, pending: liveLpNow.pending, unite: liveLpNow.unite, left: liveLpNow.left } : null}
         observe=${cc ? { canObserve: (p) => observeTarget(p, pub, myId, { observing: watchingOther, ownDone: localDone }), observing: watchingOther, onBack: backHome } : null} />` : null}
 
-      <div class="gm__effects"><${EffectsList} effects=${watchingOther && field ? (field.effects ?? null) : priv?.effects} /></div>
+      <div class="gm__effects"><${EffectsList} effects=${resonanceStrategyEffects(watchingOther && field ? (field.effects ?? null) : priv?.effects, resonanceCatalog)} /></div>
 
       ${watchingOther && !combat ? html`<div class="gm__watching" role="status">
         <${GIcon} name="eye" /><span>${tParts('正在查看 {name} 的阵地（只读）', { name: html`<b>${watchedName}</b>` })}</span>
@@ -2119,7 +2139,7 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
           ${resonancePanel === 'equipment' && resonanceDockState ? html`<${NativeSpecialEntityList} state=${resonanceState} catalog=${resonanceCatalog} editable=${editable} busy=${resonanceActionBusy} onRecall=${uid => actions.move(uid, { area: 'hand' })} />
             <div class="rs-native-equipment-help"><p>拖动组件可在库存中合成，或装备到干员身上。</p><${Button} size="sm" variant="ghost" icon="book" onClick=${() => openCodex('recipes')}>合成配方<//></div>
             <${NativeResonanceInventoryActions} state=${resonanceState} catalog=${resonanceCatalog} editable=${editable} busy=${resonanceActionBusy} onAction=${submitResonanceAction} />
-            <${InventoryDock} state=${resonanceDockState} catalog=${resonanceCatalog} busy=${!editable} fieldTargetUid=${equipmentDropTarget ?? sel?.uid ?? null}
+            <${InventoryDock} state=${resonanceDockState} catalog=${resonanceCatalog} busy=${!editable} fieldTargetUid=${equipmentDropTarget ?? sel?.uid ?? null} fieldAnchor=${equipmentFieldAnchor}
             className="rs-equipment-dock--panel" onOpen=${() => {}} onDetail=${openNativeResonanceDetail} onCombine=${combineResonanceItems} />` : null}
         </div>
       </aside>` : null}

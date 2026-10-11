@@ -3,12 +3,28 @@ import { useEffect, useRef, useState } from '../../../vendor/hooks.module.js';
 import { ResonanceItemIcon } from '../itemIcon.js';
 import { RESONANCE_EQUIP_SLOTS, recipeFor } from '../equipmentSlots.js';
 
+/** Beside `rect` (right when it fits, else left), kept inside the viewport: where a floating preview box goes. */
+function besideRect(rect, box, margin = 8) {
+  const x = rect.right + 8 + box.width <= innerWidth - margin ? rect.right + 8 : Math.max(margin, rect.left - box.width - 8);
+  const y = Math.max(margin, Math.min(rect.top, innerHeight - box.height - margin));
+  return { x, y };
+}
+
+/** What a merge makes, in full: the product's icon, name and the same effect text as its detail card. */
+export function MergePreview({ catalog, resultId, lead }) {
+  const product = catalog?.equipment?.[resultId] || {};
+  return html`<span class="rs-merge-preview" data-result-id=${resultId}>
+    <${ResonanceItemIcon} catalog=${catalog} itemId=${resultId} size="md" showTier=${false}/>
+    <span class="rs-merge-preview__text"><small>${lead}</small><b>${product.name || '装备'}</b>${product.description ? html`<span>${product.description}</span>` : null}</span>
+  </span>`;
+}
+
 /** Permanent, narrow inventory rail. Equipped items stay on their operator; this rail owns only loose inventory. */
-export function InventoryDock({ state, catalog, onDetail, onOpen, onCombine, fieldTargetUid = null, busy = false, className = '' }) {
+export function InventoryDock({ state, catalog, onDetail, onOpen, onCombine, fieldTargetUid = null, fieldAnchor = null, busy = false, className = '' }) {
   const [draggedUid, setDraggedUid] = useState(null);
   const [hoverUid, setHoverUid] = useState(null);
-  const previewRef = useRef(null);
-  const [previewPoint, setPreviewPoint] = useState(null);
+  const previewRef = useRef(null), fieldPreviewRef = useRef(null);
+  const [previewPoint, setPreviewPoint] = useState(null), [fieldPoint, setFieldPoint] = useState(null);
   const inventory = state.inventory || [];
   const source = inventory.find(item => String(item.uid) === String(draggedUid)) || null;
   const fieldTarget = (state.pieces || []).find(piece => String(piece.uid) === String(fieldTargetUid)) || null;
@@ -25,16 +41,20 @@ export function InventoryDock({ state, catalog, onDetail, onOpen, onCombine, fie
       const target = document.querySelector(`.rs-equipment-dock__slot[data-item-uid="${CSS.escape(String(hovered.uid))}"]`);
       const box = previewRef.current;
       if (!target || !box) return;
-      const r = target.getBoundingClientRect(), b = box.getBoundingClientRect(), margin = 8;
-      const x = r.right + 8 + b.width <= innerWidth - margin ? r.right + 8 : Math.max(margin, r.left - b.width - 8);
-      const y = Math.max(margin, Math.min(r.top, innerHeight - b.height - margin));
-      setPreviewPoint({ x, y });
+      setPreviewPoint(besideRect(target.getBoundingClientRect(), box.getBoundingClientRect()));
     };
     update();
     window.addEventListener('resize', update);
     window.addEventListener('scroll', update, true);
     return () => { window.removeEventListener('resize', update); window.removeEventListener('scroll', update, true); };
   }, [hoveredRecipe, hovered?.uid, hoveredResult?.name]);
+  // the operator under the dragged component: the preview sits beside that operator on the field
+  const anchored = !!(fieldAnchor && fieldTarget && source);
+  useEffect(() => {
+    const box = fieldPreviewRef.current;
+    if (!anchored || !box) { setFieldPoint(null); return; }
+    setFieldPoint(besideRect(fieldAnchor, box.getBoundingClientRect()));
+  }, [anchored, fieldAnchor?.left, fieldAnchor?.top, fieldAnchor?.right, fieldAnchor?.bottom, fieldRecipe?.recipe.resultId, fieldFull, fieldUniqueConflict]);
   const editable = !busy && ['prep', 'choice'].includes(state.phase);
   const combine = async (target) => {
     if (!editable || !source || String(source.uid) === String(target.uid)) return;
@@ -65,11 +85,12 @@ export function InventoryDock({ state, catalog, onDetail, onOpen, onCombine, fie
       </div>`;
     })}</div>
     ${hoveredRecipe ? html`<div ref=${previewRef} class="rs-equipment-dock__preview" role="status" style=${previewPoint ? `left:${previewPoint.x}px;top:${previewPoint.y}px;visibility:visible` : 'left:-10000px;top:0;visibility:hidden'}>
-      <${ResonanceItemIcon} catalog=${catalog} itemId=${hoveredRecipe.resultId} size="md" showTier=${false}/><small>松开得到${hoveredRecipe.resultName}</small>
+      <${MergePreview} catalog=${catalog} resultId=${hoveredRecipe.resultId} lead="松开得到"/>
     </div>` : null}
-    ${fieldTarget && source ? html`<div class="rs-equipment-dock__field-preview" role="status" aria-live="polite">
-      ${fieldRecipe && !fieldUniqueConflict ? html`<${ResonanceItemIcon} catalog=${catalog} itemId=${fieldRecipe.recipe.resultId} size="md" showTier=${false}/>` : null}
-      <small>${fieldRecipe ? fieldUniqueConflict ? '该干员已携带此唯一装备' : `装备合成为${fieldRecipe.recipe.resultName}` : fieldFull ? `装备栏已满（${RESONANCE_EQUIP_SLOTS}/${RESONANCE_EQUIP_SLOTS}）` : '松开即可装备'}</small>
+    ${fieldTarget && source ? html`<div ref=${fieldPreviewRef} class=${`rs-equipment-dock__field-preview${anchored ? ' is-anchored' : ''}`} role="status" aria-live="polite"
+      style=${!anchored ? undefined : fieldPoint ? `left:${fieldPoint.x}px;top:${fieldPoint.y}px;visibility:visible` : 'left:-10000px;top:0;visibility:hidden'}>
+      ${fieldRecipe && !fieldUniqueConflict ? html`<${MergePreview} catalog=${catalog} resultId=${fieldRecipe.recipe.resultId} lead="装备合成为"/>`
+        : html`<small>${fieldUniqueConflict ? '该干员已携带此唯一装备' : fieldFull ? `装备栏已满（${RESONANCE_EQUIP_SLOTS}/${RESONANCE_EQUIP_SLOTS}）` : '松开即可装备'}</small>`}
     </div>` : null}
     <button type="button" class="rs-equipment-dock__open" aria-label="打开装备与配方" title="装备与配方" onClick=${onOpen}><${Icon} name="sword"/><small>${inventory.length}</small></button>
   </aside>`;

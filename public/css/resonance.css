@@ -507,3 +507,40 @@ body { background: #101512; color: var(--rs-text); }
 .rs-brief-season__bond .rs-pact-icon { grid-row: 1 / 3; width: .36rem; height: .36rem; }
 .rs-brief-season__bond b { font-size: max(calc(.16 * var(--t)), 15px); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rs-brief-season__bond .num { font-size: max(calc(.14 * var(--t)), 14px); color: var(--text-lo, #9aa5a2); white-space: nowrap; letter-spacing: 0; }
+/* strategy icons (public/js/resonance/strategyIcon.js): pact glyph, HUD gold / level / refresh art, or the strategy group's glyph */
+.rs-strategy-icon { width: .34rem; height: .34rem; flex: none; display: inline-grid; place-items: center; color: var(--mint-300); }
+.rs-strategy-icon i { width: 100%; height: 100%; display: block; background: currentColor; mask-size: contain; mask-position: center; mask-repeat: no-repeat; -webkit-mask-size: contain; -webkit-mask-position: center; -webkit-mask-repeat: no-repeat; }
+.rs-strategy-icon img { width: 100%; height: 100%; object-fit: contain; }
+.rs-strategy-icon--sm { width: .24rem; height: .24rem; }
+.rs-strategy-icon--lg { width: .46rem; height: .46rem; }
+.rs-strategy-icon--gold { color: var(--gold, #f2c14e); }
+.rs-native-match .rs-native-choice .spcard__icon > .rs-strategy-icon, .spcard__icon > .rs-strategy-icon { width: 82%; height: 82%; }
+.rs-native-list article > .rs-strategy-icon { flex: none; width: max(.3rem, 26px); height: max(.3rem, 26px); }
+.rs-native-match .rs-native-match-info .rs-native-list article > .rs-strategy-icon { color: var(--mint-300); }
+.rs-native-match .rs-native-match-info .rs-native-list article > .rs-strategy-icon--gold, .rs-native-list article > .rs-strategy-icon--gold { color: var(--gold, #f2c14e); }
+.rs-game .rs-strategy-pins button > .rs-strategy-icon { width: .2rem; height: .2rem; }
+.rs-codex .rs-codex__catalog-card .rs-codex__art > .rs-strategy-icon { width: 46%; height: 70%; justify-self: center; align-self: center; }
+.rs-codex .rs-codex__catalog-card .rs-codex__art:has(> .rs-strategy-icon) { display: grid; place-items: center; }
+.rs-detail-panel .rs-detail__strategy-head { align-items: center; }
+.rs-detail-panel .rs-detail__strategy-head > .rs-strategy-icon { width: .56rem; height: .56rem; padding: .06rem; background: rgba(8,13,11,.6); border: 1px solid var(--line-2); box-sizing: border-box; }
+.rs-result-strategies button { display: inline-flex; align-items: center; gap: .06rem; }
+/* merge previews: the product's icon, name and full effect (equipment dock drag, component detail 可合成) */
+.rs-merge-preview { display: flex; align-items: flex-start; gap: 9px; min-width: 0; }
+.rs-merge-preview .rs-item-icon { width: 40px; height: 40px; flex: none; }
+.rs-merge-preview__text { display: grid; gap: 2px; min-width: 0; }
+.rs-merge-preview__text small { color: var(--text-lo); font-size: 12px; line-height: 1.3; }
+.rs-merge-preview__text b { color: var(--mint-300); font-size: 15px; line-height: 1.3; }
+.rs-merge-preview__text span { color: var(--text-hi); font-size: 13px; line-height: 1.45; }
+.rs-equipment-dock__preview { width: min(320px, calc(100vw - 16px)); align-items: flex-start; }
+.rs-equipment-dock__field-preview.is-anchored { position: fixed; z-index: 80; left: 0; top: 0; width: min(320px, calc(100vw - 16px)); min-width: 0; box-sizing: border-box; padding: 7px 10px; }
+.rs-equipment-dock__field-preview .rs-merge-preview small, .rs-equipment-dock__field-preview .rs-merge-preview span { max-width: none; }
+.rs-equipment-dock__field-preview:not(.is-anchored) .rs-merge-preview { width: min(300px, calc(100vw - 80px)); }
+.rs-merge-table { display: grid; gap: .06rem; }
+.rs-merge-row { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: center; column-gap: .06rem; row-gap: .03rem; padding: .06rem .08rem; background: rgba(255,255,255,.03); border: 1px solid var(--line); }
+.rs-merge-row > .icon { width: max(.14rem, 12px); height: max(.14rem, 12px); color: var(--text-lo); }
+.rs-merge-row button.rs-merge-row__partner, .rs-merge-row button.rs-merge-row__result { display: flex; align-items: center; gap: .05rem; min-width: 0; padding: .02rem; text-align: left; color: var(--text-hi); background: transparent; border: 1px solid transparent; }
+.rs-merge-row button.rs-merge-row__partner:hover, .rs-merge-row button.rs-merge-row__result:hover { border-color: var(--mint-600); }
+.rs-merge-row .rs-item-icon { width: max(.4rem, 28px); height: max(.4rem, 28px); flex: none; }
+.rs-merge-row__partner small { color: var(--text-md, #c3d0ca); font-size: max(.13rem, 13px); white-space: nowrap; }
+.rs-merge-row__result b { color: var(--mint-300); font-size: max(.15rem, 15px); line-height: 1.25; }
+.rs-merge-row__effect { grid-column: 1 / -1; margin: 0; color: var(--text-hi); font-size: max(.13rem, 14px); line-height: 1.45; }

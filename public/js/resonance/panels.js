@@ -1,20 +1,21 @@
 import { useEffect,useState } from '../../vendor/hooks.module.js';
 import { html, Button, Icon, Panel, TextField, TierChip, HexBadge, BondDisc } from '../ui/components.js';
 import { assets } from '../assets.js';
-import { filterOperators, formatStat, roleLabel, strategyConditionText, strategyTimingText } from './model.js';
+import { filterOperators, formatStat, roleLabel, strategyConditionNote } from './model.js';
 import { pactIconUrl } from './pactIcon.js';
+import { StrategyIcon } from './strategyIcon.js';
 import { ResonanceItemIcon, resonanceItemIconUrl } from './itemIcon.js';
 function OperatorAvatar({operator,size='md'}) {
  const [src,setSrc]=useState(()=>assets.avatar(operator?.charId));
  useEffect(()=>{let live=true;const refresh=()=>{if(live)setSrc(assets.avatar(operator?.charId))};const off=assets.onChange(refresh);assets.ready().then(refresh).catch(()=>{});return()=>{live=false;off()}},[operator?.charId]);
  return html`<span class=${`rs-avatar rs-avatar--${size}`}>${src?html`<img src=${src} alt="" loading="lazy"/>`:html`<span aria-hidden="true">${(operator?.name||'干').slice(0,1)}</span>`}</span>`;
 }
-function CatalogVisual({kind,id,item}) {
+function CatalogVisual({kind,id,item,catalog=null}) {
  const resolve=()=>kind==='pact'?assets.bondIcon(id):kind==='environment'&&item?.identityPactId?assets.bondIcon(item.identityPactId):kind==='item'?resonanceItemIconUrl({equipment:{[id]:item}},id):kind==='opening'?null:assets.itemIcon(item);
  const [src,setSrc]=useState(resolve);
  useEffect(()=>{let live=true;const refresh=()=>{if(live)setSrc(resolve())};const off=assets.onChange(refresh);assets.ready().then(refresh).catch(()=>{});return()=>{live=false;off()}},[kind,id,item?.identityPactId]);
  const glyph={pact:'shield',strategy:'book',environment:'rook',opening:'book'}[kind]||'book';
- return html`<span class="lo-card__art rs-codex__art">${kind==='pact'?html`<span class="rs-codex__bond-disc"><${BondDisc} name=${item?.name||''} icon=${pactIconUrl({pacts:{[id]:item}},id)||undefined} iconMask=${true} showName=${false} size="md"/></span>`:kind==='item'?html`<${ResonanceItemIcon} catalog=${{equipment:{[id]:item}}} itemId=${id} size="md" showTier=${false}/>`:src?html`<img src=${src} alt="" loading="lazy"/>`:html`<span class="lo-card__glyph"><${Icon} name=${glyph}/></span>`}</span>`;
+ return html`<span class="lo-card__art rs-codex__art">${kind==='strategy'?html`<${StrategyIcon} catalog=${catalog||{strategies:{[id]:item}}} id=${id} size="md"/>`:kind==='pact'?html`<span class="rs-codex__bond-disc"><${BondDisc} name=${item?.name||''} icon=${pactIconUrl({pacts:{[id]:item}},id)||undefined} iconMask=${true} showName=${false} size="md"/></span>`:kind==='item'?html`<${ResonanceItemIcon} catalog=${{equipment:{[id]:item}}} itemId=${id} size="md" showTier=${false}/>`:src?html`<img src=${src} alt="" loading="lazy"/>`:html`<span class="lo-card__glyph"><${Icon} name=${glyph}/></span>`}</span>`;
 }
 export function RosterPanel({ catalog, activeIds, onDetail, filter = '', onlyActive = false }) {
  const [query,setQuery]=useState(filter),[cost,setCost]=useState(''),[pact,setPact]=useState(''),[role,setRole]=useState(''),[poolOnly,setPoolOnly]=useState(onlyActive);
@@ -40,7 +41,7 @@ export function RosterPanel({ catalog, activeIds, onDetail, filter = '', onlyAct
  </${Panel}>`;
 }
 export function CatalogPanels({ catalog, onDetail, section=null }) {
-  const group=(title,kind,items,sectionId)=>html`<${Panel} id=${`rs-section-${sectionId}`} title=${title} micro="FIELD GUIDE" class="rs-panel rs-codex__catalog-panel" actions=${html``}><div class="lo-grid rs-codex__catalog-grid">${items.map(([id,item])=>{const preview=[item.description,item.condition&&`条件：${strategyConditionText(item.condition)}`,item.timing&&`时点：${strategyTimingText(item.timing)}`].filter(Boolean).join(' · ');return html`<article class="rs-codex__catalog-entry" id=${`${kind}-${id}`} key=${id}><button type="button" class="lo-card rs-codex__catalog-card" onClick=${()=>onDetail({kind,id})} aria-label=${`${item.name}，查看详情`}><${CatalogVisual} kind=${kind} id=${id} item=${item}/>${kind==='item'&&item.tier?html`<${TierChip} tier=${item.tier} size="sm" class="lo-card__tier"/>`:null}<b class="lo-card__name">${item.name}</b><span class="lo-card__kit"><span class="lo-card__sk">${kind==='pact'?'盟约':kind==='item'?'装备':kind==='strategy'?(item.group||'策略'):kind==='opening'?'开局事件':'旧局规则'}</span></span><span class="rs-codex__catalog-preview">${preview||'打开详情查看内容'}</span></button></article>`})}</div></${Panel}>`;
+  const group=(title,kind,items,sectionId)=>html`<${Panel} id=${`rs-section-${sectionId}`} title=${title} micro="FIELD GUIDE" class="rs-panel rs-codex__catalog-panel" actions=${html``}><div class="lo-grid rs-codex__catalog-grid">${items.map(([id,item])=>{const condition=kind==='strategy'?strategyConditionNote(item):'';const preview=[item.description,condition&&`条件：${condition}`].filter(Boolean).join(' · ');return html`<article class="rs-codex__catalog-entry" id=${`${kind}-${id}`} key=${id}><button type="button" class="lo-card rs-codex__catalog-card" onClick=${()=>onDetail({kind,id})} aria-label=${`${item.name}，查看详情`}><${CatalogVisual} kind=${kind} id=${id} item=${item} catalog=${catalog}/>${kind==='item'&&item.tier?html`<${TierChip} tier=${item.tier} size="sm" class="lo-card__tier"/>`:null}<b class="lo-card__name">${item.name}</b><span class="lo-card__kit"><span class="lo-card__sk">${kind==='pact'?'盟约':kind==='item'?'装备':kind==='strategy'?(item.group||'策略'):kind==='opening'?'开局事件':'旧局规则'}</span></span><span class="rs-codex__catalog-preview">${preview||'打开详情查看内容'}</span></button></article>`})}</div></${Panel}>`;
   const campaign=catalog.campaign||{};const supply=campaign.supply||{};const strategyNodes=(campaign.strategyNodes||[]).slice(0,3);const schedule=[...strategyNodes.map(node=>({node,text:'策略选择'})),...(supply.components?.nodes||[]).map(node=>({node,text:`选择${supply.components.countPerNode||1}件基础组件`})),...(supply.copies||[]).map(x=>({node:x.node,text:x.kind==='minor'?'低费复制器':'万能复制器'})),...(supply.transfers||[]).map(x=>({node:x.node,text:'选择盟约转职'})),...(supply.xp||[]).map(x=>({node:x.node,text:`获得${x.amount}点经验`}))].sort((a,b)=>a.node-b.node);
   const all=section===null;const recipes=all||section==='recipe-catalog';const economy=all||section==='economy-rules';const openingEvents=all||section==='opening-event-catalog';
   return html`<div class="rs-catalog-grid">

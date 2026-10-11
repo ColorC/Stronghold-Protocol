@@ -127,6 +127,9 @@ export function resonanceDisplayCatalog(catalog, data = null) {
     name: strategy.name, group: STRATEGY_GROUP_TEXT[strategy.group] ?? '策略', description: strategy.description,
     timing: STRATEGY_TIMING_TEXT[strategy.timing] ?? '按当前节点生效', condition: conditionText(strategy.condition),
     conditionKind: strategy.condition?.kind ?? null,
+    // what the strategy icon is chosen by (public/js/resonance/strategyIconMap.js)
+    effectKind: strategy.effects?.[0]?.kind ?? null,
+    pactId: [strategy.effects?.[0]?.params?.traitId, strategy.effects?.[0]?.params?.prototypeTraitId].find((pactId) => pactId && catalog.pacts?.[pactId]) ?? null,
   }]));
   const environments = Object.fromEntries(Object.entries(catalog.environments).map(([id, env]) => [id, {
     name: env.name, identityPactId: env.identityPactId, description: env.description,
