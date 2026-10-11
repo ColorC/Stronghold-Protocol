@@ -11,7 +11,10 @@ import {pactTierSummary} from '../../public/js/resonance/pactTierSummary.js';
 import {pactCurrentTier,pactTierStatus,pactTierStatusLabel,nativeStripTier} from '../../public/js/resonance/pactTierState.js';
 import {loadData} from '../../server/data.js';
 import {getResonanceCatalog} from '../../server/modes/resonance/catalog.js';
-import {resonanceCatalogPacket} from '../../server/modes/resonance/native-match.js';
+import {resonanceCatalogPacket,ResonanceMatch} from '../../server/modes/resonance/native-match.js';
+import {createSession} from '../../server/modes/resonance/session.js';
+import {VirtualScheduler} from '../../server/match/scheduler.js';
+import {layoutPen} from '../../public/js/render/pen.js';
 import {skillIconUrl,itemIconUrl} from '../../public/js/ui/assetUrls.js';
 import {NATIVE_ICON_BY_EQUIPMENT_ID,RESONANCE_ITEM_ICON_IDS,SOURCE_GEAR_ICON_IDS,resonanceItemPactId,resonanceNativeItem,resolveResonanceItemIconUrl} from '../../public/js/resonance/itemIconMap.js';
 import {resonanceContent} from '../../shared/resonance/catalog.js';
@@ -218,4 +221,31 @@ test('equipped icon hover stays a native tooltip while click and right-click ope
  button.dispatch('click',event);button.dispatch('contextmenu',event);assert.equal(opened.length,2);assert.equal(event.defaultPrevented,true);assert.deepEqual(opened[0],{kind:'item',id:'blade',quality:null,temporary:false,source:'member'});
  documentEvents.get('dragstart')();assert.equal(roots[0].classList['is-dragging'],true);button.dispatch('click',event);assert.equal(opened.length,2);
  documentEvents.get('dragend')();pieceDragging=true;button.dispatch('click',event);assert.equal(opened.length,2);pieceDragging=false;button.dispatch('click',event);assert.equal(opened.length,3);stop();
+});
+
+// The native 🔍▶▶ button pans to the enemy preview pen, which the renderer fills from m.private.nextEnemies (render/app.js
+// setPrep). The 共鸣 private view once left it out, so the pen stood empty however many enemies the node announced.
+test('Native PREP private view fills the enemy preview pen with the coming node\'s enemies and leaves logistics empty',()=>{
+ const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native');
+ const catalog=getResonanceCatalog(data,{rulesVersion:3,seasonId:prototypeSeason.id,seed:311});
+ const store={async exclusive(_id,task){return task();},async saveSession(){},deactivate(){}};
+ const viewOf=(state,sessionId)=>{
+  const scheduler=new VirtualScheduler();
+  const match=new ResonanceMatch({sessionId,state,catalog,data,store,scheduler,send(){},broadcast(){},onEnd(){},timerScale:0,log:{info(){},warn(){},error(){},debug(){}}});
+  try{match.phase='PREP';match.syncPlayer();return {priv:match.resonancePrivateView(match.players.get('resonance')),display:match.displayState()};}
+  finally{match.dispose();scheduler.dispose();}
+ };
+ const tally=(list)=>list.map((entry)=>`${entry.enemyKey}×${entry.count}`).sort();
+ const normal=createSession({seed:311,difficulty:'NORMAL',catalog});assert.equal(normal.ok,true,normal.error);
+ const {priv,display}=viewOf(normal.state,'test-pen-normal');
+ assert.ok(display.nextEnemies.length>0,'the fixture node has enemies');
+ assert.deepEqual(tally(priv.nextEnemies),tally(display.nextEnemies),'m.private.nextEnemies lists the node the 共鸣 display announces');
+ assert.equal(priv.nextEnemies.every((entry)=>Number.isFinite(entry.t)&&typeof entry.fly==='boolean'&&['upper','lower'].includes(entry.gate)),true,'native pen shape (waves.js previewOf)');
+ const total=priv.nextEnemies.reduce((n,entry)=>n+entry.count,0);
+ assert.equal(layoutPen(priv.nextEnemies).figures.length,Math.min(50,total),'the pen stands every enemy up');
+ const funny=createSession({seed:311,difficulty:'FUNNY',catalog});assert.equal(funny.ok,true,funny.error);
+ funny.state.round=3;funny.state.nodeStarted=false;funny.state.pendingChoices=[];
+ const logistics=viewOf(funny.state,'test-pen-logistics');
+ assert.equal(logistics.display.node.kind,'logistics');
+ assert.deepEqual(logistics.priv.nextEnemies,[],'a logistics node has no fight: the 🔍▶▶ button stays grey');
 });

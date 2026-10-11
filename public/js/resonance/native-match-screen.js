@@ -105,7 +105,7 @@ import {
   terrainInfo, deviceInfo, deviceTipAt, noteDeviceUnits, deviceUnitsForEntry,
   countdownState, shopBlockReason, stageOverrides, effectiveStage, watchTarget, dropFailureReason,
   previewEnemyKey, prepCamera, prepCameraFor, foldCamera, deployFieldOf, fieldTile, panelSide, panelSlots, bondPopupPlace, unitLoadout, deployedRecord,
-  mergeTarget, modeOffBonds, readyFundsPrompt, readyShopFold, ownerBandId, ownDiyRecord, ownStandIn,
+  mergeTarget, modeOffBonds, readyFundsPrompt, readyShopFold, ownerBandId, ownDiyRecord, ownStandIn, groupEnemies,
 } from '../ui/gameLogic.js';
 import { toast } from '../ui/toasts.js';
 import { BriefingScreen } from '../screens/briefing.js';
@@ -205,6 +205,25 @@ function NativePactMatrix({ state, catalog, onDetail }) {
       </article>`;
     })}</div>
   </section>`;
+}
+
+/** The pen's roll call (🔍▶▶): the coming node's enemies by name × count beside their figures; a row opens its card. */
+function PenEnemyList({ list, onEnemy }) {
+  const rows = groupEnemies(list, (k) => data.lookup('enemies', k));
+  if (!rows.length) return null;
+  const total = rows.reduce((s, r) => s + r.count, 0);
+  return html`<aside class="rs-pen-enemies" aria-label="下一场遭遇">
+    <header class="rs-pen-enemies__head"><b>下一场遭遇</b><span>即将迎击 <b class="num">${total}</b> 名敌人</span></header>
+    <div class="rs-pen-enemies__list">${rows.map((r) => html`<button key=${`${r.enemyKey}|${r.tag}`} type="button" class=${cx('erow', r.tag && `erow--${r.tag}`)} onClick=${() => onEnemy(r.enemyKey, r.count)}>
+      <${UnitThumb} kind="enemy" id=${r.enemyKey} size="sm" />
+      <span class="erow__text"><b class="erow__name">${r.name}</b><span class="erow__tags">
+        ${r.tag === 'boss' ? html`<span class="etag etag--boss">领袖</span>` : null}
+        ${r.rank === 'ELITE' ? html`<span class="etag etag--elite">精英</span>` : null}
+        ${r.fly ? html`<span class="etag etag--fly">空中</span>` : null}
+      </span></span>
+      <b class="erow__count num">×${r.count}</b>
+    </button>`)}</div>
+  </aside>`;
 }
 
 function NativeFunds({ state, catalog, onOpen, onCollapse }) {
@@ -745,8 +764,9 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
     if (penRef.current.on) { penRef.current.on = false; setPen(false); setCollapsed(penRef.current.collapsed); }
     view?.setCamera(kind, opts);
   }, [view]);
-  // 休整期 only; never while a piece is being placed (the wheel sits on a tile of the board camera)
-  const penAvail = phase === PHASE.PREP && !!view && viewKind !== 'loading';
+  // 休整期 only, and only with enemies to meet (a logistics node has none: the button stays grey); never while a piece is
+  // being placed (the wheel sits on a tile of the board camera)
+  const penAvail = phase === PHASE.PREP && !!view && viewKind !== 'loading' && !!priv?.nextEnemies?.length;
   /** Pan to the enemy preview pen (on) or back to the camera in use before (off). */
   const togglePen = useCallback((on) => {
     const P = penRef.current;
@@ -2081,6 +2101,8 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
         <button type="button" class="gm__gear" aria-label=${t('设置')} title=${t('设置')} onClick=${() => setSettingsOpen(true)}><${GIcon} name="gear" /></button>
         <a class="gm__gear rs-fullscreen rs-fullscreen-small" aria-label="全屏打开" title="全屏打开" href=${location.href} target="_blank" rel="noopener"><${Icon} name="expand" /></a>
       </div>
+
+      ${pen ? html`<${PenEnemyList} list=${priv?.nextEnemies} onEnemy=${(k, n) => setDetail({ kind: 'enemy', id: k, count: n })} />` : null}
 
       ${drawer ? html`<${EnemyDrawer} tab=${drawer} onTab=${setDrawer} pub=${pub} priv=${priv} onClose=${() => setDrawer(null)}
         bandId=${scoutBandId} bandOwner=${scoutBandOwner}

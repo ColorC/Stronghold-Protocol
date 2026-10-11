@@ -207,6 +207,12 @@ body { background: #101512; color: var(--rs-text); }
 .rs-native-match .rs-detail-panel { top: calc(max(80px,.96rem) + env(safe-area-inset-top,0px)); }
 .rs-native-match .gm__hud.has-resonance-overlay { z-index: 70; }
 .rs-native-match .rs-detail-panel, .rs-native-match .rs-native-resonance-panel { z-index: 70; }
+.rs-native-match .rs-pen-enemies { position: absolute; z-index: 30; top: calc(max(80px,.96rem) + env(safe-area-inset-top,0px)); right: max(12px,env(safe-area-inset-right,0px)); width: min(320px,calc(100vw - 24px)); max-height: calc(100dvh - 2.4rem - env(safe-area-inset-bottom,0px)); display: flex; flex-direction: column; gap: 8px; box-sizing: border-box; padding: 10px 12px; overflow: auto; color: #d7e5dc; background: rgba(16,24,20,.94); border: 1px solid var(--line-2); pointer-events: auto; }
+.rs-native-match .rs-pen-enemies__head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.rs-native-match .rs-pen-enemies__head > b { color: #edf3ef; font-size: max(.17rem,16px); }
+.rs-native-match .rs-pen-enemies__head > span { color: var(--text-md); font-size: 14px; white-space: nowrap; }
+.rs-native-match .rs-pen-enemies__list { display: flex; flex-direction: column; gap: 6px; }
+.rs-native-match .rs-pen-enemies .erow { cursor: pointer; }
 .rs-native-match .rs-native-resonance-panel__head { flex: none; display: flex; align-items: center; justify-content: space-between; padding: .1rem .14rem; color: #d7e5dc; border-bottom: 1px solid var(--line); }
 .rs-native-match .rs-native-resonance-panel__head :is(h2,b) { margin: 0; color: #edf3ef; font-size: max(.2rem,20px); line-height: 1.2; }
 .rs-native-match .rs-native-resonance-panel__head button { width: 36px; min-width: 36px; height: 36px; color: #d7e5dc; background: #18251f; border: 1px solid var(--line-2); font-size: max(.14rem,14px); cursor: pointer; }

@@ -6,6 +6,7 @@ import { applyAction, effectiveDeployCapacity, viewSession } from './session.js'
 import { resonanceSessionDisplay, resonanceDisplayCatalog, resonanceOperatorPresentation } from './display.js';
 import { BOSS_CLOCK_MS, DELAYS } from '../../match/match/common.js';
 import { BOSS_HIT_STEPS, SharedBossPool } from '../../match/finalAssault.js';
+import { previewOf } from '../../match/waves.js';
 import { compactResonanceResult, resonanceResultExtras } from '../../sim/spec.js';
 import { summarizeResonanceResult } from '../../../shared/resonance/result-summary.js';
 
@@ -270,6 +271,9 @@ export class ResonanceMatch extends Match {
         refreshPrice: shopCosts.refreshGold ?? 2, freeRefreshes: shopCosts.freeRefreshes ?? 0,
         frozen: !!this.state.shop.locked, slots: offers, rewardOffer: null },
       items: Object.fromEntries(items.map((item) => [this.uidMap.native(item.uid), item.itemId])), specialEntities,
+      // the coming node's enemies for the preview pen (🔍▶▶) and its roll call (the native m.private.nextEnemies,
+      // waves.js previewOf); a logistics node has no fight, and a finished run has nothing left to meet
+      nextEnemies: ['logistics', 'complete'].includes(state.node?.kind) ? [] : previewOf(specialField.wave?.spawns || []),
       resonance: { state },
     };
   }

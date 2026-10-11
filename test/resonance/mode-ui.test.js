@@ -104,3 +104,12 @@ test('resonance briefing shows the season bonds instead of native core/add-on bo
  assert.match(brief,/阵营盟约/);assert.match(brief,/职业与机制盟约/);
  assert.doesNotMatch(brief,/import[^;]*(MatchInfo|BannedOperators)|bannedChess/);
 });
+
+test('native 🔍▶▶ opens the pen only with enemies to meet and lists them by name × count there',()=>{
+ const screen=read('public/js/resonance/native-match-screen.js');
+ assert.match(screen,/const penAvail = phase === PHASE\.PREP && !!view && viewKind !== 'loading' && !!priv\?\.nextEnemies\?\.length;/);
+ assert.match(screen,/\$\{pen \? html`<\$\{PenEnemyList\} list=\$\{priv\?\.nextEnemies\} onEnemy=\$\{\(k, n\) => setDetail\(\{ kind: 'enemy', id: k, count: n \}\)\}/);
+ assert.match(screen,/<header class="rs-pen-enemies__head"><b>下一场遭遇<\/b><span>即将迎击 <b class="num">\$\{total\}<\/b> 名敌人<\/span><\/header>/);
+ assert.match(screen,/<b class="erow__count num">×\$\{r\.count\}<\/b>/);
+ assert.match(gameCss,/\.rs-native-match \.rs-pen-enemies \{ position: absolute;/);
+});
