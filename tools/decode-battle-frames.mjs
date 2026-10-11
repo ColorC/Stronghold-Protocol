@@ -35,9 +35,14 @@ for (const round of rounds) {
   await fs.mkdir(targetDir, { recursive: true });
   const probe = await run(FFPROBE, ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height,r_frame_rate,avg_frame_rate,nb_frames,duration', '-of', 'json', input]);
   const stream = JSON.parse(probe.stdout).streams?.[0];
-  if (!stream || Number(stream.width) !== 2560 || Number(stream.height) !== 1260) throw new Error(`unexpected source dimensions R${round}: ${JSON.stringify(stream)}`);
+  if (!stream || !Number.isInteger(Number(stream.width)) || !Number.isInteger(Number(stream.height)) || Number(stream.width) < 2 || Number(stream.height) < 2) throw new Error(`unexpected source dimensions R${round}: ${JSON.stringify(stream)}`);
   const firstProbe = await run(FFPROBE, ['-v', 'error', '-select_streams', 'v:0', '-read_intervals', '%+#1', '-show_frames', '-show_entries', 'frame=best_effort_timestamp_time,pts_time,pkt_duration_time', '-of', 'json', input]);
   const firstFrame = JSON.parse(firstProbe.stdout).frames?.[0];
+  const fullProbe = await run(FFPROBE, ['-v', 'error', '-select_streams', 'v:0', '-show_frames', '-show_entries', 'frame=best_effort_timestamp_time', '-of', 'json', input]);
+  const probedFrames = JSON.parse(fullProbe.stdout).frames || [];
+  const firstPts = probedFrames.map((frame) => Number(frame.best_effort_timestamp_time)).find(Number.isFinite);
+  const framePts = probedFrames.map((frame) => Number(frame.best_effort_timestamp_time) - firstPts);
+  if (!Number.isFinite(firstPts) || framePts.some((time, index) => !Number.isFinite(time) || (index > 0 && time < framePts[index - 1]))) throw new Error(`source PTS invalid R${round}`);
   process.stdout.write(`decode R${round} start source=${clip.startSecond}-${clip.endSecond} fps=${stream.r_frame_rate} frames=${stream.nb_frames}\n`);
   const outputPattern = path.join(targetDir, 'frame-%06d.jpg');
   const decoded = await run(FFMPEG, ['-hide_banner', '-loglevel', 'error', '-i', input, '-map', '0:v:0', '-fps_mode', 'passthrough', '-start_number', '0', '-q:v', '1', '-y', outputPattern]);
@@ -45,10 +50,12 @@ for (const round of rounds) {
   const entry = { round, file: clip.file, input, sourceStartSecond: clip.startSecond, sourceEndSecond: clip.endSecond,
     sourceMediaDuration: clip.mediaDuration, reported: { width: Number(stream.width), height: Number(stream.height), rFrameRate: stream.r_frame_rate,
       avgFrameRate: stream.avg_frame_rate, nbFrames: stream.nb_frames, duration: stream.duration }, decodedFrameCount: files.length,
+    decoderProcess: { executable: FFMPEG, exitCode: 0, status: 'complete' }, framePts,
     actualFirstFrame: firstFrame ? { bestEffortTimestampTime: firstFrame.best_effort_timestamp_time, ptsTime: firstFrame.pts_time, packetDurationTime: firstFrame.pkt_duration_time } : null,
     firstDecodedFile: files[0] ? path.join(targetDir, files[0]) : null, lastDecodedFile: files.at(-1) ? path.join(targetDir, files.at(-1)) : null,
-    firstFrameIndex: 0, indexTimeRule: 'round((sourceSecond-sourceStart)/(sourceEnd-sourceStart)*sourceMediaDuration*30); frame index is sequential decode order' };
+    firstFrameIndex: 0, indexTimeRule: 'choose greatest frame PTS less than or equal to the requested media time, clamped to decoded frame count' };
   if (!files.length || (stream.nb_frames && Number(stream.nb_frames) !== files.length)) throw new Error(`decoded frame count mismatch R${round}: expected=${stream.nb_frames} actual=${files.length}; ${decoded.stderr}`);
+  if (framePts.length !== files.length) throw new Error(`source PTS/cache frame count mismatch R${round}: pts=${framePts.length} jpeg=${files.length}`);
   report.clips.push(entry);
   process.stdout.write(`decode R${round} done count=${files.length} last=${entry.lastDecodedFile}\n`);
 }

@@ -13,7 +13,30 @@ import { buildPrepClips, buildLegacyPrepClips } from './recorded-prep.mjs';
 
 const gunzip = promisify(zlib.gunzip);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const FFMPEG = 'C:/Users/lilithgames/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-9.0.1-full_build/bin/ffmpeg.exe';
+
+export function resolveExecutable(name, { pathValue = process.env.PATH || '', platform = process.platform } = {}) {
+  if (!name || typeof name !== 'string') throw new TypeError('executable name is required');
+  const explicitPath = path.isAbsolute(name) || name.includes('/') || name.includes('\\');
+  const withExtension = (value) => platform === 'win32' && !/\.exe$/i.test(value) ? `${value}.exe` : value;
+  if (explicitPath) {
+    const candidate = path.resolve(name);
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
+    throw new Error(`executable not found: ${candidate}`);
+  }
+  for (const directory of String(pathValue).split(path.delimiter).filter(Boolean)) {
+    const candidate = path.resolve(directory, withExtension(name));
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
+  }
+  throw new Error(`executable not found on PATH: ${name}`);
+}
+
+export function resolveFfprobe({ explicitPath, ffmpegPath, pathValue = process.env.PATH || '', platform = process.platform } = {}) {
+  if (explicitPath) return resolveExecutable(explicitPath, { pathValue, platform });
+  const adjacentName = platform === 'win32' ? 'ffprobe.exe' : 'ffprobe';
+  const adjacent = path.join(path.dirname(ffmpegPath), adjacentName);
+  if (fs.existsSync(adjacent) && fs.statSync(adjacent).isFile()) return adjacent;
+  return resolveExecutable('ffprobe', { pathValue, platform });
+}
 
 export function battleFrameRetryUrls(round, frameIndex, maxAttempts = 3) {
   if (!Number.isInteger(round) || round < 1 || !Number.isInteger(frameIndex) || frameIndex < 0
@@ -107,6 +130,7 @@ async function main(argv) {
   const eventsPath = path.join(recDir, 'events.jsonl');
   const meta = JSON.parse(await fsp.readFile(sourceMetaPath, 'utf8'));
   if (meta.id !== recordingId) throw new Error('recording metadata ID mismatch');
+  const recordingViewport = { width: Number(meta.viewport?.width) || 2187, height: Number(meta.viewport?.height) || 1077 };
   let hrefBound = false; const traceEvents = [], rrwebRecords = [];
   const eventLines = readline.createInterface({ input: fs.createReadStream(eventsPath, { encoding: 'utf8' }), crlfDelay: Infinity });
   for await (const line of eventLines) {
@@ -182,11 +206,18 @@ async function main(argv) {
   const wtRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   const sourceRevision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: wtRoot, encoding: 'utf8' }).trim();
   const installRoot = path.resolve(args['install-root']);
-  const compositeFfmpeg = args['composite-ffmpeg'] ? path.resolve(args['composite-ffmpeg']) : FFMPEG;
+  const ffmpegExecutable = resolveExecutable(args['composite-ffmpeg'] || process.env.SP_FFMPEG_PATH || 'ffmpeg');
+  const compositeFfmpeg = ffmpegExecutable;
+  const ffprobe = resolveFfprobe({ explicitPath: args.ffprobe || process.env.SP_FFPROBE_PATH,
+    ffmpegPath: compositeFfmpeg });
   const publicRoot = path.join(installRoot, 'public');
   const dataRoot = path.resolve(args['data-root'] || path.join(wtRoot, 'data'));
   const localAssetsManifest = path.resolve(args['local-assets-manifest'] || path.join(installRoot, 'data', 'local-assets.json'));
   process.env.SP_DATA_DIR = dataRoot;
+  process.env.SP_INDEPENDENT_DESIGN_PATH = path.join(dataRoot, 'independent-design.json');
+  process.env.SP_INDEPENDENT_HISTORICAL_PRIZES_PATH = path.join(dataRoot, 'independent-darkmoon-prizes-19.2.json');
+  process.env.SP_INDEPENDENT_ROGUELIKE_PRIZE_ART_PATH = path.join(dataRoot, 'independent-darkmoon-roguelike-art.json');
+  process.env.SP_INDEPENDENT_DARKMOON_ADDON_PATH = path.join(dataRoot, 'independent-darkmoon-design-addon.json');
   const { getData } = await import(pathToFileURL(path.join(wtRoot, 'server', 'data.js')).href);
   const { getCatalog } = await import(pathToFileURL(path.join(wtRoot, 'server', 'modes', 'independent', 'catalog.js')).href);
   const { independentDisplayCatalog } = await import(pathToFileURL(path.join(wtRoot, 'server', 'modes', 'independent', 'display.js')).href);
@@ -196,7 +227,7 @@ async function main(argv) {
       ...(legacyVisualSource ? { sourceKind: legacyVisualSource.sourceKind, coverage: legacyVisualSource.coverage,
         unresolvedExamples: legacyVisualSource.unresolved.slice(0, 50) } : {}) }, sampleSeconds: args.sampleSeconds,
     source: { recordingId, sessionId, recordingStartedAt: meta.startedAt, recordingEndedAt: meta.endedAt || meta.mediaCaptureStoppedAt, recordingDuration,
-      mediaStartedAt: meta.mediaStartedAt || null, mediaOffsetSeconds } };
+      mediaStartedAt: meta.mediaStartedAt || null, mediaOffsetSeconds, logicalViewport: recordingViewport } };
   const battleDir = args['battle-dir'] ? path.resolve(args['battle-dir']) : null;
   const battleManifestPath = args['battle-manifest'] ? path.resolve(args['battle-manifest']) : null;
   const battleFramesDir = args['battle-frames-dir'] ? path.resolve(args['battle-frames-dir']) : null;
@@ -206,13 +237,15 @@ async function main(argv) {
   if (battleManifest) {
     const selectedRounds = new Set(clips.map((clip) => Number(clip.round)));
     battleManifest.clips = battleManifest.clips.filter((clip) => selectedRounds.has(Number(clip.round)));
-    const ffprobePath = path.join(path.dirname(args['composite-ffmpeg'] ? path.resolve(args['composite-ffmpeg']) : FFMPEG), 'ffprobe.exe');
+    const ffprobePath = ffprobe;
     const decodeManifestPath = path.join(battleFramesDir, 'decode-manifest.json');
     const decodeManifest = JSON.parse(await fsp.readFile(decodeManifestPath, 'utf8'));
     if (decodeManifest.sourceRecordingId !== recordingId || !Array.isArray(decodeManifest.clips)) throw new Error('battle frame decode manifest identity/schema mismatch');
     for (const clip of battleManifest.clips) {
       const decoded = decodeManifest.clips.find((entry) => Number(entry.round) === Number(clip.round) && entry.file === clip.file);
       if (!decoded || !Number.isInteger(decoded.decodedFrameCount) || decoded.decodedFrameCount < 1) throw new Error(`battle frame decode manifest lacks frame count for R${clip.round}`);
+      const frameWidth = Number(decoded.reported?.width), frameHeight = Number(decoded.reported?.height);
+      if (!Number.isInteger(frameWidth) || !Number.isInteger(frameHeight) || frameWidth < 2 || frameHeight < 2) throw new Error(`battle frame decode manifest lacks source dimensions for R${clip.round}`);
       const first = path.join(battleFramesDir, `round-${clip.round}`, 'frame-000000.jpg');
       const last = path.join(battleFramesDir, `round-${clip.round}`, `frame-${String(decoded.decodedFrameCount - 1).padStart(6, '0')}.jpg`);
       for (const filename of [first, last]) {
@@ -221,8 +254,9 @@ async function main(argv) {
       }
       const mediaPath = path.resolve(battleDir, clip.file);
       if (!inside(battleDir, mediaPath)) throw new Error(`battle media path escapes input root: ${clip.file}`);
-      const probeText = execFileSync(ffprobePath, ['-v','error','-select_streams','v:0','-show_frames','-show_entries','frame=best_effort_timestamp_time','-of','json',mediaPath], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
-      const probeFrames = JSON.parse(probeText).frames || [];
+      const probeText = execFileSync(ffprobePath, ['-v','error','-select_streams','v:0','-show_streams','-show_frames','-show_entries','stream=width,height:frame=best_effort_timestamp_time','-of','json',mediaPath], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+      const probeResult = JSON.parse(probeText), probeFrames = probeResult.frames || [], mediaStream = probeResult.streams?.[0];
+      if (Number(mediaStream?.width) !== frameWidth || Number(mediaStream?.height) !== frameHeight) throw new Error(`battle source/cache dimensions mismatch R${clip.round}: source=${mediaStream?.width}x${mediaStream?.height} cache=${frameWidth}x${frameHeight}`);
       const firstPts = probeFrames.map((frame) => Number(frame.best_effort_timestamp_time)).filter(Number.isFinite)[0];
       if (!Number.isFinite(firstPts)) throw new Error(`battle source has no usable frame PTS R${clip.round}`);
       const frameTimes = probeFrames.map((frame) => Number(frame.best_effort_timestamp_time) - firstPts);
@@ -231,6 +265,7 @@ async function main(argv) {
       }
       clip.frameTimes = frameTimes;
       clip.decodedFrameCount = decoded.decodedFrameCount;
+      clip.frameWidth = frameWidth; clip.frameHeight = frameHeight;
       stage(`battle PTS indexed R${clip.round}: ${frameTimes.length} frames first=${frameTimes[0]}s last=${frameTimes.at(-1)}s`);
     }
   }
@@ -270,7 +305,7 @@ async function main(argv) {
     }
     if (req.url === '/__harness') {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-      return res.end('<!doctype html><html lang="zh-CN" class="ix-ws"><head><meta charset="utf-8"><link rel="stylesheet" href="/css/theme.css"><link rel="stylesheet" href="/fonts/fonts.css"><link rel="stylesheet" href="/css/screens/game.css"><link rel="stylesheet" href="/css/devices.css"><link rel="stylesheet" href="/css/workshop.css"><link rel="stylesheet" href="/css/independent-recording.css"><script src="/vendor/rrweb.umd.js"></script><style>html,body,#screen,#rr-stage{margin:0;width:2187px;height:1077px;overflow:hidden;background:#0a0e0d}body.ix-replay{padding:0!important}#screen{position:relative;padding:0!important;border:0!important;border-radius:0!important}#host{position:absolute;inset:0;opacity:0;pointer-events:none;z-index:-10}.ix-composite-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}.ix-replay__text-selection-rect{border:0!important;background:#1683ff33!important;box-shadow:none!important}</style></head><body class="ix-replay"><div id="screen" class="gm ix-replay"><div id="rr-stage"></div><div id="host" class="gm__field"></div></div><script type="module" src="/__entry.js"></script></body></html>');
+      return res.end(`<!doctype html><html lang="zh-CN" class="ix-ws"><head><meta charset="utf-8"><link rel="stylesheet" href="/css/theme.css"><link rel="stylesheet" href="/fonts/fonts.css"><link rel="stylesheet" href="/css/screens/game.css"><link rel="stylesheet" href="/css/devices.css"><link rel="stylesheet" href="/css/workshop.css"><link rel="stylesheet" href="/css/independent-recording.css"><script src="/vendor/rrweb.umd.js"></script><style>html,body,#screen,#rr-stage{margin:0;width:${recordingViewport.width}px;height:${recordingViewport.height}px;overflow:hidden;background:#0a0e0d}body.ix-replay{padding:0!important}#screen{position:relative;padding:0!important;border:0!important;border-radius:0!important}#host{position:absolute;inset:0;opacity:0;pointer-events:none;z-index:-10}.ix-composite-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}.ix-replay__text-selection-rect{border:0!important;background:#1683ff33!important;box-shadow:none!important}</style></head><body class="ix-replay"><div id="screen" class="gm ix-replay"><div id="rr-stage"></div><div id="host" class="gm__field"></div></div><script type="module" src="/__entry.js"></script></body></html>`);
     }
     if (req.url === '/__entry.js') {
       res.writeHead(200, { 'content-type': 'text/javascript' });
@@ -295,7 +330,6 @@ async function main(argv) {
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
   const port = server.address().port;
   stage(`isolated readonly HTTP fixture listening on 127.0.0.1:${port}`);
-  const ffprobe = 'C:/Users/lilithgames/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-9.0.1-full_build/bin/ffprobe.exe';
   let puppeteer;
   try {
     const { createRequire } = await import('node:module');
@@ -303,7 +337,7 @@ async function main(argv) {
     browser = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true, protocolTimeout: 180000, args: ['--no-sandbox', '--disable-dev-shm-usage', '--enable-webcodecs', '--use-gl=angle', '--use-angle=d3d11'] });
     stage(`Chrome launched; pid=${browser.process()?.pid || 'unknown'}`);
     const page = await browser.newPage();
-    await page.setViewport({ width: 2187, height: 1077, deviceScaleFactor: 2560 / 2187 });
+    await page.setViewport({ ...recordingViewport, deviceScaleFactor: 2560 / recordingViewport.width });
     const fatalPageErrors = [];
     page.on('console', (m) => { if (m.type() === 'error') console.error(`browser: ${m.text()}`); });
     page.on('response', (response) => { if (response.status() >= 400) stage(`browser HTTP ${response.status()} ${response.url()}`); });
@@ -392,7 +426,7 @@ async function main(argv) {
         prepGapAudit: r.prepGapAudit, helpers: mod, prepView, prepCameraFor, GEO, data, catalog, activeRound: r.clips[0].round };
       const rrItems = await fetch('/__rrweb.json').then((response) => { if (!response.ok) throw new Error(`RRWeb HTTP ${response.status}`); return response.json(); });
       const { rebaseRecordedAssets } = await import('/js/independent/replayAssets.js'); rebaseRecordedAssets(rrItems);
-      const rrPlayer = new rrweb.Replayer(rrItems, { root: document.getElementById('rr-stage'), width: 2187, height: 1077,
+      const rrPlayer = new rrweb.Replayer(rrItems, { root: document.getElementById('rr-stage'), width: r.source.logicalViewport.width, height: r.source.logicalViewport.height,
         skipInactive: false, showWarning: false, showDebug: false, mouseTail: false, useVirtualDom: false, UNSAFE_replayCanvas: true });
       const firstTs = rrItems[0]?.timestamp || 0;
       const targetOffset = Math.max(0, Date.parse(r.source.recordingStartedAt) - firstTs);
@@ -433,7 +467,8 @@ async function main(argv) {
         if (!style) { style = doc.createElement('style'); style.id = 'ix-composite-style';
           style.textContent = '.gm__field canvas:not([data-sp-canvas-surface]){display:none!important;visibility:hidden!important}.ix-composite-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}.ix-replay .replayer-mouse{width:24px;height:32px;background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2724%27 height=%2732%27 viewBox=%270 0 24 32%27%3E%3Cpath d=%27M2 1v27l6.5-6.5L14 31l4-2-5.5-9H22z%27 fill=%27%23000%27 stroke=%27%23fff%27 stroke-width=%272%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E");filter:drop-shadow(0 0 1px #111)}.ix-replay .replayer-mouse::after{display:none}.ix-replay__text-selection-rect{border:0!important;background:#1683ff33!important;box-shadow:none!important}html[data-sp-replay-scene="game"] .ix-start{display:none!important}html[data-sp-replay-scene="game"] .screen.gm{opacity:1!important;animation:none!important}'; doc.head.append(style); }
         let overlay = field.querySelector('canvas[data-sp-canvas-surface="1"]');
-        if (!overlay) { overlay = doc.createElement('canvas'); overlay.width = 2560; overlay.height = 1260; overlay.className = 'ix-composite-canvas'; overlay.dataset.spCanvasSurface = '1'; field.append(overlay); }
+        if (!overlay) { overlay = doc.createElement('canvas'); overlay.width = window.__renderer.compositeCanvas.width; overlay.height = window.__renderer.compositeCanvas.height; overlay.className = 'ix-composite-canvas'; overlay.dataset.spCanvasSurface = '1'; field.append(overlay); }
+        else { overlay.width = window.__renderer.compositeCanvas.width; overlay.height = window.__renderer.compositeCanvas.height; }
         window.__renderer.rrCanvas = overlay; window.__renderer.rrContext = overlay.getContext('2d', { alpha: true });
         return true;
       };
@@ -483,6 +518,12 @@ async function main(argv) {
       return { width: even(size.width), height: even(size.height) };
     });
     if (!layout?.width || !layout?.height || Math.max(layout.width, layout.height) < 1920) throw new Error(`captured canvas dimensions invalid: ${JSON.stringify(layout)}`);
+    await page.evaluate(({ width, height }) => {
+      const renderer = window.__renderer;
+      renderer.outputLayout = { width, height };
+      renderer.compositeCanvas.width = width; renderer.compositeCanvas.height = height;
+      if (renderer.rrCanvas) { renderer.rrCanvas.width = width; renderer.rrCanvas.height = height; }
+    }, layout);
     const visualDiagnostics = await page.evaluate(async () => {
       const { hudPadding } = await import('/js/ui/fieldHost.js');
       const canvas = document.querySelector('#host canvas');
@@ -514,7 +555,7 @@ async function main(argv) {
       const outputFile = path.join(outputRoot, `prep-${clipIndex + 1}.webm`);
       const partialFile = `${outputFile}.partial.webm`;
       ffmpegError = '';
-      ffmpeg = spawn(FFMPEG, ['-hide_banner','-loglevel','warning','-f','ivf','-i','pipe:0','-c:v','copy','-cues_to_front','1','-f','webm','-y',partialFile], { stdio: ['pipe','ignore','pipe'] });
+      ffmpeg = spawn(ffmpegExecutable, ['-hide_banner','-loglevel','warning','-f','ivf','-i','pipe:0','-c:v','copy','-cues_to_front','1','-f','webm','-y',partialFile], { stdio: ['pipe','ignore','pipe'] });
       ffmpeg.stderr.setEncoding('utf8'); ffmpeg.stderr.on('data', (s) => { ffmpegError += s; });
       ffmpeg.stdin.on('error', (error) => stage(`FFmpeg stdin: ${error.code || error.message}`));
       stage(`encoding prep ${clipIndex + 1}: ${clip.startSecond}-${clip.endSecond}s with ${clip.states.length} state snapshot(s)`);
@@ -716,7 +757,9 @@ async function main(argv) {
                 throw new Error(`high-quality native battle media missing for round ${battleClip.round}`);
               }
               const mediaDuration = sourceClip.mediaDuration;
-              const desiredMediaTime = Math.max(0, (second - battleClip.startSecond) / (battleClip.endSecond - battleClip.startSecond) * mediaDuration);
+              const desiredMediaTime = sourceClip.mediaOffsetSeconds != null
+                ? Math.max(0, second - Number(sourceClip.mediaOffsetSeconds))
+                : Math.max(0, (second - battleClip.startSecond) / (battleClip.endSecond - battleClip.startSecond) * mediaDuration);
               const mediaFrameIndex = renderer.nearestBattleFrameIndex(sourceClip.frameTimes || [], desiredMediaTime);
               const imageUrl = `/__battle-frame/${battleClip.round}/${mediaFrameIndex}`;
               if (renderer.activeBattleImageUrl !== imageUrl) {
@@ -731,7 +774,7 @@ async function main(argv) {
                       throw new Error(`HTTP ${response.status} ${requestUrl}: ${body}`);
                     }
                     const candidate = await createImageBitmap(await response.blob());
-                    if (candidate.width !== 2560 || candidate.height !== 1260) {
+                    if (candidate.width !== sourceClip.frameWidth || candidate.height !== sourceClip.frameHeight) {
                       const dimensions = `${candidate.width}x${candidate.height}`; candidate.close(); throw new Error(`decoded dimensions ${dimensions}`);
                     }
                     decoded = candidate;
@@ -747,7 +790,7 @@ async function main(argv) {
                 renderer.battleBitmap = decoded;
                 renderer.activeBattleImageUrl = imageUrl;
               }
-              if (!renderer.battleBitmap || renderer.battleBitmap.width !== 2560 || renderer.battleBitmap.height !== 1260) throw new Error(`native battle decoded frame invalid: ${JSON.stringify({ round: battleClip.round, frameIndex: mediaFrameIndex, width: renderer.battleBitmap?.width, height: renderer.battleBitmap?.height })}`);
+              if (!renderer.battleBitmap || renderer.battleBitmap.width !== sourceClip.frameWidth || renderer.battleBitmap.height !== sourceClip.frameHeight) throw new Error(`native battle decoded frame invalid: ${JSON.stringify({ round: battleClip.round, frameIndex: mediaFrameIndex, width: renderer.battleBitmap?.width, height: renderer.battleBitmap?.height })}`);
               renderer.compositeContext.clearRect(0, 0, renderer.compositeCanvas.width, renderer.compositeCanvas.height);
               renderer.compositeContext.drawImage(renderer.battleBitmap, 0, 0, renderer.compositeCanvas.width, renderer.compositeCanvas.height);
               if (renderer.rrCanvas) {
@@ -849,7 +892,7 @@ async function main(argv) {
     const outputFile = path.join(outputRoot, `battle-${clip.round}.webm`);
     const partialFile = `${outputFile}.partial.webm`;
     ffmpegError = '';
-    ffmpeg = spawn(FFMPEG, ['-hide_banner','-loglevel','warning','-f','ivf','-i','pipe:0','-c:v','copy','-cues_to_front','1','-f','webm','-y',partialFile], { stdio: ['pipe','ignore','pipe'] });
+    ffmpeg = spawn(ffmpegExecutable, ['-hide_banner','-loglevel','warning','-f','ivf','-i','pipe:0','-c:v','copy','-cues_to_front','1','-f','webm','-y',partialFile], { stdio: ['pipe','ignore','pipe'] });
     ffmpeg.stderr.setEncoding('utf8'); ffmpeg.stderr.on('data', (s) => { ffmpegError += s; });
     ffmpeg.stderr.on('close', () => stage(`FFmpeg stderr closed: ${ffmpegError.trim()}`));
     ffmpeg.stdin.on('error', (error) => stage(`FFmpeg stdin: ${error.code || error.message}`));

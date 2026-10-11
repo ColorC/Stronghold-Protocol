@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
-import { parseArgs, ivfHeader, writeIvfFrame, battleFrameRetryUrls, nearestBattleFrameIndex } from '../../tools/render-independent-recording.mjs';
+import path from 'node:path';
+import { parseArgs, ivfHeader, writeIvfFrame, battleFrameRetryUrls, nearestBattleFrameIndex, resolveExecutable, resolveFfprobe } from '../../tools/render-independent-recording.mjs';
 
 const base = ['--recording-id','c3c3f89e-eae2-46ac-a118-a6deda3aa3b6','--session-id','8e9c96d2-576e-4f8d-8e9b-f7668e093d09',
   '--recordings-dir','C:/recordings','--session-dir','C:/sessions','--timeline-json','C:/timeline.json','--install-root','C:/install','--output-root','C:/out','--rounds','12','--sample-seconds','5'];
@@ -68,4 +69,13 @@ test('battle frame selection uses actual PTS, clamps to decoded cache, and never
   assert.equal(nearestBattleFrameIndex(pts, 100), 3);
   assert.throws(() => nearestBattleFrameIndex([], 0), /invalid battle frame timestamps/);
   assert.throws(() => nearestBattleFrameIndex([0, 0.1, 0.09], 0.1), /invalid battle frame timestamps/);
+});
+
+test('media executable resolution honors explicit paths and PATH without resolving missing names in cwd', () => {
+  const executableDir = path.dirname(process.execPath);
+  const executableName = path.basename(process.execPath).replace(/\.exe$/i, '');
+  assert.equal(resolveExecutable(process.execPath), path.resolve(process.execPath));
+  assert.equal(resolveExecutable(executableName, { pathValue: executableDir }), path.resolve(process.execPath));
+  assert.throws(() => resolveExecutable('missing-renderer-test-binary', { pathValue: '' }), /not found on PATH/);
+  assert.equal(resolveFfprobe({ explicitPath: process.execPath }), path.resolve(process.execPath));
 });
