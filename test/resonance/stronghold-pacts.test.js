@@ -416,6 +416,72 @@ test('迅击爆发 counts each member\'s bursts from its first attack in season 
   assert.ok(burst(first.unit('谜图')), 'season 1 bursts at the start');
 });
 
+test('season-2 strategy, pact and equipment copy uses only in-game words', () => {
+  const view = resonanceDisplayCatalog(catalog, data);
+  const banned = ['护盾', '攻速', '评分', '术法', '双抗', '普攻', '转职', '备战席', '周围1格', '法抗', '击杀', '「', 'TFT', 'undefined', 'NaN'];
+  const texts = [
+    ...Object.values(view.strategies).flatMap((row) => [row.name, row.description]),
+    ...Object.values(view.pacts).flatMap((row) => [row.summaryDescription, ...row.levels.map((level) => level.description)]),
+    ...Object.entries(view.equipment).filter(([id, row]) => !id.startsWith('prototype_chem') && !row.codexHidden).flatMap(([, row]) => [row.name, row.description]),
+  ].filter(Boolean);
+  // native item names (护盾无人机 …) are the game's own words
+  const itemNames = Object.values(view.equipment).map((row) => row.name).filter(Boolean).sort((a, b) => b.length - a.length);
+  for (const text of texts) {
+    const words = itemNames.reduce((rest, name) => rest.replaceAll(name, ''), text);
+    for (const term of banned) assert.ok(!words.includes(term), `${term} in: ${text}`);
+  }
+  for (const row of Object.values(view.strategies)) assert.ok(!/\s徽记/.test(row.name), row.name);
+  assert.equal(catalog.strategies.prototype_set13_academycrest.description.startsWith('获得“拉特兰徽记”'), true, 'crests name the item the player receives');
+});
+
+const traitOps = (trait) => [...new Map(Object.values(catalog.operators).filter((row) => active.has(row.id) && row.pacts.includes(trait)).map((row) => [row.charId, row])).values()];
+
+test('术式还击 bursts on enemies only, never on the allies next to the fallen member', () => {
+  const id = 'prototype_set13_sorcerer';
+  const [mage] = traitOps('arts');
+  const run = arena([mage, op('银灰')], { strategies: [id], idle: true });
+  const fallen = run.unit(mage.name), ally = run.unit('银灰');
+  assert.ok(Math.hypot(fallen.x - ally.x, fallen.y - ally.y) <= 1.5, 'the ally stands next to the member');
+  const foe = run.enemy([fallen.tileR, fallen.tileC]);
+  const allyHp = ally.hp, foeHp = foe.hp;
+  trueHit(run.battle, foe, fallen, fallen.hp + fallen.s.maxHp * 2);
+  assert.equal(fallen.alive, false);
+  assert.equal(ally.hp, allyHp, 'no damage to the ally');
+  assert.ok(foe.hp < foeHp, 'the enemy next to it takes the burst');
+  assert.equal(run.battle.errorCount, 0);
+});
+
+test('守望战痕 stacks at most ten times in season 2', () => {
+  const id = 'prototype_set13_watcher';
+  const [guard] = traitOps('watcher');
+  const run = arena([guard], { strategies: [id], idle: true });
+  const unit = run.unit(guard.name), foe = run.enemy([unit.tileR, unit.tileC + 1]);
+  for (let i = 0; i < 15; i++) run.battle.dealDamage(foe, unit, { amount: 10, type: 'phys', isAttack: true });
+  const scars = unit.buffs.find((buff) => buff.key.includes(':attack-scars:'));
+  close(scars.mods.atkPct, 0.2, 'ten stacks of +2%');
+  assert.equal(run.battle.errorCount, 0);
+});
+
+test('坚阵盾击 and 卡西米尔断头台 give native DEF / RES in season 2', () => {
+  const [sentinel] = traitOps('sentinel');
+  const plain = arena([sentinel]).unit(sentinel.name), shielded = arena([sentinel], { strategies: ['prototype_set13_sentinel'] }).unit(sentinel.name);
+  close(shielded.s.def / plain.s.def, 1.05, 'DEF +5%', 1e-3);
+  const [knight] = traitOps('conqueror');
+  const run = arena([knight], { strategies: ['prototype_set13_conqueror'], idle: true });
+  const unit = run.unit(knight.name), def = unit.s.def, res = unit.s.res;
+  for (let i = 0; i < 6; i++) {
+    const foe = run.enemy([unit.tileR, unit.tileC + 1], { hp: 1000 });
+    foe.hp = foe.s.maxHp * 0.1;
+    run.battle.dealDamage(unit, foe, { amount: 1, type: 'phys', isAttack: true });
+    assert.equal(foe.alive, false, 'below 12% it is knocked out');
+  }
+  const stacks = unit.buffs.find((buff) => buff.key.includes(':conqueror-executions:'));
+  close(stacks.mods.defPct, 0.4, 'DEF +8% per knock-out, five at most');
+  close(stacks.mods.resFlat, 20, 'RES +4 per knock-out, five at most');
+  assert.ok(unit.s.def > def && unit.s.res >= res + 20 - 1e-6);
+  assert.equal(run.battle.errorCount, 0);
+});
+
 test('卡西米尔 attacks carry true damage and blocking members pulse true damage and stun', () => {
   const two = arena([...ops('砾', '焰尾'), op('格拉尼')]);
   const member = two.unit('砾'), other = two.unit('格拉尼'), target = two.enemy([10, 9]);

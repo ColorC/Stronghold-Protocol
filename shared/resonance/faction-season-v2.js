@@ -6,6 +6,7 @@ const clone=value=>structuredClone(value);
 const requireValue=(condition,message)=>{if(!condition)throw new Error(message);};
 const retiredAugments=new Set(STRONGHOLD_RETIRED_AUGMENTS);
 const corrected=row=>{
+  if(typeof row.displayName==='string'&&/\s+徽记$/.test(row.displayName))row={...clone(row),displayName:row.displayName.replace(/\s+徽记$/,'徽记')};
   const fix=STRONGHOLD_STRATEGY_OVERRIDES[row.apiName];
   if(!fix)return row;
   const effects={...clone(row.effects??{}),...clone(fix.variables??{})};

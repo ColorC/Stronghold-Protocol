@@ -87,6 +87,13 @@ export function installPrototypeBattleAugments(battle,state,catalog){
       battle.every(Number(augment.variables.RefreshSeconds??4),arm,{owner:battle,immediate:true});
     }
     for(const augment of entries('sentinel_shield_bash')){
+      const arm=()=>{for(const unit of members(augment.traitId))unit.mem.prototypeSentinelAugmentReady=true;metric(augment,'readyWindows');};
+      if(Number(augment.variables.NativeDefPct)>0){
+        // season 2: a native DEF share instead of the source defense rating
+        for(const unit of members(augment.traitId))addBuff(unit,augment,'sentinel-def',{defPct:Number(augment.variables.NativeDefPct)});
+        battle.every(Number(augment.variables.Interval??4),arm,{owner:battle,immediate:true});
+        continue;
+      }
       const key=`augment:${augment.id}:sentinel-resists`;
       const updateRatings=()=>{
         for(const unit of members(augment.traitId)){
@@ -97,7 +104,6 @@ export function installPrototypeBattleAugments(battle,state,catalog){
       };
       updateRatings();
       battle.every(.2,updateRatings,{owner:battle});
-      const arm=()=>{for(const unit of members(augment.traitId))unit.mem.prototypeSentinelAugmentReady=true;metric(augment,'readyWindows');};
       battle.every(Number(augment.variables.Interval??4),arm,{owner:battle,immediate:true});
     }
     for(const augment of entries('dominator_shield_rush')){
@@ -136,8 +142,14 @@ export function installPrototypeBattleAugments(battle,state,catalog){
           source.mem.prototypeConquerorExecutions??={};
           const count=(source.mem.prototypeConquerorExecutions[augment.id]??0)+1;
           source.mem.prototypeConquerorExecutions[augment.id]=count;
-          const bonus=count*Number(augment.variables.ArmorandMagicResist??0);
-          setPrototypeRatingBonus(battle,source,`augment:${augment.id}:conqueror-executions`,{armor:bonus,magicResist:bonus},powerFor(source));
+          if(Number(augment.variables.NativeDefPctPerKill)>0){
+            // season 2: native DEF / RES per execution, at most MaxKills times
+            const stacks=Math.min(count,Number(augment.variables.MaxKills??Infinity));
+            addBuff(source,augment,'conqueror-executions',{defPct:stacks*Number(augment.variables.NativeDefPctPerKill),resFlat:stacks*Number(augment.variables.NativeResPerKill??0)});
+          }else{
+            const bonus=count*Number(augment.variables.ArmorandMagicResist??0);
+            setPrototypeRatingBonus(battle,source,`augment:${augment.id}:conqueror-executions`,{armor:bonus,magicResist:bonus},powerFor(source));
+          }
           metric(augment,'executions');
         }
       }
@@ -169,7 +181,7 @@ export function installPrototypeBattleAugments(battle,state,catalog){
       // This engine has no TFT `AP` stat. Preserve the source ratio as a mode
       // adaptation against the operator's resolved attack power and arts amp.
       const abilityPower=Number(dead.s.atk??0)*Number(dead.s.artsDealtMul??1);
-      for(const unit of battle.units.filter((target)=>target!==dead&&target.alive&&target.deployed&&!target.removed&&Math.hypot(target.x-dead.x,target.y-dead.y)<=1.5)){
+      for(const unit of battle.units.filter((target)=>target.side==='enemy'&&target.alive&&target.deployed&&!target.removed&&!target.hidden&&Math.hypot(target.x-dead.x,target.y-dead.y)<=1.5)){
         battle.dealDamage(dead,unit,{amount:abilityPower*Number(augment.variables.DeathPercentage??0),type:'arts',canDodge:false,tags:['resonance','prototype-sorcerer-death-burst']});
       }
       metric(augment,'deathBursts');
@@ -181,8 +193,9 @@ export function installPrototypeBattleAugments(battle,state,catalog){
     if(target?.side!=='ally'||target.kind!=='op'||event?.source?.side!=='enemy'||!(event.dealt>0))return;
     for(const augment of entries('watcher_battle_scars')){
       if(!hasTrait(target,augment.traitId))continue;
-      if(dmg?.isAttack){target.mem.prototypeWatcherAttackStacks=(target.mem.prototypeWatcherAttackStacks??0)+1;const stacks=target.mem.prototypeWatcherAttackStacks;addBuff(target,augment,'attack-scars',{atkPct:Number(augment.variables.IncreaseADByTakeAttack??0)*stacks/100});metric(augment,'attackScars');}
-      if(dmg?.isSkill){target.mem.prototypeWatcherSpellStacks=(target.mem.prototypeWatcherSpellStacks??0)+1;const stacks=target.mem.prototypeWatcherSpellStacks;addBuff(target,augment,'spell-scars',{artsDealtMul:1+Number(augment.variables.IncreaseAPByTakeSpell??0)*stacks/100});metric(augment,'spellScars');}
+      const cap=Number(augment.variables.MaxStacks??Infinity);
+      if(dmg?.isAttack){target.mem.prototypeWatcherAttackStacks=Math.min(cap,(target.mem.prototypeWatcherAttackStacks??0)+1);const stacks=target.mem.prototypeWatcherAttackStacks;addBuff(target,augment,'attack-scars',{atkPct:Number(augment.variables.IncreaseADByTakeAttack??0)*stacks/100});metric(augment,'attackScars');}
+      if(dmg?.isSkill){target.mem.prototypeWatcherSpellStacks=Math.min(cap,(target.mem.prototypeWatcherSpellStacks??0)+1);const stacks=target.mem.prototypeWatcherSpellStacks;addBuff(target,augment,'spell-scars',{artsDealtMul:1+Number(augment.variables.IncreaseAPByTakeSpell??0)*stacks/100});metric(augment,'spellScars');}
     }
   },{owner:battle});
 

@@ -129,13 +129,37 @@ export const STRONGHOLD_RETIRED_AUGMENTS = freeze(['TFT13_Augment_AcademyCrown',
 /** Reward items whose season-1 item no longer exists in season 2, by source item name → the native item granted instead. */
 export const STRONGHOLD_REWARD_ITEM_SUBSTITUTIONS = freeze({ Guardbreaker: 'hurricane' });
 /**
- * Season-2 strategy corrections by source augment: extra variables for the battle adapter and the player copy. The
- * field is empty when the battle starts, so 迅击爆发 counts its bursts from each member's first attack.
+ * Season-2 strategy corrections by source augment: extra variables for the battle adapter and handwritten player copy.
+ * 迅击爆发 counts its bursts from each member's first attack (the field is empty when the battle starts); 坚阵盾击 and
+ * 卡西米尔断头台 give native DEF / RES instead of the source defense ratings (values measured on the members: rating
+ * +5% ≈ DEF +4%, +5 rating per execution ≈ DEF +7–15% and RES +4); 守望战痕 stacks are capped.
  */
+const pct = (value) => `${Number((Number(value) * 100).toFixed(1))}%`;
 export const STRONGHOLD_STRATEGY_OVERRIDES = freeze({
   TFT13_Augment_Quickstriker: freeze({
     variables: freeze({ StartOnFirstAttack: 1 }),
     adaptation: (v) => `【迅击】干员首次攻击时及之后每${Number(v.TimeBetweenProcs)}秒，攻击速度+${Math.round(Number(v.AttackSpeed) * 100)}，持续${Number(v.BuffDuration)}秒。`,
+  }),
+  TFT13_Augment_Bruiser: freeze({
+    adaptation: (v) => `每${Number(v.RefreshSeconds)}秒，【重装】干员的下一次攻击额外造成相当于自身生命上限${pct(v.SlamPercentHealth)}的物理伤害。`,
+  }),
+  TFT13_Augment_Dominator: freeze({
+    adaptation: (v) => `【掌控】干员持有屏障时攻击速度+${Math.round(Number(v.ShieldPercentAS) * 100)}；【掌控】干员击倒敌人后，所有【掌控】干员获得${Number(v.ShieldAmount)}点屏障，持续${Number(v.ShieldDuration)}秒。`,
+  }),
+  TFT13_Augment_Sentinel: freeze({
+    variables: freeze({ NativeDefPct: 0.05 }),
+    adaptation: (v) => `【坚阵】干员防御力+${pct(v.NativeDefPct)}；每${Number(v.Interval)}秒，下一次攻击额外造成相当于自身防御力与法术抗性之和${pct(v.ResistToDamageRatio)}的法术伤害。`,
+  }),
+  TFT13_Augment_Conqueror: freeze({
+    variables: freeze({ NativeDefPctPerKill: 0.08, NativeResPerKill: 4, MaxKills: 5 }),
+    adaptation: (v) => `【卡西米尔】干员对生命低于${Number(v.BaseExecuteThreshold)}%的敌人造成伤害时，直接将其击倒；每以此击倒1名敌人，防御力+${pct(v.NativeDefPctPerKill)}、法术抗性+${Number(v.NativeResPerKill)}，至多叠加${Number(v.MaxKills)}次。`,
+  }),
+  TFT13_Augment_Sorcerer: freeze({
+    adaptation: (v) => `【术式】干员倒下时，对周围8格内的敌人造成相当于其攻击力${pct(v.DeathPercentage)}的法术伤害。`,
+  }),
+  TFT13_Augment_Watcher: freeze({
+    variables: freeze({ MaxStacks: 10 }),
+    adaptation: (v) => `【守望】干员每受到1次攻击，攻击力+${Number(v.IncreaseADByTakeAttack)}%；每受到1次技能伤害，法术伤害+${Number(v.IncreaseAPByTakeSpell)}%；各至多叠加${Number(v.MaxStacks)}次。`,
   }),
 });
 /** The one equipment slot count the temporary 维式重锤 fills up to. */
@@ -184,17 +208,17 @@ export function strongholdPactCopy(trait, season, { itemName = (id) => id } = {}
     ]],
     conqueror: ['【卡西米尔】干员的攻击附带真实伤害；阻挡敌人时冲击周围。', (v) => [
       `攻击额外附带攻击力${p(v.attackTrue)}的真实伤害。`,
-      v.blockPulse ? `阻挡敌人时，每${n(v.blockInterval)}秒对周围1格的敌人造成攻击力${p(v.blockPulse)}的真实伤害${v.blockStun ? `并使其晕眩${n(v.blockStun)}秒` : ''}。` : '',
+      v.blockPulse ? `阻挡敌人时，每${n(v.blockInterval)}秒对周围8格内的敌人造成攻击力${p(v.blockPulse)}的真实伤害${v.blockStun ? `并使其晕眩${n(v.blockStun)}秒` : ''}。` : '',
       v.othersTrue ? `其他干员的攻击附带攻击力${p(v.othersTrue)}的真实伤害。` : '',
     ]],
     experiment: ['任一【萨尔贡】干员开启技能时，所有【萨尔贡】干员获得强化；再次触发只刷新持续时间。', (v) => [
       `攻击速度+${v.castAspd}${v.castAtk ? `、攻击力+${p(v.castAtk)}` : ''}，持续${n(v.castDuration)}秒。`,
-      v.sandSlow ? `开启技能的干员在周围1格留下流沙，使其中的敌人减速${p(v.sandSlow)}，持续${n(v.sandDuration)}秒。` : '',
+      v.sandSlow ? `开启技能的干员在所在位置及周围8格留下流沙，使其中的敌人减速${p(v.sandSlow)}，持续${n(v.sandDuration)}秒。` : '',
       v.relaySp ? `其他【萨尔贡】干员回复${v.relaySp}点技力（每名每秒至多一次）。` : '',
     ]],
     rhodes: ['开战时【哥伦比亚】干员获得屏障。', (v) => [
       `屏障为最大生命的${p(v.barrier)}${v.summonBarrier ? '，【哥伦比亚】干员的召唤物和装置也获得屏障' : ''}。`,
-      v.breakDamage ? `屏障被击破时，对周围1格的敌人造成攻击力${p(v.breakDamage)}的法术伤害并使其晕眩${n(v.breakStun)}秒。` : '',
+      v.breakDamage ? `屏障被击破时，对周围8格内的敌人造成攻击力${p(v.breakDamage)}的法术伤害并使其晕眩${n(v.breakStun)}秒。` : '',
       v.rebarrierDelay ? `屏障被击破${n(v.rebarrierDelay)}秒后重新获得（每场至多${v.rebarrierCount}次）。` : '',
     ]],
     enforcer: ['【罗德岛】干员受到的治疗提升，开启技能时照料身边的友军。', (v) => [

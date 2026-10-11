@@ -79,7 +79,7 @@ export function applyPrototypeStrategies(catalog) {
     const heroNames=rewards?.bonusOperatorIds.map((operatorId)=>catalog.operators[operatorId]?.name).filter(Boolean)??[];
     const rewardNames=rewards?.bonusRewards.filter((row)=>row.kind==='item').map((row)=>catalog.equipment[row.itemId]?.name).filter(Boolean)??[];
     const transferDescription=augment.adapter==='choose_transfer'
-      ?`获得「${traitName}」转职徽记${heroNames.length?`，招募${heroNames.join('、')}`:''}${rewardNames.length?`，并获得${rewardNames.join('、')}`:''}${rewards.sawRandomSponsored?'，并从本局赞助装备中随机获得一件':''}${rewards.sawRandomComponents?`，并获得${rewards.bonusRewards.find((row)=>row.kind==='random-components').count}件随机组件`:''}。`
+      ?`获得“${traitName}徽记”${heroNames.length?`，招募${heroNames.join('、')}`:''}${rewardNames.length?`，并获得${rewardNames.map((name)=>`“${name}”`).join('、')}`:''}${rewards.sawRandomSponsored?'，并从本局赞助装备中随机获得一件':''}${rewards.sawRandomComponents?`，并获得${rewards.bonusRewards.find((row)=>row.kind==='random-components').count}件随机组件`:''}。`
       :null;
     strategies[id]={
       id,name:augment.displayName??augment.name,group:'rule',description:augment.adapter==='choose_transfer'?transferDescription:augment.adaptation,timing:'run-or-node',condition:{kind:'always'},
@@ -92,7 +92,7 @@ export function applyPrototypeStrategies(catalog) {
   const already=new Set(season.augmentCandidates.map((row)=>row.apiName));
   const sourcePresentation={
     TFT6_Augment_TradeSector:{name:'商贸枢纽',description:'获得1金币；每个节点可免费刷新一次商店。'},
-    TFT6_Augment_ClearMind:{name:'清心',description:'若战斗结束时备战席为空，获得3点经验。'},
+    TFT6_Augment_ClearMind:{name:'清心',description:'若战斗结束时备战区为空，获得3点经验。'},
     TFT6_Augment_MaxLevel10:{name:'等级提升',description:'立即获得12点经验；每次购买经验时额外获得2点。'},
     TFT10_Augment_GoingLong:{name:'长线经营',description:'立即获得15金币；每场战斗结束后获得4点经验，且不再获得利息。'},
     TFT9_Augment_HighEndSector:{name:'高端商圈',description:'立即获得4金币；每次升级时按新等级获得免费刷新次数。'},
@@ -129,7 +129,7 @@ export function applyPrototypeStrategies(catalog) {
           const hpPerWin=Number(row.effects?.HealthPerWin??0);
           const attackText=Number.isInteger(attackPct)?String(attackPct):String(Number(attackPct.toFixed(2)));
           const hpText=Number.isInteger(hpPerWin)?String(hpPerWin):String(Number(hpPerWin.toFixed(2)));
-          return {name:presentation.name,description:`重装盟约干员每次战败永久获得${attackText}%攻击力；每次胜利永久获得${hpText}点生命${heroName?`，并招募「${heroName}」`:''}。`};
+          return {name:presentation.name,description:`${heroName?`招募${heroName}；`:''}之后每场战斗结束，上阵的【重装】干员永久成长：失败时攻击力+${attackText}%，胜利时生命上限+${hpText}。`};
         })()
         :presentation;
       const id=`prototype_source_${row.apiName.replace(/^TFT\d*_?Augment_?/,'').replace(/[^a-zA-Z0-9]+/g,'_').toLowerCase()}`;

@@ -96,7 +96,7 @@ test('Pit Fighter source growth is shown in localized terms with its exact compa
   const attackPct=Number(source.effects.ADPerLoss)*100;
   const hpPerWin=Number(source.effects.HealthPerWin);
   const displayAttackPct=Number.isInteger(attackPct)?attackPct:Number(attackPct.toFixed(2));
-  assert.equal(strategy.description,`重装盟约干员每次战败永久获得${displayAttackPct}%攻击力；每次胜利永久获得${hpPerWin}点生命${heroName?`，并招募「${heroName}」`:''}。`);
+  assert.equal(strategy.description,`${heroName?`招募${heroName}；`:''}之后每场战斗结束，上阵的【重装】干员永久成长：失败时攻击力+${displayAttackPct}%，胜利时生命上限+${hpPerWin}。`);
   assert.ok(heroName,'the mapped companion must have a localized catalog name');
   assert.equal(strategy.effects[0].params.attackPctPerLoss,attackPct);
   assert.equal(strategy.effects[0].params.hpPerWin,hpPerWin);

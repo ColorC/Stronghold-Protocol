@@ -143,28 +143,28 @@
 | 叙拉古正装 | bow | component | 否 | 攻击速度+15 |
 | 迅捷作战粮 | tear | component | 否 | 初始技力+6 |
 | 耶拉冈德之泪 | cloak | component | 否 | 法术抗性+15 |
-| Academy Emblem | prototype_emblem_academy | emblem | 是 | 佩戴者获得「研发」盟约身份。 |
-| Ambusher Emblem | prototype_emblem_redeploy | emblem | 是 | 佩戴者获得「突袭」盟约身份。 |
-| Artillerist Emblem | prototype_emblem_artillery | emblem | 是 | 佩戴者获得「炮术」盟约身份。 |
-| Automata Emblem | prototype_emblem_creation | emblem | 是 | 佩戴者获得「机巧」盟约身份。 |
-| Black Rose Emblem | prototype_emblem_sui | emblem | 是 | 佩戴者获得「幻造」盟约身份。 |
-| Bruiser Emblem | prototype_emblem_bruiser | emblem | 是 | 佩戴者获得「重装」盟约身份。 |
-| Chem-Baron Emblem | prototype_emblem_risk | emblem | 是 | 佩戴者获得「险境」盟约身份。 |
-| Conqueror Emblem | prototype_emblem_conqueror | emblem | 是 | 佩戴者获得「远征」盟约身份。 |
-| Dominator Emblem | prototype_emblem_dominator | emblem | 是 | 佩戴者获得「掌控」盟约身份。 |
-| Enforcer Emblem | prototype_emblem_enforcer | emblem | 是 | 佩戴者获得「围剿」盟约身份。 |
-| Experiment Emblem | prototype_emblem_experiment | emblem | 是 | 佩戴者获得「共生」盟约身份。 |
-| Family Emblem | prototype_emblem_family | emblem | 是 | 佩戴者获得「并肩」盟约身份。 |
-| Firelight Emblem | prototype_emblem_flight | emblem | 是 | 佩戴者获得「游击」盟约身份。 |
-| Pit Fighter Emblem | prototype_emblem_breaker | emblem | 是 | 佩戴者获得「决斗」盟约身份。 |
-| Quickstriker Emblem | prototype_emblem_combo | emblem | 是 | 佩戴者获得「迅击」盟约身份。 |
-| Rebel Emblem | prototype_emblem_resistance | emblem | 是 | 佩戴者获得「逆潮」盟约身份。 |
-| Scrap Emblem | prototype_emblem_rhodes | emblem | 是 | 佩戴者获得「战地整备」盟约身份。 |
-| Sentinel Emblem | prototype_emblem_sentinel | emblem | 是 | 佩戴者获得「坚阵」盟约身份。 |
-| Sniper Emblem | prototype_emblem_ammo | emblem | 是 | 佩戴者获得「狙击」盟约身份。 |
-| Sorcerer Emblem | prototype_emblem_arts | emblem | 是 | 佩戴者获得「术式」盟约身份。 |
-| Visionary Emblem | prototype_emblem_logistics | emblem | 是 | 佩戴者获得「技力协同」盟约身份。 |
-| Watcher Emblem | prototype_emblem_watcher | emblem | 是 | 佩戴者获得「守望」盟约身份。 |
+| Academy Emblem | prototype_emblem_academy | emblem | 是 | 佩戴者获得【研发】盟约身份。 |
+| Ambusher Emblem | prototype_emblem_redeploy | emblem | 是 | 佩戴者获得【突袭】盟约身份。 |
+| Artillerist Emblem | prototype_emblem_artillery | emblem | 是 | 佩戴者获得【炮术】盟约身份。 |
+| Automata Emblem | prototype_emblem_creation | emblem | 是 | 佩戴者获得【机巧】盟约身份。 |
+| Black Rose Emblem | prototype_emblem_sui | emblem | 是 | 佩戴者获得【幻造】盟约身份。 |
+| Bruiser Emblem | prototype_emblem_bruiser | emblem | 是 | 佩戴者获得【重装】盟约身份。 |
+| Chem-Baron Emblem | prototype_emblem_risk | emblem | 是 | 佩戴者获得【险境】盟约身份。 |
+| Conqueror Emblem | prototype_emblem_conqueror | emblem | 是 | 佩戴者获得【远征】盟约身份。 |
+| Dominator Emblem | prototype_emblem_dominator | emblem | 是 | 佩戴者获得【掌控】盟约身份。 |
+| Enforcer Emblem | prototype_emblem_enforcer | emblem | 是 | 佩戴者获得【围剿】盟约身份。 |
+| Experiment Emblem | prototype_emblem_experiment | emblem | 是 | 佩戴者获得【共生】盟约身份。 |
+| Family Emblem | prototype_emblem_family | emblem | 是 | 佩戴者获得【并肩】盟约身份。 |
+| Firelight Emblem | prototype_emblem_flight | emblem | 是 | 佩戴者获得【游击】盟约身份。 |
+| Pit Fighter Emblem | prototype_emblem_breaker | emblem | 是 | 佩戴者获得【决斗】盟约身份。 |
+| Quickstriker Emblem | prototype_emblem_combo | emblem | 是 | 佩戴者获得【迅击】盟约身份。 |
+| Rebel Emblem | prototype_emblem_resistance | emblem | 是 | 佩戴者获得【逆潮】盟约身份。 |
+| Scrap Emblem | prototype_emblem_rhodes | emblem | 是 | 佩戴者获得【战地整备】盟约身份。 |
+| Sentinel Emblem | prototype_emblem_sentinel | emblem | 是 | 佩戴者获得【坚阵】盟约身份。 |
+| Sniper Emblem | prototype_emblem_ammo | emblem | 是 | 佩戴者获得【狙击】盟约身份。 |
+| Sorcerer Emblem | prototype_emblem_arts | emblem | 是 | 佩戴者获得【术式】盟约身份。 |
+| Visionary Emblem | prototype_emblem_logistics | emblem | 是 | 佩戴者获得【技力协同】盟约身份。 |
+| Watcher Emblem | prototype_emblem_watcher | emblem | 是 | 佩戴者获得【守望】盟约身份。 |
 | 白银·处决链刃 | prototype_chem13_silver_executionersvorpalblade | passive | 否 | 攻击力提高25%，攻击速度+10。攻击或技能可处决生命低于10%的敌人；击倒后5秒内伤害提高10%、受到伤害降低10%。 |
 | 白银·电涌军刀 | prototype_chem13_silver_voltaicsaber | passive | 否 | 法术伤害提高15%，攻击力提高15%，伤害转化为20%生命恢复。每累计6次伤害，对生命最低的2名敌人各造成150点物理伤害。 |
 | 白银·毒性病毒 | prototype_chem13_silver_virulentvirus | passive | 否 | 法术伤害提高25%，攻击速度+15。技能伤害使敌人额外承受15%伤害，持续3秒。 |
@@ -236,63 +236,63 @@
 
 | 策略 | ID | 效果 / 选择 |
 |---|---|---|
-| 研发 徽记 | prototype_set13_academycrest | 获得「研发」转职徽记，招募泡泡。<br>choose_transfer: {"itemIds":["prototype_emblem_academy"],"prototypeTraitId":"academy","bonusOperatorIds":["chess_char_2_08_a"],"bonusRewards":[]} |
-| 研发王冠 | prototype_set13_academycrown | 获得「研发」转职徽记，并从本局赞助装备中随机获得一件。<br>choose_transfer: {"itemIds":["prototype_emblem_academy"],"prototypeTraitId":"academy","bonusOperatorIds":[],"bonusRewards":[],"bonusSponsorItem":true} |
-| 突袭 徽记 | prototype_set13_ambushercrest | 获得「突袭」转职徽记，招募砾。<br>choose_transfer: {"itemIds":["prototype_emblem_redeploy"],"prototypeTraitId":"redeploy","bonusOperatorIds":["chess_char_2_12_a"],"bonusRewards":[]} |
-| 突袭王冠 | prototype_set13_ambushercrown | 获得「突袭」转职徽记，招募砾，并获得休眠子裔。<br>choose_transfer: {"itemIds":["prototype_emblem_redeploy"],"prototypeTraitId":"redeploy","bonusOperatorIds":["chess_char_2_12_a"],"bonusRewards":[{"kind":"item","itemId":"vampBlade","sourceApiName":"TFT_Item_UnstableConcoction","sourceName":"Hand Of Justice"}]} |
-| 炮术 徽记 | prototype_set13_artilleristcrest | 获得「炮术」转职徽记，招募能天使。<br>choose_transfer: {"itemIds":["prototype_emblem_artillery"],"prototypeTraitId":"artillery","bonusOperatorIds":["chess_char_3_01_a"],"bonusRewards":[]} |
-| 炮术王冠 | prototype_set13_artilleristcrown | 获得「炮术」转职徽记，招募能天使，并获得卡西米尔竞技旗。<br>choose_transfer: {"itemIds":["prototype_emblem_artillery"],"prototypeTraitId":"artillery","bonusOperatorIds":["chess_char_3_01_a"],"bonusRewards":[{"kind":"item","itemId":"hurricane","sourceApiName":"TFT_Item_RunaansHurricane","sourceName":"Runaan's Hurricane"}]} |
+| 研发 徽记 | prototype_set13_academycrest | 获得“研发徽记”，招募泡泡。<br>choose_transfer: {"itemIds":["prototype_emblem_academy"],"prototypeTraitId":"academy","bonusOperatorIds":["chess_char_2_08_a"],"bonusRewards":[]} |
+| 研发王冠 | prototype_set13_academycrown | 获得“研发徽记”，并从本局赞助装备中随机获得一件。<br>choose_transfer: {"itemIds":["prototype_emblem_academy"],"prototypeTraitId":"academy","bonusOperatorIds":[],"bonusRewards":[],"bonusSponsorItem":true} |
+| 突袭 徽记 | prototype_set13_ambushercrest | 获得“突袭徽记”，招募砾。<br>choose_transfer: {"itemIds":["prototype_emblem_redeploy"],"prototypeTraitId":"redeploy","bonusOperatorIds":["chess_char_2_12_a"],"bonusRewards":[]} |
+| 突袭王冠 | prototype_set13_ambushercrown | 获得“突袭徽记”，招募砾，并获得“休眠子裔”。<br>choose_transfer: {"itemIds":["prototype_emblem_redeploy"],"prototypeTraitId":"redeploy","bonusOperatorIds":["chess_char_2_12_a"],"bonusRewards":[{"kind":"item","itemId":"vampBlade","sourceApiName":"TFT_Item_UnstableConcoction","sourceName":"Hand Of Justice"}]} |
+| 炮术 徽记 | prototype_set13_artilleristcrest | 获得“炮术徽记”，招募能天使。<br>choose_transfer: {"itemIds":["prototype_emblem_artillery"],"prototypeTraitId":"artillery","bonusOperatorIds":["chess_char_3_01_a"],"bonusRewards":[]} |
+| 炮术王冠 | prototype_set13_artilleristcrown | 获得“炮术徽记”，招募能天使，并获得“卡西米尔竞技旗”。<br>choose_transfer: {"itemIds":["prototype_emblem_artillery"],"prototypeTraitId":"artillery","bonusOperatorIds":["chess_char_3_01_a"],"bonusRewards":[{"kind":"item","itemId":"hurricane","sourceApiName":"TFT_Item_RunaansHurricane","sourceName":"Runaan's Hurricane"}]} |
 | 晶碎回响 | prototype_set13_automata | 机巧的晶体爆破会额外弹射至最近敌人，造成原爆破一半伤害。<br>prototype_battle_augment: {"traitId":"creation","mechanic":"automata_second_blast","variables":{"Percentage":0.5},"sourceApiName":"TFT13_Augment_Automata","grantedHeroIds":["chess_char_1_02_a","chess_native_char_155_tiger_a"],"grantedItemIds":[]} |
-| 机巧 徽记 | prototype_set13_automatacrest | 获得「机巧」转职徽记，招募因陀罗。<br>choose_transfer: {"itemIds":["prototype_emblem_creation"],"prototypeTraitId":"creation","bonusOperatorIds":["chess_native_char_155_tiger_a"],"bonusRewards":[]} |
-| 机巧王冠 | prototype_set13_automatacrown | 获得「机巧」转职徽记，招募因陀罗，并获得破障重刃。<br>choose_transfer: {"itemIds":["prototype_emblem_creation"],"prototypeTraitId":"creation","bonusOperatorIds":["chess_native_char_155_tiger_a"],"bonusRewards":[{"kind":"item","itemId":"prototype_academy_guardbreaker","sourceApiName":"TFT_Item_PowerGauntlet","sourceName":"Guardbreaker"}]} |
+| 机巧 徽记 | prototype_set13_automatacrest | 获得“机巧徽记”，招募因陀罗。<br>choose_transfer: {"itemIds":["prototype_emblem_creation"],"prototypeTraitId":"creation","bonusOperatorIds":["chess_native_char_155_tiger_a"],"bonusRewards":[]} |
+| 机巧王冠 | prototype_set13_automatacrown | 获得“机巧徽记”，招募因陀罗，并获得“破障重刃”。<br>choose_transfer: {"itemIds":["prototype_emblem_creation"],"prototypeTraitId":"creation","bonusOperatorIds":["chess_native_char_155_tiger_a"],"bonusRewards":[{"kind":"item","itemId":"prototype_academy_guardbreaker","sourceApiName":"TFT_Item_PowerGauntlet","sourceName":"Guardbreaker"}]} |
 | 重装猛击 | prototype_set13_bruiser | 每4秒，重装下一次攻击额外造成相当于目标最大生命值7%的物理伤害。<br>prototype_battle_augment: {"traitId":"bruiser","mechanic":"bruiser_health_strike","variables":{"RefreshSeconds":4,"SlamPercentHealth":0.07000000029802322},"sourceApiName":"TFT13_Augment_Bruiser","grantedHeroIds":["chess_native_char_385_finlpp_a","chess_char_1_18_a"],"grantedItemIds":[]} |
-| 重装 徽记 | prototype_set13_bruisercrest | 获得「重装」转职徽记，招募深巡。<br>choose_transfer: {"itemIds":["prototype_emblem_bruiser"],"prototypeTraitId":"bruiser","bonusOperatorIds":["chess_char_1_04_a"],"bonusRewards":[]} |
-| 重装王冠 | prototype_set13_bruisercrown | 获得「重装」转职徽记，招募深巡，并获得伪装服。<br>choose_transfer: {"itemIds":["prototype_emblem_bruiser"],"prototypeTraitId":"bruiser","bonusOperatorIds":["chess_char_1_04_a"],"bonusRewards":[{"kind":"item","itemId":"redemptionCloak","sourceApiName":"TFT_Item_Redemption","sourceName":"Redemption"}]} |
-| 幻造 徽记 | prototype_set13_cabalcrest | 获得「幻造」转职徽记。<br>choose_transfer: {"itemIds":["prototype_emblem_sui"],"prototypeTraitId":"sui","bonusOperatorIds":[],"bonusRewards":[]} |
-| 幻造王冠 | prototype_set13_cabalcrown | 获得「幻造」转职徽记，招募巫恋，并获得灼燃维式重锤。<br>choose_transfer: {"itemIds":["prototype_emblem_sui"],"prototypeTraitId":"sui","bonusOperatorIds":["chess_char_3_15_a"],"bonusRewards":[{"kind":"item","itemId":"duelistCrest","sourceApiName":"TFT_Item_Morellonomicon","sourceName":"Morellonomicon"}]} |
-| 险境 徽记 | prototype_set13_chembaroncrest | 获得「险境」转职徽记，招募赫默。<br>choose_transfer: {"itemIds":["prototype_emblem_risk"],"prototypeTraitId":"risk","bonusOperatorIds":["chess_char_2_02_a"],"bonusRewards":[]} |
-| 险境王冠 | prototype_set13_chembaroncrown | 获得「险境」转职徽记，招募伊内丝，并获得蒸汽之心。<br>choose_transfer: {"itemIds":["prototype_emblem_risk"],"prototypeTraitId":"risk","bonusOperatorIds":["chess_char_4_04_a"],"bonusRewards":[{"kind":"item","itemId":"berserkBow","sourceApiName":"TFT_Item_Leviathan","sourceName":"Nashor's Tooth"}]} |
+| 重装 徽记 | prototype_set13_bruisercrest | 获得“重装徽记”，招募深巡。<br>choose_transfer: {"itemIds":["prototype_emblem_bruiser"],"prototypeTraitId":"bruiser","bonusOperatorIds":["chess_char_1_04_a"],"bonusRewards":[]} |
+| 重装王冠 | prototype_set13_bruisercrown | 获得“重装徽记”，招募深巡，并获得“伪装服”。<br>choose_transfer: {"itemIds":["prototype_emblem_bruiser"],"prototypeTraitId":"bruiser","bonusOperatorIds":["chess_char_1_04_a"],"bonusRewards":[{"kind":"item","itemId":"redemptionCloak","sourceApiName":"TFT_Item_Redemption","sourceName":"Redemption"}]} |
+| 幻造 徽记 | prototype_set13_cabalcrest | 获得“幻造徽记”。<br>choose_transfer: {"itemIds":["prototype_emblem_sui"],"prototypeTraitId":"sui","bonusOperatorIds":[],"bonusRewards":[]} |
+| 幻造王冠 | prototype_set13_cabalcrown | 获得“幻造徽记”，招募巫恋，并获得“灼燃维式重锤”。<br>choose_transfer: {"itemIds":["prototype_emblem_sui"],"prototypeTraitId":"sui","bonusOperatorIds":["chess_char_3_15_a"],"bonusRewards":[{"kind":"item","itemId":"duelistCrest","sourceApiName":"TFT_Item_Morellonomicon","sourceName":"Morellonomicon"}]} |
+| 险境 徽记 | prototype_set13_chembaroncrest | 获得“险境徽记”，招募赫默。<br>choose_transfer: {"itemIds":["prototype_emblem_risk"],"prototypeTraitId":"risk","bonusOperatorIds":["chess_char_2_02_a"],"bonusRewards":[]} |
+| 险境王冠 | prototype_set13_chembaroncrown | 获得“险境徽记”，招募伊内丝，并获得“蒸汽之心”。<br>choose_transfer: {"itemIds":["prototype_emblem_risk"],"prototypeTraitId":"risk","bonusOperatorIds":["chess_char_4_04_a"],"bonusRewards":[{"kind":"item","itemId":"berserkBow","sourceApiName":"TFT_Item_Leviathan","sourceName":"Nashor's Tooth"}]} |
 | 远征断头台 | prototype_set13_conqueror | 远征攻击生命值低于12%的敌人时将其击倒；击倒后获得5点双抗，持续整场战斗。<br>prototype_battle_augment: {"traitId":"conqueror","mechanic":"conqueror_execute","variables":{"ArmorandMagicResist":5,"BaseExecuteThreshold":12,"NumKills":1},"sourceApiName":"TFT13_Augment_Conqueror","grantedHeroIds":["chess_char_1_12_a","chess_char_1_07_a"],"grantedItemIds":[]} |
-| 远征 徽记 | prototype_set13_conquerorcrest | 获得「远征」转职徽记，招募雷蛇。<br>choose_transfer: {"itemIds":["prototype_emblem_conqueror"],"prototypeTraitId":"conqueror","bonusOperatorIds":["chess_char_1_20_a"],"bonusRewards":[]} |
-| 远征王冠 | prototype_set13_conquerorcrown | 获得「远征」转职徽记，招募雷蛇，并获得激光发射器。<br>choose_transfer: {"itemIds":["prototype_emblem_conqueror"],"prototypeTraitId":"conqueror","bonusOperatorIds":["chess_char_1_20_a"],"bonusRewards":[{"kind":"item","itemId":"quietCape","sourceApiName":"TFT_Item_LastWhisper","sourceName":"Last Whisper"}]} |
+| 远征 徽记 | prototype_set13_conquerorcrest | 获得“远征徽记”，招募雷蛇。<br>choose_transfer: {"itemIds":["prototype_emblem_conqueror"],"prototypeTraitId":"conqueror","bonusOperatorIds":["chess_char_1_20_a"],"bonusRewards":[]} |
+| 远征王冠 | prototype_set13_conquerorcrown | 获得“远征徽记”，招募雷蛇，并获得“激光发射器”。<br>choose_transfer: {"itemIds":["prototype_emblem_conqueror"],"prototypeTraitId":"conqueror","bonusOperatorIds":["chess_char_1_20_a"],"bonusRewards":[{"kind":"item","itemId":"quietCape","sourceApiName":"TFT_Item_LastWhisper","sourceName":"Last Whisper"}]} |
 | 掌盾支配 | prototype_set13_dominator | 掌控干员持有护盾时获得10%攻速；掌控干员击倒敌人后，全体掌控获得100点护盾，持续3秒。<br>prototype_battle_augment: {"traitId":"dominator","mechanic":"dominator_shield_rush","variables":{"ShieldAmount":100,"ShieldDuration":3,"ShieldPercentAS":0.10000000149011612},"sourceApiName":"TFT13_Augment_Dominator","grantedHeroIds":["chess_char_3_15_a"],"grantedItemIds":[]} |
-| 掌控 徽记 | prototype_set13_dominatorcrest | 获得「掌控」转职徽记，招募星熊。<br>choose_transfer: {"itemIds":["prototype_emblem_dominator"],"prototypeTraitId":"dominator","bonusOperatorIds":["chess_char_4_17_a"],"bonusRewards":[]} |
-| 掌控王冠 | prototype_set13_dominatorcrown | 获得「掌控」转职徽记，招募星熊，并获得坚固维式重锤。<br>choose_transfer: {"itemIds":["prototype_emblem_dominator"],"prototypeTraitId":"dominator","bonusOperatorIds":["chess_char_4_17_a"],"bonusRewards":[{"kind":"item","itemId":"armorAxe","sourceApiName":"TFT_Item_FrozenHeart","sourceName":"Protector's Vow"}]} |
-| 围剿 徽记 | prototype_set13_enforcercrest | 获得「围剿」转职徽记，招募瑕光。<br>choose_transfer: {"itemIds":["prototype_emblem_enforcer"],"prototypeTraitId":"enforcer","bonusOperatorIds":["chess_char_3_12_a"],"bonusRewards":[]} |
-| 围剿王冠 | prototype_set13_enforcercrown | 获得「围剿」转职徽记，招募瑕光，并获得铳骑之威。<br>choose_transfer: {"itemIds":["prototype_emblem_enforcer"],"prototypeTraitId":"enforcer","bonusOperatorIds":["chess_char_3_12_a"],"bonusRewards":[{"kind":"item","itemId":"giantSlayer","sourceApiName":"TFT_Item_InfinityEdge","sourceName":"Infinity Edge"}]} |
-| 并肩 徽记 | prototype_set13_familycrest | 获得「并肩」转职徽记，招募休谟斯。<br>choose_transfer: {"itemIds":["prototype_emblem_family"],"prototypeTraitId":"family","bonusOperatorIds":["chess_char_2_09_a"],"bonusRewards":[]} |
-| 并肩王冠 | prototype_set13_familycrown | 获得「并肩」转职徽记，招募折桠、休谟斯，并获得伪装服。<br>choose_transfer: {"itemIds":["prototype_emblem_family"],"prototypeTraitId":"family","bonusOperatorIds":["chess_char_2_17_a","chess_char_2_09_a"],"bonusRewards":[{"kind":"item","itemId":"redemptionCloak","sourceApiName":"TFT_Item_Redemption","sourceName":"Redemption"}]} |
-| 游击 徽记 | prototype_set13_firelightcrest | 获得「游击」转职徽记，招募隐现。<br>choose_transfer: {"itemIds":["prototype_emblem_flight"],"prototypeTraitId":"flight","bonusOperatorIds":["chess_char_1_01_a"],"bonusRewards":[]} |
-| 游击王冠 | prototype_set13_firelightcrown | 获得「游击」转职徽记，招募缄默德克萨斯，并获得坚固维式重锤。<br>choose_transfer: {"itemIds":["prototype_emblem_flight"],"prototypeTraitId":"flight","bonusOperatorIds":["chess_char_4_16_a"],"bonusRewards":[{"kind":"item","itemId":"armorAxe","sourceApiName":"TFT_Item_FrozenHeart","sourceName":"Protector's Vow"}]} |
-| 决斗 徽记 | prototype_set13_pitfightercrest | 获得「决斗」转职徽记，招募灰毫。<br>choose_transfer: {"itemIds":["prototype_emblem_breaker"],"prototypeTraitId":"breaker","bonusOperatorIds":["chess_char_2_18_a"],"bonusRewards":[]} |
-| 决斗王冠 | prototype_set13_pitfightercrown | 获得「决斗」转职徽记，招募风丸，并获得天马之枪。<br>choose_transfer: {"itemIds":["prototype_emblem_breaker"],"prototypeTraitId":"breaker","bonusOperatorIds":["chess_char_2_11_a"],"bonusRewards":[{"kind":"item","itemId":"titanArmor","sourceApiName":"TFT_Item_SteraksGage","sourceName":"Sterak's Gage"}]} |
+| 掌控 徽记 | prototype_set13_dominatorcrest | 获得“掌控徽记”，招募星熊。<br>choose_transfer: {"itemIds":["prototype_emblem_dominator"],"prototypeTraitId":"dominator","bonusOperatorIds":["chess_char_4_17_a"],"bonusRewards":[]} |
+| 掌控王冠 | prototype_set13_dominatorcrown | 获得“掌控徽记”，招募星熊，并获得“坚固维式重锤”。<br>choose_transfer: {"itemIds":["prototype_emblem_dominator"],"prototypeTraitId":"dominator","bonusOperatorIds":["chess_char_4_17_a"],"bonusRewards":[{"kind":"item","itemId":"armorAxe","sourceApiName":"TFT_Item_FrozenHeart","sourceName":"Protector's Vow"}]} |
+| 围剿 徽记 | prototype_set13_enforcercrest | 获得“围剿徽记”，招募瑕光。<br>choose_transfer: {"itemIds":["prototype_emblem_enforcer"],"prototypeTraitId":"enforcer","bonusOperatorIds":["chess_char_3_12_a"],"bonusRewards":[]} |
+| 围剿王冠 | prototype_set13_enforcercrown | 获得“围剿徽记”，招募瑕光，并获得“铳骑之威”。<br>choose_transfer: {"itemIds":["prototype_emblem_enforcer"],"prototypeTraitId":"enforcer","bonusOperatorIds":["chess_char_3_12_a"],"bonusRewards":[{"kind":"item","itemId":"giantSlayer","sourceApiName":"TFT_Item_InfinityEdge","sourceName":"Infinity Edge"}]} |
+| 并肩 徽记 | prototype_set13_familycrest | 获得“并肩徽记”，招募休谟斯。<br>choose_transfer: {"itemIds":["prototype_emblem_family"],"prototypeTraitId":"family","bonusOperatorIds":["chess_char_2_09_a"],"bonusRewards":[]} |
+| 并肩王冠 | prototype_set13_familycrown | 获得“并肩徽记”，招募折桠、休谟斯，并获得“伪装服”。<br>choose_transfer: {"itemIds":["prototype_emblem_family"],"prototypeTraitId":"family","bonusOperatorIds":["chess_char_2_17_a","chess_char_2_09_a"],"bonusRewards":[{"kind":"item","itemId":"redemptionCloak","sourceApiName":"TFT_Item_Redemption","sourceName":"Redemption"}]} |
+| 游击 徽记 | prototype_set13_firelightcrest | 获得“游击徽记”，招募隐现。<br>choose_transfer: {"itemIds":["prototype_emblem_flight"],"prototypeTraitId":"flight","bonusOperatorIds":["chess_char_1_01_a"],"bonusRewards":[]} |
+| 游击王冠 | prototype_set13_firelightcrown | 获得“游击徽记”，招募缄默德克萨斯，并获得“坚固维式重锤”。<br>choose_transfer: {"itemIds":["prototype_emblem_flight"],"prototypeTraitId":"flight","bonusOperatorIds":["chess_char_4_16_a"],"bonusRewards":[{"kind":"item","itemId":"armorAxe","sourceApiName":"TFT_Item_FrozenHeart","sourceName":"Protector's Vow"}]} |
+| 决斗 徽记 | prototype_set13_pitfightercrest | 获得“决斗徽记”，招募灰毫。<br>choose_transfer: {"itemIds":["prototype_emblem_breaker"],"prototypeTraitId":"breaker","bonusOperatorIds":["chess_char_2_18_a"],"bonusRewards":[]} |
+| 决斗王冠 | prototype_set13_pitfightercrown | 获得“决斗徽记”，招募风丸，并获得“天马之枪”。<br>choose_transfer: {"itemIds":["prototype_emblem_breaker"],"prototypeTraitId":"breaker","bonusOperatorIds":["chess_char_2_11_a"],"bonusRewards":[{"kind":"item","itemId":"titanArmor","sourceApiName":"TFT_Item_SteraksGage","sourceName":"Sterak's Gage"}]} |
 | 迅击爆发 | prototype_set13_quickstriker | 战斗开始并每6秒，迅击干员攻速提高85%，持续2.5秒。<br>prototype_battle_augment: {"traitId":"combo","mechanic":"quickstriker_burst","variables":{"AttackSpeed":0.8500000238418579,"BuffDuration":2.5,"TimeBetweenProcs":6},"sourceApiName":"TFT13_Augment_Quickstriker","grantedHeroIds":["chess_char_1_08_a","chess_native_char_155_tiger_a"],"grantedItemIds":[]} |
-| 迅击 徽记 | prototype_set13_quickstrikercrest | 获得「迅击」转职徽记，招募德克萨斯。<br>choose_transfer: {"itemIds":["prototype_emblem_combo"],"prototypeTraitId":"combo","bonusOperatorIds":["chess_char_1_08_a"],"bonusRewards":[]} |
-| 迅击王冠 | prototype_set13_quickstrikercrown | 获得「迅击」转职徽记，招募因陀罗，并获得有限加速器。<br>choose_transfer: {"itemIds":["prototype_emblem_combo"],"prototypeTraitId":"combo","bonusOperatorIds":["chess_native_char_155_tiger_a"],"bonusRewards":[{"kind":"item","itemId":"thunderRing","sourceApiName":"TFT_Item_GuinsoosRageblade","sourceName":"Guinsoo's Rageblade"}]} |
-| 逆潮 徽记 | prototype_set13_rebelcrest | 获得「逆潮」转职徽记，招募德克萨斯。<br>choose_transfer: {"itemIds":["prototype_emblem_resistance"],"prototypeTraitId":"resistance","bonusOperatorIds":["chess_char_1_08_a"],"bonusRewards":[]} |
-| 逆潮王冠 | prototype_set13_rebelcrown | 获得「逆潮」转职徽记，招募德克萨斯，并获得炎国短刀。<br>choose_transfer: {"itemIds":["prototype_emblem_resistance"],"prototypeTraitId":"resistance","bonusOperatorIds":["chess_char_1_08_a"],"bonusRewards":[{"kind":"item","itemId":"spellblade","sourceApiName":"TFT_Item_JeweledGauntlet","sourceName":"Jeweled Gauntlet"}]} |
-| 战地整备 徽记 | prototype_set13_scrapcrest | 获得「战地整备」转职徽记，招募惊蛰。<br>choose_transfer: {"itemIds":["prototype_emblem_rhodes"],"prototypeTraitId":"rhodes","bonusOperatorIds":["chess_char_1_03_a"],"bonusRewards":[]} |
-| 战地整备王冠 | prototype_set13_scrapcrown | 获得「战地整备」转职徽记，招募惊蛰，并获得2件随机组件。<br>choose_transfer: {"itemIds":["prototype_emblem_rhodes"],"prototypeTraitId":"rhodes","bonusOperatorIds":["chess_char_1_03_a"],"bonusRewards":[{"kind":"random-components","count":2}]} |
+| 迅击 徽记 | prototype_set13_quickstrikercrest | 获得“迅击徽记”，招募德克萨斯。<br>choose_transfer: {"itemIds":["prototype_emblem_combo"],"prototypeTraitId":"combo","bonusOperatorIds":["chess_char_1_08_a"],"bonusRewards":[]} |
+| 迅击王冠 | prototype_set13_quickstrikercrown | 获得“迅击徽记”，招募因陀罗，并获得“有限加速器”。<br>choose_transfer: {"itemIds":["prototype_emblem_combo"],"prototypeTraitId":"combo","bonusOperatorIds":["chess_native_char_155_tiger_a"],"bonusRewards":[{"kind":"item","itemId":"thunderRing","sourceApiName":"TFT_Item_GuinsoosRageblade","sourceName":"Guinsoo's Rageblade"}]} |
+| 逆潮 徽记 | prototype_set13_rebelcrest | 获得“逆潮徽记”，招募德克萨斯。<br>choose_transfer: {"itemIds":["prototype_emblem_resistance"],"prototypeTraitId":"resistance","bonusOperatorIds":["chess_char_1_08_a"],"bonusRewards":[]} |
+| 逆潮王冠 | prototype_set13_rebelcrown | 获得“逆潮徽记”，招募德克萨斯，并获得“炎国短刀”。<br>choose_transfer: {"itemIds":["prototype_emblem_resistance"],"prototypeTraitId":"resistance","bonusOperatorIds":["chess_char_1_08_a"],"bonusRewards":[{"kind":"item","itemId":"spellblade","sourceApiName":"TFT_Item_JeweledGauntlet","sourceName":"Jeweled Gauntlet"}]} |
+| 战地整备 徽记 | prototype_set13_scrapcrest | 获得“战地整备徽记”，招募惊蛰。<br>choose_transfer: {"itemIds":["prototype_emblem_rhodes"],"prototypeTraitId":"rhodes","bonusOperatorIds":["chess_char_1_03_a"],"bonusRewards":[]} |
+| 战地整备王冠 | prototype_set13_scrapcrown | 获得“战地整备徽记”，招募惊蛰，并获得2件随机组件。<br>choose_transfer: {"itemIds":["prototype_emblem_rhodes"],"prototypeTraitId":"rhodes","bonusOperatorIds":["chess_char_1_03_a"],"bonusRewards":[{"kind":"random-components","count":2}]} |
 | 坚阵盾击 | prototype_set13_sentinel | 坚阵干员双抗提高5%；每4秒下一次攻击额外造成总双抗75%的法术伤害。<br>prototype_battle_augment: {"traitId":"sentinel","mechanic":"sentinel_shield_bash","variables":{"Interval":4,"PercGain":0.05000000074505806,"ResistToDamageRatio":0.75},"sourceApiName":"TFT13_Augment_Sentinel","grantedHeroIds":["chess_char_3_12_a"],"grantedItemIds":[]} |
-| 坚阵 徽记 | prototype_set13_sentinelcrest | 获得「坚阵」转职徽记，招募雷蛇。<br>choose_transfer: {"itemIds":["prototype_emblem_sentinel"],"prototypeTraitId":"sentinel","bonusOperatorIds":["chess_char_1_20_a"],"bonusRewards":[]} |
-| 坚阵王冠 | prototype_set13_sentinelcrown | 获得「坚阵」转职徽记，招募瑕光，并获得护盾无人机。<br>choose_transfer: {"itemIds":["prototype_emblem_sentinel"],"prototypeTraitId":"sentinel","bonusOperatorIds":["chess_char_3_12_a"],"bonusRewards":[{"kind":"item","itemId":"vitalEngine","sourceApiName":"TFT_Item_Crownguard","sourceName":"Crownguard"}]} |
-| 狙击 徽记 | prototype_set13_snipercrest | 获得「狙击」转职徽记，招募隐现。<br>choose_transfer: {"itemIds":["prototype_emblem_ammo"],"prototypeTraitId":"ammo","bonusOperatorIds":["chess_char_1_01_a"],"bonusRewards":[]} |
-| 狙击王冠 | prototype_set13_snipercrown | 获得「狙击」转职徽记，招募隐现，并获得铳骑之威。<br>choose_transfer: {"itemIds":["prototype_emblem_ammo"],"prototypeTraitId":"ammo","bonusOperatorIds":["chess_char_1_01_a"],"bonusRewards":[{"kind":"item","itemId":"giantSlayer","sourceApiName":"TFT_Item_InfinityEdge","sourceName":"Infinity Edge"}]} |
+| 坚阵 徽记 | prototype_set13_sentinelcrest | 获得“坚阵徽记”，招募雷蛇。<br>choose_transfer: {"itemIds":["prototype_emblem_sentinel"],"prototypeTraitId":"sentinel","bonusOperatorIds":["chess_char_1_20_a"],"bonusRewards":[]} |
+| 坚阵王冠 | prototype_set13_sentinelcrown | 获得“坚阵徽记”，招募瑕光，并获得“护盾无人机”。<br>choose_transfer: {"itemIds":["prototype_emblem_sentinel"],"prototypeTraitId":"sentinel","bonusOperatorIds":["chess_char_3_12_a"],"bonusRewards":[{"kind":"item","itemId":"vitalEngine","sourceApiName":"TFT_Item_Crownguard","sourceName":"Crownguard"}]} |
+| 狙击 徽记 | prototype_set13_snipercrest | 获得“狙击徽记”，招募隐现。<br>choose_transfer: {"itemIds":["prototype_emblem_ammo"],"prototypeTraitId":"ammo","bonusOperatorIds":["chess_char_1_01_a"],"bonusRewards":[]} |
+| 狙击王冠 | prototype_set13_snipercrown | 获得“狙击徽记”，招募隐现，并获得“铳骑之威”。<br>choose_transfer: {"itemIds":["prototype_emblem_ammo"],"prototypeTraitId":"ammo","bonusOperatorIds":["chess_char_1_01_a"],"bonusRewards":[{"kind":"item","itemId":"giantSlayer","sourceApiName":"TFT_Item_InfinityEdge","sourceName":"Infinity Edge"}]} |
 | 术式还击 | prototype_set13_sorcerer | 术式干员倒下时，对相邻单位造成相当于其法术强度3倍的法术伤害。<br>prototype_battle_augment: {"traitId":"arts","mechanic":"sorcerer_death_burst","variables":{"DeathPercentage":3},"sourceApiName":"TFT13_Augment_Sorcerer","grantedHeroIds":["chess_char_1_06_a"],"grantedItemIds":[]} |
-| 术式 徽记 | prototype_set13_sorcerercrest | 获得「术式」转职徽记，招募刺玫。<br>choose_transfer: {"itemIds":["prototype_emblem_arts"],"prototypeTraitId":"arts","bonusOperatorIds":["chess_char_1_06_a"],"bonusRewards":[]} |
-| 术式王冠 | prototype_set13_sorcerercrown | 获得「术式」转职徽记，招募刺玫，并获得激光发射器。<br>choose_transfer: {"itemIds":["prototype_emblem_arts"],"prototypeTraitId":"arts","bonusOperatorIds":["chess_char_1_06_a"],"bonusRewards":[{"kind":"item","itemId":"quietCape","sourceApiName":"TFT_Item_AdaptiveHelm","sourceName":"Adaptive Helm"}]} |
-| 技力协同 徽记 | prototype_set13_visionarycrest | 获得「技力协同」转职徽记，招募赫默。<br>choose_transfer: {"itemIds":["prototype_emblem_logistics"],"prototypeTraitId":"logistics","bonusOperatorIds":["chess_char_2_02_a"],"bonusRewards":[]} |
-| 技力协同王冠 | prototype_set13_visionarycrown | 获得「技力协同」转职徽记，招募赫默，并获得精准狙击镜。<br>choose_transfer: {"itemIds":["prototype_emblem_logistics"],"prototypeTraitId":"logistics","bonusOperatorIds":["chess_char_2_02_a"],"bonusRewards":[{"kind":"item","itemId":"quickCharger","sourceApiName":"TFT_Item_SpearOfShojin","sourceName":"Spear of Shojin"}]} |
+| 术式 徽记 | prototype_set13_sorcerercrest | 获得“术式徽记”，招募刺玫。<br>choose_transfer: {"itemIds":["prototype_emblem_arts"],"prototypeTraitId":"arts","bonusOperatorIds":["chess_char_1_06_a"],"bonusRewards":[]} |
+| 术式王冠 | prototype_set13_sorcerercrown | 获得“术式徽记”，招募刺玫，并获得“激光发射器”。<br>choose_transfer: {"itemIds":["prototype_emblem_arts"],"prototypeTraitId":"arts","bonusOperatorIds":["chess_char_1_06_a"],"bonusRewards":[{"kind":"item","itemId":"quietCape","sourceApiName":"TFT_Item_AdaptiveHelm","sourceName":"Adaptive Helm"}]} |
+| 技力协同 徽记 | prototype_set13_visionarycrest | 获得“技力协同徽记”，招募赫默。<br>choose_transfer: {"itemIds":["prototype_emblem_logistics"],"prototypeTraitId":"logistics","bonusOperatorIds":["chess_char_2_02_a"],"bonusRewards":[]} |
+| 技力协同王冠 | prototype_set13_visionarycrown | 获得“技力协同徽记”，招募赫默，并获得“精准狙击镜”。<br>choose_transfer: {"itemIds":["prototype_emblem_logistics"],"prototypeTraitId":"logistics","bonusOperatorIds":["chess_char_2_02_a"],"bonusRewards":[{"kind":"item","itemId":"quickCharger","sourceApiName":"TFT_Item_SpearOfShojin","sourceName":"Spear of Shojin"}]} |
 | 守望战痕 | prototype_set13_watcher | 守望干员每受到一次普通攻击，攻击力提高2%；每受到一次技能命中，法术强度提高4点。<br>prototype_battle_augment: {"traitId":"watcher","mechanic":"watcher_battle_scars","variables":{"IncreaseADByTakeAttack":2,"IncreaseAPByTakeSpell":4},"sourceApiName":"TFT13_Augment_Watcher","grantedHeroIds":["chess_char_2_17_a"],"grantedItemIds":[]} |
-| 守望 徽记 | prototype_set13_watchercrest | 获得「守望」转职徽记，招募折桠。<br>choose_transfer: {"itemIds":["prototype_emblem_watcher"],"prototypeTraitId":"watcher","bonusOperatorIds":["chess_char_2_17_a"],"bonusRewards":[]} |
-| 守望王冠 | prototype_set13_watchercrown | 获得「守望」转职徽记，招募缄默德克萨斯，并获得天马之盔。<br>choose_transfer: {"itemIds":["prototype_emblem_watcher"],"prototypeTraitId":"watcher","bonusOperatorIds":["chess_char_4_16_a"],"bonusRewards":[{"kind":"item","itemId":"guardianPlate","sourceApiName":"TFT_Item_NightHarvester","sourceName":"Steadfast Heart"}]} |
+| 守望 徽记 | prototype_set13_watchercrest | 获得“守望徽记”，招募折桠。<br>choose_transfer: {"itemIds":["prototype_emblem_watcher"],"prototypeTraitId":"watcher","bonusOperatorIds":["chess_char_2_17_a"],"bonusRewards":[]} |
+| 守望王冠 | prototype_set13_watchercrown | 获得“守望徽记”，招募缄默德克萨斯，并获得“天马之盔”。<br>choose_transfer: {"itemIds":["prototype_emblem_watcher"],"prototypeTraitId":"watcher","bonusOperatorIds":["chess_char_4_16_a"],"bonusRewards":[{"kind":"item","itemId":"guardianPlate","sourceApiName":"TFT_Item_NightHarvester","sourceName":"Steadfast Heart"}]} |
 | 长线经营 | prototype_source_goinglong | 立即获得15金币；每场战斗结束后获得4点经验，且不再获得利息。<br>prototype_going_long: {"gold":15,"roundXp":4,"sourceApiName":"TFT10_Augment_GoingLong"} |
 | 纪元 | prototype_source_epoch | 立即获得6点经验和2次免费刷新；每进入新阶段再获得相同奖励。<br>prototype_epoch: {"xp":6,"rerolls":2,"stageNodes":4,"sourceApiName":"TFT11_Augment_Epoch"} |
 | 纪元+ | prototype_source_epochplus | 立即获得8点经验和3次免费刷新；每进入新阶段再获得相同奖励。<br>prototype_epoch: {"xp":8,"rerolls":3,"stageNodes":4,"sourceApiName":"TFT11_Augment_EpochPlus"} |
 | 金币雨 | prototype_source_raininggold | 立即获得8金币；每场战斗结束后再获得1金币。<br>prototype_round_gold: {"instantGold":8,"roundGold":1,"sourceApiName":"TFT11_Augment_RainingGold"} |
 | 金币雨+ | prototype_source_raininggoldplus | 立即获得18金币；每场战斗结束后再获得1金币。<br>prototype_round_gold: {"instantGold":18,"roundGold":1,"sourceApiName":"TFT11_Augment_RainingGoldPlus"} |
-| 重装成长 | prototype_source_pitfighter | 重装盟约干员每次战败永久获得1.5%攻击力；每次胜利永久获得45点生命，并招募「灰毫」。<br>prototype_win_loss_growth: {"traitId":"bruiser","attackPctPerLoss":1.4999999664723873,"hpPerWin":45,"bonusOperatorIds":["chess_char_2_18_a"],"sourceApiName":"TFT13_Augment_PitFighter"} |
-| 清心 | prototype_source_clearmind | 若战斗结束时备战席为空，获得3点经验。<br>prototype_clear_mind: {"xp":3,"sourceApiName":"TFT6_Augment_ClearMind"} |
+| 重装成长 | prototype_source_pitfighter | 招募灰毫；之后每场战斗结束，上阵的【重装】干员永久成长：失败时攻击力+1.5%，胜利时生命上限+45。<br>prototype_win_loss_growth: {"traitId":"bruiser","attackPctPerLoss":1.4999999664723873,"hpPerWin":45,"bonusOperatorIds":["chess_char_2_18_a"],"sourceApiName":"TFT13_Augment_PitFighter"} |
+| 清心 | prototype_source_clearmind | 若战斗结束时备战区为空，获得3点经验。<br>prototype_clear_mind: {"xp":3,"sourceApiName":"TFT6_Augment_ClearMind"} |
 | 等级提升 | prototype_source_maxlevel10 | 立即获得12点经验；每次购买经验时额外获得2点。<br>prototype_level_up: {"initialXp":12,"bonusXpPerPurchase":2,"sourceApiName":"TFT6_Augment_MaxLevel10"} |
 | 商贸枢纽 | prototype_source_tradesector | 获得1金币；每个节点可免费刷新一次商店。<br>trade_sector: {"gold":1,"sourceApiName":"TFT6_Augment_TradeSector"} |
 | 高端商圈 | prototype_source_highendsector | 立即获得4金币；每次升级时按新等级获得免费刷新次数。<br>prototype_high_end_sector: {"gold":4,"sourceApiName":"TFT9_Augment_HighEndSector"} |

@@ -111,7 +111,7 @@ export function applyPrototypePacts(catalog) {
     const parts=sourceParts.length===2?sourceParts.map((part)=>componentMap[part]??null):[];
     const craftable=parts.length===2&&parts.every(Boolean);
     const plainDescription=candidate.description.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
-    const item={id,name:season.powerModel==='native-pve'?`${pacts[candidate.traitId]?.name}徽记`:candidate.name,description:`佩戴者获得「${pacts[candidate.traitId]?.name}」盟约身份。`,kind:'emblem',unique:true,grantAllowed:true,prototype:true,source:{game:'Teamfight Tactics',version:'Set 13 patch 14.23',apiName:candidate.apiName,icon:candidate.icon,sourceComposition:candidate.composition,recipeEvidence:candidate.recipeEvidence,sourceEffects:candidate.effects},effects:[{kind:'transfer_pact',params:{pactId:candidate.traitId}}]};
+    const item={id,name:season.powerModel==='native-pve'?`${pacts[candidate.traitId]?.name}徽记`:candidate.name,description:`佩戴者获得【${pacts[candidate.traitId]?.name}】盟约身份。`,kind:'emblem',unique:true,grantAllowed:true,prototype:true,source:{game:'Teamfight Tactics',version:'Set 13 patch 14.23',apiName:candidate.apiName,icon:candidate.icon,sourceComposition:candidate.composition,recipeEvidence:candidate.recipeEvidence,sourceEffects:candidate.effects},effects:[{kind:'transfer_pact',params:{pactId:candidate.traitId}}]};
     if(craftable){item.parts=parts;item.baseEffects=parts.flatMap((part)=>equipment[part]?.effects??[]);recipes.push({parts:[...parts].sort(),resultId:id,source:{apiName:candidate.apiName,recipeEvidence:'source composition mapped onto available Resonance components'}});}
     else item.grantOnly=true;
     equipment[id]=item;emblemItems.push(id);
