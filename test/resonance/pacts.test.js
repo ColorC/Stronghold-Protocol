@@ -174,7 +174,7 @@ test('transfer gear is applied before unique-member tier resolution and control 
   const before=units[1].base.atk;
   battle.start();
   assert.equal(units[1].base.atk,before,'equipment leaves source base stats intact');
-  assert.equal(units[1].s.atk,before+15,'component attack applies in Battle effective stats');
+  assert.ok(Math.abs(units[1].s.atk-before*1.15)<1e-9,'the 维式重锤 component applies 攻击力+15% in Battle effective stats');
   const enemyKey=Object.keys(data.enemies)[0];
   const enemy=battle.spawnEnemy(enemyKey,{pos:[9,10]});assert.ok(enemy);
   const hp=enemy.hp;

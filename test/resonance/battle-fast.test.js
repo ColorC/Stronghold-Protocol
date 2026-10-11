@@ -201,7 +201,7 @@ test('same native operator at 1★ and 3★ keeps isolated star records and owne
     assert.equal(owner.base.atk, starRecord.stats.atk);
     assert.equal(owner.base.def, starRecord.stats.def);
     assert.equal(owner.s.maxHp, starRecord.stats.maxHp + (index === 0 ? 7 : 0));
-    assert.equal(owner.s.atk, starRecord.stats.atk + (index === 0 ? 15 : 0));
+    assert.ok(Math.abs(owner.s.atk - starRecord.stats.atk * (index === 0 ? 1.15 : 1)) < 1e-9, '维式重锤 gives 攻击力+15%');
     assert.deepEqual(owner.def.skill.bb, starRecord.skill.bb);
   }
   const ownerInput = battle.players[0].input.units.find((unit) => unit.uid === 'hemer-owner-1');
@@ -223,7 +223,7 @@ test('same native operator at 1★ and 3★ keeps isolated star records and owne
   battle.start();
   assert.ok(tokens.every((token) => token.alive), 'the original native tokens deploy onto the battle field');
   assert.ok(tokens.every((token) => owners.includes(token.ownerUnit)));
-  assert.equal(owners[0].s.atk, operator.stars[1].record.stats.atk + 15, 'the real battle stat receives the equipped blade component');
+  assert.ok(Math.abs(owners[0].s.atk - operator.stars[1].record.stats.atk * 1.15) < 1e-9, 'the real battle stat receives the equipped 维式重锤 攻击力+15%');
   assert.ok(owners[0].mem.resonancePacts?.has('aegir'), 'the real battle installs the equipped pact transfer');
   assert.equal(battle.errorCount, 0);
 });
