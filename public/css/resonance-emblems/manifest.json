@@ -1,0 +1,318 @@
+{
+ "version": 1,
+ "size": 256,
+ "format": "webp",
+ "note": "Generated emblem item art, one per pact. Raw 1024px outputs stay outside Git.",
+ "emblems": {
+  "academy": {
+   "itemId": "prototype_emblem_academy",
+   "itemName": "拉特兰徽记",
+   "pactName": "拉特兰",
+   "file": "academy.webp",
+   "bytes": 24606,
+   "sourcePactIcon": "/assets/ui/campLogo/logo_laterano.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:38:01.175Z",
+   "palette": {
+    "enamel": "pearl white",
+    "rim": "gold"
+   }
+  },
+  "redeploy": {
+   "itemId": "prototype_emblem_redeploy",
+   "itemName": "突袭徽记",
+   "pactName": "突袭",
+   "file": "redeploy.webp",
+   "bytes": 20252,
+   "sourcePactIcon": "/assets/bond/raidShip.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:38:01.052Z",
+   "palette": {
+    "enamel": "bright orange",
+    "rim": "silver"
+   }
+  },
+  "creation": {
+   "itemId": "prototype_emblem_creation",
+   "itemName": "谢拉格徽记",
+   "pactName": "谢拉格",
+   "file": "creation.webp",
+   "bytes": 22260,
+   "sourcePactIcon": "/assets/ui/campLogo/logo_kjerag.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:39:00.607Z",
+   "palette": {
+    "enamel": "pale ice-blue",
+    "rim": "silver"
+   }
+  },
+  "bruiser": {
+   "itemId": "prototype_emblem_bruiser",
+   "itemName": "重装徽记",
+   "pactName": "重装",
+   "file": "bruiser.webp",
+   "bytes": 21522,
+   "sourcePactIcon": "/assets/bond/indomShip.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:39:21.525Z",
+   "palette": {
+    "enamel": "gunmetal grey",
+    "rim": "bronze"
+   }
+  },
+  "sui": {
+   "itemId": "prototype_emblem_sui",
+   "itemName": "炎徽记",
+   "pactName": "炎",
+   "file": "sui.webp",
+   "bytes": 24936,
+   "sourcePactIcon": "/assets/ui/campLogo/logo_yan.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:39:00.776Z",
+   "palette": {
+    "enamel": "crimson red",
+    "rim": "gold"
+   }
+  },
+  "combo": {
+   "itemId": "prototype_emblem_combo",
+   "itemName": "迅击徽记",
+   "pactName": "迅击",
+   "file": "combo.webp",
+   "bytes": 21314,
+   "sourcePactIcon": "/assets/bond/swiftShip.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:39:44.072Z",
+   "palette": {
+    "enamel": "bright lemon yellow",
+    "rim": "steel"
+   }
+  },
+  "risk": {
+   "itemId": "prototype_emblem_risk",
+   "itemName": "叙拉古徽记",
+   "pactName": "叙拉古",
+   "file": "risk.webp",
+   "bytes": 26550,
+   "sourcePactIcon": "/assets/ui/campLogo/logo_siracusa.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:40:05.475Z",
+   "palette": {
+    "enamel": "jet black",
+    "rim": "gold"
+   }
+  },
+  "artillery": {
+   "itemId": "prototype_emblem_artillery",
+   "itemName": "连轰徽记",
+   "pactName": "连轰",
+   "file": "artillery.webp",
+   "bytes": 22790,
+   "sourcePactIcon": "/assets/bond/preciShip.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:40:05.111Z",
+   "palette": {
+    "enamel": "olive military green",
+    "rim": "brass"
+   }
+  },
+  "experiment": {
+   "itemId": "prototype_emblem_experiment",
+   "itemName": "萨尔贡徽记",
+   "pactName": "萨尔贡",
+   "file": "experiment.webp",
+   "bytes": 21676,
+   "sourcePactIcon": "/assets/ui/campLogo/logo_sargon.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:40:48.645Z",
+   "palette": {
+    "enamel": "turquoise",
+    "rim": "gold"
+   }
+  },
+  "family": {
+   "itemId": "prototype_emblem_family",
+   "itemName": "同袍徽记",
+   "pactName": "同袍",
+   "file": "family.webp",
+   "bytes": 20802,
+   "sourcePactIcon": "/assets/bond/maniShip.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:40:49.048Z",
+   "palette": {
+    "enamel": "rose pink",
+    "rim": "silver"
+   }
+  },
+  "flight": {
+   "itemId": "prototype_emblem_flight",
+   "itemName": "深海猎人徽记",
+   "pactName": "深海猎人",
+   "file": "flight.webp",
+   "bytes": 21470,
+   "sourcePactIcon": "/assets/ui/campLogo/logo_abyssal.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:40:49.573Z",
+   "palette": {
+    "enamel": "deep sea teal",
+    "rim": "silver"
+   }
+  },
+  "dominator": {
+   "itemId": "prototype_emblem_dominator",
+   "itemName": "掌控徽记",
+   "pactName": "掌控",
+   "file": "dominator.webp",
+   "bytes": 22672,
+   "sourcePactIcon": "/assets/bond/arcaneShip.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:41:32.748Z",
+   "palette": {
+    "enamel": "royal purple",
+    "rim": "gold"
+   }
+  },
+  "logistics": {
+   "itemId": "prototype_emblem_logistics",
+   "itemName": "技力协同徽记",
+   "pactName": "技力协同",
+   "file": "logistics.webp",
+   "bytes": 20916,
+   "sourcePactIcon": "/assets/bond/investShip.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:41:53.646Z",
+   "palette": {
+    "enamel": "lime green",
+    "rim": "steel"
+   }
+  },
+  "breaker": {
+   "itemId": "prototype_emblem_breaker",
+   "itemName": "决斗徽记",
+   "pactName": "决斗",
+   "file": "breaker.webp",
+   "bytes": 18658,
+   "sourcePactIcon": "/assets/bond/raidShip.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:41:32.178Z",
+   "palette": {
+    "enamel": "royal blue",
+    "rim": "silver"
+   }
+  },
+  "resistance": {
+   "itemId": "prototype_emblem_resistance",
+   "itemName": "维多利亚徽记",
+   "pactName": "维多利亚",
+   "file": "resistance.webp",
+   "bytes": 25728,
+   "sourcePactIcon": "/assets/ui/campLogo/logo_victoria.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:42:36.426Z",
+   "palette": {
+    "enamel": "emerald green",
+    "rim": "gold"
+   }
+  },
+  "rhodes": {
+   "itemId": "prototype_emblem_rhodes",
+   "itemName": "哥伦比亚徽记",
+   "pactName": "哥伦比亚",
+   "file": "rhodes.webp",
+   "bytes": 24210,
+   "sourcePactIcon": "/assets/ui/campLogo/logo_columbia.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:42:16.076Z",
+   "palette": {
+    "enamel": "sky blue",
+    "rim": "silver"
+   }
+  },
+  "ammo": {
+   "itemId": "prototype_emblem_ammo",
+   "itemName": "狙击徽记",
+   "pactName": "狙击",
+   "file": "ammo.webp",
+   "bytes": 21310,
+   "sourcePactIcon": "/assets/bond/preciShip.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:45:41.029Z",
+   "palette": {
+    "enamel": "soft lavender lilac",
+    "rim": "silver"
+   }
+  },
+  "arts": {
+   "itemId": "prototype_emblem_arts",
+   "itemName": "术式徽记",
+   "pactName": "术式",
+   "file": "arts.webp",
+   "bytes": 22878,
+   "sourcePactIcon": "/assets/bond/arcaneShip.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:43:19.362Z",
+   "palette": {
+    "enamel": "electric cyan",
+    "rim": "silver"
+   }
+  },
+  "enforcer": {
+   "itemId": "prototype_emblem_enforcer",
+   "itemName": "罗德岛徽记",
+   "pactName": "罗德岛",
+   "file": "enforcer.webp",
+   "bytes": 17552,
+   "sourcePactIcon": "/assets/ui/campLogo/logo_rhodes.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:43:20.053Z",
+   "palette": {
+    "enamel": "charcoal black and white",
+    "rim": "silver"
+   }
+  },
+  "sentinel": {
+   "itemId": "prototype_emblem_sentinel",
+   "itemName": "坚阵徽记",
+   "pactName": "坚阵",
+   "file": "sentinel.webp",
+   "bytes": 20204,
+   "sourcePactIcon": "/assets/bond/steadShip.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:43:19.900Z",
+   "palette": {
+    "enamel": "terracotta brown",
+    "rim": "bronze"
+   }
+  },
+  "conqueror": {
+   "itemId": "prototype_emblem_conqueror",
+   "itemName": "卡西米尔徽记",
+   "pactName": "卡西米尔",
+   "file": "conqueror.webp",
+   "bytes": 19956,
+   "sourcePactIcon": "/assets/ui/campLogo/logo_kazimierz.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:44:02.947Z",
+   "palette": {
+    "enamel": "magenta",
+    "rim": "silver"
+   }
+  },
+  "watcher": {
+   "itemId": "prototype_emblem_watcher",
+   "itemName": "守望徽记",
+   "pactName": "守望",
+   "file": "watcher.webp",
+   "bytes": 23266,
+   "sourcePactIcon": "/assets/bond/visiShip.png",
+   "model": "gpt-image-2.5-sunburst",
+   "generatedAt": "2026-10-11T16:44:24.581Z",
+   "palette": {
+    "enamel": "midnight indigo",
+    "rim": "gold"
+   }
+  }
+ },
+ "generatedFor": "resonance-factions-2",
+ "finalizedAt": "2026-10-11T16:46:39+00:00"
+}

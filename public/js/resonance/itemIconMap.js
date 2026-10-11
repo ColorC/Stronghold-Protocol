@@ -29,6 +29,15 @@ export const SOURCE_GEAR_ICON_IDS = Object.freeze({
 
 export const NATIVE_ICON_BY_EQUIPMENT_ID = Object.freeze({ ...RESONANCE_ITEM_ICON_IDS, ...SOURCE_GEAR_ICON_IDS });
 
+// Emblems carry their own item art: one badge per pact, drawn from that pact's icon (public/css/resonance-emblems,
+// provenance in its manifest.json). It sits under /css/ because the Workshop gateway forwards only the game's fixed
+// static prefixes to the resonance service. A pact without a badge here keeps its pact icon.
+export const EMBLEM_ICON_DIR = '/css/resonance-emblems';
+export const EMBLEM_ICON_PACT_IDS = Object.freeze([
+  'academy', 'ammo', 'artillery', 'arts', 'breaker', 'bruiser', 'combo', 'conqueror', 'creation', 'dominator', 'enforcer',
+  'experiment', 'family', 'flight', 'logistics', 'redeploy', 'resistance', 'rhodes', 'risk', 'sentinel', 'sui', 'watcher',
+]);
+
 function nativeRecord(nativeId, itemRecords) {
   if (!nativeId) return null;
   const found = itemRecords.find(item => item.id === nativeId) || itemRecords.find(item => item.trapId === nativeId || item.iconId === nativeId);
@@ -36,11 +45,21 @@ function nativeRecord(nativeId, itemRecords) {
   return { id: nativeId, trapId: nativeId, iconId: nativeId };
 }
 
+// The player catalog (server/modes/resonance/display.js) carries no effects; there an emblem's pact is the one its id
+// names (prototype_emblem_<pactId>, server/sim/content/resonance/prototype-pacts.js).
+const EMBLEM_ID = /^prototype_emblem_(.+)$/;
+
 export function resonanceItemPactId(catalog, id) {
   const record = catalog?.equipment?.[id];
   const transfer = record?.effects?.find(effect => ['pact_transfer', 'transfer_pact'].includes(effect?.kind));
-  const pactId = transfer?.params?.pactId;
+  const pactId = transfer?.params?.pactId ?? (record?.kind === 'emblem' ? EMBLEM_ID.exec(id)?.[1] : null);
   return typeof pactId === 'string' && pactId ? pactId : null;
+}
+
+export function resonanceEmblemIconUrl(catalog, id) {
+  if (catalog?.equipment?.[id]?.kind !== 'emblem') return null;
+  const pactId = resonanceItemPactId(catalog, id);
+  return pactId && EMBLEM_ICON_PACT_IDS.includes(pactId) ? `${EMBLEM_ICON_DIR}/${pactId}.webp` : null;
 }
 
 export function resonanceNativeItem(catalog, id, itemRecords = []) {
