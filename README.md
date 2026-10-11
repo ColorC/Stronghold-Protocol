@@ -12,7 +12,7 @@
 > - 本项目是玩家自制的**非官方同人作品**，与上海鹰角网络科技有限公司（Hypergryph）、Yostar 及其关联方**没有任何关系**，未获其授权或认可。
 > - 《明日方舟》及「卫戍协议」相关的名称、角色、美术、音乐、音效、文本与数据等素材，版权归原权利人所有。这些素材**不适用**本项目的 GPL-3.0 许可证；GPL 只覆盖本项目自己编写的代码。
 > - 仅供学习交流与个人非商业使用。**严禁任何形式的盈利**，包括但不限于：售卖本项目或整合包、付费下载或付费分发、收费服务器或收费代开、广告 / 打赏 / 会员等变现方式，以及其他任何商业用途。
-> - 仓库源码不包含游戏的美术与音频素材（只有由官方数据表生成的数据和几张游戏截图，同样不适用 GPL）；[Releases](../../releases/latest) 中的整合包为了方便玩家附带了素材，下载即视为同意本声明。请勿将素材用于本项目以外的用途或单独再分发。完整条款见 [NOTICE.md](NOTICE.md)。
+> - 仓库源码不包含游戏的美术与音频素材（只有由官方数据表生成的数据和几张游戏截图，同样不适用 GPL）；[Releases](https://github.com/ColorC/Stronghold-Protocol/releases/tag/workshop-v0.3.0-workshop.1) 中的整合包为了方便玩家附带了素材，下载即视为同意本声明。请勿将素材用于本项目以外的用途或单独再分发。完整条款见 [NOTICE.md](NOTICE.md)。
 > - 权利人如认为本项目侵犯其权益，请通过 Issue 联系，我们会**立即删除**相关内容。
 > - 本项目按「现状」提供，**不提供任何担保**，使用风险自负。
 
@@ -72,17 +72,17 @@ English summary: [below](#english).
 
 ### 方式一：整合包（推荐）
 
-可从 GitHub Releases 获取完整包或轻量包。完整包带有可公开下载资源；轻量包带便携 Node 与生产依赖，首次启动会通过 setup 获取公开资源并显示进度。可选本地客户端资源不包含在公开下载中；缺少时使用 2D 棋盘和替代样式。
+本次工坊发布提供 [Windows 轻量便携包](https://github.com/ColorC/Stronghold-Protocol/releases/tag/workshop-v0.3.0-workshop.1)。包内自带 Node 与运行依赖，首次启动需要联网下载游戏资源并显示进度；准备完成后可离线使用。可选本地客户端资源不包含在公开下载中；缺少时使用 2D 棋盘和替代样式。
 
-1. **准备运行环境**：Windows 完整包和轻量包自带便携版 Node；从源码运行或在 macOS / Linux 使用启动脚本时，需要 Node.js 22 或 24（LTS）。
+1. **准备运行环境**：Windows 工坊轻量包自带便携版 Node，无需另行安装；从源码运行或在 macOS / Linux 使用启动脚本时，需要 Node.js 22 或 24（LTS）。
    - Windows：在 PowerShell 里运行 `winget install OpenJS.NodeJS.LTS`，或到 <https://nodejs.org/zh-cn/download> 下载安装包。
    - macOS：`brew install node@22`，或到官网下载安装包。
    - Linux：发行版的包管理器、nvm 或 fnm。
-2. **下载**：在 [Releases](../../releases/latest) 页面下载工坊 0.3.0-workshop.1 的完整包或轻量包（zip），解压到一个路径较短的文件夹（Windows 上建议不要放在 OneDrive 同步的目录里）。轻量包首次启动会联网获取公开资源；中断后再次启动会续传。
+2. **下载**：在 [工坊发布页面](https://github.com/ColorC/Stronghold-Protocol/releases/tag/workshop-v0.3.0-workshop.1) 下载 `Stronghold-Protocol-Windows-Lite-workshop-v0.3.0-workshop.1.zip`，解压到一个路径较短的文件夹（Windows 上建议不要放在 OneDrive 同步的目录里）。首次资源下载中断后，再次启动会续传。
 3. **启动**
    - Windows：包内双击 **`启动游戏.bat`**；从源码运行则双击 **`scripts\start-windows.bat`**。如果弹出「安全警告」，点「运行」；Windows 防火墙弹窗请勾选「专用网络」并允许。
    - macOS / Linux：在解压出的文件夹里运行 `./scripts/start.sh`（或 `bash scripts/start.sh`）。
-4. 浏览器会自动打开 `http://localhost:3000`。窗口里列出的局域网地址可以直接发给同一网络的朋友。关闭窗口（或按 `Ctrl+C`）即停止服务器。
+4. 便携包会自动打开工坊 `http://localhost:3000/independent.html`；原版盟约仍可通过 `http://localhost:3000/index.html` 进入。窗口里列出的局域网地址可以直接发给同一网络的朋友。关闭窗口（或按 `Ctrl+C`）即停止服务器。
 
 ### 方式二：从源码运行
 
@@ -90,8 +90,8 @@ English summary: [below](#english).
 git clone --branch workshop https://github.com/ColorC/Stronghold-Protocol.git
 cd Stronghold-Protocol
 npm ci             # 安装锁定依赖（postinstall 会生成 public/vendor）
-npm run setup      # 检查环境，并从公开源下载可重建资源（约 270 MB；中断后可续传）
-npm start          # 启动服务器：http://localhost:3000
+npm run setup      # 检查环境并下载游戏资源；中断后可续传
+npm start          # 启动服务器；工坊入口：http://localhost:3000/independent.html
 ```
 
 也可以直接运行启动脚本（Windows `scripts\start-windows.bat`，macOS / Linux `scripts/start.sh`）：首次会自动安装依赖、下载素材，然后启动服务器并打开浏览器。
@@ -104,7 +104,7 @@ npm start          # 启动服务器：http://localhost:3000
 
 | 项目 | 要求 |
 |---|---|
-| 开服的电脑 | Windows / macOS / Linux，Node.js 22 或 24（LTS）；磁盘约 400–500 MB（素材、依赖与可选的本地提取贴图）；内存空闲约 100 MB，每局再加几 MB |
+| 开服的电脑 | Windows / macOS / Linux，Node.js 22 或 24（LTS）；磁盘需容纳游戏资源、运行依赖与可选的本地提取贴图；内存空闲约 100 MB，每局再加几 MB |
 | 玩家 | 支持 WebGL 的现代浏览器（Chrome / Edge / Firefox / Safari 最新版），电脑、手机或平板（横屏） |
 | 网络 | 首次进入游戏时，每位玩家要从开服的电脑下载几十 MB 素材（之后走浏览器缓存）；对局中流量很小 |
 
@@ -190,7 +190,7 @@ npm start          # 启动服务器：http://localhost:3000
 
 ```bash
 npm run dev                 # node --watch：改动服务器代码后自动重启
-node --test                 # 单元 + 集成测试（约 3170 项；缺少素材 / 浏览器的用例会自动跳过）
+node --test                 # 单元 + 集成测试；部分用例需另行准备素材或浏览器
 SP_E2E=1 node --test test/ui/mock.e2e.test.js        # 浏览器端到端测试，需要本机 Chrome（CHROME_PATH 可指定路径）
 SP_REAL_E2E=1 node --test test/ui/real.e2e.test.js   # 需要 Chrome + 已下载的素材
 RENDER_E2E=1 node --test 'test/render/*.browser.test.js'   # 渲染测试，部分需要本地提取的棋盘贴图
@@ -245,7 +245,7 @@ GOLDEN_FULL=1 node --test test/golden.test.js           # 黄金结果：固定�
 
 An **unofficial, non-commercial fan remake** of Arknights' seasonal auto-chess tower-defense mode *Stronghold Protocol: Alliance*, played in the browser: solo, or 1–4 player co-op (AI teammates can fill seats). Combat is simulated in each player's browser, so a low-power PC can host.
 
-- **Run:** download the all-in-one bundle from [Releases](../../releases/latest), install Node.js 22 or 24, then double-click `scripts\start-windows.bat` (Windows) or run `./scripts/start.sh` (macOS / Linux) and open <http://localhost:3000>. From source: `npm install && npm run setup && npm start` (setup downloads ~270 MB of art from public mirrors, the emotes and the how-to-play pages included; the official 3D board, some official HUD icons and two enemy models are extracted from a local Arknights client — without one the game uses the 2D board and look-alike stand-ins, and a server can copy `public/assets/local/` and `data/local-assets.json` from the release bundle of the same version).
+- **Run:** download the Windows Lite ZIP from the [Workshop release](https://github.com/ColorC/Stronghold-Protocol/releases/tag/workshop-v0.3.0-workshop.1) and double-click `启动游戏.bat`. Node is included. The first launch downloads game resources; later launches can run offline. It opens Workshop at <http://localhost:3000/independent.html>; Alliance remains available at <http://localhost:3000/index.html>. From source: install Node.js 22 or 24, then run `npm ci && npm run setup && npm start` (setup downloads game resources from public mirrors; optional local-client resources use fallback styles when absent). On macOS / Linux, `./scripts/start.sh` also prepares the resources and starts the server.
 - **Play with friends:** create a co-op room and share the 4-letter key or the `?room=KEY` link. On a LAN, use the address printed at start; otherwise use a virtual-LAN tool, a tunnel or a VPS — see [docs/DEPLOY.md](docs/DEPLOY.md).
 - **Disclaimer:** not affiliated with or endorsed by Hypergryph or Yostar. All Arknights names, art, audio, text and data are © their respective owners and are **not** covered by this project's GPL licence. For study and personal non-commercial use only — no selling, paid distribution, paid servers or monetisation of any kind. Content will be removed on request of the rights holders. Provided "as is", without warranty.
 - **License:** code GPL-3.0-or-later ([LICENSE](LICENSE)); game assets excluded.
