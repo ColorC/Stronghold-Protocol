@@ -11,6 +11,7 @@ const SHOT=path.join(OUT,'native-sale-factions-target.jpg');
 const PROTECTED=path.join(ROOT,'runtime/resonance/player-sessions/53ffde79-85b3-4302-89f7-e0d792f78723.json');
 const require=createRequire(path.join(ROOT,'package.json'));
 const receipt={status:'running',startedAt:new Date().toISOString(),source:SOURCE,receipt:RECEIPT,screenshot:SHOT,ws:[],errors:[]};
+try{const prior=JSON.parse(await readFile(RECEIPT,'utf8'));if(prior.receipt!==RECEIPT)throw new Error('Unrelated sale receipt');receipt.previousAttempts=[...(prior.previousAttempts??[]),{...prior,previousAttempts:undefined}];}catch(e){if(e.code!=='ENOENT')throw e;}
 const before=await stat(PROTECTED,{bigint:true});
 let browser,page;
 const timer=setTimeout(()=>{receipt.timeout=true;void browser?.close();},180000);
@@ -33,6 +34,7 @@ try{
   await page.waitForFunction(()=>[...document.querySelectorAll('.brief__foot button')].some(n=>n.innerText.includes('准备就绪')&&!n.disabled),{timeout:15000});
   await page.evaluate(()=>[...document.querySelectorAll('.brief__foot button')].find(n=>n.innerText.includes('准备就绪')&&!n.disabled).click());
   await page.waitForFunction(()=>!document.querySelector('.pbanner--overlay')&&globalThis.__SP_VIEW__?.pieceScreenRect&&document.querySelector('.shopbar'),{timeout:45000});
+  await page.waitForFunction(async()=>{const {store}=await import('./js/store.js');return store.get().match.public?.phase==='PREP';},{timeout:20000});
   const state=()=>page.evaluate(async()=>{const {store}=await import('./js/store.js');return store.get().match.private.resonance.state;});
   const initial=await state(),piece=initial.pieces.find(p=>p.row==null);assert(piece);
   receipt.seasonId=initial.seasonId;assert.equal(initial.seasonId,'resonance-factions-1');
