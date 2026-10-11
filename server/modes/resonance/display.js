@@ -130,6 +130,7 @@ export function resonanceDisplayCatalog(catalog, data = null) {
     // what the strategy icon is chosen by (public/js/resonance/strategyIconMap.js)
     effectKind: strategy.effects?.[0]?.kind ?? null,
     pactId: [strategy.effects?.[0]?.params?.traitId, strategy.effects?.[0]?.params?.prototypeTraitId].find((pactId) => pactId && catalog.pacts?.[pactId]) ?? null,
+    emblemId: strategy.effects?.[0]?.kind === 'choose_transfer' ? strategy.effects[0].params?.itemIds?.find((itemId) => catalog.equipment?.[itemId]?.kind === 'emblem') ?? null : null,
   }]));
   const environments = Object.fromEntries(Object.entries(catalog.environments).map(([id, env]) => [id, {
     name: env.name, identityPactId: env.identityPactId, description: env.description,

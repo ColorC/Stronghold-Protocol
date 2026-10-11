@@ -6,7 +6,8 @@ import {loadData} from '../../server/data.js';
 import {getResonanceCatalog} from '../../server/modes/resonance/catalog.js';
 import {resonanceDisplayCatalog} from '../../server/modes/resonance/display.js';
 import {getActivePrototypeSeason} from '../../shared/resonance/season-registry.js';
-import {STRATEGY_UI_ICONS,strategyIcon,strategyPactId,resolveStrategyIconUrl} from '../../public/js/resonance/strategyIconMap.js';
+import {STRATEGY_UI_ICONS,strategyIcon,strategyPactId,strategyEmblemId,resolveStrategyIconUrl} from '../../public/js/resonance/strategyIconMap.js';
+import {fileURLToPath} from 'node:url';
 import {choiceDescription,strategyConditionNote} from '../../public/js/resonance/model.js';
 
 const INSTALL='E:/WindowsWorkspace/webworks/apps/stronghold-protocol';
@@ -15,7 +16,9 @@ const bonds=Object.values(data.bonds);
 const season=getActivePrototypeSeason();
 const catalog=getResonanceCatalog(data,{rulesVersion:3,seasonId:season.id,seed:13});
 const display=resonanceDisplayCatalog(catalog,data);
-const fileOf=(url)=>path.join(INSTALL,'public',url);
+const REPO=fileURLToPath(new URL('../../',import.meta.url));
+// mode art (emblem badges under /css/) ships with this checkout; native art (/assets/) lives in the install
+const fileOf=(url)=>[path.join(REPO,'public',url),path.join(INSTALL,'public',url)].find(file=>fs.existsSync(file))??path.join(REPO,'public',url);
 
 test('every current-season strategy resolves to an existing icon file, the same from the raw and the display catalog',()=>{
  const ids=Object.keys(catalog.strategies);
@@ -29,15 +32,25 @@ test('every current-season strategy resolves to an existing icon file, the same 
  }
 });
 
-test('pact strategies use their pact icon; gold, experience and refresh strategies use the HUD art; the rest the group icon',()=>{
+test('徽记 / 王冠 strategies show the emblem they hand out; other pact strategies their pact icon; gold, experience and refresh strategies the HUD art; the rest the group icon',()=>{
+ let emblems=0;
  for(const [id,strategy] of Object.entries(catalog.strategies)){
-  const params=strategy.effects?.[0]?.params??{};
+  const effect=strategy.effects?.[0],params=effect?.params??{};
   const pactId=[params.traitId,params.prototypeTraitId].find(value=>value&&catalog.pacts[value])??null;
   assert.equal(strategyPactId(display,id),pactId,id);
-  if(pactId)assert.deepEqual(strategyIcon(display,id),{kind:'pact',pactId},id);
+  if(effect?.kind==='choose_transfer'){
+   const itemId=params.itemIds[0];
+   assert.equal(catalog.equipment[itemId].kind,'emblem',id);
+   assert.equal(strategyEmblemId(display,id),itemId,id);
+   assert.deepEqual(strategyIcon(display,id),{kind:'emblem',itemId,pactId},id);
+   assert.equal(resolveStrategyIconUrl(display,id,data.assets,bonds),`/css/resonance-emblems/${pactId}.webp`,`${id}: the inventory's badge for ${itemId}`);
+   emblems++;
+  }else if(pactId)assert.deepEqual(strategyIcon(display,id),{kind:'pact',pactId},id);
  }
+ assert.ok(emblems>=40,'every 徽记 and 王冠 strategy');
  const theme=(id)=>strategyIcon(display,id).theme;
- assert.equal(strategyIcon(display,'prototype_set13_academycrest').pactId,'academy','徽记 → its pact');
+ assert.equal(strategyIcon(display,'prototype_set13_academycrest').itemId,'prototype_emblem_academy','拉特兰徽记 → the 拉特兰徽记 badge');
+ assert.equal(strategyIcon(display,'prototype_set13_snipercrown').itemId,'prototype_emblem_ammo','狙击王冠 → the 狙击徽记 badge');
  assert.equal(strategyIcon(display,'prototype_set13_quickstriker').pactId,'combo','迅击爆发 → 迅击');
  assert.equal(strategyIcon(display,'prototype_source_pitfighter').pactId,'bruiser','重装成长 → 重装');
  for(const id of ['prototype_source_raininggold','prototype_source_raininggoldplus','prototype_source_goinglong'])assert.equal(theme(id),'gold',id);
