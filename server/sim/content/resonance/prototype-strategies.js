@@ -1,4 +1,4 @@
-import { prototypeSeason } from '../../../../shared/resonance/prototype-season.js';
+import { prototypeSeasonForCatalog } from '../../../../shared/resonance/season-registry.js';
 import { setPrototypeRatingBonus, prototypeRatingTotal, resolvePrototypeRatingReference } from './prototype-rating.js';
 
 const clone=(value)=>structuredClone(value);
@@ -21,6 +21,7 @@ function selectedAugments(state,catalog){
 
 /** Install source-variable-backed Set 13 battle augments before Battle.start(). */
 export function installPrototypeBattleAugments(battle,state,catalog){
+  const season=prototypeSeasonForCatalog(catalog);
   const augments=selectedAugments(state,catalog);
   if(!augments.length)return {augments:[],metrics:battle.resonanceMetrics?.prototypeBattleAugments??{}};
   const operators=catalog?.operators??{};
@@ -36,7 +37,7 @@ export function installPrototypeBattleAugments(battle,state,catalog){
     const raw=unit?.def?.raw??unit?.def??{};
     return raw.charId??operatorFor(unit)?.charId??null;
   };
-  const powerFor=(unit)=>resolvePrototypeRatingReference(unit,prototypeSeason.heroes.find((hero)=>hero.charId===charFor(unit))?.powerReference??{}).powerReference;
+  const powerFor=(unit)=>{const hero=season.heroes.find((entry)=>entry.charId===charFor(unit));return resolvePrototypeRatingReference(unit,hero?.nativePowerReference??hero?.powerReference??{}).powerReference;};
   const ratingsFor=(unit)=>{
     const power=powerFor(unit);
     return {armor:Number(power.armor??0)+prototypeRatingTotal(unit,'armor'),magicResist:Number(power.magicResist??0)+prototypeRatingTotal(unit,'magicResist')};
@@ -100,7 +101,8 @@ export function installPrototypeBattleAugments(battle,state,catalog){
     for(const augment of entries('sentinel_shield_bash')){
       if(hasTrait(source,augment.traitId)&&dmg.isAttack&&!dmg.isSkill&&source.mem.prototypeSentinelAugmentReady){
         const ratings=ratingsFor(source);
-        const amount=(ratings.armor+ratings.magicResist)*Number(augment.variables.ResistToDamageRatio??0);
+        const resistance=season.powerModel==='native-pve'?Number(source.s.def??0)+Number(source.s.res??0):ratings.armor+ratings.magicResist;
+        const amount=resistance*Number(augment.variables.ResistToDamageRatio??0);
         source.mem.prototypeSentinelAugmentReady=false;
         if(amount>0)battle.dealDamage(source,target,{amount,type:'arts',canDodge:false,tags:['resonance','prototype-sentinel-shield-bash']});
         metric(augment,'shieldBashes');

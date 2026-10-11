@@ -1,5 +1,3 @@
-import { prototypeSeason } from './prototype-season.js';
-
 const sourceKey=(value)=>String(value??'').normalize('NFKC').toLowerCase().replace(/[’‘]/g,"'").replace(/[^\p{L}\p{N}]+/gu,' ').trim();
 const sourceItemRows=(augment)=>(augment.grantedItems??[]).filter((row)=>String(row?.name??'').trim());
 function activeSourceHeroes(augment,catalog) {
@@ -62,8 +60,10 @@ function sourceRewardPlan(augment,catalog,emblemId) {
 }
 
 export function applyPrototypeStrategies(catalog) {
+  const season=catalog.prototypeSeason;
+  if(!season)throw new Error(`RESONANCE_SEASON_REQUIRED:${catalog.config?.seasonId??'unknown'}`);
   const strategies={};
-  for(const [index,augment] of prototypeSeason.augmentCandidates.entries()){
+  for(const [index,augment] of season.augmentCandidates.entries()){
     const id=`prototype_set13_${augment.apiName.slice('TFT13_Augment_'.length).toLowerCase()}`;
     const itemId=`prototype_emblem_${augment.traitId}`;
     if(augment.adapter==='choose_transfer'&&!catalog.equipment?.[itemId])continue;
@@ -87,7 +87,7 @@ export function applyPrototypeStrategies(catalog) {
       weight:1,order:index,
     };
   }
-  const already=new Set(prototypeSeason.augmentCandidates.map((row)=>row.apiName));
+  const already=new Set(season.augmentCandidates.map((row)=>row.apiName));
   const sourcePresentation={
     TFT6_Augment_TradeSector:{name:'商贸枢纽',description:'获得1金币；每个节点可免费刷新一次商店。'},
     TFT6_Augment_ClearMind:{name:'清心',description:'若战斗结束时备战席为空，获得3点经验。'},
@@ -114,7 +114,7 @@ export function applyPrototypeStrategies(catalog) {
     TFT11_Augment_RainingGoldPlus:(row)=>({kind:'prototype_round_gold',params:{instantGold:Number(row.effects?.InstantGold??18),roundGold:Number(row.effects?.RoundGold??1),sourceApiName:row.apiName}}),
     TFT13_Augment_PitFighter:(row)=>({kind:'prototype_win_loss_growth',params:{traitId:'bruiser',attackPctPerLoss:Number(row.effects?.ADPerLoss??0)*100,hpPerWin:Number(row.effects?.HealthPerWin??0),bonusOperatorIds:(row.grantedHeroes??[]).map((hero)=>hero.operatorId).filter(Boolean),sourceApiName:row.apiName}}),
   };
-  for(const [index,row] of prototypeSeason.strategyCandidates.entries()){
+  for(const [index,row] of season.strategyCandidates.entries()){
     if(already.has(row.apiName))continue;
     const adapt=sourceAdapters[row.apiName];
     if(!adapt)continue;
@@ -135,8 +135,8 @@ export function applyPrototypeStrategies(catalog) {
       source:{...row.reference,recordId:row.apiName,sourceEffectText:row.description,sourceEffects:row.effects,associatedTraits:row.associatedTraits??[],adapterState:'mode-adapted'},
       effects:[adapt(row)],order:strategies.length+index};
   }
-  const sourceEmblemCount=prototypeSeason.strategyCandidates.filter((row)=>(row.grantedItems??[]).some((item)=>/emblem/i.test(item.apiName??''))).length;
-  const sourceOtherCount=prototypeSeason.strategyCandidates.length-sourceEmblemCount;
+  const sourceEmblemCount=season.strategyCandidates.filter((row)=>(row.grantedItems??[]).some((item)=>/emblem/i.test(item.apiName??''))).length;
+  const sourceOtherCount=season.strategyCandidates.length-sourceEmblemCount;
   const playable=Object.values(strategies),playableEmblems=playable.filter((strategy)=>strategy.effects?.some((effect)=>effect.kind==='choose_transfer'));
   const playableOthers=playable.filter((strategy)=>!strategy.effects?.some((effect)=>effect.kind==='choose_transfer'));
   const emblemWeight=playableEmblems.length?sourceEmblemCount/playableEmblems.length:0;
@@ -145,9 +145,9 @@ export function applyPrototypeStrategies(catalog) {
     const emblem=strategy.effects?.some((effect)=>effect.kind==='choose_transfer');
     strategy.weight=emblem?emblemWeight:otherWeight;
     strategy.source={...strategy.source,sourcePoolWeight:strategy.weight,
-      sourcePoolWeightBasis:`14.23 resolved candidate source ratio ${sourceEmblemCount}/${prototypeSeason.strategyCandidates.length}; this is a Resonance pool weighting adaptation, not the original offer odds.`};
+      sourcePoolWeightBasis:`${season.displayName} resolved candidate source ratio ${sourceEmblemCount}/${season.strategyCandidates.length}; this is a Resonance pool weighting adaptation, not the original offer odds.`};
   }
-  return {...catalog,strategies,prototypeStrategyPool:{sourceCandidateCount:prototypeSeason.strategyCandidates.length,sourceEmblemCount,sourceOtherCount,
-    playableCount:playable.length,playableEmblemCount:playableEmblems.length,playableOtherCount:playableOthers.length,sourceEmblemRatio:sourceEmblemCount/prototypeSeason.strategyCandidates.length,
+  return {...catalog,strategies,prototypeStrategyPool:{sourceCandidateCount:season.strategyCandidates.length,sourceEmblemCount,sourceOtherCount,
+    playableCount:playable.length,playableEmblemCount:playableEmblems.length,playableOtherCount:playableOthers.length,sourceEmblemRatio:sourceEmblemCount/season.strategyCandidates.length,
     weighting:'Playable source groups are weighted to represent the pinned resolved candidate counts; this does not claim TFT original offer odds.'}};
 }

@@ -15,6 +15,7 @@ import { syntheticResult } from '../../server/match/fields.js';
 import { createBattleFromSpec, compactResult, resonanceResultExtras, fitResult, battleProgress } from '../../server/sim/spec.js';
 import { ERR, PROTOCOL_VERSION } from '../../shared/constants.js';
 import { summarizeResonanceResult } from '../../shared/resonance/result-summary.js';
+import { prototypeSeason } from '../../shared/resonance/prototype-season.js';
 import { createBattleRunner } from '../../public/js/battle/runner.js';
 import * as simSpec from '../../server/sim/spec.js';
 
@@ -25,7 +26,7 @@ test('V3 native chess projection hides unsupported acquisition equipment text an
   const data = loadData(NATIVE_DATA);
   const nativeChessId = (id, star) => star === 1 ? id : `resonance_${id}_star${star}`;
   const characterId = 'char_4013_kjera';
-  const modeCatalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 917 });
+  const modeCatalog = getResonanceCatalog(data, { rulesVersion: 3, seasonId: prototypeSeason.id, seed: 917 });
   const modeOperator = Object.values(modeCatalog.operators).find((operator) => operator.charId === characterId);
   assert.ok(modeOperator, 'V3 catalog includes 耶拉');
   const modePacket = resonanceCatalogPacket({ data, catalog: modeCatalog, displayCatalog: modeCatalog, nativeChessId });
@@ -103,7 +104,7 @@ async function connectResonanceLive(live, sessionId) {
 
 test('native ResonanceMatch runs a real NORMAL Battle before one session settlement', { timeout: 240_000 }, async () => {
   const data = loadData(NATIVE_DATA);
-  const catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 47 });
+  const catalog = getResonanceCatalog(data, { rulesVersion: 3, seasonId: prototypeSeason.id, seed: 47 });
   catalog.specialEntities={TFT_TrainingDummy:{id:'TFT_TrainingDummy',kind:'training_dummy',nativeTokenId:'token_10011_beewax_oblisk',maxHp:550,def:30,res:30,attackDisabled:true,canMove:false,blockCount:1}};
   const created = createSession({ seed: 47, difficulty: 'NORMAL', catalog });
   assert.equal(created.ok, true, created.error);
@@ -425,7 +426,7 @@ test('native ResonanceMatch runs a real NORMAL Battle before one session settlem
 });
 
 test('Native PREP permits shop, move, and equip actions while a reward choice is pending', { timeout: 30_000 }, async () => {
-  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seed:481});
+  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seasonId:prototypeSeason.id,seed:481});
   const created=createSession({seed:481,difficulty:'NORMAL',catalog});assert.equal(created.ok,true,created.error);
   let state=created.state;state.gold=20;
   const field=getResonanceField(state,{data,catalog});
@@ -488,7 +489,7 @@ test('Native PREP permits shop, move, and equip actions while a reward choice is
 });
 
 test('session bench slots preserve the native 9-slot hand, occupied swap, and invalid move atomicity',()=>{
-  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seed:123});
+  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seasonId:prototypeSeason.id,seed:123});
   const created=createSession({seed:123,difficulty:'NORMAL',catalog});assert.equal(created.ok,true,created.error);
   let state=created.state;
   assert.deepEqual(state.pieces.map((piece)=>piece.benchSlot),[0,1,2]);
@@ -518,7 +519,7 @@ test('session bench slots preserve the native 9-slot hand, occupied swap, and in
 });
 
 test('Family training dummy stays outside roster and only enters real specs from a saved legal tile',()=>{
-  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seed:124});
+  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seasonId:prototypeSeason.id,seed:124});
   catalog.specialEntities={TFT_TrainingDummy:{id:'TFT_TrainingDummy',kind:'training_dummy',nativeTokenId:'token_10011_beewax_oblisk',
     maxHp:550,def:30,res:30,attackDisabled:true,canMove:false,blockCount:1}};
   const created=createSession({seed:124,difficulty:'NORMAL',catalog});assert.equal(created.ok,true,created.error);
@@ -548,7 +549,7 @@ test('Family training dummy stays outside roster and only enters real specs from
 });
 
 test('session economy claims resolve source selectors and reject unaffordable purchases atomically',()=>{
-  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seed:254});
+  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seasonId:prototypeSeason.id,seed:254});
   const created=createSession({seed:254,difficulty:'NORMAL',catalog});assert.equal(created.ok,true,created.error);
   let state=created.state;
   const component=Object.values(catalog.equipment).find((item)=>item.kind==='component'&&item.grantAllowed!==false);
@@ -583,7 +584,7 @@ test('session economy claims resolve source selectors and reject unaffordable pu
 });
 
 test('V3 gear anvil consumes its source atomically and grants a catalog-backed quality item',()=>{
-  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seed:255});
+  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seasonId:prototypeSeason.id,seed:255});
   const created=createSession({seed:255,difficulty:'NORMAL',catalog});assert.equal(created.ok,true,created.error);
   const state=created.state,item=Object.values(catalog.equipment).find((entry)=>entry.kind==='completed'&&entry.grantAllowed!==false);
   assert.ok(item,'real completed catalog item is available');
@@ -615,7 +616,7 @@ test('V3 gear anvil consumes its source atomically and grants a catalog-backed q
 });
 
 test('nine deployed chess plus three persisted training dummies leave native population full and ready',()=>{
-  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seed:256});
+  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seasonId:prototypeSeason.id,seed:256});
   const created=createSession({seed:256,difficulty:'NORMAL',catalog});assert.equal(created.ok,true,created.error);
   const state=created.state,field=getResonanceField(state,{data,catalog});
   const candidates=catalog.config.activeOperatorIds.slice(0,9),used=new Set();
@@ -657,7 +658,7 @@ test('nine deployed chess plus three persisted training dummies leave native pop
 
 test('native battle reason cleared still settles as a loss when counted leaks consumed LP', () => {
   const data = loadData(NATIVE_DATA);
-  const catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 48 });
+  const catalog = getResonanceCatalog(data, { rulesVersion: 3, seasonId: prototypeSeason.id, seed: 48 });
   const created = createSession({ seed: 48, difficulty: 'NORMAL', catalog });
   assert.equal(created.ok, true, created.error);
   const result = nativeResultForSession(created.state, {
@@ -676,7 +677,7 @@ test('native Match routes campaign NORMAL, FINAL_ASSAULT, HIDDEN_CORE, and FUNNY
     { difficulty: 'ABYSS', round: 30, nativePhase: 'HIDDEN_CORE', kind: 'hidden' },
   ];
   for (const [index, target] of cases.entries()) {
-    const catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 109 + index });
+    const catalog = getResonanceCatalog(data, { rulesVersion: 3, seasonId: prototypeSeason.id, seed: 109 + index });
     const created = createSession({ seed: 109 + index, difficulty: target.difficulty, catalog });
     assert.equal(created.ok, true, created.error);
     const state = created.state;
@@ -895,7 +896,7 @@ test('natural R28 winning session closes through the Native Runner and boss cloc
   assert.equal(fixture?.expected?.finalRow?.won, true);
 
   const data = loadData(NATIVE_DATA);
-  const catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: fixture.seed });
+  const catalog = getResonanceCatalog(data, { rulesVersion: 3, seasonId: prototypeSeason.id, seed: fixture.seed });
   const initial = structuredClone(fixture.preFightSession);
   const validity = validateSession(initial, { catalog });
   assert.equal(validity.ok, true, JSON.stringify(validity.errors));
@@ -1082,7 +1083,7 @@ test('natural R28 winning session closes through the Native Runner and boss cloc
 
 test('Native skips an already-started FUNNY odd logistics node into the next even prep', { timeout: 120_000 }, async () => {
   const data = loadData(NATIVE_DATA);
-  const catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 157 });
+  const catalog = getResonanceCatalog(data, { rulesVersion: 3, seasonId: prototypeSeason.id, seed: 157 });
   const created = createSession({ seed: 157, difficulty: 'FUNNY', catalog });
   assert.equal(created.ok, true, created.error);
   const state = created.state;
@@ -1113,7 +1114,7 @@ test('Native skips an already-started FUNNY odd logistics node into the next eve
 
 test('Native holds FUNNY odd-node choices in PREP, settles logistics, and never battles odd nodes', { timeout: 120_000 }, async () => {
   const data = loadData(NATIVE_DATA);
-  const sourceCatalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 159 });
+  const sourceCatalog = getResonanceCatalog(data, { rulesVersion: 3, seasonId: prototypeSeason.id, seed: 159 });
   const catalog = { ...sourceCatalog, campaign: { ...sourceCatalog.campaign, supply: {
     ...sourceCatalog.campaign.supply, components: { nodes: [3, 5], countPerNode: 1, optionCount: 3 },
   } } };
@@ -1228,7 +1229,7 @@ test('Native holds FUNNY odd-node choices in PREP, settles logistics, and never 
 
 test('v3 transfer supply honors explicit grantAllowed and emblemAllowed metadata', () => {
   const data = loadData(NATIVE_DATA);
-  const catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 211 });
+  const catalog = getResonanceCatalog(data, { rulesVersion: 3, seasonId: prototypeSeason.id, seed: 211 });
   const item = Object.values(catalog.equipment).find((entry) => entry.kind === 'emblem'
     && entry.effects?.some((effect) => ['pact_transfer', 'transfer_pact'].includes(effect.kind)));
   assert.ok(item, 'v3 catalog has an actual transfer emblem to restrict');
@@ -1248,7 +1249,7 @@ test('v3 transfer supply honors explicit grantAllowed and emblemAllowed metadata
 });
 
 test('V3 Native data patches resolve only own string keys and preserve real star records', () => {
-  const data = loadData(NATIVE_DATA), catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 550 });
+  const data = loadData(NATIVE_DATA), catalog = getResonanceCatalog(data, { rulesVersion: 3, seasonId: prototypeSeason.id, seed: 550 });
   const state = createSession({ seed: 550, difficulty: 'NORMAL', catalog }).state;
   const scheduler = new VirtualScheduler();
   const match = new ResonanceMatch({ sessionId: 'test-own-data-patch', state, catalog, data, scheduler,
@@ -1271,7 +1272,7 @@ test('V3 Native data patches resolve only own string keys and preserve real star
 });
 
 test('Native synthetic boss grace result reaches campaign settlement without mode rewards', async () => {
-  const data = loadData(NATIVE_DATA), catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 551 });
+  const data = loadData(NATIVE_DATA), catalog = getResonanceCatalog(data, { rulesVersion: 3, seasonId: prototypeSeason.id, seed: 551 });
   const state = createSession({ seed: 551, difficulty: 'NORMAL', catalog }).state;
   state.round = 28;
   const scheduler = new VirtualScheduler();
@@ -1296,7 +1297,7 @@ test('Native synthetic boss grace result reaches campaign settlement without mod
 
 test('native live WebSocket carries Runner results and reconstructs saved active Battles', { timeout: 120_000 }, async () => {
   const data = loadData(NATIVE_DATA);
-  const catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 313 });
+  const catalog = getResonanceCatalog(data, { rulesVersion: 3, seasonId: prototypeSeason.id, seed: 313 });
   const created = createSession({ seed: 313, difficulty: 'NORMAL', catalog });
   assert.equal(created.ok, true, created.error);
   const legal = getResonanceField(created.state, { data, catalog });
@@ -1384,7 +1385,7 @@ test('native live WebSocket carries Runner results and reconstructs saved active
 });
 
 test('native live close rejects failed session flush and still deactivates ownership',async()=>{
-  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seed:416});
+  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seasonId:prototypeSeason.id,seed:416});
   const created=createSession({seed:416,difficulty:'NORMAL',catalog});assert.equal(created.ok,true,created.error);
   let deactivated=false;
   const store={async loadOwnedSession(){return {state:structuredClone(created.state),catalog};},
@@ -1397,7 +1398,7 @@ test('native live close rejects failed session flush and still deactivates owner
 });
 
 test('completed live match persists before releasing owner and rebuilds its result from saved state', { timeout: 30_000 }, async () => {
-  const data = loadData(NATIVE_DATA), catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 927 });
+  const data = loadData(NATIVE_DATA), catalog = getResonanceCatalog(data, { rulesVersion: 3, seasonId: prototypeSeason.id, seed: 927 });
   const created = createSession({ seed: 927, difficulty: 'NORMAL', catalog });
   assert.equal(created.ok, true, created.error);
   let saved = structuredClone(created.state);
@@ -1462,7 +1463,7 @@ test('completed live match persists before releasing owner and rebuilds its resu
 });
 
 test('completed Resonance result projects persisted history to Native result and cold reconnect once', () => {
-  const data = loadData(NATIVE_DATA), catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 930 });
+  const data = loadData(NATIVE_DATA), catalog = getResonanceCatalog(data, { rulesVersion: 3, seasonId: prototypeSeason.id, seed: 930 });
   const created = createSession({ seed: 930, difficulty: 'ABYSS', catalog });
   assert.equal(created.ok, true, created.error);
   const state = created.state;
@@ -1540,7 +1541,7 @@ test('Resonance result summary counts passed rounds only before and during campa
 });
 
 test('completed persistence failure keeps the Native instance and owner for retry', { timeout: 30_000 }, async () => {
-  const data = loadData(NATIVE_DATA), catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 928 });
+  const data = loadData(NATIVE_DATA), catalog = getResonanceCatalog(data, { rulesVersion: 3, seasonId: prototypeSeason.id, seed: 928 });
   const created = createSession({ seed: 928, difficulty: 'NORMAL', catalog });
   assert.equal(created.ok, true, created.error);
   let saved = structuredClone(created.state), failCompletionSave = true;

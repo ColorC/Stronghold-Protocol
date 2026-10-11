@@ -156,6 +156,9 @@ body { background: #101512; color: var(--rs-text); }
 .rs-sell-zone b { color: #ffd1c8; font-size: max(.17rem, 14px); }
 .rs-sell-zone span { color: #fff; font-size: max(.14rem, 14px); }
 .rs-sell-zone small { color: #edb9ae; font-size: max(.11rem, 14px); }
+.rs-native-match .rs-native-sell-zone { position: fixed; z-index: 120; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 2px 8px; color: #f0e8df; background: rgba(12,16,14,.98); border: 1px solid #a94f46; font-size: max(.18rem,18px); line-height: 1; pointer-events: auto; }
+.rs-native-match .rs-native-sell-zone .coin-glyph { width: 18px; height: 18px; flex: none; color: #e6bd59; }
+.rs-native-match .rs-native-sell-zone b { color: #f0cc73; font-size: inherit; font-variant-numeric: tabular-nums; }
 .rs-quick-inventory { position:fixed; z-index:34; left:calc(clamp(8px,1vw,18px) + 1.15rem); bottom:calc(2.78rem + env(safe-area-inset-bottom,0px)); display:flex; align-items:center; gap:.04rem; max-width:min(4.8rem,70vw); overflow-x:auto; padding:.035rem; background:rgba(8,13,11,.88); border:1px solid var(--line-2); box-shadow:0 .08rem .2rem rgba(0,0,0,.45); pointer-events:none; }
 .rs-quick-inventory__item { flex:none; display:grid; place-items:center; width:.42rem; height:.42rem; padding:.015rem; color:var(--mint-300); background:rgba(255,255,255,.04); border:1px solid var(--line-2); cursor:grab; pointer-events:auto; }
 .rs-quick-inventory__item:active { cursor:grabbing; border-color:var(--mint-400); }
@@ -488,3 +491,5 @@ body { background: #101512; color: var(--rs-text); }
   .rs-game .gm__corner .rs-native-actions { gap: .025rem; }
   .rs-game .gm__corner .rs-native-actions > .btn, .rs-game .gm__corner .rs-native-actions > button { min-height: .3rem; padding: .035rem .06rem; }
 }
+
+.rs-pact-overview { grid-column: 1 / -1; margin: 4px 0 10px; color: #b9c4c3; font-size: 17px; line-height: 1.6; }

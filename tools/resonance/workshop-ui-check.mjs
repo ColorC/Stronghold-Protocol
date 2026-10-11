@@ -27,7 +27,7 @@ const DEADLINE_MS = 180_000;
 
 function outputPaths(receiptTag) {
   if (receiptTag === undefined) return DEFAULT_OUTPUTS;
-  if (!['ui-refinement', 'ui-alignment'].includes(receiptTag)) throw new Error('--receipt-tag only accepts ui-refinement or ui-alignment');
+  if (!['ui-refinement', 'ui-alignment', 'factions'].includes(receiptTag)) throw new Error('--receipt-tag only accepts ui-refinement, ui-alignment or factions');
   const verifyDir = path.join(ROOT, 'runtime/resonance/ui-verification');
   const tag = receiptTag;
   return Object.freeze({

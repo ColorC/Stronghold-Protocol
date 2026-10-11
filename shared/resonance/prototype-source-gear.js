@@ -1,3 +1,4 @@
+import { nativeFlatAmount } from './native-effect-scale.js';
 const SOURCE_REFERENCE=Object.freeze({game:'Teamfight Tactics',version:'Set 13 launch patch 14.23',sourceKind:'CommunityDragon extracted client data'});
 
 export const prototypeSourceGearDefinitions=Object.freeze([
@@ -20,7 +21,12 @@ export function applyPrototypeSourceGear(catalog) {
     if(byApiName.get(row.sourceApiName)!==row)throw new Error(`DUPLICATE_PROTOTYPE_SOURCE_GEAR:${row.sourceApiName}`);
     if(equipment[row.id])throw new Error(`PROTOTYPE_SOURCE_GEAR_ID_COLLISION:${row.id}`);
     bySourceApiName[row.sourceApiName]=row.id;
-    equipment[row.id]={id:row.id,name:row.name,description:row.description,kind:'completed',parts:[],baseEffects:[],effects:[],unique:/Unique\s*-\s*only\s+1\s+per\s+champion/i.test(row.sourceDescription),grantAllowed:true,prototypeSourceGearId:row.id,sourceApiName:row.sourceApiName,iconId:row.sourceApiName,source:{...SOURCE_REFERENCE,apiName:row.sourceApiName,name:row.sourceName,description:row.sourceDescription,effects:row.sourceEffects,composition:row.composition,adaptation:row.adaptation}};
+    const sourceEffects=structuredClone(row.sourceEffects);
+    const effectiveEffects=structuredClone(sourceEffects);
+    if(Object.hasOwn(effectiveEffects,'Health'))effectiveEffects.Health=nativeFlatAmount(catalog.prototypeSeason,effectiveEffects.Health);
+    let description=row.description;
+    if(effectiveEffects.Health!==sourceEffects.Health)description=description.replace(`生命值+${sourceEffects.Health}`,`生命值+${effectiveEffects.Health}`);
+    equipment[row.id]={id:row.id,name:row.name,description,kind:'completed',parts:[],baseEffects:[],effects:[],unique:/Unique\s*-\s*only\s+1\s+per\s+champion/i.test(row.sourceDescription),grantAllowed:true,prototypeSourceGearId:row.id,sourceApiName:row.sourceApiName,iconId:row.sourceApiName,prototypeSourceEffects:sourceEffects,prototypeEffectiveEffects:effectiveEffects,source:{...SOURCE_REFERENCE,apiName:row.sourceApiName,name:row.sourceName,description:row.sourceDescription,effects:sourceEffects,composition:row.composition,adaptation:row.adaptation}};
   }
   return {...catalog,equipment,prototypeSourceGear:{definitions:prototypeSourceGearDefinitions,bySourceApiName}};
 }

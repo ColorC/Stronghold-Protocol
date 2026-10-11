@@ -205,7 +205,8 @@ export function App() {
     overlayDetail=${html`<${DetailPanel} detail=${detail} catalog=${catalog} onDetail=${setDetail} onClose=${() => setDetail(null)}/>`}
     onBack=${() => { setCodex(false); setCodexTab('operators'); setDetail(null); const url = new URL(location.href); url.searchParams.delete('view'); url.hash = ''; history.replaceState(null, '', url); }} onDetail=${setDetail}/>`;
 
-  const catalogReady = seedValid && catalogKey === String(numericSeed) && activeIds.length === 60
+  const catalogReady = seedValid && catalogKey === String(numericSeed) && activeIds.length > 0
+    && new Set(activeIds).size === activeIds.length && activeIds.every(id => !!catalog.operators[id])
     && !!catalog.campaign && !!catalog.campaign.nodeSchedule;
   const difficultyArt = uiUrl(data.get('assets'), `modeChoice/${difficultyArtKey[difficulty] || 'normal'}_rhodes_island`);
   const difficultySummary = difficultyCampaignSummary(catalog.campaign, difficulty);

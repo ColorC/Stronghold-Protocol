@@ -1,10 +1,9 @@
-import { prototypeSeason } from '../../../../shared/resonance/prototype-season.js';
 import { setPrototypeRatingBonus, prototypeRatingTotal } from './prototype-rating.js';
 import { prototypeSourceGearDefinitions } from '../../../../shared/resonance/prototype-source-gear.js';
 import { resolvePrototypeCritical } from '../../../../shared/resonance/prototype-critical.js';
 
 const GEAR_BY_ID=new Map(prototypeSourceGearDefinitions.map(row=>[row.id,row]));
-const SOURCE_HERO_BY_CHAR=new Map(prototypeSeason.heroes.map(row=>[row.charId,row.powerReference]));
+const sourceHeroPowerByChar=(catalog)=>new Map((catalog?.prototypeSeason?.heroes??[]).map(row=>[row.charId,row.nativePowerReference??row.powerReference]));
 const inputOf=(unit)=>unit?.player?.input?.units?.find(row=>String(row?.uid)===String(unit.uid))??null;
 const itemId=(row)=>typeof row==='string'?row:row?.itemId??row?.id??null;
 const metric=(battle,id,key)=>{
@@ -12,6 +11,7 @@ const metric=(battle,id,key)=>{
   const row=battle.resonanceMetrics.prototypeSourceGear[id]??={};row[key]=(row[key]??0)+1;
 };
 const finite=(value)=>value!=null&&Number.isFinite(Number(value));
+const effectiveEffects=(catalog,id)=>catalog?.equipment?.[id]?.prototypeEffectiveEffects??GEAR_BY_ID.get(id)?.sourceEffects??{};
 
 function sourceRows(unit,state){
   const uid=String(inputOf(unit)?.uid??unit?.resonanceUid??unit?.uid??'');
@@ -24,12 +24,13 @@ function sourceRows(unit,state){
 
 function sourceConfig(unit,rows,activeTraits,catalog){
   const ids=rows.map(itemId);
-  const power=SOURCE_HERO_BY_CHAR.get(unit?.charId??unit?.def?.raw?.charId)??null;
+  const effectsById=new Map(ids.map(id=>[id,effectiveEffects(catalog,id)]));
+  const power=sourceHeroPowerByChar(catalog).get(unit?.charId??unit?.def?.raw?.charId)??null;
   const ambusher=activeTraits.find(row=>row.id==='redeploy'&&row.members?.includes(unit?.charId??unit?.def?.raw?.charId));
-  const config={unit,rows,ids,power,atkPct:0,apPct:0,aspd:0,hpFlat:0,armorRating:0,mrRating:0,mana:0,critChance:0,abilityCrit:false,critDamageBonus:0,omnivamp:0,ambusher,hojCount:0,hojAtkBase:0,hojApBase:0,vowCount:0,crownguardCount:0,rageCount:0};
+  const config={unit,rows,ids,power,effectsById,atkPct:0,apPct:0,aspd:0,hpFlat:0,armorRating:0,mrRating:0,mana:0,critChance:0,abilityCrit:false,critDamageBonus:0,omnivamp:0,ambusher,hojCount:0,hojAtkBase:0,hojApBase:0,vowCount:0,crownguardCount:0,rageCount:0};
   for(const row of rows){
     const id=itemId(row);
-    const {sourceEffects:e}=GEAR_BY_ID.get(id);
+    const e=effectsById.get(id)??{};
     const qualityFactor=Number(catalog?.prototypeEconomy?.qualityEffects?.[row.quality]?.[id]?.sourceStatsFactor??0);
     const scaled=(value)=>Number(value??0)*(1+qualityFactor);
     config.atkPct+=scaled(e.AD??e.AD_NotStatBar??0);
@@ -64,14 +65,14 @@ function updateStats(battle,config){
   const modifiers={};
   const hpRatio=unit.hp/Math.max(1,unit.s.maxHp);
   const hoj=ids.includes('prototype_source_gear_hand_of_justice');
-  const healthFactor=hoj&&hpRatio>Number(GEAR_BY_ID.get('prototype_source_gear_hand_of_justice').sourceEffects.HealthThreshold)?1:0;
+  const healthFactor=hoj&&hpRatio>Number(config.effectsById.get('prototype_source_gear_hand_of_justice')?.HealthThreshold??0.5)?1:0;
   const attack=config.atkPct+(healthFactor?config.hojAtkBase:0);
   const ability=config.apPct+(healthFactor?config.hojApBase:0)+(config.crownguardAp??0);
   if(attack)modifiers.atkPct=attack;
   if(ability)modifiers.artsDealtMul=1+ability/100;
   if(config.aspd)modifiers.aspd=config.aspd;
   if(config.hpFlat)modifiers.hpFlat=config.hpFlat;
-  const vowRating=config.vowTriggered?Number(GEAR_BY_ID.get('prototype_source_gear_protectors_vow').sourceEffects.Stats)*config.vowCount:0;
+  const vowRating=config.vowTriggered?Number(config.effectsById.get('prototype_source_gear_protectors_vow')?.Stats??20)*config.vowCount:0;
   setPrototypeRatingBonus(battle,unit,'source-gear',{armor:config.armorRating+vowRating,magicResist:config.mrRating+vowRating},config.power??{});
   if(Object.keys(modifiers).length)battle.addBuff(unit,{key:`resonance:sourcegear:stats:${unit.uid}`,mods:modifiers,persist:true,allowDead:true,tags:['resonance','prototype-source-gear']});
 }
@@ -81,7 +82,7 @@ function grantVow(battle,config){
   if(!ids.includes('prototype_source_gear_protectors_vow')||config.vowTriggered||unit.hp/unit.s.maxHp>0.4)return;
   config.vowTriggered=true;unit.mem.prototypeSourceGearVowTriggered=true;
   updateStats(battle,config);
-  const effect=GEAR_BY_ID.get('prototype_source_gear_protectors_vow').sourceEffects;
+  const effect=config.effectsById.get('prototype_source_gear_protectors_vow')??{};
   battle.addBuff(unit,{key:`resonance:sourcegear:vow:${unit.uid}`,shield:unit.s.maxHp*effect.ShieldHealthPercent/100*config.vowCount,duration:effect.ShieldDuration,source:unit,visible:true,tags:['resonance','prototype-source-gear']});
   metric(battle,'prototype_source_gear_protectors_vow','activated');
 }
@@ -122,7 +123,7 @@ export function installPrototypeSourceGear(battle,state,catalog,activeTraits=[])
     unit.mem.prototypeSourceGearIds=ids;installed+=ids.length;
     unit.mem.prototypeSourceGearRating={armor:config.armorRating,magicResist:config.mrRating};
     if(config.crownguardCount){
-      const source=GEAR_BY_ID.get('prototype_source_gear_crownguard').sourceEffects;
+      const source=config.effectsById.get('prototype_source_gear_crownguard')??{};
       unit.mem.prototypeCrownguardPending=true;
       battle.on('battleStart',()=>{
         updateStats(battle,config);
@@ -147,16 +148,16 @@ export function installPrototypeSourceGear(battle,state,catalog,activeTraits=[])
     }
     const source=event?.source,attacker=configs.get(source),target=event?.target,dmg=event?.dmg;
     if(attacker?.omnivamp&&event.dealt>0){
-      const effect=GEAR_BY_ID.get('prototype_source_gear_hand_of_justice').sourceEffects;
+      const effect=attacker.effectsById.get('prototype_source_gear_hand_of_justice')??{};
       const ratio=attacker.omnivamp*(source.hp/source.s.maxHp<Number(effect.HealthThreshold)?2:1);
       battle.heal(source,source,event.dealt*ratio,{self:true,tags:['resonance','prototype-source-gear','hand-of-justice']});
       metric(battle,'prototype_source_gear_hand_of_justice','healing_events');
     }
     if(!attacker||target?.side!=='enemy'||!(event.dealt>0))return;
     if(attacker.ids.includes('prototype_source_gear_last_whisper')&&dmg?.type==='phys'){
-      const effect=GEAR_BY_ID.get('prototype_source_gear_last_whisper').sourceEffects;
+      const effect=attacker.effectsById.get('prototype_source_gear_last_whisper')??{};
       const targetChar=target.charId??target.def?.raw?.charId??target.def?.charId;
-      const targetPower=SOURCE_HERO_BY_CHAR.get(targetChar);
+      const targetPower=sourceHeroPowerByChar(catalog).get(targetChar);
       if(targetPower&&finite(targetPower.armor)&&finite(targetPower.attackDamage)){
         const key='sourcegear-last-whisper';
         const current=target.mem?.prototypeRatingBonuses?.[key]?.armor??0;
@@ -179,7 +180,7 @@ export function installPrototypeSourceGear(battle,state,catalog,activeTraits=[])
     if(!config||target?.side!=='enemy'||!dmg)return;
     if(!dmg.isAttack&&!dmg.isSkill)return;
     if(config.ids.includes('prototype_source_gear_morellonomicon')){
-      const e=GEAR_BY_ID.get('prototype_source_gear_morellonomicon').sourceEffects;
+      const e=config.effectsById.get('prototype_source_gear_morellonomicon')??{};
       battle.addBuff(target,{key:'resonance:sourcegear:morello',duration:e.BurnDuration,interval:1,source,mods:{healingTakenMul:1-e.GrievousWoundsPercent/100},onTick:({battle:current,unit})=>{
         if(unit.alive)current.dealDamage(source,unit,{amount:unit.s.maxHp*e.BurnPercent/100,type:'true',canDodge:false,tags:['resonance','prototype-source-gear','morello-burn']});
       },tags:['resonance','prototype-source-gear']});
@@ -193,7 +194,7 @@ export function installPrototypeSourceGear(battle,state,catalog,activeTraits=[])
     const rage=config.rageCount>0;
     if(rage){
       unit.mem.prototypeSourceRageStacks=(unit.mem.prototypeSourceRageStacks??0)+config.rageCount;
-      const perStack=Number(GEAR_BY_ID.get('prototype_source_gear_guinsoos_rageblade').sourceEffects.AttackSpeedPerStack);
+      const perStack=Number(config.effectsById.get('prototype_source_gear_guinsoos_rageblade')?.AttackSpeedPerStack??0);
       battle.addBuff(unit,{key:`resonance:sourcegear:rage:${unit.uid}`,mods:{aspd:perStack*unit.mem.prototypeSourceRageStacks},persist:true,allowDead:true,tags:['resonance','prototype-source-gear']});
       metric(battle,'prototype_source_gear_guinsoos_rageblade','attack_stacks');
     }

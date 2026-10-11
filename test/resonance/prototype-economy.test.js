@@ -343,7 +343,7 @@ test('Flesh Ripper surge grants the source omnivamp only during its live window'
 
 test('Perfected Executioner coins survive Native result validation and settle exactly once', { timeout: 60_000 }, async()=>{
   const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native');
-  const catalog=getResonanceCatalog(data,{rulesVersion:3,seed:601});
+  const catalog=getResonanceCatalog(data,{rulesVersion:3,seasonId:prototypeSeason.id,seed:601});
   const sourceItem=Object.values(catalog.equipment).find(row=>row.source?.apiName==='TFT13_Crime_Prismatic_ExecutionersVorpalblade');
   assert.ok(sourceItem,'the real source equipment is in the V3 catalog');
   const created=createSession({seed:601,difficulty:'NORMAL',catalog});assert.equal(created.ok,true,created.error);

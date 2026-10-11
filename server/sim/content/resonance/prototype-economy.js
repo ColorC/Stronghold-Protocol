@@ -1,5 +1,5 @@
 import { academySponsorSets, chooseAcademySponsorSet, prototypeEconomyRules, junkerKingUpgrades } from '../../../../shared/resonance/prototype-economy.js';
-import { prototypeSeason } from '../../../../shared/resonance/prototype-season.js';
+import { prototypeSeasonForCatalog } from '../../../../shared/resonance/season-registry.js';
 import { setPrototypeRatingBonus, prototypeRatingTotal, resolvePrototypeRatingReference } from './prototype-rating.js';
 
 const clone=(value)=>structuredClone(value);
@@ -41,7 +41,7 @@ function requiredAcademyCount(tier) {
   return byTier[tier]??(tier>6?byTier[6]:0);
 }
 function strongestRumblePiece(state,catalog) {
-  const memberIds=new Set(prototypeSeason.traits.find((row)=>row.sourceName==='Junker King')?.members??[]);
+  const memberIds=new Set(prototypeSeasonForCatalog(catalog).traits.find((row)=>row.sourceName==='Junker King')?.members??[]);
   const rows=(state?.pieces??[]).map((piece)=>{
     const op=catalog?.operators?.[piece.operatorId]??catalog?.operators?.[piece.sourceChessId];
     const charId=piece.charId??op?.charId;
@@ -180,6 +180,7 @@ export function onPrototypeEconomyResult(state,catalog={},activeTraits=[],result
 
 /** Apply persistent armory purchases to the actual Rumble unit for each battle. */
 export function installPrototypeEconomy(battle,state,catalog={}) {
+  const season=prototypeSeasonForCatalog(catalog);
   // NativeBattle does not expose addCoins; mode rewards are returned through this
   // result queue and credited by session settlement.
   battle.resonanceResults??={};
@@ -198,8 +199,8 @@ export function installPrototypeEconomy(battle,state,catalog={}) {
   }).filter(Boolean);};
   const chemItems=new Map(Object.values(catalog.equipment??{}).filter((item)=>item?.prototypeEconomyEffect).map((item)=>[item.id,item]));
   const definitions=new Map(junkerKingUpgrades.map((row)=>[row.id,row]));
-  const rumbleCharIds=new Set(prototypeSeason.traits.find((row)=>row.sourceName==='Junker King')?.members??[]);
-  const sourcePowerByChar=new Map((prototypeSeason.heroes??[]).map((hero)=>[hero.charId,hero.powerReference??{}]));
+  const rumbleCharIds=new Set(season.traits.find((row)=>row.sourceName==='Junker King')?.members??[]);
+  const sourcePowerByChar=new Map((season.heroes??[]).map((hero)=>[hero.charId,hero.nativePowerReference??hero.powerReference??{}]));
   const ratingReference=(unit)=>resolvePrototypeRatingReference(unit,sourcePowerByChar.get(charIdFor(unit))??{}).powerReference;
   const targets=()=>{
     const candidates=battle.allyUnits.filter((unit)=>unit?.kind==='op'&&unit.alive&&unit.deployed&&!unit.removed&&rumbleCharIds.has(charIdFor(unit))).map((unit)=>({unit,star:Number(unit.resonanceStar??unit.def?.raw?.resonanceStar??inputFor(unit)?.star??1),gear:held(unit).length,power:Number(unit.s?.atk??0)+Number(unit.s?.maxHp??0)/10,uid:String(inputFor(unit)?.uid??unit.uid??'')}));
@@ -229,7 +230,7 @@ export function installPrototypeEconomy(battle,state,catalog={}) {
   };
   const freeTile=(unit)=>{for(let d=1;d<=3;d++)for(let r=unit.tileR-d;r<=unit.tileR+d;r++)for(let c=unit.tileC-d;c<=unit.tileC+d;c++)if(Math.max(Math.abs(r-unit.tileR),Math.abs(c-unit.tileC))===d&&battle.grid?.canStand(r,c)&&!battle.unitAt?.(r,c)&&!battle.downOn?.(r,c))return[r,c];return null;};
   const addTimedBuff=(unit,key,mods,duration)=>battle.addBuff(unit,{key,mods,duration,source:unit,tags:['resonance','chem-baron']});
-  const sourceValue=(item,key,fallback=0)=>Number(item.prototypeSourceEffects?.[key]??fallback);
+  const sourceValue=(item,key,fallback=0)=>Number(item.prototypeEffectiveEffects?.[key]??item.prototypeSourceEffects?.[key]??fallback);
   const applyPersistents=()=>{
     for(const unit of battle.allyUnits.filter((row)=>row?.kind==='op'&&row.alive&&!row.removed)){
       if(applied.has(unit.id))continue;applied.add(unit.id);

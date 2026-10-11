@@ -6,7 +6,8 @@ import { applyCurrentStrategies } from '../../../shared/resonance/current-strate
 import { applyCurrentPacts } from '../../../shared/resonance/current-pacts.js';
 import { applyCurrentOperators } from '../../../shared/resonance/current-operators.js';
 import { applyCurrentEquipment } from '../../../shared/resonance/current-equipment.js';
-import { prototypeSeason } from '../../../shared/resonance/prototype-season.js';
+import { getActivePrototypeSeason, getPrototypeSeason } from '../../../shared/resonance/season-registry.js';
+import { buildNativePowerStars, buildNativePowerReference } from '../../../shared/resonance/native-power.js';
 import { tftArmorToNativeDefense, tftMrToNativeResistance } from '../../../shared/resonance/prototype-resistance.js';
 import { applyPrototypePacts } from '../../sim/content/resonance/prototype-pacts.js';
 import { applyPrototypeStrategies } from '../../../shared/resonance/prototype-strategies.js';
@@ -87,52 +88,58 @@ export function getResonanceCatalog(data = getData(), options = {}) {
   }
   const catalog = { ...resonanceContent, operators };
   if (rulesVersion === 3) {
-    const seasonId = options.seasonId ?? prototypeSeason.id;
-    if (seasonId !== prototypeSeason.id) throw new Error(`RESONANCE_UNKNOWN_SEASON:${seasonId}`);
+    const season = options.seasonId == null ? getActivePrototypeSeason() : getPrototypeSeason(options.seasonId);
+    const seasonId = season.id;
     const seasonOperators = { ...operators };
     const traitIdsByCharId = new Map();
-    for (const trait of prototypeSeason.traits) for (const charId of trait.members) {
+    const effectiveHeroes=[];
+    for (const trait of season.traits) for (const charId of trait.members) {
       const ids=traitIdsByCharId.get(charId)??[]; ids.push(trait.id); traitIdsByCharId.set(charId,ids);
     }
     const activeOperatorIds = [];
-    for (const hero of prototypeSeason.heroes) {
+    for (const hero of season.heroes) {
       const original = operators[hero.sourceChessId];
       if (!original || original.charId !== hero.charId) throw new Error(`RESONANCE_PROTOTYPE_OPERATOR_MISMATCH:${hero.sourceChessId}`);
-      const roleMultipliers=prototypeSeason.powerBudget.roleMultipliers[hero.role]??{hp:1,dps:1};
-      const targetHp=prototypeSeason.powerBudget.oneStarBaseHp[hero.cost-1]*roleMultipliers.hp;
-      const budgetScale=hero.currentFeeAdjustment?.budgetScale??1;
-      if(!Number.isFinite(budgetScale)||budgetScale<=0)throw new Error(`RESONANCE_INVALID_FEE_ADJUSTMENT:${hero.apiName}`);
-      const targetDps=prototypeSeason.powerBudget.oneStarBaseDps[hero.cost-1]*roleMultipliers.dps*budgetScale;
-      const normalBat=Number(original.source.normalChess.stats?.bat??1);
-      const sourceAttackSpeed=Number(hero.powerReference?.attackSpeed);
-      const sourceBat=Number.isFinite(sourceAttackSpeed)&&sourceAttackSpeed>0?1/sourceAttackSpeed:normalBat;
-      const stars={};
-      for (const star of [1,2,3]) {
-        const sourceStar=original.stars[star];
-        const hpMult=prototypeSeason.powerBudget.starMultipliers.hp[star-1];
-        const atkMult=prototypeSeason.powerBudget.starMultipliers.atk[star-1];
-        const armor=hero.powerReference?.armor,resistance=hero.powerReference?.magicResist;
-        const nativeArmor=typeof armor==='number'&&Number.isFinite(armor)
-          ?tftArmorToNativeDefense(armor,hero.powerReference?.attackDamage):null;
-        const nativeMr=typeof resistance==='number'&&Number.isFinite(resistance)
-          ?tftMrToNativeResistance(resistance):null;
-        const stats={...sourceStar.stats,maxHp:Math.round(targetHp*hpMult),atk:Math.round(targetDps*sourceBat*atkMult),
-          // Set 13 armor ratings become a flat-defense budget anchored to source AD;
-          // Set 13 MR ratings become Native's percentage resistance. Raw ratings remain in powerReference.
-          def:nativeArmor==null?sourceStar.stats.def:nativeArmor,
-          res:nativeMr==null?sourceStar.stats.res:nativeMr,bat:sourceBat};
-        const record={...clone(sourceStar.record),tier:hero.cost,resonanceStar:star,stats:{...sourceStar.record.stats,maxHp:stats.maxHp,atk:stats.atk,def:stats.def,res:stats.res,bat:stats.bat}};
-        stars[star]={...clone(sourceStar),stats,normalized:stats,record};
+      let stars,powerReference=hero.powerReference??{};
+      if(season.powerModel==='native-pve'){
+        stars=buildNativePowerStars(original,hero,season);
+        powerReference=buildNativePowerReference(original,hero,season);
+      }else{
+        const roleMultipliers=season.powerBudget.roleMultipliers[hero.role]??{hp:1,dps:1};
+        const targetHp=season.powerBudget.oneStarBaseHp[hero.cost-1]*roleMultipliers.hp;
+        const budgetScale=hero.currentFeeAdjustment?.budgetScale??1;
+        if(!Number.isFinite(budgetScale)||budgetScale<=0)throw new Error(`RESONANCE_INVALID_FEE_ADJUSTMENT:${hero.apiName}`);
+        const targetDps=season.powerBudget.oneStarBaseDps[hero.cost-1]*roleMultipliers.dps*budgetScale;
+        const normalBat=Number(original.source.normalChess.stats?.bat??1);
+        const sourceAttackSpeed=Number(hero.powerReference?.attackSpeed);
+        const sourceBat=Number.isFinite(sourceAttackSpeed)&&sourceAttackSpeed>0?1/sourceAttackSpeed:normalBat;
+        stars={};
+        for (const star of [1,2,3]) {
+          const sourceStar=original.stars[star];
+          const hpMult=season.powerBudget.starMultipliers.hp[star-1];
+          const atkMult=season.powerBudget.starMultipliers.atk[star-1];
+          const armor=hero.powerReference?.armor,resistance=hero.powerReference?.magicResist;
+          const nativeArmor=typeof armor==='number'&&Number.isFinite(armor)?tftArmorToNativeDefense(armor,hero.powerReference?.attackDamage):null;
+          const nativeMr=typeof resistance==='number'&&Number.isFinite(resistance)?tftMrToNativeResistance(resistance):null;
+          const stats={...sourceStar.stats,maxHp:Math.round(targetHp*hpMult),atk:Math.round(targetDps*sourceBat*atkMult),def:nativeArmor==null?sourceStar.stats.def:nativeArmor,res:nativeMr==null?sourceStar.stats.res:nativeMr,bat:sourceBat};
+          const record={...clone(sourceStar.record),tier:hero.cost,resonanceStar:star,stats:{...sourceStar.record.stats,maxHp:stats.maxHp,atk:stats.atk,def:stats.def,res:stats.res,bat:stats.bat}};
+          stars[star]={...clone(sourceStar),stats,normalized:stats,record};
+        }
       }
-      seasonOperators[hero.sourceChessId]={...original,cost:hero.cost,role:hero.role,pacts:[...new Set(traitIdsByCharId.get(hero.charId)??[])],currentFeeAdjustment:hero.currentFeeAdjustment?clone(hero.currentFeeAdjustment):null,stars,source:{...original.source,normalChess:{...original.source.normalChess,tier:hero.cost}}};
+      effectiveHeroes.push(season.powerModel==='native-pve'
+        ?{...hero,sourcePowerReference:clone(hero.powerReference??{}),powerReference:clone(powerReference),nativePowerReference:clone(powerReference)}
+        :hero);
+      seasonOperators[hero.sourceChessId]={...original,cost:hero.cost,role:hero.role,pacts:[...new Set(traitIdsByCharId.get(hero.charId)??[])],currentFeeAdjustment:hero.currentFeeAdjustment?clone(hero.currentFeeAdjustment):null,stars,nativePowerReference:clone(powerReference),source:{...original.source,normalChess:{...original.source.normalChess,tier:hero.cost}}};
       activeOperatorIds.push(hero.sourceChessId);
     }
+    const seasonForConsumers=season.powerModel==='native-pve'?{...season,heroes:effectiveHeroes}:season;
     const currentCatalog=applyPrototypeEconomy(applyPrototypePacts(applyPrototypeSourceGear(applyCurrentEquipment({
       ...catalog,
       operators:seasonOperators,
-      prototypeSeason:{chemBaronItems:prototypeSeason.chemBaronItems},
+      prototypeSeason:seasonForConsumers,
     }))));
-    delete currentCatalog.prototypeSeason;
+    if(currentCatalog.pacts.conqueror)currentCatalog.pacts.conqueror={...currentCatalog.pacts.conqueror,
+      rewardThresholds:[...prototypeEconomyRules.conqueror.chestThresholds]};
     const prototypeEmblemIds=new Set(currentCatalog.prototypeEmblemItems);
     const legacyEmblemIds=new Set(Object.values(currentCatalog.equipment).filter((item)=>item.kind==='emblem'&&!prototypeEmblemIds.has(item.id)).map((item)=>item.id));
     currentCatalog.equipment=Object.fromEntries(Object.entries(currentCatalog.equipment).filter(([,item])=>item.kind!=='emblem'||prototypeEmblemIds.has(item.id)));
@@ -146,10 +153,10 @@ export function getResonanceCatalog(data = getData(), options = {}) {
     campaign.supply.transfers=(campaign.supply.transfers??[]).map((entry)=>({...entry,selection:'viable-pact'}));
     campaign.poolByCost=Object.fromEntries([1,2,3,4,5].map((cost)=>[cost,activeOperatorIds.filter((id)=>seasonOperators[id].cost===cost).length]));
     currentCatalog.campaign=campaign;
-    currentCatalog.season={id:prototypeSeason.id,displayName:prototypeSeason.displayName};
-    currentCatalog.prototypeMeta={seasonId:prototypeSeason.id,rulesVersion:3,exactCounts:Object.values(currentCatalog.pacts).flatMap((pact)=>pact.exactCounts.map((count)=>({traitId:pact.id,count}))),traits:prototypeSeason.traits,currentFeeAdjustments:prototypeSeason.heroes.filter((hero)=>hero.currentFeeAdjustment).map((hero)=>({apiName:hero.apiName,operatorId:hero.sourceChessId,operatorName:hero.operatorName,cost:hero.cost,...clone(hero.currentFeeAdjustment)})),hooks:['onPrototypePrep','onPrototypeBattleResult']};
-    currentCatalog.specialEntities=clone(prototypeSeason.specialEntities??{});
-    currentCatalog.config={rulesVersion,seasonId:prototypeSeason.id,environmentId:null,openingId:selectPrototypeOpening(seed),seed,activeOperatorIds,starterIds:chooseStarterIds(activeOperatorIds,seasonOperators)};
+    currentCatalog.season={id:seasonForConsumers.id,displayName:seasonForConsumers.displayName};
+    currentCatalog.prototypeMeta={seasonId:seasonForConsumers.id,rulesVersion:3,exactCounts:Object.values(currentCatalog.pacts).flatMap((pact)=>pact.exactCounts.map((count)=>({traitId:pact.id,count}))),traits:seasonForConsumers.traits,currentFeeAdjustments:seasonForConsumers.heroes.filter((hero)=>hero.currentFeeAdjustment).map((hero)=>({apiName:hero.apiName,operatorId:hero.sourceChessId,operatorName:hero.operatorName,cost:hero.cost,...clone(hero.currentFeeAdjustment)})),hooks:['onPrototypePrep','onPrototypeBattleResult']};
+    currentCatalog.specialEntities=clone(seasonForConsumers.specialEntities??{});
+    currentCatalog.config={rulesVersion,seasonId,environmentId:null,openingId:selectPrototypeOpening(seed),seed,activeOperatorIds,starterIds:chooseStarterIds(activeOperatorIds,seasonOperators)};
     currentCatalog.diagnostics={sourceSkillGaps:clone(resonanceSourceSkillGaps)};
     return currentCatalog;
   }

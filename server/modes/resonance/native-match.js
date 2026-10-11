@@ -3,8 +3,7 @@ import { PHASE, ERR } from '../../../shared/constants.js';
 import { MetaRegistry } from '../../match/effectsMeta.js';
 import { buildResonanceBattle, getResonanceField, nativeResultForSession, placeSpecialEntities, previewUnitStats } from './battle.js';
 import { applyAction, effectiveDeployCapacity, viewSession } from './session.js';
-import { resonanceSessionDisplay } from './display.js';
-import { resonanceDisplayCatalog } from './display.js';
+import { resonanceSessionDisplay, resonanceDisplayCatalog, resonanceOperatorPresentation } from './display.js';
 import { BOSS_CLOCK_MS, DELAYS } from '../../match/match/common.js';
 import { BOSS_HIT_STEPS, SharedBossPool } from '../../match/finalAssault.js';
 import { compactResonanceResult, resonanceResultExtras } from '../../sim/spec.js';
@@ -17,7 +16,6 @@ const isNativeUid = (value) => Number.isSafeInteger(value) && value > 0;
 const finiteNumber = (value) => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
 const RESONANCE_ACTIONS = new Set(['advanceSupply', 'claimReward', 'chooseStrategy', 'clearSummonOrder', 'combine',
   'disassemble', 'recycleEquipment', 'setSummonOrder', 'unequip', 'useCopy', 'useConsumable']);
-
 function displayCatalogFor(catalog) {
   if (catalog?.config?.rulesVersion !== 3) return catalog;
   const pacts = Object.fromEntries(Object.entries(catalog.pacts ?? {}).map(([id, pact]) => [id, {
@@ -958,10 +956,13 @@ export function resonanceCatalogPacket(match) {
       const variantId = match.nativeChessId(id, star);
       const variant = operator.stars?.[star]?.record;
       if (!base || !variant) continue;
+      const presentation=resonanceOperatorPresentation(match.catalog,operator);
       const projected = { ...base, ...variant, chessId: variantId, baseId: star === 1 ? variantId : id,
         sourceChessId: sourceId, charId: operator.charId, tier: operator.cost, name: operator.name,
         isHidden: star > 1, visible: star === 1, resonanceStar: star, bonds: [...(operator.pacts ?? [])],
-        assets: { ...(base.assets??{}), ...(variant.assets??{}), ...(variant.skill?{skillIcon:variant.skill.iconId??operator.fixedSkillId}: {}) },
+        ...(presentation?{passivePresentation:presentation}:{}),
+        assets: { ...(base.assets??{}), ...(variant.assets??{}), ...(variant.skill?{skillIcon:variant.skill.iconId??operator.fixedSkillId}: {}),
+          ...(presentation?{resonancePresentationIcon:presentation.icon}:{}) },
         skills: variant.skills ?? [], skill: variant.skill ?? null, stats: { ...(variant.stats ?? {}) } };
       if (match.catalog.config?.rulesVersion === 3 && Array.isArray(projected.garrisonIds)) {
         projected.garrisonIds = projected.garrisonIds.filter((garrisonId) => data.garrisons?.[garrisonId]?.effectType !== 'SERVER_GAIN_EQUIP');
@@ -979,7 +980,8 @@ export function resonanceCatalogPacket(match) {
   const equipment = Object.fromEntries(Object.entries(match.catalog.equipment ?? {}).map(([id, item]) => [id, {
     ...(data.items?.[id] ?? {}), id, name: item.name, desc: item.description, kind: item.kind,
   }]));
-  return { t: 'r.catalog', catalog: resonanceDisplayCatalog(match.displayCatalog ?? match.catalog, match.data), data: {
+  const display=resonanceDisplayCatalog(match.displayCatalog ?? match.catalog, match.data);
+  return { t: 'r.catalog', catalog: display, data: {
     chess, bonds, items: equipment, config: data.config || {},
   } };
 }

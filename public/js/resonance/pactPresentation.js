@@ -7,7 +7,7 @@ export function pactReadableCopy(value) {
 }
 
 export function pactRewardSchedule(pact) {
-  const values = new Set();
+  const values = new Set((pact?.rewardThresholds??[]).map(Number));
   for (const text of [pact?.description, ...(pact?.levels || []).map(level => level.description)]) {
     for (const match of String(text || '').matchAll(new RegExp(scheduleSentence.source, 'g'))) {
       for (const n of match[1].match(/\d+/g) || []) values.add(Number(n));

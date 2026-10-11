@@ -3,8 +3,21 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { artifactPaths, attachWsCapture, colorContrastRatio, config, isAllowedHttpRequest, isRunnerResultWarning, missingChecks, nextSupplyReady, parseArgs, projectOwnSupplyLedger, REQUIRED_CHECKS, runtimeFaults, screenshotCount, settlementWaitArgs, shopPurchaseEvidence, waitForPopup, waitSent, waitSocketClosed } from '../../tools/resonance/native-live-ui-check.mjs';
+import { catalogForFixtureSession } from '../../tools/resonance/native-live-ui-fixtures.mjs';
 
 const tool = fileURLToPath(new URL('../../tools/resonance/native-live-ui-check.mjs', import.meta.url));
+
+test('fixture catalog is taken from its own session season and rejects the active-season catalog', () => {
+  const packet = { state: { seasonId: 'resonance-set13-14.23' }, catalog: {
+    config: { seasonId: 'resonance-set13-14.23' }, equipment: { prototype_emblem_arts: { name: 'Sorcerer Emblem' } },
+  } };
+  assert.equal(catalogForFixtureSession(packet, 'fixture-session'), packet.catalog);
+  const displayProjection = { state: packet.state, catalog: { schemaVersion: 3, season: { name: '共鸣' }, equipment: packet.catalog.equipment } };
+  assert.equal(catalogForFixtureSession(displayProjection, 'fixture-session'), displayProjection.catalog);
+  assert.throws(() => catalogForFixtureSession({ ...packet, catalog: {
+    ...packet.catalog, config: { seasonId: 'resonance-factions-1' },
+  } }, 'fixture-session'), /fixture catalog season mismatch/);
+});
 
 test('prepare mode validates paths without launching a browser or service', () => {
   const result = spawnSync(process.execPath, [tool, '--validate-args'], { encoding: 'utf8', timeout: 10_000 });
@@ -64,6 +77,9 @@ test('execution requires an explicit one-shot flag and acceptance gaps remain vi
   for (const check of ['native-entrypoints-unique', 'native-codex-session-and-shortcuts', 'native-panels-open-close', 'native-icons-and-type-readable', 'native-recipe-contrast', 'native-pact-rewards-disclosure', 'native-remaining-controls-live', 'native-visible-text-audit-14px', 'combat-speed-1-2-4-same-battle', 'reload-restores-same-battle', 'one-real-settlement', 'second-server-takeover-settlement-once', 'native-next-round-supply-and-strategy', 'native-result-back-to-title']) {
     assert.ok(REQUIRED_CHECKS.includes(check), `live acceptance must verify ${check}`);
   }
+  assert.ok(REQUIRED_CHECKS.includes('native-codex-bubble-skill-and-current-roster'), 'live acceptance must verify the current 3-cost Bubble skill detail and reject stale source copy');
+  assert.ok(REQUIRED_CHECKS.includes('experiment-detail-notes-disclosure'), 'live acceptance must expand and collapse Experiment member notes while retaining every tier');
+  assert.equal(REQUIRED_CHECKS.length,48,'the 46 baseline checks plus the two current-season detail regressions must remain required');
 });
 
 test('contrast helper computes WCAG ratios and composites transparent colors over the supplied surface', () => {

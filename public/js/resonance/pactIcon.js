@@ -60,9 +60,12 @@ function assetFor(manifest, [group, key]) {
 /** Resolve a real bond icon by the pact id first, then by the native bond record with the same name. */
 export function pactIconUrl(catalog, id) {
   const manifest = data.get('assets');
+  const pact = catalog?.pacts?.[id];
+  if (typeof pact?.nativeIconPath === 'string' && /^\/assets\/ui\/campLogo\/logo_[a-z_]+\.png$/.test(pact.nativeIconPath)) {
+    return pact.nativeIconPath;
+  }
   const direct = bondIconUrl(manifest, id);
   if (direct) return direct;
-  const pact = catalog?.pacts?.[id];
   const pactName = normalize(pact?.name);
   const native = pactName && data.list('bonds').find((bond) => bond && normalize(bond.name) === pactName);
   if (native) {

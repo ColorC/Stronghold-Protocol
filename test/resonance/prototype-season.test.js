@@ -268,7 +268,7 @@ test('v3 display pact tiers carry only named numeric source values for concise p
 });
 
 test('prototype meta selects inclusive source bounds and Emissary exact counts',()=>{
-  const v3=getResonanceCatalog(data,{rulesVersion:3,seed:1});
+  const v3=getResonanceCatalog(data,{rulesVersion:3,seasonId:prototypeSeason.id,seed:1});
   const emissary=v3.pacts.emissary;
   assert.deepEqual(emissary.exactCounts,[1,4]);
   const heroById=prototypeSeason.heroes;
@@ -297,7 +297,7 @@ test('Experiment laboratory cells are deterministic, legal, and independent of r
   assert.ok(two.every((cell)=>legal.some((candidate)=>candidate.row===cell.row&&candidate.col===cell.col)));
   assert.ok(two.every((cell)=>three.some((candidate)=>candidate.row===cell.row&&candidate.col===cell.col)),'higher tiers retain lower-tier lab cells');
   const state={seed:71,round:2,pieces:['TFT13_NunuWillump','TFT13_Urgot','TFT13_Zyra'].map((api,index)=>({uid:`exp-${index}`,charId:prototypeSeason.heroes.find((hero)=>hero.apiName===api).charId,row:9,col:index+1}))};
-  const prep=onPrototypePrep(state,{}, {stageId:'field-a',deployCells:legal});
+  const prep=onPrototypePrep(state,{config:{seasonId:prototypeSeason.id},prototypeSeason}, {stageId:'field-a',deployCells:legal});
   assert.equal(prep.state.prototypeMeta.labCells.length,2);
   assert.deepEqual(prep.state.prototypeMeta.labCells,two);
 });

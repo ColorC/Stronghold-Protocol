@@ -1,4 +1,5 @@
 import { prototypeSourceGearDefinitions } from './prototype-source-gear.js';
+import { nativeFlatAmount } from './native-effect-scale.js';
 
 /** Source pointers and source-backed progression constants for Set 13 (14.23).
  * Random reward contents are supplied by the session adapter from its seeded
@@ -42,15 +43,15 @@ export const prototypeEconomyRules = Object.freeze({
 export const chemBaronItems = Object.freeze([
   Object.freeze({
     id:'prototype_chem_salvaged_contraption',name:'回收式减伤装置',sourceName:'Salvaged Contraption',sourceApiName:'TFT13_Crime_Bronze_ChemGrips',
-    description:'生命值+200、护甲与法术抗性+10，受到的所有伤害降低10%。',sourceDescription:'Reduce all incoming damage by 10.',stats:Object.freeze({health:200,armor:10,magicResist:10}),effect:Object.freeze({kind:'flat_damage_reduction',amount:10}),
+    description:'生命值+200、护甲与法术抗性+10，受到的所有伤害降低10%。',sourceDescription:'Reduce all incoming damage by 10.',sourceEffects:Object.freeze({Health:200,Armor:10,MagicResist:10,ReducedDamage:10}),stats:Object.freeze({health:200,armor:10,magicResist:10}),effect:Object.freeze({kind:'flat_damage_reduction',amount:10}),
   }),
   Object.freeze({
     id:'prototype_chem_salvaged_revolver',name:'回收式法术增幅器',sourceName:'Salvaged Revolver',sourceApiName:'TFT13_Crime_Bronze_MageGuard',
-    description:'法术强度+20、初始法力+15；每5秒额外获得10点法术强度。',sourceDescription:'Gain 20 Ability Power and 10 Ability Power every 5 seconds.',stats:Object.freeze({ap:20,mana:15}),effect:Object.freeze({kind:'periodic_arts_power',basePct:20,perTickPct:10,interval:5}),
+    description:'法术强度+20、初始法力+15；每5秒额外获得10点法术强度。',sourceDescription:'Gain 20 Ability Power and 10 Ability Power every 5 seconds.',sourceEffects:Object.freeze({AP:20,Mana:15,APPerTick:10,TickRate:5}),stats:Object.freeze({ap:20,mana:15}),effect:Object.freeze({kind:'periodic_arts_power',basePct:20,perTickPct:10,interval:5}),
   }),
   Object.freeze({
     id:'prototype_chem_salvaged_gauntlet',name:'回收式真伤护手',sourceName:'Salvaged Gauntlet',sourceApiName:'TFT13_Crime_Bronze_MiningGauntlet',
-    description:'攻击力+25%、攻击速度+10%；普攻额外造成15点真实伤害。',sourceDescription:'Gain 25% Attack Damage and 10% Attack Speed. Attacks deal 15 additional true damage.',stats:Object.freeze({atkPct:0.25,aspd:10}),effect:Object.freeze({kind:'attack_true_damage',amount:15}),
+    description:'攻击力+25%、攻击速度+10%；普攻额外造成15点真实伤害。',sourceDescription:'Gain 25% Attack Damage and 10% Attack Speed. Attacks deal 15 additional true damage.',sourceEffects:Object.freeze({AD:0.25,AS:10,BonusDamageOnAttack:15}),stats:Object.freeze({atkPct:0.25,aspd:10}),effect:Object.freeze({kind:'attack_true_damage',amount:15}),
   }),
 ]);
 
@@ -78,6 +79,12 @@ const CHEM_ITEM_NAMES=Object.freeze({
   PiltovenHexplating:'六边装甲',ShimmerBloom:'微光绽放',UnleashedToxins:'释放毒素',
   VirulentVirus:'毒性病毒',VoltaicSaber:'电涌军刀',DimensionalHeirloom:'维度遗珍',
 });
+const CHEM_NATIVE_FLAT_FIELDS=Object.freeze(['Health','BonusDamageOnAttack','ShieldAmount','PrismaticHeal','FlatDamage','JoltDamage','PrismaticWaveDamage','PrismaticZombieHealth']);
+function chemEffectiveEffects(season,sourceEffects={}){
+  const effective=structuredClone(sourceEffects);
+  for(const key of CHEM_NATIVE_FLAT_FIELDS)if(Number.isFinite(Number(effective[key])))effective[key]=nativeFlatAmount(season,effective[key]);
+  return effective;
+}
 function chemFamily(apiName){return Object.keys(CHEM_ITEM_FAMILIES).find((suffix)=>apiName.endsWith(suffix))??null;}
 function chemTier(apiName){return ['OmegaPrismatic','Prismatic','Gold','Silver','Bronze'].find((tier)=>apiName.includes(`_${tier}_`))??null;}
 function chemStats(effects={}){
@@ -105,10 +112,10 @@ const chemMechanicCopy=(family,effects,tier)=>{
     default:return CHEM_ITEM_FAMILIES[family]?.copy??'';
   }
 };
-function adaptChemItem(row){
+function adaptChemItem(row,season=null){
   const apiName=String(row.apiName??row.sourceApiName??''),family=chemFamily(apiName),tier=chemTier(apiName);
   if(!family||!tier)return null;
-  const profile=CHEM_ITEM_FAMILIES[family],effects=structuredClone(row.effects??{}),stats=chemStats(effects);
+  const profile=CHEM_ITEM_FAMILIES[family],sourceEffects=structuredClone(row.effects??{}),effects=chemEffectiveEffects(season,sourceEffects),stats=chemStats(effects);
   const bronze=family==='ChemGrips'?{kind:'flat_damage_reduction',amount:stats.reducedDamage}
     :family==='MageGuard'?{kind:'periodic_arts_power',basePct:stats.ap,perTickPct:Number(effects.APPerTick??0),interval:Number(effects.TickRate??5)}
     :family==='MiningGauntlet'?{kind:'attack_true_damage',amount:Number(effects.BonusDamageOnAttack??0)}
@@ -124,7 +131,7 @@ function adaptChemItem(row){
         :null;
   return {id:apiName.startsWith('TFT13_Crime_Bronze_')?({ChemGrips:'prototype_chem_salvaged_contraption',MageGuard:'prototype_chem_salvaged_revolver',MiningGauntlet:'prototype_chem_salvaged_gauntlet'}[family]):`prototype_chem13_${apiName.replace(/^TFT13_Crime_/,'').replace(/[^A-Za-z0-9]+/g,'_').toLowerCase()}`,
     sourceApiName:apiName,sourceName,tier,name,description:`${chemStatCopy(stats)?`${chemStatCopy(stats)}。`:''}${chemMechanicCopy(family,effects,tier)}`,sourceDescription:row.description??row.desc??'',modeAdaptation,
-    sourceEffects:effects,unique:row.unique===true,stats,effect:bronze};
+    sourceEffects,effectiveEffects:effects,unique:row.unique===true,stats,effect:bronze};
 }
 
 // The eight upgrade names and their combat text come directly from the pinned
@@ -247,17 +254,43 @@ export const prototypeEconomyCopy = Object.freeze({
   junkerKing:'铸军每三场已结算战斗开放一次军械铺，只能为场上最强的维娜选择一项永久机甲升级。升级需金币；备用零件免费。',
 });
 
+function economyCopyFor(catalog) {
+  if (catalog.prototypeSeason?.id !== 'resonance-factions-1') return { ...prototypeEconomyCopy };
+  const name = (id, fallback) => catalog.pacts?.[id]?.name ?? fallback;
+  const academy = name('academy', '研发院');
+  const risk = name('risk', '险境');
+  const conqueror = name('conqueror', '远征');
+  const family = name('family', '并肩');
+  const armory = name('armory', '铸军');
+  return {
+    academy: `${academy}每局确定三件赞助装备；达到不同人数档位后，累计领取一、二或三件。赞助装备的持有者获得生命与伤害增幅，${academy}干员加成更高。`,
+    chemBaron: `${risk}干员在每场战斗后积累微光，连败时积累更多，胜利会重置连败。每积累一百微光，可选择一件违禁装备或略过市场；略过会提高${risk}干员生命。`,
+    conqueror: `${conqueror}干员击倒敌人累积征服进度；达到宝箱目标即可领取奖励。`,
+    family: `${family}最高档在战斗后推进劫掠；存活的${family}成员越多，推进越快。到达战利品目标后，可在多种奖励中领取一项。`,
+    junkerKing: `${armory}每三场战斗开放一次军械铺，可为场上最强的${armory}干员选择一项永久升级。升级需金币；备用零件免费。`,
+  };
+}
+
 /** Injects mode-backed economy items and immutable source tables into a v3 catalog. */
 export function applyPrototypeEconomy(catalog={}) {
+  const economyCopy=economyCopyFor(catalog);
+  const riskName=catalog.prototypeSeason?.id==='resonance-factions-1'?(catalog.pacts?.risk?.name??'险境'):'险境';
   const equipment={...(catalog.equipment??{})};
   const sourceChemRows=Array.isArray(catalog.prototypeSeason?.chemBaronItems)?catalog.prototypeSeason.chemBaronItems:[];
-  const projectedChem=sourceChemRows.length?sourceChemRows.map(adaptChemItem).filter(Boolean):chemBaronItems;
+  const projectedChem=sourceChemRows.length?sourceChemRows.map(row=>adaptChemItem(row,catalog.prototypeSeason)).filter(Boolean):chemBaronItems.map(row=>{
+    const sourceEffects=structuredClone(row.sourceEffects??{}),effectiveEffects=chemEffectiveEffects(catalog.prototypeSeason,sourceEffects);
+    const stats={...row.stats,health:nativeFlatAmount(catalog.prototypeSeason,row.stats?.health??0)};
+    const effect=structuredClone(row.effect);
+    if(effect.kind==='attack_true_damage')effect.amount=nativeFlatAmount(catalog.prototypeSeason,effect.amount);
+    const description=`${chemStatCopy(stats)?`${chemStatCopy(stats)}。`:''}${row.sourceApiName.endsWith('ChemGrips')?`受到的伤害降低${effect.amount}%。`:row.sourceApiName.endsWith('MageGuard')?`每${effect.interval}秒额外获得${effect.perTickPct}点法术强度。`:`普攻额外造成${effect.amount}点真实伤害。`}`;
+    return {...row,sourceEffects,effectiveEffects,stats,effect,description};
+  });
   const chemById=new Map(projectedChem.map((row)=>[row.id,row]));
   for(const record of chemById.values()){
     equipment[record.id]={id:record.id,name:record.name,kind:'passive',unique:record.unique===true,grantAllowed:true,prototype:true,
-      source:{game:'Teamfight Tactics',version:'Set 13 launch patch 14.23',apiName:record.sourceApiName,sourceEffectText:record.sourceDescription,
+      source:{game:'Teamfight Tactics',version:'Set 13 launch patch 14.23',apiName:record.sourceApiName,sourceEffectText:record.sourceDescription,sourceEffects:structuredClone(record.sourceEffects??{}),
         sourceKind:'CommunityDragon pinned 14.23 client extract; official overview establishes the trait and item family, not this exact item record'},
-      description:record.description,prototypeEconomyTier:record.tier??'Bronze',prototypeEconomyEffect:structuredClone(record.effect),prototypeEconomyStats:structuredClone(record.stats),prototypeSourceEffects:structuredClone(record.sourceEffects??{}),...(record.modeAdaptation?{prototypeModeAdaptation:record.modeAdaptation}:{}),effects:[]};
+      description:record.description,prototypeEconomyTier:record.tier??'Bronze',prototypeEconomyEffect:structuredClone(record.effect),prototypeEconomyStats:structuredClone(record.stats),prototypeSourceEffects:structuredClone(record.sourceEffects??{}),prototypeEffectiveEffects:structuredClone(record.effectiveEffects??record.sourceEffects??{}),...(record.modeAdaptation?{prototypeModeAdaptation:record.modeAdaptation}:{}),effects:[]};
   }
   if(equipment.giantSlayer&&!equipment.prototype_academy_guardbreaker){
     equipment.prototype_academy_guardbreaker={...structuredClone(equipment.giantSlayer),id:'prototype_academy_guardbreaker',name:'破障重刃',unique:false,prototype:true,
@@ -310,14 +343,14 @@ export function applyPrototypeEconomy(catalog={}) {
   };
   const familyHeistOptions={...Object.fromEntries(Object.entries(FAMILY_REWARDS).map(([threshold,rows])=>[threshold,rows.map((row)=>({...row}))]))};
   return {...catalog,equipment,prototypeEconomy:{...(catalog.prototypeEconomy??{}),
-    source:{...prototypeEconomySources},rules:{...prototypeEconomyRules},copy:{...prototypeEconomyCopy},
+    source:{...prototypeEconomySources},rules:{...prototypeEconomyRules},copy:economyCopy,
     academy:{...(catalog.prototypeEconomy?.academy??{}),eligibleItemIds:academyPool,sponsorSets,sponsorOptions},
     chemBaron:{...(catalog.prototypeEconomy?.chemBaron??{}),marketOptionsByThreshold:chemMarketOptions(),marketOptions:chemBaronItems.map((item)=>({id:item.id,label:item.name,description:item.description,
       grant:[{kind:'item',id:item.id}],cost:{currency:'shimmer',amount:0},sourceApiName:item.sourceApiName})),
-      skipOption:{id:'skip-market',label:'略过市场',description:'略过本次市场，险境干员获得本档生命加成。',cost:{currency:'shimmer',amount:0},action:'skip'}},
+      skipOption:{id:'skip-market',label:'略过市场',description:`略过本次市场，${riskName}干员获得本档生命加成。`,cost:{currency:'shimmer',amount:0},action:'skip'}},
     conqueror:{...(catalog.prototypeEconomy?.conqueror??{}),chestOptionsByThreshold:Object.fromEntries(Object.entries(CHEST_REWARDS).map(([threshold,rows])=>[threshold,rows.map((row)=>({...row}))]))},
     family:{...(catalog.prototypeEconomy?.family??{}),heistOptionsByThreshold:familyHeistOptions},
-    gearConsumables:{...gearConsumables,...Object.fromEntries(Object.entries(CHEM_CONSUMABLE_BY_TIER).map(([tier,id])=>[id,{id,name:`${CHEM_TIER_NAMES[tier]}违禁装备选择`,kind:'anvil',quality:`chemBaron${tier}`,description:`从${CHEM_TIER_NAMES[tier]}险境装备中选择一件。`,source:'Set 13 Chem-Baron Black Market reward rows',adaptation:'保留来源装备属性与效果，转译为本模式干员战斗属性及事件。'}]))},gearPools,qualityEffects,
+    gearConsumables:{...gearConsumables,...Object.fromEntries(Object.entries(CHEM_CONSUMABLE_BY_TIER).map(([tier,id])=>[id,{id,name:`${CHEM_TIER_NAMES[tier]}违禁装备选择`,kind:'anvil',quality:`chemBaron${tier}`,description:`从${CHEM_TIER_NAMES[tier]}${riskName}装备中选择一件。`,source:'Set 13 Chem-Baron Black Market reward rows',adaptation:'保留来源装备属性与效果，转译为本模式干员战斗属性及事件。'}]))},gearPools,qualityEffects,
     junkerKing:{...(catalog.prototypeEconomy?.junkerKing??{}),upgradeOptions:[...junkerKingUpgrades.map((row)=>({id:row.id,label:row.name,description:row.description,cost:{currency:'gold',amount:row.price},grant:[{kind:'rumble_upgrade',id:row.id}],sourceApiName:row.sourceApiName,priceAdaptation:row.priceAdaptation})),{id:'skip-armory',label:'暂不购买',description:'本轮保留金币。',action:'skip',cost:{currency:'gold',amount:0}}]},
   }};
 }

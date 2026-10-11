@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { prototypeSeason } from '../../shared/resonance/prototype-season.js';
 import path from 'node:path';
 import { loadData } from '../../server/data.js';
 import { getResonanceCatalog } from '../../server/modes/resonance/catalog.js';
@@ -13,7 +14,7 @@ assert.equal(path.resolve(requestedDataDir || ''), path.resolve(canonicalDataDir
   'test must read the frozen canonical Native data directory, not a worktree copy');
 const quietLog = { warn() {}, error() {}, info() {} };
 const data = loadData(canonicalDataDir, { log: quietLog });
-const catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 718 });
+const catalog = getResonanceCatalog(data, { rulesVersion: 3, seasonId: prototypeSeason.id, seed: 718 });
 const pact = catalog.pacts?.conqueror;
 const expectedSchedule = [10, 35, 65, 100, 150, 200, 330, 440, 550, 660, 750, 850, 1000, 1200, 1500];
 const fullRewardSentence = '累计达到10、35、65、100、150、200、330、440、550、660、750、850、1000、1200或1500点可领取一档奖励；';

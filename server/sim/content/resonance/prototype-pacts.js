@@ -1,9 +1,11 @@
-import { prototypeSeason } from '../../../../shared/resonance/prototype-season.js';
+import { prototypeSeasonForCatalog } from '../../../../shared/resonance/season-registry.js';
 import { PROTOTYPE_FORM_SWAP, prototypeFormForRow } from '../../../../shared/resonance/prototype-form.js';
 import { resolvePrototypeCritical } from '../../../../shared/resonance/prototype-critical.js';
 import { SkillRuntime } from '../../skills.js';
 import { tftMrToNativeResistance, tftRatingBonusToNative, tftArmorToNativeDefense } from '../../../../shared/resonance/prototype-resistance.js';
 import { setPrototypeRatingBonus } from './prototype-rating.js';
+import { nativeFlatAmount } from '../../../../shared/resonance/native-effect-scale.js';
+import { nativePactCopy } from '../../../../shared/resonance/native-pact-copy.js';
 
 const clone = (value) => structuredClone(value);
 const mechanicByTrait = Object.freeze({
@@ -18,8 +20,14 @@ const mechanicByTrait = Object.freeze({
 
 const pct = (value) => `${Math.round(Number(value ?? 0) * 100)}%`;
 const pctPrecise = (value) => `${Number((Number(value ?? 0) * 100).toFixed(2))}%`;
-function tierDescription(name, v, minUnits=0) {
-  switch (name) {
+function sourceHookHero(season,apiName) {
+  const assignedName=season.sourceHookAssignments?.[apiName];
+  return (assignedName&&season.heroes.find((hero)=>hero.operatorName===assignedName))
+    ??season.heroes.find((hero)=>hero.apiName===apiName);
+}
+function tierDescription(name, v, minUnits=0, season) {
+  const trait=season.traits.find((entry)=>entry.sourceName===name);
+  const description=(()=>{switch (name) {
     case 'Automata': return `机巧干员每次造成伤害获得1枚晶体；累计${v.TriggerNumCrystals}枚后，对当前目标造成${v.MagicDamage}点术法伤害，并追加自上次爆发以来伤害总量的${pct(v.ConversionDamagePct)}，随后重置晶体。机巧干员获得${v.Resists}点双抗评分对应的防护。`;
     case 'Sorcerer': return `非术式干员术法伤害提高${v.TeamAP}%；术式干员术法伤害总计提高${v.BaseAP}%。${v.DamageDecrease == null ? '' : `术式干员的技能命中使目标造成的伤害降低${pct(v.DamageDecrease)}，持续${v.DamageDecreaseDuration}秒。`}`;
     case 'Scrap': {
@@ -28,9 +36,12 @@ function tierDescription(name, v, minUnits=0) {
     }
     case 'Artillerist': return `炮术干员获得${pct(v.AD)}攻击力；每${v.NumOfAttacks}次普攻发射火箭，对目标周围造成${pct(v.PercentDamage)}攻击力的范围伤害。`;
     case 'Form Swapper': return `双形干员部署在前两排时获得${pct(v.DR)}减伤，部署在后两排时获得${pct(v.DA)}伤害增幅。`;
-    case 'Emissary': return minUnits===1
-      ? `恰好上场1名领军时生效：能天使使每名友军按自身星级获得6%/12%/18%攻速；流明使每名友军每次攻击额外获得${v.NamiMana}技力；塞雷娅使自己和左右相邻友军获得塞雷娅最大生命值${pct(v.GarenHealthPercent)}的生命；锏每获胜一场已结算战斗，全队获得${v.AmbessaArmor_PVE ?? v.AmbessaArmor}点护甲评分对应的防护，最多计入7场。`
-      : `恰好上场4名领军时生效：能天使使每名友军按自身星级获得6%/12%/18%攻速；流明使每名友军每次攻击额外获得${v.NamiMana}技力；塞雷娅使自己和左右相邻友军获得塞雷娅最大生命值${pct(v.GarenHealthPercent)}的生命；锏每获胜一场已结算战斗，全队获得${v.AmbessaArmor_PVE ?? v.AmbessaArmor}点护甲评分对应的防护，最多计入7场。4名领军各额外获得${v.BonusHealth}点生命与${pct(v.SelfishDamageAmp)}伤害增幅。`;
+    case 'Emissary': {
+      const hero=(api)=>sourceHookHero(season,api)?.operatorName??'对应干员';
+      const [attackSpeed,energy,healing,defense]=['TFT13_Tristana','TFT13_Nami','TFT13_Garen','TFT13_Ambessa'].map(hero);
+      const effects=`${attackSpeed}使每名友军按自身星级获得6%/12%/18%攻速；${energy}使每名友军每次攻击额外获得${v.NamiMana}技力；${healing}使自己和左右相邻友军获得其最大生命值${pct(v.GarenHealthPercent)}的生命；${defense}每获胜一场已结算战斗，全队获得${v.AmbessaArmor_PVE ?? v.AmbessaArmor}点护甲评分对应的防护，最多计入7场。`;
+      return minUnits===1?`恰好上场1名${trait?.name??'盟约'}干员时生效：${effects}`:`恰好上场4名${trait?.name??'盟约'}干员时生效：${effects}4名${trait?.name??'盟约'}干员各额外获得${v.BonusHealth}点生命与${pct(v.SelfishDamageAmp)}伤害增幅。`;
+    }
     case 'Sentinel': return `全队获得${v.BonusArmor}点护甲评分对应的物理减伤与法术抗性；坚阵干员获得三倍加成。`;
     case 'Family': return `并肩干员攻击速度+${pct(v.AttackSpeed)}、所受伤害降低${pct(v.DamageReduction)}、技能技力需求降低${pct(v.ManaReduction)}。${v['{01fcc30b}'] == null ? '' : `战斗结束后，存活的并肩干员推进家族行动。`}`;
     case 'Ambusher': return `突袭干员获得${pct(v.CritChance)}暴击率加成，普攻与技能均可暴击；暴击伤害提高${pct(v.CritDamage)}。${v.DamageReductionPct == null ? '' : `所受伤害降低${pct(v.DamageReductionPct)}。`}`;
@@ -45,33 +56,44 @@ function tierDescription(name, v, minUnits=0) {
     case 'Pit Fighter': return `决斗干员全能吸血+${pct(v.OmnivampPercent)}、伤害转为额外真实伤害${pct(v.TrueDamagePercent)}；首次降至${pct(v.HealthThreshold)}生命时恢复${pct(v.HealPercent)}生命。`;
     case 'Enforcer': return `围剿干员获得${pct(v.BaseDA)}伤害增幅与相当于自身最大生命值${pct(v.PercentMaxHealthShield)}的护盾；开战标记${Number(v.NumOfWantedEnemies)>=99?'所有':v.NumOfWantedEnemies}名高生命敌人。每名被标记者被击倒后，所有围剿干员的攻速提高${pct(v.AttackSpeedPerWantedKill)}。`;
     case 'Firelight': return `游击干员每${v.Duration}秒冲刺；冲刺期间获得无限射程，并恢复所受伤害的${pct(v.PercentDamageTakenHeal)}。`;
-    case 'Experiment': return `共生干员获得${v.MaxHealth}点生命值并开启${v.NumLaboratory}格实验室。处于实验室格的共生干员共享格中实验体的战斗效果；其中幽灵鲨造成伤害后追加相当于自身最大生命值${pct(Number(prototypeSeason.heroes.find((hero)=>hero.apiName==='TFT13_NunuWillump')?.experimentBonus?.sourceVariables?.ExperimentMaxHealthDamage??0.03))}的术法伤害（7人档翻倍）。${Number(v.ExperimentBonusIncrease??0)>0?`实验体效果提高${pct(v.ExperimentBonusIncrease)}。`:''}`;
+    case 'Experiment': return `共生干员获得${v.MaxHealth}点生命值并开启${v.NumLaboratory}格实验室。处于实验室格的干员可共享实验效果；实验室内的干员造成伤害后追加相当于自身最大生命值${pct(Number(sourceHookHero(season,'TFT13_NunuWillump')?.experimentBonus?.sourceVariables?.ExperimentMaxHealthDamage??0.03))}的术法伤害（7人档翻倍）。${Number(v.ExperimentBonusIncrease??0)>0?`实验效果提高${pct(v.ExperimentBonusIncrease)}。`:''}`;
     case 'Bruiser': return `全队最大生命值+${v.TeamFlatHealth}；重装干员额外获得${pct(v.BonusPercentHealth)}最大生命值。`;
-    case 'Junker King': return `每${v.NumRounds1Star}场已结算战斗开启一次军械铺；由场上最强的维娜选择一项永久机甲升级，按标价支付金币，也可暂不购买。`;
+    case 'Junker King': return `每${v.NumRounds1Star}场已结算战斗开启一次${trait?.name??'盟约'}升级铺；由场上最强的${sourceHookHero(season,'TFT13_Rumble')?.operatorName??'该盟约干员'}选择一项永久机甲升级，按标价支付金币，也可暂不购买。`;
     case 'Black Rose': return `幻造守卫被锁链束缚；幻造干员施放${v.NumCastsToUnlock}次技能或守卫生命低于${pct(v.PercentHealthUnlock)}时解锁。解锁后守卫冲锋。${minUnits>=4?'冲锋命中的敌人会被标记，幻造干员对其伤害提高15%。':''}${minUnits>=5?'冲锋还会对附近敌人造成其最大生命值25%的伤害，并将守卫恢复至满生命。':''}守卫获得${v['{2e45fc86}']}点护甲评分对应的物理防护与法术抗性；技能获得175点护盾，并对直线敌人造成伤害与眩晕。${minUnits>=7?'守卫被击倒后以50%生命复生，并获得300%攻速与40%全能吸血。':''}`;
     case 'Quickstriker': return `迅击干员依据目标已损失生命值获得${pct(v.MinBonusAS)}至${pct(v.MaxBonusAS)}攻击速度。${v.ShieldAmount == null ? '' : `击倒目标后冲向新的目标，并获得${v.ShieldAmount}点护盾，持续${v.ShieldDuration}秒。`}`;
     case 'Watcher': return `守望干员基础减伤${pct(v.BaseDR)}；生命值高于${pct(v.HealthBreakpoint)}时提升至${pct(v.IncreasedDR)}。`;
     default: return '原型效果尚无中文适配。';
-  }
+  }})();
+  const terms={
+    Automata:'机巧',Sorcerer:'术式',Scrap:'战地整备',Artillerist:'炮术','Form Swapper':'双形',Emissary:'领军',Sentinel:'坚阵',Family:'并肩',Ambusher:'突袭',Visionary:'技力协同',Sniper:'狙击',Conqueror:'远征','High Roller':'圣枪',Academy:'研发','Chem-Baron':'险境',Rebel:'逆潮',Dominator:'掌控','Pit Fighter':'决斗',Enforcer:'围剿',Firelight:'游击',Experiment:'共生',Bruiser:'重装','Junker King':'军械','Black Rose':'幻造',Quickstriker:'迅击',Watcher:'守望',
+  };
+  let localized=description;
+  if(trait?.name)for(const oldTerm of terms[name]?[terms[name]]:[])localized=localized.split(`${oldTerm}干员`).join(`${trait.name}干员`);
+  if(trait?.name&&name==='Junker King')localized=localized.split('军械铺').join(`${trait.name}升级铺`);
+  return localized;
 }
 
 export function applyPrototypePacts(catalog) {
+  const season=prototypeSeasonForCatalog(catalog);
   const pacts = {};
-  for (const trait of prototypeSeason.traits) {
+  for (const trait of season.traits) {
     const mechanic = mechanicByTrait[trait.sourceName];
     if (!mechanic) throw new Error(`PROTOTYPE_MECHANIC_MISSING:${trait.sourceName}`);
     const nativeIconId=catalog.pacts?.[trait.id]?.iconId??catalog.pacts?.[trait.id]?.icon??null;
-    const sourceOperators=trait.members.map((charId)=>prototypeSeason.heroes.find((hero)=>hero.charId===charId)?.sourceChessId).filter(Boolean);
+    const nativeCopy=season.powerModel==='native-pve'?nativePactCopy(trait,season):null;
+    const overview=nativeCopy?.overview??trait.description;
+    const sourceOperators=trait.members.map((charId)=>season.heroes.find((hero)=>hero.charId===charId)?.sourceChessId).filter(Boolean);
     pacts[trait.id] = {
-      id:trait.id, name:trait.name, description:trait.description, icon:nativeIconId, iconId:nativeIconId,
+      id:trait.id, name:trait.name, description:overview, icon:nativeIconId, iconId:nativeIconId,
+      ...(nativeCopy?{summaryDescription:overview,...(nativeCopy.notes.length?{detailNotes:nativeCopy.notes}:{})}:{}),
       members:sourceOperators, memberCharIds:[...trait.members], thresholds:trait.effects.map((tier)=>tier.minUnits),
-      group:'prototype-natural-trait', unique:false, natural:true, emblemRequired:trait.emblemRequired,
+      group:trait.group??'prototype-natural-trait', nativeIconPath:trait.nativeIconPath, unique:false, natural:true, emblemRequired:trait.emblemRequired,
       exactCounts:trait.effects.filter((tier)=>tier.minUnits===tier.maxUnits).map((tier)=>tier.minUnits),
       source:{...clone(trait.reference),recordId:trait.sourceApiName,sourceEffectText:trait.description},
       levels:trait.effects.map((tier)=>({
         threshold:tier.minUnits,minUnits:tier.minUnits,maxUnits:tier.maxUnits,style:tier.style,
-        description:tierDescription(trait.sourceName,tier.variables,tier.minUnits),sourceVariables:clone(tier.variables),
-        effects:[{kind:'prototype_trait',params:{traitId:trait.id,sourceName:trait.sourceName,mechanic,variables:clone(tier.variables),description:tierDescription(trait.sourceName,tier.variables,tier.minUnits),sourceReference:clone(trait.reference)}}],
+        description:nativeCopy?.tier(tier)??tierDescription(trait.sourceName,tier.variables,tier.minUnits,season),sourceVariables:clone(tier.sourceVariables??tier.variables),
+        effects:[{kind:'prototype_trait',params:{traitId:trait.id,sourceName:trait.sourceName,mechanic,variables:clone(tier.variables),description:tierDescription(trait.sourceName,tier.variables,tier.minUnits,season),sourceReference:clone(trait.reference)}}],
       })),
     };
   }
@@ -79,13 +101,13 @@ export function applyPrototypePacts(catalog) {
   const recipes=[...(catalog.recipes??[])];
   const componentMap={TFT_Item_Spatula:'crest',TFT_Item_FryingPan:null,TFT_Item_BFSword:'blade',TFT_Item_NegatronCloak:'cloak',TFT_Item_NeedlesslyLargeRod:'staff',TFT_Item_GiantsBelt:'belt',TFT_Item_TearOfTheGoddess:'tear',TFT_Item_RecurveBow:'bow',TFT_Item_ChainVest:'plate'};
   const emblemItems=[];
-  for(const candidate of prototypeSeason.emblemCandidates??[]){
+  for(const candidate of season.emblemCandidates??[]){
     const id=`prototype_emblem_${candidate.traitId}`;
     const sourceParts=candidate.composition??[];
     const parts=sourceParts.length===2?sourceParts.map((part)=>componentMap[part]??null):[];
     const craftable=parts.length===2&&parts.every(Boolean);
     const plainDescription=candidate.description.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
-    const item={id,name:candidate.name,description:`佩戴者获得「${pacts[candidate.traitId]?.name}」盟约身份。`,kind:'emblem',unique:true,grantAllowed:true,prototype:true,source:{game:'Teamfight Tactics',version:'Set 13 patch 14.23',apiName:candidate.apiName,icon:candidate.icon,sourceComposition:candidate.composition,recipeEvidence:candidate.recipeEvidence,sourceEffects:candidate.effects},effects:[{kind:'transfer_pact',params:{pactId:candidate.traitId}}]};
+    const item={id,name:season.powerModel==='native-pve'?`${pacts[candidate.traitId]?.name}徽记`:candidate.name,description:`佩戴者获得「${pacts[candidate.traitId]?.name}」盟约身份。`,kind:'emblem',unique:true,grantAllowed:true,prototype:true,source:{game:'Teamfight Tactics',version:'Set 13 patch 14.23',apiName:candidate.apiName,icon:candidate.icon,sourceComposition:candidate.composition,recipeEvidence:candidate.recipeEvidence,sourceEffects:candidate.effects},effects:[{kind:'transfer_pact',params:{pactId:candidate.traitId}}]};
     if(craftable){item.parts=parts;item.baseEffects=parts.flatMap((part)=>equipment[part]?.effects??[]);recipes.push({parts:[...parts].sort(),resultId:id,source:{apiName:candidate.apiName,recipeEvidence:'source composition mapped onto available Resonance components'}});}
     else item.grantOnly=true;
     equipment[id]=item;emblemItems.push(id);
@@ -93,7 +115,7 @@ export function applyPrototypePacts(catalog) {
   const playerText={...(catalog.playerText??{}),pacts:{...(catalog.playerText?.pacts??{})},equipment:{...(catalog.playerText?.equipment??{})}};
   for(const [id,pact] of Object.entries(pacts))playerText.pacts[id]={name:pact.name,levels:pact.levels.map((level)=>({description:level.description}))};
   for(const itemId of emblemItems)playerText.equipment[itemId]={description:equipment[itemId].description};
-  return {...catalog,pacts,equipment,recipes,playerText,prototypeSeason,prototypeEmblemItems:emblemItems};
+  return {...catalog,pacts,equipment,recipes,playerText,prototypeSeason:season,prototypeEmblemItems:emblemItems};
 }
 
 /** Prepare battle-local Scrap conversions before the ordinary equipment installer runs. */
@@ -161,6 +183,7 @@ export function preparePrototypeScrapGear(battle,state,catalog,activeTraits=[]) 
 
 /** Attach serializable, source-tier-scoped battle instrumentation for the v3 adapter. */
 export function installPrototypePacts(battle,catalog,activeTraits=[]) {
+  const season=prototypeSeasonForCatalog(catalog);
   const consumedTraits=activeTraits.map((entry)=>{
     const pact=catalog?.pacts?.[entry.id];
     const tier=pact?.levels?.find((row)=>row.threshold===entry.tier);
@@ -180,9 +203,9 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
   };
   const sourceApiOf=(unit)=>{
     const owner=ownedUnit(unit),raw=owner?.def?.raw??owner?.def??{},sourceId=raw.id??raw.chessId??owner?.defId;
-    return prototypeSeason.heroes.find((hero)=>hero.sourceChessId===sourceId)?.apiName??null;
+    return season.heroes.find((hero)=>hero.sourceChessId===sourceId)?.apiName??null;
   };
-  const powerReferenceFor=(unit)=>prototypeSeason.heroes.find((hero)=>hero.apiName===sourceApiOf(unit))?.powerReference??{};
+  const powerReferenceFor=(unit)=>season.heroes.find((hero)=>hero.apiName===sourceApiOf(unit))?.nativePowerReference??season.heroes.find((hero)=>hero.apiName===sourceApiOf(unit))?.powerReference??{};
   const applyRating=(unit,key,armor,magicResist)=>setPrototypeRatingBonus(battle,unit,key,{armor,magicResist},powerReferenceFor(unit));
   const traitIdsFor=(unit)=>{
     const owner=ownedUnit(unit),charId=charIdOf(owner),operator=byChar.get(charId);
@@ -245,8 +268,8 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
     const unit=event?.attacker,target=event?.target;
     if(!unit||!target?.alive||!experimentSourcesFor(unit).includes('TFT13_Twitch'))return;
     const key='prototypeExperimentTwitchAttacks';unit.mem[key]=(Number(unit.mem[key])||0)+1;
-    const needed=Number(prototypeSeason.heroes.find((hero)=>hero.apiName==='TFT13_Twitch')?.experimentBonus?.sourceVariables?.ExperimentDamageTicks??5);
-    if(unit.mem[key]>=needed){unit.mem[key]=0;const amount=target.s.maxHp*Number(prototypeSeason.heroes.find((hero)=>hero.apiName==='TFT13_Twitch')?.experimentBonus?.sourceVariables?.ExperimentMaxHealthDamage??0.15)*(active.get('experiment')?.tier>=7?2:1);battle.dealDamage(unit,target,{amount,type:'phys',canDodge:false,tags:['resonance','prototype-experiment','twitch-bonus']});metric('experiment','twitchBonusHits');}
+    const needed=Number(season.heroes.find((hero)=>hero.apiName==='TFT13_Twitch')?.experimentBonus?.sourceVariables?.ExperimentDamageTicks??5);
+    if(unit.mem[key]>=needed){unit.mem[key]=0;const amount=target.s.maxHp*Number(season.heroes.find((hero)=>hero.apiName==='TFT13_Twitch')?.experimentBonus?.sourceVariables?.ExperimentMaxHealthDamage??0.15)*(active.get('experiment')?.tier>=7?2:1);battle.dealDamage(unit,target,{amount,type:'phys',canDodge:false,tags:['resonance','prototype-experiment','twitch-bonus']});metric('experiment','twitchBonusHits');}
   },{owner:battle});
   battle.on('attack',(event)=>{const row=rowFor(event?.attacker);if(row)row.attacks++;refresh();},{owner:battle});
   battle.on('skillStart',(event)=>{
@@ -269,10 +292,10 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
         unit.mem.prototypeExperimentSources=[...sourceApis];
         const hp=Number(experiment.variables?.MaxHealth??0);
         if(hp>0)buff(unit,'experiment-lab-health',{hpFlat:hp});
-        const mundo=prototypeSeason.heroes.find((hero)=>hero.apiName==='TFT13_DrMundo')?.experimentBonus?.sourceVariables;
+        const mundo=season.heroes.find((hero)=>hero.apiName==='TFT13_DrMundo')?.experimentBonus?.sourceVariables;
         if(sourceApis.includes('TFT13_DrMundo')&&mundo?.BaseExperimentHealthGain)
           buff(unit,'experiment-lab-mundo-health',{hpFlat:Number(mundo.BaseExperimentHealthGain)*(experiment.tier>=7?2:1)});
-        if(sourceApis.includes('TFT13_Urgot'))applyUrgotExperiment(unit,prototypeSeason.heroes.find((hero)=>hero.apiName==='TFT13_Urgot').experimentBonus.sourceVariables);
+        if(sourceApis.includes('TFT13_Urgot'))applyUrgotExperiment(unit,season.heroes.find((hero)=>hero.apiName==='TFT13_Urgot').experimentBonus.sourceVariables);
       }
       metric('experiment','labbedMembers',experimentLabUnits.length);
       metric('experiment','labCells',labs.size);
@@ -339,10 +362,10 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
     metric('resistance','signals');
   };
   const roseState={token:null,casts:0,freed:false,revived:false};
-  const sionSource=prototypeSeason.summonedEntities?.TFT13_Sion??null;
+  const sionSource=season.summonedEntities?.TFT13_Sion??null;
   const sionVariable=(name,fallback=0)=>Number(sionSource?.ability?.variables?.find((entry)=>entry.name===name)?.value?.[0]??fallback);
   const roseMembers=()=>traitMembers('sui');
-  const formSwapMembers=new Set(prototypeSeason.traits.find((trait)=>trait.id==='formSwap')?.members??[]);
+  const formSwapMembers=new Set(season.traits.find((trait)=>trait.id==='formSwap')?.members??[]);
   const freeSion=(healOnFree=false)=>{
     const unit=roseState.token;if(!unit?.alive||roseState.freed)return false;
     roseState.freed=true;unit.mem.prototypeRoseChained=false;unit.profile.noAttack=false;
@@ -380,9 +403,11 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
     cells.sort((a,b)=>Math.hypot(a[0]-owner.tileR,a[1]-owner.tileC)-Math.hypot(b[0]-owner.tileR,b[1]-owner.tileC)||a[0]-b[0]||a[1]-b[1]);
     const cell=cells[0];if(!cell)return;
     const totalStars=roseMembers().reduce((sum,row)=>sum+Number(row.def?.raw?.resonanceStar??1),0);
-    const stats=sionSource.stats??{},traitVariables=vars('sui'),hp=Number(stats.hp??750)*(1+Number(traitVariables.PercentHealthPerStarLevel??0.15)*totalStars);
+    const stats=sionSource.stats??{},traitVariables=vars('sui'),hp=nativeFlatAmount(season,stats.hp??750)*(1+Number(traitVariables.PercentHealthPerStarLevel??0.15)*totalStars);
     const sionArmor=Number(traitVariables['{2e45fc86}']??0),sourceAttackSpeed=Math.max(0.01,Number(stats.attackSpeed??0.7));
-    const def={id:'prototype_TFT13_Sion',name:'幻造守卫',profession:'TOKEN',position:'MELEE',stats:{maxHp:hp,atk:Number(stats.damage??50),def:tftArmorToNativeDefense(sionArmor,stats.damage??50)??0,res:tftMrToNativeResistance(sionArmor)??0,aspd:100,bat:1/sourceAttackSpeed,blockCnt:1,cost:0,respawnTime:0},rangeGrid:[[0,0],[0,1]],spine:'token_10022_kazema_shadow',avatar:'token_10022_kazema_shadow',description:'幻造守卫'};
+    const guardianName=season.powerModel==='native-pve'?'山海卫灵':'幻造守卫';
+    const defenseAnchor=season.powerModel==='native-pve'?1500:(stats.damage??50);
+    const def={id:'prototype_TFT13_Sion',name:guardianName,profession:'TOKEN',position:'MELEE',stats:{maxHp:hp,atk:nativeFlatAmount(season,stats.damage??50),def:tftArmorToNativeDefense(sionArmor,defenseAnchor)??0,res:tftMrToNativeResistance(sionArmor)??0,aspd:100,bat:1/sourceAttackSpeed,blockCnt:1,cost:0,respawnTime:0},rangeGrid:[[0,0],[0,1]],spine:'token_10022_kazema_shadow',avatar:'token_10022_kazema_shadow',description:guardianName};
     roseState.token=battle.spawnToken(owner,def.id,cell[0],cell[1],{def,anySource:true,kit:{skill:null,trait:{noAttack:true}}});
     if(roseState.token){
       roseState.token.mem.prototypeRoseChained=true;
@@ -390,7 +415,7 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
       const skillSpec={id:skillDef.id,name:skillDef.name,kind:'instant',trigger:'NEVER',attack:{dmgType:'phys'},onStart:({battle,unit})=>{
         const target=battle.enemies.filter((enemy)=>enemy?.alive&&enemy.deployed&&!enemy.hidden).sort((a,b)=>Math.hypot(a.x-unit.x,a.y-unit.y)-Math.hypot(b.x-unit.x,b.y-unit.y)||a.id-b.id)[0];
         if(!target)return;
-        battle.addBuff(unit,{key:`resonance:v3:sion-active-shield:${unit.id}`,shield:sionVariable('Shield',175),duration:sionVariable('ShieldDuration',5),tags:['resonance','prototype-sion']});
+        battle.addBuff(unit,{key:`resonance:v3:sion-active-shield:${unit.id}`,shield:nativeFlatAmount(season,sionVariable('Shield',175)),duration:sionVariable('ShieldDuration',5),tags:['resonance','prototype-sion']});
         const dr=Math.sign(target.tileR-unit.tileR),dc=Math.sign(target.tileC-unit.tileC),length=sionVariable('SlamHexLength',3),seen=new Set();
         for(let step=1;step<=length;step++){
           const victim=battle.unitAt(unit.tileR+dr*step,unit.tileC+dc*step);
@@ -513,11 +538,11 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
   },{owner:battle});
   battle.on('skillEnd',(event)=>{
     const unit=event?.unit;if(!unit||!experimentSourcesFor(unit).includes('TFT13_Urgot'))return;
-    applyUrgotExperiment(unit,prototypeSeason.heroes.find((hero)=>hero.apiName==='TFT13_Urgot').experimentBonus.sourceVariables);
+    applyUrgotExperiment(unit,season.heroes.find((hero)=>hero.apiName==='TFT13_Urgot').experimentBonus.sourceVariables);
   },{owner:battle});
   battle.on('kill',(event)=>{
     const killer=event?.killer;if(!killer||event?.victim?.side!=='enemy'||!killer.alive||!experimentSourcesFor(killer).includes('TFT13_DrMundo'))return;
-    const source=prototypeSeason.heroes.find((hero)=>hero.apiName==='TFT13_DrMundo')?.experimentBonus?.sourceVariables;
+    const source=season.heroes.find((hero)=>hero.apiName==='TFT13_DrMundo')?.experimentBonus?.sourceVariables;
     const amount=Number(source?.ExperimentHealthGain??0)*(active.get('experiment')?.tier>=7?2:1);
     if(amount>0){battle.addBuff(killer,{key:`resonance:v3:experiment-mundo-takedown:${killer.id}:${event.victim?.id??battle.time}`,persist:true,allowDead:true,mods:{hpFlat:amount},tags:['resonance','prototype-experiment']});metric('experiment','mundoTakedownHealth',amount);}
   },{owner:battle});
@@ -526,14 +551,14 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
     if(source?.side!=='ally'||target?.side!=='enemy'||!target.alive||!(amount>0)||dmg?.tags?.includes('prototype-experiment'))return;
     const tier=active.get('experiment'),scale=tier?.tier>=7?2:1;
     if(experimentSourcesFor(source).includes('TFT13_Zyra')&&dmg?.isSkill){
-      const bonus=amount*Number(prototypeSeason.heroes.find((hero)=>hero.apiName==='TFT13_Zyra')?.experimentBonus?.sourceVariables?.ExperimentTrueDamage??0.5)*scale;
+      const bonus=amount*Number(season.heroes.find((hero)=>hero.apiName==='TFT13_Zyra')?.experimentBonus?.sourceVariables?.ExperimentTrueDamage??0.5)*scale;
       metric('experiment','zyraBleedsStarted');
       let ticks=4;const tick=()=>{if(!target.alive||ticks<=0)return;const dealt=battle.dealDamage(source,target,{amount:bonus/4,type:'true',canDodge:false,tags:['resonance','prototype-experiment','zyra-bleed']});ticks--;if(dealt>0)metric('experiment','zyraBleedDamage',dealt);if(ticks>0)battle.after(0.5,tick,{owner:source});};
       battle.after(0.5,tick,{owner:source});
     }
     if(experimentSourcesFor(source).includes('TFT13_NunuWillump')){
-      const cooldown=Number(prototypeSeason.heroes.find((hero)=>hero.apiName==='TFT13_NunuWillump')?.experimentBonus?.sourceVariables?.ExperimentICD??1),ready=Number(source.mem.prototypeNunuExperimentReady??0);
-      if(battle.time>=ready){source.mem.prototypeNunuExperimentReady=battle.time+cooldown;const bonus=source.s.maxHp*Number(prototypeSeason.heroes.find((hero)=>hero.apiName==='TFT13_NunuWillump')?.experimentBonus?.sourceVariables?.ExperimentMaxHealthDamage??0.03)*scale;const dealt=battle.dealDamage(source,target,{amount:bonus,type:'arts',canDodge:false,tags:['resonance','prototype-experiment','nunu-bonus']});if(dealt>0)metric('experiment','nunuBonusDamage',dealt);}
+      const cooldown=Number(season.heroes.find((hero)=>hero.apiName==='TFT13_NunuWillump')?.experimentBonus?.sourceVariables?.ExperimentICD??1),ready=Number(source.mem.prototypeNunuExperimentReady??0);
+      if(battle.time>=ready){source.mem.prototypeNunuExperimentReady=battle.time+cooldown;const bonus=source.s.maxHp*Number(season.heroes.find((hero)=>hero.apiName==='TFT13_NunuWillump')?.experimentBonus?.sourceVariables?.ExperimentMaxHealthDamage??0.03)*scale;const dealt=battle.dealDamage(source,target,{amount:bonus,type:'arts',canDodge:false,tags:['resonance','prototype-experiment','nunu-bonus']});if(dealt>0)metric('experiment','nunuBonusDamage',dealt);}
     }
   },{owner:battle});
   battle.on('spGain',(event)=>{

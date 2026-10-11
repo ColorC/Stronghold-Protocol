@@ -920,6 +920,8 @@ const FIXED_SKILLS = Object.freeze({
   }
 });
 export function resolveOperatorSkillIcon(operator){
+ const presentation=operator?.passivePresentation;
+ if(presentation?.kind==='passive-support')return {skillId:null,iconId:null,url:presentation.url??'/assets/ui/garrisonTypeIcon/icon_support.png',name:presentation.label??'被动支援',kind:presentation.kind};
  const shown=operator?.stars?.[1]?.skill??operator?.skill, native=operator?.stars?.[1]?.record?.skill??operator?.source?.normalChess?.skill;
  const mapped=FIXED_SKILLS[`${operator?.charId}:${shown?.name??native?.name??''}`];
  const skillId=operator?.chosenSkillId??shown?.skillId??native?.skillId??mapped?.skillId;

@@ -34,6 +34,7 @@ export const REQUIRED_CHECKS = [
   'mobile-shop-panel-safe',
   'equipment-holder-combine', 'inventory-combine', 'whole-card-cost-colors', 'fixed-skill-icons-loaded', 'ground-tier-ring',
   'all-pact-tier-icons-loaded-and-active', 'emissary-exact-count-2-3', 'chem-market-28-effects-readable', 'native-w-deploy-withdraw', 'native-e-sell',
+  'native-codex-bubble-skill-and-current-roster', 'experiment-detail-notes-disclosure',
   'xp-interest-graphics', 'refresh-lock', 'combat-ledger-immutable', 'combat-progress-two-seconds',
   'pause-freezes-and-resume-progresses', 'combat-speed-1-2-4-same-battle', 'reload-restores-same-battle', 'one-real-settlement', 'second-server-takeover-settlement-once', 'choice-g-resonance-roundtrip',
   'native-next-round-supply-and-strategy',
@@ -270,8 +271,10 @@ export async function createIsolatedNativeFixtures({ directory = SESSION_DIR, se
   const report = JSON.parse(await readFile(path.join(ROOT, '.omni/tmp/resonance/native-natural-campaign.json'), 'utf8'));
   const finalFixture = report.nativeFinalFixtures?.at(-1);
   assert(finalFixture?.status === 'captured', 'natural final-boss fixture is unavailable');
-  const finalCatalog = getResonanceCatalog(data, { rulesVersion: 3, seed: finalFixture.seed });
   const finalState = structuredClone(finalFixture.preFightSession);
+  const finalSeasonId = finalState.seasonId;
+  assert(typeof finalSeasonId === 'string' && finalSeasonId, 'captured final-boss fixture must retain its explicit seasonId');
+  const finalCatalog = getResonanceCatalog(data, { rulesVersion: 3, seed: finalFixture.seed, seasonId: finalSeasonId });
   const validStrategyIds = new Set(Object.keys(finalCatalog.strategies || {}));
   finalState.strategies = (finalState.strategies || []).filter((entry) => validStrategyIds.has(typeof entry === 'string' ? entry : entry?.id));
   finalState.strategyState = Object.fromEntries(Object.entries(finalState.strategyState || {}).filter(([id]) => validStrategyIds.has(id)));
@@ -1346,6 +1349,32 @@ async function run() {
     await page.setViewport({width:1440,height:900,deviceScaleFactor:1}); await sleep(120);
     assert(codexLayoutCompact.present&&codexLayoutCompact.scrollbox.clientHeight>0&&codexLayoutCompact.firstRowVisibleCount>=3,
       `Codex first row is clipped at 1000px: ${JSON.stringify(codexLayoutCompact)}`);
+    const codexSearch=await page.$('.rs-native-codex-overlay .rs-codex__filters input[placeholder="姓名或代号"]');
+    assert(codexSearch,'Codex operator search input is missing');
+    await codexSearch.click(); await page.keyboard.down('Control'); await page.keyboard.press('A'); await page.keyboard.up('Control');
+    await codexSearch.type('泡泡');
+    await page.waitForFunction(()=>[...document.querySelectorAll('.rs-native-codex-overlay .rs-codex__operator-card')]
+      .some(node=>node.getAttribute('aria-label')?.startsWith('泡泡，3费')), {timeout:5_000});
+    const bubbleCard=await page.$('.rs-native-codex-overlay .rs-codex__operator-card[aria-label^="泡泡，3费"]');
+    assert(bubbleCard,'The current 3-cost Bubble entry is absent from the tactical Codex');
+    await clickHandleByMeasuredCenter(page,bubbleCard,'Codex Bubble operator detail');
+    await page.waitForSelector('.rs-native-codex-overlay .rs-detail-panel[role="dialog"]',{visible:true,timeout:4_000});
+    const bubbleDetail=await page.$eval('.rs-native-codex-overlay .rs-detail-panel',node=>({text:node.innerText,
+      name:node.querySelector('.dhead__name')?.innerText||'',chips:node.querySelector('.dhead__chips')?.innerText||'',
+      skill:node.querySelector('.dskill__name')?.innerText||'',description:node.querySelector('.dsec .dtext')?.innerText||''}));
+    const bubbleCatalog=await page.evaluate(async()=>{const response=await fetch('/resonance/api/catalog?seed=1'),packet=await response.json();
+      const row=Object.entries(packet.catalog?.operators||{}).find(([id,operator])=>id==='chess_char_2_08_a'||operator.name==='泡泡');
+      const operator=row?.[1],skill=operator?.stars?.[0]?.skill||operator?.stars?.[1]?.skill||operator?.skill;
+      return row?{id:row[0],name:operator.name,cost:operator.cost,skill:skill?.name||'',description:skill?.description||''}:null;});
+    check('native-codex-bubble-skill-and-current-roster',bubbleCatalog?.name==='泡泡'&&bubbleCatalog?.cost===3&&bubbleDetail.name==='泡泡'
+      &&/\b3\b/.test(bubbleDetail.chips)
+      &&bubbleDetail.skill===bubbleCatalog.skill&&bubbleDetail.description.includes(bubbleCatalog.description)
+      &&!/(?:萨尔贡.{0,12})?坚守.{0,8}叠层|(?:萨尔贡.{0,12})?叠层.{0,8}坚守/.test(bubbleDetail.text),{bubbleCatalog,bubbleDetail});
+    const bubbleClose=await page.$('.rs-native-codex-overlay .rs-detail-panel .dpanel__close');
+    assert(bubbleClose,'Bubble Codex detail has no close control'); await clickHandleByMeasuredCenter(page,bubbleClose,'close Bubble Codex detail');
+    await page.waitForFunction(()=>!document.querySelector('.rs-native-codex-overlay .rs-detail-panel'),{timeout:4_000});
+    await codexSearch.click(); await page.keyboard.down('Control'); await page.keyboard.press('A'); await page.keyboard.up('Control'); await codexSearch.press('Backspace');
+    await page.waitForFunction(()=>document.querySelectorAll('.rs-native-codex-overlay .rs-codex__operator-card').length>0,{timeout:4_000});
     const codexCardsAfterResize=await page.$$('.rs-native-codex-overlay .lo-card.rs-codex__operator-card');
     assert(codexCardsAfterResize.length>0,'Codex cards disappeared after viewport restore');
     await clickHandleByMeasuredCenter(page,codexCardsAfterResize[0],'codex operator detail');
@@ -1613,6 +1642,49 @@ async function run() {
       &&detailTypography.labels.length>0&&detailTypography.labels.every(row=>row.font>=14),{presentation,detailTypography});
     const rewardClose=await page.$('.rs-detail-panel button[aria-label="关闭详情"]');
     if(rewardClose)await clickHandleByMeasuredCenter(page,rewardClose,'reward detail close');
+    const matrixVisible=await page.evaluate(()=>{const node=document.querySelector('.rs-native-pact-matrix'),r=node?.getBoundingClientRect();return!!node&&!!r&&r.width>0&&r.height>0&&getComputedStyle(node).display!=='none';});
+    if(!matrixVisible){const opener=await page.$('.rs-native-pact-open[aria-label="盟约与效果"]');assert(opener,'Pact panel opener is missing before Experiment detail');
+      await clickHandleByMeasuredCenter(page,opener,'open pact matrix for Experiment detail');await page.waitForSelector('.rs-native-pact-matrix',{visible:true,timeout:4_000});}
+    const pactNameButtons=await page.$$('.rs-native-pact-matrix__name');
+    let experimentEntry=null;
+    for(const button of pactNameButtons)if((await button.evaluate(node=>node.innerText.trim().split('\n')[0]))==='萨尔贡'){experimentEntry=button;break;}
+    assert(experimentEntry,'The current 萨尔贡 pact entry is required for its Experiment member special-effect disclosure');
+    await experimentEntry.evaluate(node=>node.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'}));
+    await clickHandleByMeasuredCenter(page,experimentEntry,'萨尔贡 Experiment pact detail');
+    await page.waitForSelector('.rs-detail-panel[role="dialog"]',{visible:true,timeout:4_000});
+    const experimentBefore=await page.evaluate(async()=>{
+      const {store}=await import('./js/store.js'),catalog=store.get().match?.resonanceCatalog;
+      const entry=Object.entries(catalog?.pacts||{}).find(([,pact])=>pact.name==='萨尔贡');
+      const [pactId,pact]=entry||[];
+      const notes=document.querySelector('.rs-detail-panel details.rs-pact-notes'),levels=[...document.querySelectorAll('.rs-detail-panel .rs-detail__level')];
+      return{pactId,pactName:pact?.name,expectedLevels:pact?.levels?.length||0,levels:levels.length,allLevelsVisible:levels.length>0&&levels.every(node=>node.getClientRects().length>0&&getComputedStyle(node).display!=='none'),
+        notesPresent:!!notes,notesOpen:!!notes?.open,summary:notes?.querySelector(':scope > summary')?.innerText?.trim()||'',
+        noteCount:notes?.querySelectorAll(':scope > .dtext').length||0};
+    });
+    assert(experimentBefore.expectedLevels>0&&experimentBefore.levels===experimentBefore.expectedLevels&&experimentBefore.allLevelsVisible
+      &&experimentBefore.notesPresent&&!experimentBefore.notesOpen&&/查看成员实验特效/.test(experimentBefore.summary),
+      `萨尔贡 tiers must remain visible while Experiment member notes start collapsed: ${JSON.stringify(experimentBefore)}`);
+    const experimentSummary=await page.$('.rs-detail-panel details.rs-pact-notes > summary');
+    await clickHandleByMeasuredCenter(page,experimentSummary,'expand Experiment member effects');
+    await page.waitForFunction(()=>document.querySelector('.rs-detail-panel details.rs-pact-notes')?.open===true,{timeout:3_000});
+    const experimentExpanded=await page.evaluate(()=>{const notes=document.querySelector('.rs-detail-panel details.rs-pact-notes');
+      const levels=[...document.querySelectorAll('.rs-detail-panel .rs-detail__level')];
+      return{open:!!notes?.open,noteText:[...notes?.querySelectorAll(':scope > .dtext')||[]].map(node=>node.innerText.trim()).filter(Boolean),
+        levels:levels.length,allLevelsVisible:levels.length>0&&levels.every(node=>node.getClientRects().length>0&&getComputedStyle(node).display!=='none')};});
+    assert(experimentExpanded.open&&experimentExpanded.noteText.length>0&&experimentExpanded.allLevelsVisible,
+      `Experiment note must expand without hiding tier rows: ${JSON.stringify(experimentExpanded)}`);
+    await clickHandleByMeasuredCenter(page,experimentSummary,'collapse Experiment member effects');
+    await page.waitForFunction(()=>document.querySelector('.rs-detail-panel details.rs-pact-notes')?.open===false,{timeout:3_000});
+    const experimentCollapsed=await page.evaluate(()=>{const notes=document.querySelector('.rs-detail-panel details.rs-pact-notes'),levels=[...document.querySelectorAll('.rs-detail-panel .rs-detail__level')];
+      return{closed:!!notes&&!notes.open,summaryVisible:!!notes?.querySelector(':scope > summary')?.getClientRects().length,
+        levels:levels.length,allLevelsVisible:levels.length>0&&levels.every(node=>node.getClientRects().length>0&&getComputedStyle(node).display!=='none')};});
+    check('experiment-detail-notes-disclosure',experimentBefore.allLevelsVisible&&experimentExpanded.open&&experimentExpanded.noteText.length>0
+      &&experimentExpanded.allLevelsVisible&&experimentCollapsed.closed&&experimentCollapsed.summaryVisible&&experimentCollapsed.allLevelsVisible,
+      {before:experimentBefore,expanded:experimentExpanded,collapsed:experimentCollapsed});
+    const experimentClose=await page.$('.rs-detail-panel button[aria-label="关闭详情"]');
+    assert(experimentClose,'Experiment pact detail has no close control');
+    await clickHandleByMeasuredCenter(page,experimentClose,'close Experiment pact detail');
+    await page.waitForFunction(()=>!document.querySelector('.rs-detail-panel'),{timeout:4_000});
     await page.click('.rs-native-pact-open[aria-label="盟约与效果"]');
     await page.waitForSelector('.rs-native-resonance-panel--pacts .rs-native-pact-matrix',{visible:true,timeout:4_000});
     await capture('04-pacts');
@@ -1662,14 +1734,23 @@ async function run() {
       const rows=active.map(id=>{
         const native=data.list('chess').find(record=>record.sourceChessId===id&&record.resonanceStar===1);
         const skill=native&&resolveOperatorSkillIcon(native);
+        const passiveSupport=id==='chess_native_char_4000_jnight_a'&&native?.passivePresentation?.kind==='passive-support'
+          &&native?.assets?.resonancePresentationIcon==='support';
         const expected=native?.skill?.skillId, expectedIcon=native?.assets?.skillIcon||native?.skill?.iconId;
-        return{id,expected:expected||null,expectedIcon:expectedIcon||null,actual:skill?.skillId||null,actualIcon:skill?.iconId||null,
-          skill:skill?.url||null,match:!!expected&&!!expectedIcon&&skill?.skillId===expected&&skill?.iconId===expectedIcon};
+        return{id,name:native?.name||'',expected:expected||null,expectedIcon:expectedIcon||null,actual:skill?.skillId??null,actualIcon:skill?.iconId??null,
+          skill:skill?.url||null,kind:skill?.kind||null,passiveSupport,match:passiveSupport
+            ?skill?.skillId===null&&skill?.iconId===null&&skill?.kind==='passive-support'&&skill?.url==='/assets/ui/garrisonTypeIcon/icon_support.png'
+            :!!expected&&!!expectedIcon&&skill?.skillId===expected&&skill?.iconId===expectedIcon};
       });
       const loaded=await Promise.all(rows.map(row=>new Promise(resolve=>{if(!row.skill){resolve({...row,loaded:false});return}const img=new Image();img.onload=()=>resolve({...row,loaded:img.naturalWidth>0});img.onerror=()=>resolve({...row,loaded:false});img.src=new URL(row.skill,location.href).href})));
-      return {expected:active.length,loaded:loaded.filter(row=>row.loaded&&row.match).length,missing:loaded.filter(row=>!row.loaded||!row.match)};
+      const passive=loaded.filter(row=>row.id==='chess_native_char_4000_jnight_a');
+      const activeSkills=loaded.filter(row=>row.id!=='chess_native_char_4000_jnight_a');
+      return {expected:active.length,activeExpected:activeSkills.length,activeLoaded:activeSkills.filter(row=>row.loaded&&row.match).length,
+        passive,loaded:loaded.filter(row=>row.loaded&&row.match).length,missing:loaded.filter(row=>!row.loaded||!row.match)};
     });
-    check('fixed-skill-icons-loaded', skillIcons.expected > 0 && skillIcons.expected === skillIcons.loaded, skillIcons);
+    check('fixed-skill-icons-loaded',skillIcons.expected===57&&skillIcons.activeExpected===56&&skillIcons.activeLoaded===56
+      &&skillIcons.passive.length===1&&skillIcons.passive[0].name==='正义骑士号'&&skillIcons.passive[0].passiveSupport
+      &&skillIcons.passive[0].loaded&&skillIcons.passive[0].match&&skillIcons.loaded===57&&skillIcons.missing.length===0,skillIcons);
     await capture('05-shop-detail');
     const beforeBuyPacket = await readPacket(); await page.click('button[aria-label="关闭面板"]');
     const detailEvidence = await clickRealShopCard(page, beforeBuyPacket, attempt, waitSent); const afterBuyPacket = await readPacket();

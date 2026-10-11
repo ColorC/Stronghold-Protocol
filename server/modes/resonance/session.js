@@ -1,7 +1,7 @@
 import { legalSummonCells,selectedSummonIds } from './summons.js';
 import { resonanceOpenings, selectResonanceOpening, resonanceRulesVersion } from '../../../shared/resonance/openings.js';
 import { getResonanceSeason } from '../../../shared/resonance/season-roster.js';
-import { prototypeSeason } from '../../../shared/resonance/prototype-season.js';
+import { getPrototypeSeason, prototypeSeasonForCatalog } from '../../../shared/resonance/season-registry.js';
 import { chooseAcademySponsorSet } from '../../../shared/resonance/prototype-economy.js';
 import { onPrototypeBattleResult, onPrototypePrep } from '../../sim/content/resonance/prototype-meta.js';
 import { applyPrototypeGearAction } from './prototype-consumables.js';
@@ -188,7 +188,7 @@ function createStarterState({ seed, difficulty, catalog, environmentId }) {
   } else if (rulesVersion === 3) {
     state.rulesVersion = 3;
     state.seasonId = catalog.config?.seasonId;
-    if (state.seasonId !== prototypeSeason.id) throw new Error('UNKNOWN_SEASON');
+    try { getPrototypeSeason(state.seasonId); } catch { throw new Error('UNKNOWN_SEASON'); }
   }
   for (const id of selectInitialStarterIds(state, catalog)) {
     state.poolRemaining[id]--;
@@ -243,8 +243,9 @@ export function validateSession(state, { catalog } = {}) {
     if (!isInt(state.freeRefreshes) || state.freeRefreshes < 0 || state.freeRefreshes > (state.rulesVersion>=3?64:8)) add('BAD_FREE_REFRESHES');
     const tradeSectorState=state.strategyState?.strategy_21;
     if(tradeSectorState&&Object.hasOwn(tradeSectorState,'freeAvailable')&&typeof tradeSectorState.freeAvailable!=='boolean')add('BAD_TRADE_SECTOR_FREE_REFRESH');
-  } else if (rulesVersion === 3 && (state.seasonId !== prototypeSeason.id || catalog.config?.seasonId !== state.seasonId)) {
-    add('UNKNOWN_SEASON');
+  } else if (rulesVersion === 3) {
+    try { getPrototypeSeason(state.seasonId); } catch { add('UNKNOWN_SEASON'); }
+    if (catalog.config?.seasonId !== state.seasonId) add('UNKNOWN_SEASON');
   }
   if(!validEnvironmentId(catalog,state.environmentId))add('UNKNOWN_ENVIRONMENT');
   if (state.schemaVersion !== SCHEMA_VERSION) add('BAD_SCHEMA_VERSION');
@@ -1059,7 +1060,7 @@ function claimPrototypeEconomyChoice(state,catalog,choice,optionIds) {
       } else if(grant?.kind==='rumble_upgrade'){
         if(choice.economyKind!=='junker_armory'||typeof grant.id!=='string')throw new Error('INVALID_PROTOTYPE_ECONOMY_UPGRADE');
         const target=pieceByUid(state,grant.targetUid);
-        const rumbleIds=new Set((catalog.prototypeSeason?.traits??prototypeSeason.traits).find((trait)=>trait.sourceName==='Junker King')?.members??[]);
+        const rumbleIds=new Set(prototypeSeasonForCatalog(catalog).traits.find((trait)=>trait.sourceName==='Junker King')?.members??[]);
         const targetChar=target&&opTable(catalog)[target.operatorId]?.charId;
         if(!target||target.row===null||!rumbleIds.has(targetChar)||target.star<1)throw new Error('INVALID_JUNKER_TARGET');
         if(grant.id==='TFT13_JunkerKing_3Star'&&target.star!==3)throw new Error('JUNKER_THREE_STAR_REQUIRED');

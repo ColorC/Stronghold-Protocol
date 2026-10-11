@@ -122,7 +122,8 @@ import { InventoryDock } from './native/equipmentDock.js';
 import { DetailPanel as ResonanceDetailPanel } from './detail.js';
 import { mountUnitItemOverlay } from './unitItems.js';
 import { ResonanceItemIcon, resonanceItemIconUrl } from './itemIcon.js';
-import { firstAvailableLegalTile, isResonanceSaleDrop, resonanceShortcutFor, RESONANCE_SHORTCUT_LABEL } from './nativeControls.js';
+import { firstAvailableLegalTile, resonanceShortcutFor, RESONANCE_SHORTCUT_LABEL } from './nativeControls.js';
+import { dispatchNativeSellDrop, nativeSellTargetRect } from './nativeSell.js';
 import { pactIconUrl, PactIcon } from './pactIcon.js';
 import { pactTierSummary } from './pactTierSummary.js';
 import { pactReadableCopy } from './pactPresentation.js';
@@ -183,7 +184,7 @@ function NativePactMatrix({ state, catalog, onDetail }) {
           <${BondDisc} name=${pact.name || '盟约'} showName=${false} tier=${tier} maxTier=${levels.length} icon=${pactIconUrl(catalog, id) || undefined} iconMask=${true} active=${reached > 0} size="sm" />
           <span><b>${pact.name || '盟约'}</b><small>${count} 名成员</small></span>
         </button>
-        <div class="rs-native-pact-matrix__tiers">${levels.map(level => {
+        <div class="rs-native-pact-matrix__tiers">${pact.summaryDescription?html`<p class="rs-pact-overview">${pact.summaryDescription}</p>`:null}${levels.map(level => {
           const tierText = pactReadableCopy(level.description || pactTierSummary(id, level.sourceVariables) || '盟约效果');
           const tierStatus = pactTierStatus(level, count);
           const currentTier = pactCurrentTier(levels, count, reached);
@@ -411,7 +412,7 @@ function ResonanceChoiceOverlay({ state, catalog, onAction, busy }) {
   const needsPair = strategy && needsAdjacentStrategyPair(catalog?.strategies?.[selectedStrategy]);
   const pair = strategyTargets[selectedStrategy] || '';
   const pairs = needsPair ? adjacentDeployedPairs(state) : [];
-  const economyTitles = { academy_sponsor: '研发赞助', chem_market: '险境黑市', war_chest: '远征宝箱', family_heist: '家族劫掠', junker_armory: '铸军军械铺' };
+  const economyTitles = { academy_sponsor: `${catalog?.pacts?.academy?.name||'研发'}赞助`, chem_market: `${catalog?.pacts?.risk?.name||'险境'}黑市`, war_chest: `${catalog?.pacts?.conqueror?.name||'远征'}宝箱`, family_heist: `${catalog?.pacts?.family?.name||'家族'}战利品`, junker_armory: '铸军军械铺' };
   const choiceTitle = strategy ? '选择策略' : economy ? (economyTitles[choice.economyKind] || '盟约奖励') : ['operators', 'target_operator'].includes(choice.type) ? '干员补给'
     : ['identity_transfer', 'pact_tag', 'dual_pact'].includes(choice.type) ? '盟约选择' : '领取补给';
   if (collapsed) return html`<button type="button" class="rs-native-choice-tab" aria-label="重新打开待领取选择" onClick=${() => setCollapsed(false)}>
@@ -510,6 +511,8 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
   const [exitOpen, setExitOpen] = useState(false);
   const [drag, setDrag] = useState(null);                // { uid, kind, id } while dragging a piece
   const sellZoneRef = useRef(null);
+  const sellRectRef = useRef(null);
+  const [sellRect, setSellRect] = useState(null);
   const [facing, setFacing] = useState(null);            // direction step: { uid, piece, row, col, grid, name }
   const [sel, setSel] = useState(null);                  // tapped own piece: { uid }
   const [selBusy, setSelBusy] = useState(false);
@@ -1335,6 +1338,8 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
     const endDrag = () => {
       moveOff?.(); moveOff = null;
       setDrag(null);
+      sellRectRef.current = null;
+      setSellRect(null);
       view.highlightTiles(null, null);
     };
     /** Open the direction wheel for a legal board drop (the piece stays on the tile meanwhile). */
@@ -1356,6 +1361,10 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
         // a new placement: a piece's detail card (right-click / long-press) would sit beside the wheel showing another unit
         setDetail((d) => (d?.kind === 'piece' ? null : d));
         setDrag({ uid: entry.piece.uid, kind: entry.piece.kind, id: entry.piece.id, area: entry.area });
+        const saleRect = entry.piece.kind === 'chess' && live.current.showPrep
+          ? nativeSellTargetRect(barRef.current?.getBoundingClientRect?.()) : null;
+        sellRectRef.current = saleRect;
+        setSellRect(saleRect);
         const { legal } = boardTargets(L.placeCtx, entry.piece.uid);
         view.highlightTiles(null, null);
         view.highlightTiles(legal, 'legal');
@@ -1367,6 +1376,8 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
       }),
       view.on('tileHover', (t) => { ptr.tile = t && typeof t === 'object' ? t : null; }),
       view.on('pieceDrop', async (e) => {
+        // Capture the target before endDrag removes it from the DOM.
+        const saleRect = sellZoneRef.current?.getBoundingClientRect?.() || sellRectRef.current;
         endDrag();
         const L = live.current;
         if (!e || !L.editable) return;
@@ -1375,10 +1386,8 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
         const t = e.target || {};
         if (t.area === 'outside') {
           if (entry.piece.kind !== 'chess' || !L.showPrep) return;
-          const rect = sellZoneRef.current?.getBoundingClientRect?.();
           const sellValue = underframeActions(L.placeCtx, entry.piece.uid)?.sell;
-          if (!isResonanceSaleDrop({kind:entry.piece.kind,showPrep:L.showPrep,sell:sellValue,point:t,rect})) return;
-          await sellPiece(entry.piece);
+          await dispatchNativeSellDrop({ piece: entry.piece, showPrep: L.showPrep, sell: sellValue, target: t, rect: saleRect, onSell: sellPiece });
           return;
         }
         const res = canPlace(L.placeCtx, e.uid, t);
@@ -1959,6 +1968,8 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
   const detailBonds = detailOwner === strip.ownerId ? stripBonds : playerBonds({ pub, priv, myId, ownerId: detailOwner, live: liveLayers });
   // bonds this mode never activates (标准: 10 of 23, 奥术 among them) — shown 本局禁用 on cards, chips and the popup
   const offBonds = modeOffBonds(getMode(pub?.modeId));
+  const draggedSellValue = drag?.kind === 'chess' && editable && showPrep
+    ? underframeActions(placeCtx, drag.uid)?.sell : null;
 
   return html`<div class=${cx('screen', 'gm', `gm--${mode}`, drag && 'is-dragging', collapsed && 'is-collapsed', (sp || hasPersonalChoice) && 'has-sp', pen && 'is-pen', readyWhy && 'has-readywhy', equipmentDropTarget != null && 'has-equipment-drop')}
       data-camera=${pen ? 'pen' : camKind} onDragOver=${equipmentDropOver} onDrop=${equipmentDrop} onDragLeave=${(event) => { if (!event.currentTarget.contains(event.relatedTarget)) { setEquipmentDropTarget(null); setSpecialDropTile(null); } }}>
@@ -1966,9 +1977,9 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
     ${resonanceDockState && resonanceCatalog ? html`<${InventoryDock} className="rs-native-equipment-rail" state=${resonanceDockState} catalog=${resonanceCatalog}
       busy=${!editable} fieldTargetUid=${equipmentDropTarget ?? sel?.uid ?? null} onOpen=${() => toggleResonancePanel('equipment')}
       onDetail=${openNativeResonanceDetail} onCombine=${combineResonanceItems} />` : null}
-    ${drag?.kind === 'chess' && editable && showPrep ? html`<div ref=${sellZoneRef} class="rs-native-sell-zone" aria-live="polite"
-      style="position:fixed;z-index:120;top:calc(env(safe-area-inset-top) + 4.8rem);right:1rem;min-width:10rem;padding:.65rem 1rem;border:1px solid #e98e6d;border-radius:.65rem;background:rgba(64,26,24,.94);color:#ffe9df;text-align:center;box-shadow:0 5px 20px #0008;pointer-events:none">
-      放到这里出售 · +${drag?.uid != null ? (underframeActions(placeCtx, drag.uid)?.sell ?? 0) : 0} 枚
+    ${draggedSellValue != null && sellRect ? html`<div ref=${sellZoneRef} class="rs-native-sell-zone" aria-live="polite"
+      style=${`left:${sellRect.left}px;top:${sellRect.top}px;width:${sellRect.width}px;height:${sellRect.height}px`}>
+      <span>出售</span><${CoinGlyph} /><b>+${draggedSellValue}</b>
     </div>` : null}
     ${viewKind === 'loading' ? html`<div class="gm__loading"><${Spinner} label="LOADING FIELD" /></div>` : null}
     <div class="gm__vignette" aria-hidden="true"></div>

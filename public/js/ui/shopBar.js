@@ -87,7 +87,7 @@ export function ChessCard({ slot, idx, priv, frozen = false, reason = null, free
       </span>` : null}
     </span>
     <span class="scard__body">
-      ${lo?.skill ? html`<${SkillBadge} chess=${c} lo=${lo} />` : null}
+      ${lo?.skill ? html`<${SkillBadge} chess=${c} lo=${lo} />` : c?.passivePresentation?.kind==='passive-support' ? html`<span class="scard__skill" title=${c.passivePresentation.description} aria-label=${c.passivePresentation.label} data-presentation="passive-support"><${Img} src=${uiUrl(m,'garrisonTypeIcon/icon_support')} alt=${c.passivePresentation.label}/></span>` : null}
       <span class="scard__name">${c?.name || slot.id}</span>
       <span class="scard__bonds">
         ${bonds.slice(0, 3).map((b) => {

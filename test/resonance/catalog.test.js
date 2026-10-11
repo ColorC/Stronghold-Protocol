@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { loadData } from '../../server/data.js';
 import { toDataSource } from '../../server/sim/simdata.js';
 import { getResonanceCatalog } from '../../server/modes/resonance/catalog.js';
+import { resonanceDisplayCatalog } from '../../server/modes/resonance/display.js';
 import { tftArmorToNativeDefense, tftMrToNativeResistance } from '../../shared/resonance/prototype-resistance.js';
 import { resonanceContent, resonanceSourceSkillGaps, buildRecruitmentPool } from '../../shared/resonance/catalog.js';
 import { prototypeSeason } from '../../shared/resonance/prototype-season.js';
@@ -148,10 +149,12 @@ test('fixed skill index resolves to the configured raw skill and blackboard in B
   }
 });
 
-test('prototype catalog compiler projects all canonical Chem-Baron rows without leaking its source table', () => {
+test('prototype server catalog retains its season while display projection omits source tables', () => {
   const prototypeData = loadData(process.env.SP_DATA_DIR ? path.resolve(process.env.SP_DATA_DIR) : path.join(ROOT, 'data/resonance-native'), { log: { warn() {}, error() {} } });
   const catalog = getResonanceCatalog(prototypeData, { rulesVersion: 3, seasonId: 'resonance-set13-14.23', seed: 1 });
-  assert.equal(Object.hasOwn(catalog, 'prototypeSeason'), false);
+  assert.equal(catalog.prototypeSeason.id, 'resonance-set13-14.23');
+  assert.equal(catalog.prototypeSeason.chemBaronItems.length, 28);
+  assert.equal(Object.hasOwn(resonanceDisplayCatalog(catalog), 'prototypeSeason'), false);
   assert.equal(Object.values(catalog.equipment).filter((item) => item.source?.apiName?.startsWith('TFT13_Crime_')).length, 28);
   for (const hero of prototypeSeason.heroes) {
     const stats = catalog.operators[hero.sourceChessId].stars[1].stats;

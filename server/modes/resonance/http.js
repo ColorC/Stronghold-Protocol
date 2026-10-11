@@ -57,13 +57,13 @@ export function createResonanceHttp({ data, directory, battleRunner = runResonan
   const file = (id) => path.join(directory, `${id}.json`);
   const replayFile = (id, round) => path.join(directory, `${id}.replay-r${round}.json.gz`);
 
-  function catalogFor(rulesVersion = 3, seed = 1, environmentId = null) {
+  function catalogFor(rulesVersion = 3, seed = 1, environmentId = null, seasonId = null) {
     resonanceRulesVersion({rulesVersion});
-    const key = `${rulesVersion}|${environmentId}|${seed}`;
+    const key = `${rulesVersion}|${environmentId}|${seasonId??'active'}|${seed}`;
     if (catalogCache.has(key)) {
       const cached = catalogCache.get(key); catalogCache.delete(key); catalogCache.set(key, cached); return cached;
     }
-    const catalog = catalogProvider(data, { rulesVersion, environmentId, seed });
+    const catalog = catalogProvider(data, { rulesVersion, environmentId, seed, ...(seasonId==null?{}:{seasonId}) });
     catalogCache.set(key, catalog);
     while (catalogCache.size > CATALOG_CACHE_LIMIT) catalogCache.delete(catalogCache.keys().next().value);
     return catalog;
@@ -77,7 +77,7 @@ export function createResonanceHttp({ data, directory, battleRunner = runResonan
   }
 
   function catalogForIdentity(identity) {
-    try { return catalogFor(resonanceRulesVersion(identity), identity.seed, identity.environmentId); }
+    try { return catalogFor(resonanceRulesVersion(identity), identity.seed, identity.environmentId, identity.seasonId); }
     catch { throw Object.assign(new Error('这一局的规则存档内容无效'), { status: 500, code: 'CORRUPT_SESSION' }); }
   }
 

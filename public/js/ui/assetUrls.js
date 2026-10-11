@@ -61,6 +61,7 @@ export function chessPortraitUrl(m, chess) {
 
 /** Skill icon of a chess record (manifest `skills[iconId]`, else the empty skill sprite). */
 export function skillIconUrl(m, chess) {
+  if (chess?.assets?.resonancePresentationIcon === 'support') return uiUrl(m, 'garrisonTypeIcon/icon_support');
   const skills = obj(obj(m)?.skills);
   const id = str(chess?.assets?.skillIcon) || str(chess?.skill?.iconId) || str(chess?.skill?.skillId);
   if (skills && id && skills[id]) return str(skills[id]);

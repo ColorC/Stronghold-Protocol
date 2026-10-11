@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { prototypeSeason } from '../../shared/resonance/prototype-season.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import {getSeasonCampaignCatalog} from '../../tools/resonance/balance-campaign.mjs';
@@ -31,7 +32,7 @@ test('every projected fixed skill uses its native identity and an existing icon'
 test('native resonance shop packet resolves the selected fixed skill icon from its actual chess record',()=>{
  const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native');
  assert.equal(Object.keys(data.assets.items).length,59,'all frozen manifest item icons are available for lookup');
- const catalog=getResonanceCatalog(data,{rulesVersion:3,seed:13});
+ const catalog=getResonanceCatalog(data,{rulesVersion:3,seasonId:prototypeSeason.id,seed:13});
  const packet=resonanceCatalogPacket({data,catalog,displayCatalog:catalog,nativeChessId:(id,star)=>star===1?id:`resonance_${id}_star${star}`});
  const expected=[['灰毫','skchr_ashlok_2'],['白金','skchr_platnm_2'],['令','skchr_ling_3']];
  for(const [name,skillId] of expected){
@@ -40,6 +41,36 @@ test('native resonance shop packet resolves the selected fixed skill icon from i
   assert.equal(record.assets.skillIcon,skillId,name);
   assert.equal(skillIconUrl(data.assets,record),data.assets.skills[skillId],name);
  }
+});
+
+test('faction-season Judgement icon is a scoped passive-support presentation, not a fabricated skill',()=>{
+ const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native');
+ const catalog=getResonanceCatalog(data,{rulesVersion:3,seasonId:'resonance-factions-1',seed:19});
+ const operator=Object.values(catalog.operators).find(row=>row.charId==='char_4000_jnight');
+ assert.equal(operator.fixedSkillId,'resonance_judgement_support');
+ assert.equal(operator.stars[1].record.skill,null,'the native robot has no active skill');
+ const httpDisplay=resonanceDisplayCatalog(catalog,data).operators[operator.id];
+ assert.equal(httpDisplay.stars[1].skill,null);
+ assert.equal(httpDisplay.passivePresentation.kind,'passive-support','HTTP/library display uses the same mode projection');
+ const packet=resonanceCatalogPacket({data,catalog,displayCatalog:catalog,nativeChessId:(id,star)=>star===1?id:`resonance_${id}_star${star}`});
+ const presentation=packet.catalog.operators[operator.id].passivePresentation;
+ assert.deepEqual(presentation,httpDisplay.passivePresentation,'packet and HTTP display share one presentation definition');
+ assert.deepEqual({kind:presentation.kind,icon:presentation.icon,label:presentation.label},
+  {kind:'passive-support',icon:'support',label:'被动支援'});
+ assert.equal(presentation.description,'无需施放主动技能。');
+ assert.equal(packet.catalog.operators[operator.id].stars[1].skill,null,'presentation does not populate the skill slot');
+ const chess=packet.data.chess[operator.id];
+ assert.equal(chess.skill,null,'native packet keeps the actual skill absent');
+ assert.deepEqual(chess.passivePresentation,presentation,'native chess records carry the same mode presentation');
+ assert.equal(chess.assets.resonancePresentationIcon,'support');
+ assert.equal(chess.assets.skillIcon,null,'support art is not disguised as a skill asset id');
+ const resolved=resolveOperatorSkillIcon(packet.catalog.operators[operator.id]);
+ assert.equal(resolved.url,'/assets/ui/garrisonTypeIcon/icon_support.png');
+ assert.equal(resolved.skillId,null);assert.equal(resolved.iconId,null);
+ assert.equal(skillIconUrl(data.assets,chess),data.assets.ui['garrisonTypeIcon/icon_support']);
+ assert.equal(fs.existsSync(path.join('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/public',resolved.url)),true);
+ const other=Object.values(packet.catalog.operators).find(row=>row.charId!=='char_4000_jnight');
+ assert.equal(other.passivePresentation,undefined,'presentation does not leak to other operators');
 });
 
 test('all eight Resonance components and 28 completed recipes use distinct frozen Native item art',()=>{
@@ -80,7 +111,7 @@ test('source gear uses explicit existing completed-item art and transfers resolv
 
 test('V3 native pact projection preserves per-tier activation intervals and exact counts',()=>{
  const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native');
- const catalog=getResonanceCatalog(data,{rulesVersion:3,seed:15});
+ const catalog=getResonanceCatalog(data,{rulesVersion:3,seasonId:prototypeSeason.id,seed:15});
  const display=resonanceDisplayCatalog(catalog,data),emissary=display.pacts.emissary;
  assert.deepEqual(emissary.exactCounts,[1,4]);
  assert.deepEqual(emissary.levels.map(({minUnits,maxUnits,exactCounts})=>({minUnits,maxUnits,exactCounts})),[

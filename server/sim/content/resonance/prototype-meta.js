@@ -1,4 +1,4 @@
-import { prototypeSeason } from '../../../../shared/resonance/prototype-season.js';
+import { prototypeSeasonForCatalog } from '../../../../shared/resonance/season-registry.js';
 import { prototypeFormForRow } from '../../../../shared/resonance/prototype-form.js';
 import { prototypeLabCells } from '../../../../shared/resonance/prototype-labs.js';
 import { mechanicByTrait } from './prototype-pacts.js';
@@ -34,7 +34,8 @@ function tierAtCount(trait,count) {
     .sort((a,b)=>a.minUnits-b.minUnits).at(-1)??null;
 }
 export function activePrototypeTraits(state,catalog={}) {
-  const traits = catalog.prototypeSeason?.traits ?? prototypeSeason.traits;
+  const season = prototypeSeasonForCatalog(catalog);
+  const traits = season.traits;
   const roster = rosterOf(state,catalog);
   const activeTraits=[];
   for (const trait of traits) {
@@ -48,7 +49,8 @@ export function activePrototypeTraits(state,catalog={}) {
 }
 
 export function prototypeFormModes(state,catalog={}) {
-  const trait=prototypeSeason.traits.find((entry)=>entry.id==='formSwap');
+  const season=prototypeSeasonForCatalog(catalog);
+  const trait=season.traits.find((entry)=>entry.id==='formSwap');
   const members=new Set(trait?.members??[]);
   const rect=state?.fieldRect??state?.battlefield?.rect??catalog?.prototypeMeta?.fieldRect??{r0:9,r1:12};
   const pieces=state?.pieces??state?.input?.units??state?.units??[];
@@ -61,22 +63,23 @@ export function prototypeFormModes(state,catalog={}) {
     if(!mode)return [];
     return [{uid:String(piece.uid??''),charId,row:Number(piece.row),mode,skillId:operator?.fixedSkillId??null,
       label:mode==='frontline'?'前排形态':'后排形态',nativeSkillKept:true,
-      skillRangeExtension:mode==='backline'?Number(prototypeSeason.formSwapAdaptation?.backlineSkillRangeExtension??1):0}];
+      skillRangeExtension:mode==='backline'?Number(season.formSwapAdaptation?.backlineSkillRangeExtension??1):0}];
   });
 }
 
 /** Pure prep hook: install a serializable active-tier snapshot for the battle adapter. */
 export function onPrototypePrep(state,catalog={},context={}) {
   const next=clone(state);
+  const season=prototypeSeasonForCatalog(catalog);
   const activeTraits=activePrototypeTraits(next,catalog);
   const experiment=activeTraits.find((trait)=>trait.id==='experiment');
   const labCells=experiment?prototypeLabCells({
-    stageId:context.stageId??next.stageId??next.seasonId??catalog.config?.seasonId??prototypeSeason.id,
+    stageId:context.stageId??next.stageId??next.seasonId??catalog.config?.seasonId??season.id,
     seed:next.seed??0,
     deployCells:context.deployCells??[],
     count:experiment.variables?.NumLaboratory??0,
   }):[];
-  next.prototypeMeta={...(next.prototypeMeta??{}),seasonId:prototypeSeason.id,rulesVersion:3,activeTraits,formModes:prototypeFormModes(next,catalog),labCells};
+  next.prototypeMeta={...(next.prototypeMeta??{}),seasonId:season.id,rulesVersion:3,activeTraits,formModes:prototypeFormModes(next,catalog),labCells};
   const economy=onPrototypeEconomyPrep(next,catalog,activeTraits);
   return {state:economy.state,activeTraits,events:economy.events??[],choiceDrafts:economy.choiceDrafts??[]};
 }
@@ -84,6 +87,7 @@ export function onPrototypePrep(state,catalog={},context={}) {
 /** Pure result hook: retain source-backed active tiers and measured combat contribution. */
 export function onPrototypeBattleResult(state,catalog={},result={}) {
   const next=clone(state);
+  const season=prototypeSeasonForCatalog(catalog);
   const activeTraits=activePrototypeTraits(next,catalog);
   const contribution={};
   for (const unit of result?.contributions??[]) {
@@ -96,7 +100,7 @@ export function onPrototypeBattleResult(state,catalog={},result={}) {
     }
     contribution[unit.charId]=row;
   }
-  next.prototypeMeta={...(next.prototypeMeta??{}),seasonId:prototypeSeason.id,rulesVersion:3,activeTraits,lastBattle:{
+  next.prototypeMeta={...(next.prototypeMeta??{}),seasonId:season.id,rulesVersion:3,activeTraits,lastBattle:{
     battleId:result?.battleId??null,battleRound:result?.battleRound??result?.outcome?.round??null,
     outcome:result?.outcome??null,metrics:clone(result?.metrics??{}),contribution,survivors:clone(result?.survivors??[]),
     uidMap:clone(result?.uidMap??null),

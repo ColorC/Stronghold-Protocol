@@ -67,6 +67,13 @@ function skillView(operator, star, playerText) {
   };
 }
 
+export function resonanceOperatorPresentation(catalog, operator) {
+  if (catalog?.config?.seasonId !== 'resonance-factions-1' || operator?.charId !== 'char_4000_jnight'
+    || operator?.fixedSkillId !== 'resonance_judgement_support') return null;
+  return { kind:'passive-support', icon:'support', label:'被动支援', url:'/assets/ui/garrisonTypeIcon/icon_support.png',
+    description:'无需施放主动技能。' };
+}
+
 function starView(operator, star, data, playerText) {
   const spec = operator.stars[star];
   const record = spec.record;
@@ -93,11 +100,16 @@ export function resonanceDisplayCatalog(catalog, data = null) {
     name: operator.name, charId: operator.charId, cost: operator.cost, position: operator.position,
     canDeployHighGround: operator.canDeployHighGround, role: ROLE_TEXT[operator.role] ?? '伤害', pacts: [...operator.pacts],
     avatar: operator.assets?.avatar ?? operator.assets?.portrait ?? null,
+    ...(resonanceOperatorPresentation(catalog,operator)?{passivePresentation:resonanceOperatorPresentation(catalog,operator)}:{}),
     stars: { 1: starView(operator, 1, data, catalog.playerText), 2: starView(operator, 2, data, catalog.playerText), 3: starView(operator, 3, data, catalog.playerText) },
   }]));
   const publicPactVariables = new Set(['ConversionDamagePct','MagicDamage','Resists','TriggerNumCrystals','BaseAP','TeamAP','DamageDecrease','DamageDecreaseDuration','HPShieldAmount','NumComponents','ShieldDuration','AD','NumOfAttacks','PercentDamage','DA','DR','AmbessaArmor','BonusHealth','SelfishDamageAmp','GarenHealthPercent','NamiMana','StarAS','BonusArmor','AttackSpeed','DamageReduction','ManaReduction','CritChance','CritDamage','DamageReductionPct','EnlightenedBonusMana','AllyHealing','PercentDamageIncrease','PercentDamageTakenHeal','BonusHexRangeIncrease','ADAPBase','PercentIncreasePerChest','StacksPerKill','Bonus1NumRockets','Bonus1RocketDamage','Bonus2ShieldAmount','Bonus2ShieldDuration','Bonus4Gold','Durability','Duration','BaseValues','NumOfItems','PercentIncreaseSponsored','HealthPerSkip','MinStreakLength','ShimmerBreakpoint','ShimmerPerCombat','ShimmerPerCombatStreaking','ADAP','BurstAS','BurstDuration','ForceDuration','MaxHealthIncrease','PercentHealthTrigger','PercentMaxHealthBonus','StunDuration','APPercent','ShieldAmount','OmnivampPercent','HealthThreshold','TrueDamagePercent','HealPercent','NumOfWantedEnemies','PercentMaxHealthShield','AttackSpeedPerWantedKill','BaseDA','ExperimentBonusIncrease','MaxHealth','NumLaboratory','BonusPercentHealth','TeamFlatHealth','NumRounds1Star','NumCastsToUnlock','PercentHealthUnlock','PercentHealthPerStarLevel','MinBonusAS','MaxBonusAS','BaseDR','HealthBreakpoint','IncreasedDR']);
   const pacts = Object.fromEntries(Object.entries(catalog.pacts).map(([id, pact]) => [id, {
-    name: pact.name, description: pact.description, exactCounts:[...(pact.exactCounts??[])], thresholds: [...(pact.thresholds ?? pact.levels.map((level) => level.minUnits??level.threshold))],
+    name: pact.name, description: pact.description, summaryDescription:pact.summaryDescription,
+    group:pact.group, nativeIconPath:pact.nativeIconPath,
+    ...(pact.detailNotes?{detailNotes:pact.detailNotes.map(note=>({name:note.name,text:note.text}))}:{}),
+    ...(pact.rewardThresholds?{rewardThresholds:[...pact.rewardThresholds]}:{}),
+    exactCounts:[...(pact.exactCounts??[])], thresholds: [...(pact.thresholds ?? pact.levels.map((level) => level.minUnits??level.threshold))],
     levels: pact.levels.map((level, index) => ({ threshold: level.threshold, minUnits:level.minUnits??level.threshold,
       maxUnits:Number.isFinite(level.maxUnits)?level.maxUnits:25000,
       exactCounts:Array.isArray(level.exactCounts)?[...level.exactCounts]:(level.maxUnits===level.minUnits?[level.minUnits]:[]),

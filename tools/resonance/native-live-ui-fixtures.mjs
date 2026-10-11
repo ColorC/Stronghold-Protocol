@@ -31,14 +31,23 @@ function summarizeSessionResultHistory(state) {
   return totals;
 }
 
-async function readCatalog(page, seed) {
-  const packet = await page.evaluate(async (catalogSeed) => {
-    const response = await fetch(`/resonance/api/catalog?seed=${encodeURIComponent(catalogSeed)}`, { cache: 'no-store' });
-    if (!response.ok) throw new Error(`catalog GET failed: ${response.status}`);
-    return response.json();
-  }, seed);
-  assert(packet?.catalog?.equipment, 'catalog GET returned no equipment records');
+export function catalogForFixtureSession(packet, sessionId) {
+  assert(sessionId, 'catalog lookup requires the fixture session identity');
+  assert(packet?.state?.seasonId && packet?.catalog?.equipment,
+    `session catalog projection is incomplete: ${JSON.stringify({ sessionId, stateSeasonId: packet?.state?.seasonId, hasEquipment: !!packet?.catalog?.equipment })}`);
+  if (packet.catalog.config?.seasonId != null) assert(packet.catalog.config.seasonId === packet.state.seasonId,
+    `fixture catalog season mismatch: ${JSON.stringify({ sessionId, stateSeasonId: packet.state.seasonId, catalogSeasonId: packet.catalog.config.seasonId })}`);
   return packet.catalog;
+}
+
+async function readCatalog(page, sessionId) {
+  assert(sessionId, 'catalog lookup requires the fixture session identity');
+  const packet = await page.evaluate(async (id) => {
+    const response = await fetch(`/resonance/api/sessions/${encodeURIComponent(id)}`, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`session catalog GET failed: ${response.status}`);
+    return response.json();
+  }, sessionId);
+  return catalogForFixtureSession(packet, sessionId);
 }
 
 async function waitPublicPrep(attempt, waitReceived, fromIndex, timeoutMs = 25_000) {
@@ -254,7 +263,7 @@ async function verifyChoiceRoundTrip({ page, baseUrl, file, attempt, check, capt
 }
 
 async function inspectChemItemDetails(page, file, fixtureSetup) {
-  const catalog = await readCatalog(page, file.seed);
+  const catalog = await readCatalog(page, file.id);
   const chemItemIds = Array.isArray(fixtureSetup?.chemItems) ? fixtureSetup.chemItems.map((row) => typeof row === 'string' ? row : row?.id) : [];
   assert(chemItemIds.length === 28 && new Set(chemItemIds).size === 28, `fixtureSetup.chemItems must provide 28 unique IDs, got ${chemItemIds.length}`);
   const items = chemItemIds.map((id) => [id, catalog.equipment[id]]);
@@ -454,7 +463,7 @@ async function verifyScrapTemporaryGear({ page, baseUrl, fixtureSetup, attempt, 
   assert(initial.phase === 'prep', `Scrap fixture must enter PREP before combat: ${initial.phase}`);
   assert(!fixture.stageId || initial.field?.stageId === fixture.stageId,
     `Scrap fixture field changed: expected ${fixture.stageId}, got ${initial.field?.stageId}`);
-  const catalog = await readCatalog(page, file.seed);
+  const catalog = await readCatalog(page, file.id);
   const rhodesMembers = new Set(fixture.sourceMemberIds || catalog.pacts?.rhodes?.members || []);
   assert(rhodesMembers.size >= 2, 'Scrap fixture must carry at least two compiler-verified Rhodes source member IDs');
   const sourcePieces = initial.pieces.filter((piece) => rhodesMembers.has(piece.operatorId));
@@ -725,7 +734,7 @@ async function runTerminalFixture({ page, baseUrl, file, difficulty, attempt, wa
     `Hidden Core loss at round ${state.round} must report ${Number(state.round) - 1} rounds passed`);
   if (expectedPhase === 'FINAL_ASSAULT' && expectedVictory) assert(expectedRoundsPassed === Number(state.round),
     `Final Assault victory must report the settled victory round ${state.round}`);
-  const catalog = await readCatalog(page, file.seed);
+  const catalog = await readCatalog(page, file.id);
   const roster = (state.pieces || []).map((piece) => ({ uid: piece.uid, operatorId: piece.operatorId,
     name: catalog.operators?.[piece.operatorId]?.name || piece.operatorId, star: piece.star,
     gear: (piece.equipment || []).map((item) => catalog.equipment?.[item.itemId]?.name || item.itemId) }));

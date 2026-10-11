@@ -1,4 +1,4 @@
-import { prototypeSeason } from '../../../../shared/resonance/prototype-season.js';
+import { prototypeSeasonForCatalog } from '../../../../shared/resonance/season-registry.js';
 
 const clone=(value)=>structuredClone(value);
 
@@ -6,10 +6,10 @@ const clone=(value)=>structuredClone(value);
 // They remain independent personal abilities in Set 13 v3 and never add a natural pact.
 const SIGNATURES=Object.freeze({
   snow:Object.freeze({
-    operatorName:'圣聆初雪',tileCooldown:3,coldDuration:1.5,perColdSp:.2,
+    tileCooldown:3,coldDuration:1.5,perColdSp:.2,
   }),
   lateranoAirstrike:Object.freeze({
-    operatorName:'新约能天使',actionCooldown:.4,bombCount:15,
+    actionCooldown:.4,bombCount:15,
     byStar:Object.freeze({
       1:Object.freeze({chance:15,damage:60,cap:100,factor:.005,radius:1.5}),
       2:Object.freeze({chance:25,damage:100,cap:150,factor:.008,radius:1.5}),
@@ -19,12 +19,12 @@ const SIGNATURES=Object.freeze({
 });
 const installedBattles=new WeakMap();
 
-function battleUnitInfo(unit,catalog,state,pieceByUid,bySource){
+function battleUnitInfo(unit,catalog,state,pieceByUid,bySource,season){
   const sourceId=unit?.def?.raw?.id??unit?.def?.raw?.chessId??unit?.defId;
   const operator=bySource.get(sourceId)??catalog?.operators?.[sourceId]??null;
   const piece=pieceByUid.get(String(unit?.uid));
   const star=Math.max(1,Math.min(3,Number(piece?.star??unit?.def?.raw?.resonanceStar??unit?.resonanceStar??1)));
-  const hero=prototypeSeason.heroes.find((entry)=>entry.sourceChessId===sourceId||entry.charId===(operator?.charId??unit?.def?.raw?.charId));
+  const hero=season.heroes.find((entry)=>entry.sourceChessId===sourceId||entry.charId===(operator?.charId??unit?.def?.raw?.charId));
   return {sourceId,operator,piece,star,hero,charId:operator?.charId??unit?.def?.raw?.charId??null};
 }
 function fieldTiles(battle){
@@ -51,14 +51,16 @@ function damage(battle,source,target,amount,type,tags){
 
 /** Install the two pre-existing Resonance personal signatures that are separate from Set 13 natural traits. */
 export function installPrototypeSignatures(battle,state,catalog){
+  const season=prototypeSeasonForCatalog(catalog);
   if(installedBattles.has(battle))return installedBattles.get(battle);
   const pieces=new Map((state?.pieces??[]).map((piece)=>[String(piece.uid),piece]));
   const operators=catalog?.operators??{};
   const bySource=new Map(Object.values(operators).map((operator)=>[operator.sourceChessId,operator]));
   const active=()=>battle.allyUnits.filter((unit)=>unit?.kind==='op'&&unit.side==='ally'&&unit.alive&&unit.deployed&&!unit.removed);
-  const info=(unit)=>battleUnitInfo(unit,catalog,state,pieces,bySource);
-  const yela=()=>active().find((unit)=>info(unit).hero?.operatorName===SIGNATURES.snow.operatorName)??null;
-  const angel=()=>active().find((unit)=>info(unit).hero?.operatorName===SIGNATURES.lateranoAirstrike.operatorName)??null;
+  const info=(unit)=>battleUnitInfo(unit,catalog,state,pieces,bySource,season);
+  const snowApi='TFT13_Malzahar',lateranoApi='TFT13_Lieutenant';
+  const yela=()=>active().find((unit)=>info(unit).hero?.apiName===snowApi)??null;
+  const angel=()=>active().find((unit)=>info(unit).hero?.apiName===lateranoApi)??null;
   const cooldowns=new Map();
   const floorKeys=new Set();
   const metrics={};
@@ -125,7 +127,7 @@ export function installPrototypeSignatures(battle,state,catalog){
     if((dmg.tags??[]).includes('ammoSkill'))dmg.mul=(dmg.mul??1)*1.5;
   },{owner:battle});
 
-  const result={signatures:['snow','lateranoAirstrike'],metrics,operators:prototypeSeason.heroes.filter((hero)=>['圣聆初雪','新约能天使'].includes(hero.operatorName)).map((hero)=>({name:hero.operatorName,sourceChessId:hero.sourceChessId,charId:hero.charId}))};
+  const result={signatures:['snow','lateranoAirstrike'],metrics,operators:season.heroes.filter((hero)=>[snowApi,lateranoApi].includes(hero.apiName)).map((hero)=>({name:hero.operatorName,sourceChessId:hero.sourceChessId,charId:hero.charId}))};
   installedBattles.set(battle,result);
   return result;
 }
