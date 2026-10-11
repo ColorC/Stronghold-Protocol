@@ -491,7 +491,7 @@ async function resolveVisibleSupplyChoices({ page, attempt, readState }) {
     const required = Math.max(1, Math.trunc(Number(choice.remaining) || 1));
     let selected = [], targetPair = null;
     if (choice.type === 'strategy') {
-      assert.equal(required, 1, `strategy choice ${choice.uid} requires an unsupported multi-strategy selection`);
+      assert(required === 1, `strategy choice ${choice.uid} requires an unsupported multi-strategy selection`);
       let candidate = null;
       for (let index = 0; index < articles.length; index++) {
         const select = await articles[index].$('select');
@@ -506,7 +506,7 @@ async function resolveVisibleSupplyChoices({ page, attempt, readState }) {
       const cardButton = await articles[candidate.index].$('button.spcard');
       assert(cardButton, `strategy option ${optionId} has no selectable card button`);
       await clickHandleByMeasuredCenter(page, cardButton, `select strategy ${optionId}`);
-      assert.equal(await cardButton.evaluate((node) => node.getAttribute('aria-pressed')), 'true',
+      assert(await cardButton.evaluate((node) => node.getAttribute('aria-pressed')) === 'true',
         `strategy card ${optionId} did not become selected`);
       selected = [optionId];
       if (attempt.nextRoundSupply) attempt.nextRoundSupply.currentChoice.selected = [...selected];
@@ -526,7 +526,7 @@ async function resolveVisibleSupplyChoices({ page, attempt, readState }) {
         `choice ${choice.uid} exposes fewer selectable options than required: ${JSON.stringify({ required, selectable: selectable.length, type: choice.type })}`);
       for (const { index, button } of selectable.slice(0, required)) {
         await clickHandleByMeasuredCenter(page, button, `select ${choice.type} option ${choice.options[index]}`);
-        assert.equal(await button.evaluate((node) => node.getAttribute('aria-pressed')), 'true',
+        assert(await button.evaluate((node) => node.getAttribute('aria-pressed')) === 'true',
           `choice option ${choice.options[index]} did not become selected`);
         selected.push(choice.options[index]);
         if (attempt.nextRoundSupply) attempt.nextRoundSupply.currentChoice.selected = [...selected];
@@ -654,10 +654,49 @@ export function settlementWaitArgs(sessionId, historyCount) {
   return { id: sessionId, historyCount };
 }
 
-export function nextSupplyReady(state, expectedRound = 2) {
+export function projectOwnSupplyLedger(sessionDocument, expectedRound = 2) {
+  const state = sessionDocument?.state ?? sessionDocument;
+  const round = Number(expectedRound);
+  const matchingAdvances = (Array.isArray(state?.history) ? state.history : [])
+    .filter((row) => row?.type === 'supply-advanced' && Number(row.round) === round);
+  const choices = matchingAdvances.length === 1 && Number.isSafeInteger(Number(matchingAdvances[0].choices))
+    ? Number(matchingAdvances[0].choices) : null;
+  return {
+    round: Number.isFinite(Number(state?.round)) ? Number(state.round) : null,
+    nodeStarted: state?.nodeStarted === true,
+    claimed: Array.isArray(state?.claimedNodes) && state.claimedNodes.includes(round),
+    advanceCount: matchingAdvances.length,
+    choiceCount: choices,
+  };
+}
+
+async function readOwnSupplyLedger(sessionId, expectedRound = 2) {
+  assert(typeof sessionId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId),
+    'only a UUID session created by this checker can be read for the supply ledger');
+  assert(sessionId.toLowerCase() !== '53ffde79-85b3-4302-89f7-e0d792f78723', 'protected player session is forbidden');
+  const directory = path.resolve(SESSION_DIR);
+  const file = path.resolve(directory, `${sessionId}.json`);
+  assert(path.dirname(file) === directory, 'own test-session path escaped its isolated directory');
+  const info = await lstat(file);
+  assert(info.isFile() && !info.isSymbolicLink() && info.size <= 10 * 1024 * 1024,
+    'own test-session ledger must be a bounded regular file');
+  const document = JSON.parse(await readFile(file, 'utf8'));
+  return projectOwnSupplyLedger(document, expectedRound);
+}
+
+export function nextSupplyReady(state, expectedRound = 2, ledger = null, choiceReceipts = []) {
+  const expected = Number(expectedRound);
+  const choicesResolved = Array.isArray(choiceReceipts) && choiceReceipts.length === ledger?.choiceCount
+    && choiceReceipts.every((choice) => choice?.action === (choice.type === 'strategy' ? 'chooseStrategy' : 'claimReward')
+      && Array.isArray(choice.selected) && choice.selected.length > 0
+      && Number.isFinite(Number(choice.pendingAfter)) && Number(choice.pendingAfter) >= 0)
+    && (!choiceReceipts.length || Number(choiceReceipts.at(-1).pendingAfter) === 0);
+  const ledgerReady = ledger?.round === expected && ledger.nodeStarted === true
+    && ledger.claimed === true && ledger.advanceCount === 1 && Number.isSafeInteger(ledger.choiceCount)
+    && ledger.choiceCount >= 0 && choicesResolved;
   return Number(state?.round) === Number(expectedRound) && state?.nodeStarted === true
     && state?.phase === 'prep' && !(state?.pendingChoices || []).length
-    && Array.isArray(state?.claimedNodes) && state.claimedNodes.includes(Number(expectedRound));
+    && ledgerReady;
 }
 
 export async function attachWsCapture(page, attempt, onSent = null) {
@@ -1928,9 +1967,11 @@ async function run() {
     const supplyBeforeRound = await page.evaluate(async (sessionId) =>
       (await (await fetch(`/resonance/api/sessions/${sessionId}`)).json()).state,
     attempt.sessionId);
-    attempt.nextRoundSupply = { before: { round: supplyBeforeRound?.round ?? null, nodeStarted: supplyBeforeRound?.nodeStarted === true,
-      phase: supplyBeforeRound?.phase ?? null, claimed: [...(supplyBeforeRound?.claimedNodes ?? [])],
-      pending: (supplyBeforeRound?.pendingChoices ?? []).map(({ uid, type, source }) => ({ uid, type, source })) }, choices: [] };
+    const persistedSupplyBeforeRound = await readOwnSupplyLedger(attempt.sessionId, 2);
+    attempt.nextRoundSupply = { before: { ui: { round: supplyBeforeRound?.round ?? null,
+      nodeStarted: supplyBeforeRound?.nodeStarted === true, phase: supplyBeforeRound?.phase ?? null,
+      pending: (supplyBeforeRound?.pendingChoices ?? []).map(({ uid, type, source }) => ({ uid, type, source })) },
+    persisted: persistedSupplyBeforeRound }, choices: [] };
     const savedSessionUrl = `http://${HOST}:${PORT}/resonance.html?session=${encodeURIComponent(attempt.sessionId)}`;
     await page.goto(savedSessionUrl, { waitUntil: 'domcontentloaded', timeout: 20_000 });
     await page.waitForSelector('.rs-native-match .gtop__exit', { visible: true, timeout: 30_000 });
@@ -1940,7 +1981,7 @@ async function run() {
       const privatePhase = store.get().match.private?.resonance?.state?.phase;
       return !!privatePhase && publicPhase !== 'COMBAT' && !/combat/i.test(String(privatePhase));
     }, { timeout: 20_000 });
-    assert.equal(Number(supplyBeforeRound?.round), 2,
+    assert(Number(supplyBeforeRound?.round) === 2,
       `first natural settlement must hand off to round 2 before supply: ${JSON.stringify({ round: supplyBeforeRound?.round, nodeStarted: supplyBeforeRound?.nodeStarted, phase: supplyBeforeRound?.phase })}`);
     await page.waitForFunction(async () => {
       const {store}=await import('./js/store.js'),match=store.get().match,state=match.private?.resonance?.state;
@@ -1950,18 +1991,22 @@ async function run() {
     const secondSupplyState = await readState();
     assert(secondSupplyState.round===2&&secondSupplyState.nodeStarted===true,
       `Native did not advance the actual round-2 supply node: ${JSON.stringify({round:secondSupplyState.round,nodeStarted:secondSupplyState.nodeStarted,phase:secondSupplyState.phase})}`);
-    assert(secondSupplyState.claimedNodes?.includes(2),
-      `round-2 supply is not recorded as claimed: ${JSON.stringify({round:secondSupplyState.round,claimedNodes:secondSupplyState.claimedNodes})}`);
+    const persistedSupplyAdvanced = await readOwnSupplyLedger(attempt.sessionId, 2);
+    assert(persistedSupplyAdvanced.round === 2 && persistedSupplyAdvanced.nodeStarted && persistedSupplyAdvanced.claimed
+      && persistedSupplyAdvanced.advanceCount === 1 && Number.isSafeInteger(persistedSupplyAdvanced.choiceCount),
+    `round-2 supply ledger is not exactly once in this isolated session: ${JSON.stringify(persistedSupplyAdvanced)}`);
     attempt.nextRoundSupply.advanced = { round: secondSupplyState.round, nodeStarted: secondSupplyState.nodeStarted,
-      phase: secondSupplyState.phase, claimed: [...secondSupplyState.claimedNodes],
+      phase: secondSupplyState.phase, persisted: persistedSupplyAdvanced,
       pending: (secondSupplyState.pendingChoices ?? []).map(({ uid, type, source, options, remaining }) =>
         ({ uid, type, source, optionCount: options?.length ?? 0, remaining })) };
     await resolveVisibleSupplyChoices({ page, attempt, readState });
     const secondBefore = await readState();
-    const supplyGatePassed = nextSupplyReady(secondBefore, 2);
+    const persistedSupplyAfterChoices = await readOwnSupplyLedger(attempt.sessionId, 2);
+    const supplyGatePassed = nextSupplyReady(secondBefore, 2, persistedSupplyAfterChoices, attempt.nextRoundSupply.choices);
     const supplyGateEvidence = { before: attempt.nextRoundSupply.before, advanced: attempt.nextRoundSupply.advanced,
-      choices: attempt.nextRoundSupply.choices, after: { round: secondBefore.round, nodeStarted: secondBefore.nodeStarted,
-        phase: secondBefore.phase, claimed: [...(secondBefore.claimedNodes ?? [])],
+      choices: attempt.nextRoundSupply.choices, persistedAfter: persistedSupplyAfterChoices,
+      after: { round: secondBefore.round, nodeStarted: secondBefore.nodeStarted,
+        phase: secondBefore.phase,
         pending: (secondBefore.pendingChoices ?? []).map(({ uid, type, source }) => ({ uid, type, source })) } };
     attempt.nextRoundSupply.gate = supplyGateEvidence;
     check('native-next-round-supply-and-strategy', supplyGatePassed, supplyGateEvidence);

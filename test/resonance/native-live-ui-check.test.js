@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { artifactPaths, attachWsCapture, colorContrastRatio, config, isAllowedHttpRequest, isRunnerResultWarning, missingChecks, nextSupplyReady, parseArgs, REQUIRED_CHECKS, runtimeFaults, screenshotCount, settlementWaitArgs, shopPurchaseEvidence, waitForPopup, waitSent, waitSocketClosed } from '../../tools/resonance/native-live-ui-check.mjs';
+import { artifactPaths, attachWsCapture, colorContrastRatio, config, isAllowedHttpRequest, isRunnerResultWarning, missingChecks, nextSupplyReady, parseArgs, projectOwnSupplyLedger, REQUIRED_CHECKS, runtimeFaults, screenshotCount, settlementWaitArgs, shopPurchaseEvidence, waitForPopup, waitSent, waitSocketClosed } from '../../tools/resonance/native-live-ui-check.mjs';
 
 const tool = fileURLToPath(new URL('../../tools/resonance/native-live-ui-check.mjs', import.meta.url));
 
@@ -183,13 +183,35 @@ test('second server settlement wait passes its baseline into the isolated browse
 });
 
 test('the next-round supply gate requires claimed node 2, nodeStarted and no pending choices', () => {
-  const ready = { round: 2, nodeStarted: true, phase: 'prep', claimedNodes: [1, 2], pendingChoices: [] };
-  assert.equal(nextSupplyReady(ready), true);
-  assert.equal(nextSupplyReady({ ...ready, pendingChoices: [{ uid: 'choice-1', type: 'strategy' }] }), false);
-  assert.equal(nextSupplyReady({ ...ready, nodeStarted: false }), false);
-  assert.equal(nextSupplyReady({ ...ready, round: 1 }), false);
-  assert.equal(nextSupplyReady({ ...ready, claimedNodes: [1] }), false);
-  assert.equal(nextSupplyReady({ ...ready, phase: 'choice' }), false);
+  const ready = { round: 2, nodeStarted: true, phase: 'prep', pendingChoices: [] };
+  const noChoiceLedger = projectOwnSupplyLedger({ round: 2, nodeStarted: true, claimedNodes: [1, 2], history: [
+    { type: 'supply-advanced', round: 2, choices: 0 },
+  ] });
+  assert.deepEqual(noChoiceLedger, { round: 2, nodeStarted: true, claimed: true, advanceCount: 1, choiceCount: 0 });
+  assert.equal(nextSupplyReady(ready, 2, noChoiceLedger, []), true,
+    'an actually claimed supply node with zero source choices completes without inventing a choice');
+  assert.equal(nextSupplyReady({ ...ready, pendingChoices: [{ uid: 'choice-1', type: 'strategy' }] }, 2, noChoiceLedger, []), false);
+  assert.equal(nextSupplyReady({ ...ready, nodeStarted: false }, 2, noChoiceLedger, []), false);
+  assert.equal(nextSupplyReady({ ...ready, round: 1 }, 2, noChoiceLedger, []), false);
+  assert.equal(nextSupplyReady({ ...ready, phase: 'choice' }, 2, noChoiceLedger, []), false);
+  assert.equal(nextSupplyReady(ready, 2, { ...noChoiceLedger, advanceCount: 2 }, []), false,
+    'a duplicated persisted supply advance cannot pass');
+
+  const choiceLedger = projectOwnSupplyLedger({ round: 2, nodeStarted: true, claimedNodes: [1, 2], history: [
+    { type: 'supply-advanced', round: 2, choices: 1 },
+  ] });
+  assert.equal(nextSupplyReady(ready, 2, choiceLedger, []), false,
+    'a real persisted choice cannot be skipped');
+  assert.equal(nextSupplyReady(ready, 2, choiceLedger, [{ type: 'strategy', action: 'chooseStrategy', selected: ['source-strategy'], pendingAfter: 0 }]), true,
+    'a source choice passes only with matching UI action evidence and no remaining choice');
+  assert.equal(nextSupplyReady(ready, 2, choiceLedger, [{ type: 'strategy', action: 'claimReward', selected: ['source-strategy'], pendingAfter: 0 }]), false,
+    'a mismatched choice action cannot pass');
+});
+
+test('checker uses predicate assert calls rather than Node assert methods', async () => {
+  const source = await (await import('node:fs/promises')).readFile(tool, 'utf8');
+  assert.doesNotMatch(source, /\bassert\s*\.\s*[A-Za-z_$][\w$]*\s*\(/,
+    'the checker defines assert as a predicate function, so assert.equal/ok/etc. would throw at runtime');
 });
 
 test('native result projection captures only the resonance player result metrics', async () => {
