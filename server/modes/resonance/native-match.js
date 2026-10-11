@@ -979,6 +979,8 @@ export function resonanceCatalogPacket(match) {
   }]));
   const equipment = Object.fromEntries(Object.entries(match.catalog.equipment ?? {}).map(([id, item]) => [id, {
     ...(data.items?.[id] ?? {}), id, name: item.name, desc: item.description, kind: item.kind,
+    // the native item art (build-content.mjs iconId): the native detail card's item rows resolve icons by iconId
+    ...(item.iconId ? { iconId: item.iconId } : {}),
   }]));
   const display=resonanceDisplayCatalog(match.displayCatalog ?? match.catalog, match.data);
   return { t: 'r.catalog', catalog: display, data: {

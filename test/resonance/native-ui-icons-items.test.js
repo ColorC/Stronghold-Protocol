@@ -12,7 +12,7 @@ import {pactCurrentTier,pactTierStatus,pactTierStatusLabel,nativeStripTier} from
 import {loadData} from '../../server/data.js';
 import {getResonanceCatalog} from '../../server/modes/resonance/catalog.js';
 import {resonanceCatalogPacket} from '../../server/modes/resonance/native-match.js';
-import {skillIconUrl} from '../../public/js/ui/assetUrls.js';
+import {skillIconUrl,itemIconUrl} from '../../public/js/ui/assetUrls.js';
 import {NATIVE_ICON_BY_EQUIPMENT_ID,RESONANCE_ITEM_ICON_IDS,SOURCE_GEAR_ICON_IDS,resonanceItemPactId,resonanceNativeItem,resolveResonanceItemIconUrl} from '../../public/js/resonance/itemIconMap.js';
 import {resonanceContent} from '../../shared/resonance/catalog.js';
 import {specialBoardTile} from '../../public/js/resonance/specialEntityPlacement.js';
@@ -107,6 +107,24 @@ test('source gear uses explicit existing completed-item art and transfers resolv
  const catalog={equipment:{transfer_arts:{kind:'emblem',effects:[{kind:'transfer_pact',params:{pactId:'arts'}}]}}};
  assert.equal(resonanceItemPactId(catalog,'transfer_arts'),'arts');
  assert.equal(resonanceNativeItem(catalog,'transfer_arts',[]),null,'emblems use their pact icon, not generic equipment art');
+});
+
+test('the native catalog packet carries each item art identity; never-granted aliases stay readable but leave the codex',()=>{
+ const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native');
+ const catalog=getResonanceCatalog(data,{rulesVersion:3,seed:1});
+ const packet=resonanceCatalogPacket({data,catalog,displayCatalog:catalog,nativeChessId:(id,star)=>star===1?id:`resonance_${id}_star${star}`});
+ for(const [id,iconId] of Object.entries(NATIVE_ICON_BY_EQUIPMENT_ID)){
+  assert.equal(packet.data.items[id].iconId,iconId,`${id} carries its native art identity`);
+  assert.equal(itemIconUrl(data.assets,packet.data.items[id]),data.assets.items[iconId],`${id} resolves in the native detail card`);
+ }
+ const hidden=new Set(Object.entries(packet.catalog.equipment).filter(([,item])=>item.codexHidden).map(([id])=>id));
+ for(const row of catalog.prototypeSourceGear.definitions){
+  assert.ok(hidden.has(row.id),`${row.id} is not listed in the codex`);
+  assert.equal(packet.catalog.equipment[row.id].name,catalog.equipment[row.nativeItemId].name,'an old save still reads the item name');
+ }
+ for(const [id,item] of Object.entries(catalog.equipment))assert.equal(hidden.has(id),!!(item.legacyAliasOf||item.grantAllowed===false),`${id} is hidden exactly when it is never granted`);
+ const panels=fs.readFileSync(new URL('../../public/js/resonance/panels.js',import.meta.url),'utf8');
+ assert.ok(panels.includes("group('装备','item',Object.entries(catalog.equipment).filter(([,item])=>!item.codexHidden)"),'the codex equipment list skips hidden items');
 });
 
 test('V3 native pact projection preserves per-tier activation intervals and exact counts',()=>{

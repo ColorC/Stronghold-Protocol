@@ -116,8 +116,11 @@ export function resonanceDisplayCatalog(catalog, data = null) {
       description: catalog.playerText?.pacts?.[pact.id]?.levels?.[index]?.description ?? level.description,
       ...(level.sourceVariables && typeof level.sourceVariables === 'object' ? { sourceVariables: Object.fromEntries(Object.entries(level.sourceVariables).filter(([key, value]) => /^[A-Za-z][A-Za-z0-9_]*$/.test(key) && Number.isFinite(value))) } : {}) })),
   }]));
+  // An item that is never granted (a hidden legacy alias of a native item, a retired transfer) keeps its name and text
+  // for the saves that hold it, but the codex does not list it (public/js/resonance/panels.js).
   const equipment = Object.fromEntries(Object.entries(catalog.equipment).map(([id, item]) => [id, {
     name: item.name, description: catalog.playerText?.equipment?.[item.id]?.description ?? item.description, kind: item.kind, unique: !!item.unique,
+    ...(item.legacyAliasOf || item.grantAllowed === false ? { codexHidden: true } : {}),
   }]));
   const strategies = Object.fromEntries(Object.entries(catalog.strategies).map(([id, strategy]) => [id, {
     name: strategy.name, group: STRATEGY_GROUP_TEXT[strategy.group] ?? '策略', description: strategy.description,
