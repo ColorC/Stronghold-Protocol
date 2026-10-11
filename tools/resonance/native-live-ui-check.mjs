@@ -16,7 +16,7 @@ const SESSION_DIR = path.join(OUT, 'native-live-test-sessions');
 const PROFILE = path.join(ROOT, '.omni/tmp/resonance/browser-profile');
 const RECEIPT = path.join(OUT, 'native-live-ui-receipt.json');
 const LOG = path.join(ROOT, '.omni/tmp/resonance/native-live-ui-check.log');
-const HOST = '127.0.0.1', PORT = 19003, DEADLINE_MS = 8 * 60_000;
+const HOST = '127.0.0.1', PORT = 19003, DEADLINE_MS = 10 * 60_000;
 const SHOT_NAMES = ['01-title', '02-difficulty', '03-prep', '04-pacts', '05-shop-detail', '06-equipment', '07-combat', '08-settle', '09-choice-fixture', '10-result-fixture'];
 const SHOTS = Object.fromEntries(SHOT_NAMES.map((name) => [name, path.join(OUT, `native-live-${name}.jpg`)]));
 const SUPPLEMENTAL_SHOTS = {
@@ -36,6 +36,7 @@ export const REQUIRED_CHECKS = [
   'all-pact-tier-icons-loaded-and-active', 'emissary-exact-count-2-3', 'chem-market-28-effects-readable', 'native-w-deploy-withdraw', 'native-e-sell',
   'xp-interest-graphics', 'refresh-lock', 'combat-ledger-immutable', 'combat-progress-two-seconds',
   'pause-freezes-and-resume-progresses', 'combat-speed-1-2-4-same-battle', 'reload-restores-same-battle', 'one-real-settlement', 'second-server-takeover-settlement-once', 'choice-g-resonance-roundtrip',
+  'native-next-round-supply-and-strategy',
   'boss-hidden-fixture-result-lineup-gear-chart', 'scrap-temporary-gear-in-combat', 'equipment-detail-unequip',
   'equipment-detail-recycle', 'native-detail-deep-link', 'native-result-back-to-title', 'difficulty-default-copy', 'default-copy-is-product-language',
   'native-fullscreen-open-link',
@@ -472,6 +473,91 @@ async function clickVisibleButtonText(page, pattern) {
   }
   throw new Error(`no visible enabled button matched ${pattern}`);
 }
+
+async function resolveVisibleSupplyChoices({ page, attempt, readState }) {
+  const actions = [];
+  for (let step = 0; step < 8; step++) {
+    const before = await readState();
+    const choice = before?.pendingChoices?.[0];
+    if (!choice) return actions;
+    if (attempt.nextRoundSupply) attempt.nextRoundSupply.currentChoice = { uid: choice.uid, type: choice.type,
+      source: choice.source ?? null, optionCount: choice.options?.length ?? 0, remaining: choice.remaining ?? 1 };
+    assert(Array.isArray(choice.options) && choice.options.length > 0,
+      `next-round choice ${choice.uid} has no options: ${JSON.stringify({ type: choice.type, source: choice.source })}`);
+    await page.waitForSelector('.rs-native-choice .rs-choice-option', { visible: true, timeout: 12_000 });
+    const articles = await page.$$('.rs-native-choice .rs-choice-option');
+    assert(articles.length === choice.options.length,
+      `visible choice cards differ from session options: ${JSON.stringify({ type: choice.type, cards: articles.length, options: choice.options.length })}`);
+    const required = Math.max(1, Math.trunc(Number(choice.remaining) || 1));
+    let selected = [], targetPair = null;
+    if (choice.type === 'strategy') {
+      assert.equal(required, 1, `strategy choice ${choice.uid} requires an unsupported multi-strategy selection`);
+      let candidate = null;
+      for (let index = 0; index < articles.length; index++) {
+        const select = await articles[index].$('select');
+        let pairValue = null;
+        if (select) pairValue = await select.evaluate((node) => [...node.options].find((option) => option.value)?.value || null);
+        if (select && !pairValue) continue;
+        candidate = { index, select, pairValue };
+        break;
+      }
+      assert(candidate, `no offered strategy has a currently valid adjacent pair: ${JSON.stringify(choice.options)}`);
+      const optionId = choice.options[candidate.index];
+      const cardButton = await articles[candidate.index].$('button.spcard');
+      assert(cardButton, `strategy option ${optionId} has no selectable card button`);
+      await clickHandleByMeasuredCenter(page, cardButton, `select strategy ${optionId}`);
+      assert.equal(await cardButton.evaluate((node) => node.getAttribute('aria-pressed')), 'true',
+        `strategy card ${optionId} did not become selected`);
+      selected = [optionId];
+      if (attempt.nextRoundSupply) attempt.nextRoundSupply.currentChoice.selected = [...selected];
+      if (candidate.select) {
+        await candidate.select.select(candidate.pairValue);
+        targetPair = await candidate.select.evaluate((node) => node.value);
+        assert(targetPair, `strategy ${optionId} adjacent pair selection did not persist`);
+        if (attempt.nextRoundSupply) attempt.nextRoundSupply.currentChoice.targetPair = targetPair;
+      }
+    } else {
+      const selectable = [];
+      for (let index = 0; index < articles.length; index++) {
+        const button = await articles[index].$('button.spcard');
+        if (button && !(await button.evaluate((node) => node.disabled))) selectable.push({ index, button });
+      }
+      assert(selectable.length >= required,
+        `choice ${choice.uid} exposes fewer selectable options than required: ${JSON.stringify({ required, selectable: selectable.length, type: choice.type })}`);
+      for (const { index, button } of selectable.slice(0, required)) {
+        await clickHandleByMeasuredCenter(page, button, `select ${choice.type} option ${choice.options[index]}`);
+        assert.equal(await button.evaluate((node) => node.getAttribute('aria-pressed')), 'true',
+          `choice option ${choice.options[index]} did not become selected`);
+        selected.push(choice.options[index]);
+        if (attempt.nextRoundSupply) attempt.nextRoundSupply.currentChoice.selected = [...selected];
+      }
+    }
+    const confirm = await page.$('.rs-native-choice .spov__confirm:not(:disabled)');
+    assert(confirm, `choice ${choice.uid} did not enable its confirmation button`);
+    const sentOffset = attempt.ws.sent.length;
+    await clickHandleByMeasuredCenter(page, confirm, `confirm next-round choice ${choice.uid}`);
+    const expectedAction = choice.type === 'strategy' ? 'chooseStrategy' : 'claimReward';
+    const actionFrame = await waitSentWhere(attempt, (row) => row.t === 'g.resonance' && row.action === expectedAction,
+      8_000, sentOffset);
+    assert(actionFrame, `choice ${choice.uid} did not send g.resonance ${expectedAction}`);
+    await page.waitForFunction(async ({ sessionId, choiceUid }) => {
+      const packet = await (await fetch(`/resonance/api/sessions/${sessionId}`)).json();
+      return !(packet.state?.pendingChoices || []).some((entry) => entry.uid === choiceUid);
+    }, { timeout: 12_000 }, { sessionId: attempt.sessionId, choiceUid: choice.uid });
+    const after = await readState();
+    const evidence = { choiceUid: choice.uid, type: choice.type, source: choice.source ?? null,
+      action: actionFrame.action, selected, targetPair, remainingBefore: required,
+      pendingBefore: before.pendingChoices.length, pendingAfter: after.pendingChoices?.length ?? null,
+      revisionBefore: before.revision, revisionAfter: after.revision };
+    actions.push(evidence);
+    attempt.nextRoundSupply?.choices?.push(evidence);
+    if (attempt.nextRoundSupply) attempt.nextRoundSupply.currentChoice = null;
+  }
+  const unresolved = await readState();
+  assert(!(unresolved.pendingChoices || []).length,
+    `too many next-round choices remained unresolved: ${JSON.stringify(unresolved.pendingChoices.map(({ uid, type, source }) => ({ uid, type, source })))}`);
+  return actions;
+}
 async function clickHandleByMeasuredCenter(page, handle, label) {
   assert(handle, `${label} has no target element`);
   await handle.evaluate(node => new Promise(resolve => {
@@ -562,6 +648,16 @@ export function shopPurchaseEvidence({ frames = [], buy = null, expectedSlot, ex
   evidence.valid = evidence.oneBuyFrame && evidence.matchedOffer && evidence.matchedHistory
     && evidence.matchedPiece && evidence.matchedCost && evidence.revisionAdvanced && evidence.historyAdvanced;
   return evidence;
+}
+
+export function settlementWaitArgs(sessionId, historyCount) {
+  return { id: sessionId, historyCount };
+}
+
+export function nextSupplyReady(state, expectedRound = 2) {
+  return Number(state?.round) === Number(expectedRound) && state?.nodeStarted === true
+    && state?.phase === 'prep' && !(state?.pendingChoices || []).length
+    && Array.isArray(state?.claimedNodes) && state.claimedNodes.includes(Number(expectedRound));
 }
 
 export async function attachWsCapture(page, attempt, onSent = null) {
@@ -1829,6 +1925,12 @@ async function run() {
       && !resultBackState.result && !resultBackState.nativeMatch && !resultBackState.session
       && String(resultBackState.phase || '').toUpperCase() !== 'COMBAT' && !!closedResultSocket,
       { from: resultUrl, button: resultBackLabel, closedSocket: closedResultSocket, ...resultBackState });
+    const supplyBeforeRound = await page.evaluate(async (sessionId) =>
+      (await (await fetch(`/resonance/api/sessions/${sessionId}`)).json()).state,
+    attempt.sessionId);
+    attempt.nextRoundSupply = { before: { round: supplyBeforeRound?.round ?? null, nodeStarted: supplyBeforeRound?.nodeStarted === true,
+      phase: supplyBeforeRound?.phase ?? null, claimed: [...(supplyBeforeRound?.claimedNodes ?? [])],
+      pending: (supplyBeforeRound?.pendingChoices ?? []).map(({ uid, type, source }) => ({ uid, type, source })) }, choices: [] };
     const savedSessionUrl = `http://${HOST}:${PORT}/resonance.html?session=${encodeURIComponent(attempt.sessionId)}`;
     await page.goto(savedSessionUrl, { waitUntil: 'domcontentloaded', timeout: 20_000 });
     await page.waitForSelector('.rs-native-match .gtop__exit', { visible: true, timeout: 30_000 });
@@ -1838,16 +1940,37 @@ async function run() {
       const privatePhase = store.get().match.private?.resonance?.state?.phase;
       return !!privatePhase && publicPhase !== 'COMBAT' && !/combat/i.test(String(privatePhase));
     }, { timeout: 20_000 });
+    assert.equal(Number(supplyBeforeRound?.round), 2,
+      `first natural settlement must hand off to round 2 before supply: ${JSON.stringify({ round: supplyBeforeRound?.round, nodeStarted: supplyBeforeRound?.nodeStarted, phase: supplyBeforeRound?.phase })}`);
     await page.waitForFunction(async () => {
       const {store}=await import('./js/store.js'),match=store.get().match,state=match.private?.resonance?.state;
-      return match.public?.phase==='PREP'&&state?.phase==='prep'&&!(state.pendingChoices||[]).length;
+      return match.public?.phase==='PREP'&&Number(state?.round)===2&&state?.nodeStarted===true
+        &&['prep','choice'].includes(state?.phase);
     },{timeout:30_000});
-    const secondBefore=await readState();
-    assert(secondBefore.phase==='prep'&&!(secondBefore.pendingChoices||[]).length,
-      `the second natural round must begin from an editable PREP state: ${JSON.stringify({phase:secondBefore.phase,pendingChoices:secondBefore.pendingChoices?.length,round:secondBefore.round})}`);
+    const secondSupplyState = await readState();
+    assert(secondSupplyState.round===2&&secondSupplyState.nodeStarted===true,
+      `Native did not advance the actual round-2 supply node: ${JSON.stringify({round:secondSupplyState.round,nodeStarted:secondSupplyState.nodeStarted,phase:secondSupplyState.phase})}`);
+    assert(secondSupplyState.claimedNodes?.includes(2),
+      `round-2 supply is not recorded as claimed: ${JSON.stringify({round:secondSupplyState.round,claimedNodes:secondSupplyState.claimedNodes})}`);
+    attempt.nextRoundSupply.advanced = { round: secondSupplyState.round, nodeStarted: secondSupplyState.nodeStarted,
+      phase: secondSupplyState.phase, claimed: [...secondSupplyState.claimedNodes],
+      pending: (secondSupplyState.pendingChoices ?? []).map(({ uid, type, source, options, remaining }) =>
+        ({ uid, type, source, optionCount: options?.length ?? 0, remaining })) };
+    await resolveVisibleSupplyChoices({ page, attempt, readState });
+    const secondBefore = await readState();
+    const supplyGatePassed = nextSupplyReady(secondBefore, 2);
+    const supplyGateEvidence = { before: attempt.nextRoundSupply.before, advanced: attempt.nextRoundSupply.advanced,
+      choices: attempt.nextRoundSupply.choices, after: { round: secondBefore.round, nodeStarted: secondBefore.nodeStarted,
+        phase: secondBefore.phase, claimed: [...(secondBefore.claimedNodes ?? [])],
+        pending: (secondBefore.pendingChoices ?? []).map(({ uid, type, source }) => ({ uid, type, source })) } };
+    attempt.nextRoundSupply.gate = supplyGateEvidence;
+    check('native-next-round-supply-and-strategy', supplyGatePassed, supplyGateEvidence);
+    assert(supplyGatePassed,
+      `round-2 supply must complete and all actual choices must be resolved before ready: ${JSON.stringify(supplyGateEvidence)}`);
     const secondReady=await page.$('.readybtn:not(:disabled)');
     assert(secondReady,'second natural round has no enabled ready control');
     const secondHistoryBefore=secondBefore.history?.filter(row=>row.type==='fight-settled').length||0;
+    attempt.secondHistoryBefore = secondHistoryBefore;
     const secondStartOffset=attempt.ws.received.length,secondReadyOffset=attempt.ws.sent.length;
     await clickHandleByMeasuredCenter(page,secondReady,'ready second natural round');
     const secondStart=await waitReceived(attempt,'b.start',20_000,secondStartOffset);
@@ -1886,8 +2009,10 @@ async function run() {
       reason:secondField.result?.reason??null,synthetic:secondField.result?.synthetic===true,
       statsCount:Object.values(secondField.result?.perPlayer??{}).reduce((sum,row)=>sum+(Array.isArray(row?.unitStats)?row.unitStats.length:0),0),
       errors:secondField.result?.errors??null};
-    await page.waitForFunction(async id=>{const packet=await(await fetch(`/resonance/api/sessions/${id}`)).json();
-      return(packet.state?.history||[]).filter(row=>row.type==='fight-settled').length===secondHistoryBefore+1;},{timeout:15_000},attempt.sessionId);
+    attempt.secondServerResult = secondServerResult;
+    await page.waitForFunction(async ({id,historyCount})=>{const packet=await(await fetch(`/resonance/api/sessions/${id}`)).json();
+      return(packet.state?.history||[]).filter(row=>row.type==='fight-settled').length===historyCount+1;},
+      {timeout:15_000},settlementWaitArgs(attempt.sessionId,secondHistoryBefore));
     const secondSettled=await readState(),secondFights=secondSettled.history?.filter(row=>row.type==='fight-settled')||[];
     const clientResultsForSecond=attempt.ws.sent.filter(row=>row.t==='b.result'&&row.battleId===attempt.secondBattleId);
     check('second-server-takeover-settlement-once',secondServerResult.mode==='server'&&secondServerResult.resultSource==='server'

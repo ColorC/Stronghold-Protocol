@@ -68,7 +68,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from '../../vendor/hooks.module.js';
 import { PHASE, GEO } from '../../../shared/constants.js';
 import { html, Spinner, PhaseBanner, ResultDialog, Icon, Button, BondDisc, HexBadge, confirmDialog, closeAllDialogs, useTicker } from '../ui/components.js';
-import { useGameData, GIcon } from '../ui/gameComponents.js';
+import { useGameData, GIcon, UnitThumb } from '../ui/gameComponents.js';
 import { useFieldView } from '../ui/fieldHost.js';
 import { TopBar, liveLp, ownLeaks, uniteRemaining, tempInfo, tempReadyReason } from '../ui/hud.js';
 import { BondStrip, BondPopup } from '../ui/bondStrip.js';
@@ -121,7 +121,7 @@ import { IncomePanel, RoundSettlementPanel } from './economyPanels.js';
 import { InventoryDock } from './native/equipmentDock.js';
 import { DetailPanel as ResonanceDetailPanel } from './detail.js';
 import { mountUnitItemOverlay } from './unitItems.js';
-import { resonanceItemIconUrl } from './itemIcon.js';
+import { ResonanceItemIcon, resonanceItemIconUrl } from './itemIcon.js';
 import { firstAvailableLegalTile, isResonanceSaleDrop, resonanceShortcutFor, RESONANCE_SHORTCUT_LABEL } from './nativeControls.js';
 import { pactIconUrl, PactIcon } from './pactIcon.js';
 import { pactTierSummary } from './pactTierSummary.js';
@@ -325,6 +325,53 @@ function NativeSpecialEntityList({ state, catalog, editable, busy, onRecall }) {
   </section>`;
 }
 
+const ECONOMY_CHOICE_PACT = Object.freeze({
+  academy_sponsor: 'academy', chem_market: 'risk', war_chest: 'conqueror',
+  family_heist: 'family', junker_armory: 'armory',
+});
+
+function ChoiceOptionIcon({ choice, option, state, catalog, detail, strategy }) {
+  if (strategy) return html`<${GIcon} name="bolt"/>`;
+  const grants = Array.isArray(detail?.grant) ? detail.grant : [];
+  const grantedItem = grants.find((grant) => grant && ['item', 'component'].includes(grant.kind)
+    && typeof grant.id === 'string' && catalog?.equipment?.[grant.id]);
+  if (grantedItem) return html`<${ResonanceItemIcon} catalog=${catalog} itemId=${grantedItem.id} size="sm" showTier=${false}/>`;
+
+  const grantedOperatorId = grants.map((grant) => {
+    if (!grant || grant.kind !== 'operator') return null;
+    const directId = grant.operatorId ?? grant.id;
+    if (typeof directId === 'string' && catalog?.operators?.[directId]) return directId;
+    if (typeof grant.targetOperatorId === 'string' && catalog?.operators?.[grant.targetOperatorId]) return grant.targetOperatorId;
+    if (typeof grant.targetCharId === 'string') {
+      return Object.entries(catalog?.operators ?? {}).find(([, operator]) => operator?.charId === grant.targetCharId)?.[0] ?? null;
+    }
+    return null;
+  }).find(Boolean);
+  if (grantedOperatorId) return html`<${UnitThumb} kind="chess" id=${grantedOperatorId} size="sm" showTier=${false}/>`;
+
+  if (choice?.type === 'disassemble') {
+    const ownedItem = [...(state?.inventory ?? []), ...(state?.pieces ?? []).flatMap((entry) => entry.equipment ?? [])]
+      .find((entry) => String(entry.uid) === String(option));
+    if (ownedItem?.itemId && catalog?.equipment?.[ownedItem.itemId]) {
+      return html`<${ResonanceItemIcon} catalog=${catalog} itemId=${ownedItem.itemId} size="sm" showTier=${false}/>`;
+    }
+  }
+
+  const piece = (state?.pieces ?? []).find((entry) => String(entry.uid) === String(option));
+  const operatorId = piece?.operatorId ?? (catalog?.operators?.[option] ? option : null);
+  if (operatorId) return html`<${UnitThumb} kind="chess" id=${operatorId} size="sm" showTier=${false}/>`;
+
+  const directPact = ['pact_tag', 'identity_transfer'].includes(choice?.type) ? option : null;
+  const grantedPact = grants.find((grant) => grant?.kind === 'pact' && typeof grant.id === 'string')?.id;
+  const contextualPact = ECONOMY_CHOICE_PACT[choice?.economyKind]
+    ?? (catalog?.pacts?.[choice?.source] ? choice.source : null);
+  const pactId = [directPact, grantedPact, contextualPact].find((id) => id && catalog?.pacts?.[id]);
+  if (pactId) return html`<${PactIcon} catalog=${catalog} id=${pactId} size="sm"/>`;
+
+  if (catalog?.equipment?.[option]) return html`<${ResonanceItemIcon} catalog=${catalog} itemId=${option} size="sm" showTier=${false}/>`;
+  return html`<${GIcon} name="flag"/>`;
+}
+
 function ResonanceChoiceOverlay({ state, catalog, onAction, busy }) {
   const choice = state?.pendingChoices?.[0];
   const [selected, setSelected] = useState([]);
@@ -381,7 +428,7 @@ function ResonanceChoiceOverlay({ state, catalog, onAction, busy }) {
     if (!action) return;
     onAction(action);
   };
-  return html`<div class="spov rs-choice-full rs-native-choice" role="dialog" aria-modal="true" aria-label="选择补给">
+  return html`<div class="spov rs-choice-full rs-native-choice" data-option-count=${options.length} role="dialog" aria-modal="true" aria-label="选择补给">
     <div class="spov__veil"></div><section class="spov__inner">
       <header class="spov__head"><div class="spov__titles"><small class="micro">共鸣 · ${strategy ? '策略' : '整备'}</small>
         <h2 class="spov__title">${choiceTitle} · 还需 ${Math.max(0, count - selected.length)} 项</h2>
@@ -400,10 +447,12 @@ function ResonanceChoiceOverlay({ state, catalog, onAction, busy }) {
         const optionPair = strategyTargets[option] || '';
         const optionName = detail?.label || choiceLabel(choice, option, state, catalog);
         const optionDesc = detail?.description || choiceDescription(choice, option, state, catalog);
-        const costText = optionCost && typeof optionCost === 'object' ? ` · ${optionCost.amount} ${optionCost.currency === 'shimmer' ? '微光' : '金币'}` : '';
+        const costAmount = Number(optionCost?.amount);
+        const costText = Number.isFinite(costAmount) && costAmount > 0
+          ? ` · ${costAmount} ${optionCost.currency === 'shimmer' ? '微光' : '金币'}` : '';
         return html`<article class="rs-choice-option" key=${option}>
           <button type="button" disabled=${economy && !optionAffordable} class=${`spcard spcard--tactic${optionSelected ? ' is-armed' : ''}${economy && !optionAffordable ? ' is-disabled' : ''}`} aria-pressed=${String(optionSelected)} onClick=${() => { if (!economy || optionAffordable) toggle(option); }}>
-            <span class="spcard__glow"></span><span class="spcard__head"><span class="spcard__icon"><${GIcon} name=${strategy ? 'bolt' : choice.type === 'operators' ? 'users' : 'item'}/></span>
+            <span class="spcard__glow"></span><span class="spcard__head"><span class="spcard__icon"><${ChoiceOptionIcon} choice=${choice} option=${option} state=${state} catalog=${catalog} detail=${detail} strategy=${strategy}/></span>
               <span class="spcard__title"><b class="spcard__name">${optionName}${costText}</b></span></span>
             <span class="spcard__desc">${optionDesc}</span></button>
           ${optionNeedsPair ? html`<label>相邻干员<select value=${optionPair} onChange=${event => setStrategyTargets(current => ({ ...current, [option]: event.currentTarget.value }))}>

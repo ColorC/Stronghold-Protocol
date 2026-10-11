@@ -137,7 +137,7 @@ body { background: #101512; color: var(--rs-text); }
 .rs-replay-seek { display: flex; flex-wrap: wrap; align-items: center; gap: .07rem; margin-bottom: .12rem; padding: .1rem; background: rgba(255,255,255,.035); border: 1px solid var(--line-2); }
 .rs-replay-seek label { display: flex; flex: 1 1 100%; align-items: center; gap: .08rem; }
 .rs-replay-seek input[type="range"] { flex: 1; min-width: 0; accent-color: var(--mint-400); }
-.rs-choice-full { z-index: 20; inset: 0; display: block; pointer-events: none; background: transparent; }
+.rs-choice-full { z-index: 50; inset: 0; display: block; pointer-events: none; background: transparent; }
 .rs-choice-full .spov__veil { display: none; }
 .rs-choice-overlay { position: absolute; right: clamp(8px,1vw,18px); bottom: var(--rs-dock-bottom,calc(2.82rem + env(safe-area-inset-bottom,0px))); width: min(12.8rem,92vw); max-height: min(72dvh,calc(100dvh - 3.2rem - env(safe-area-inset-bottom,0px))); overflow: auto; padding: .18rem; background: rgba(8,13,11,.97); border: 1px solid var(--mint-600); pointer-events: auto; }
 .rs-choice-option { min-width: 0; }
@@ -452,13 +452,17 @@ body { background: #101512; color: var(--rs-text); }
 .rs-native-match .shopbar__cards .scard__body { background: linear-gradient(0deg,rgba(50,154,223,.18) 62%,transparent); background: linear-gradient(0deg,color-mix(in srgb,var(--tc) 18%,rgba(8,11,10,.98)) 62%,color-mix(in srgb,var(--tc) 8%,transparent)); }
 .rs-native-match .shopbar__cards .scard__name { color: #fff; text-shadow: 0 1px 3px #000,0 0 8px #000; }
 .rs-native-match .shopbar__cards .scard__top > .tier { display: none; }
-.rs-native-match .rs-native-choice { pointer-events: auto; background: rgba(4,7,6,.88); }
+.rs-native-match .rs-native-choice { z-index: 50; pointer-events: none; background: transparent; }
 .rs-native-match .rs-native-choice .spov__veil { display: none; }
-.rs-native-match .rs-native-choice .spov__inner { left: auto; right: clamp(8px,1vw,18px); top: calc(.82rem + env(safe-area-inset-top,0px)); bottom: calc(2.82rem + env(safe-area-inset-bottom,0px)); width: min(12.8rem,92vw); overflow: auto; padding: .16rem; background: rgba(8,13,11,.98); border: 1px solid var(--mint-600); pointer-events: auto; }
+.rs-native-match .rs-native-choice .spov__inner { left: auto; right: clamp(8px,1vw,18px); top: calc(.82rem + env(safe-area-inset-top,0px)); bottom: calc(2.82rem + env(safe-area-inset-bottom,0px)); width: min(11.2rem,92vw); overflow: auto; padding: .16rem; background: rgba(8,13,11,.98); border: 1px solid var(--mint-600); pointer-events: auto; }
+.rs-native-match .rs-native-choice[data-option-count="1"] .spov__inner { top: calc(.82rem + env(safe-area-inset-top,0px)); bottom: auto; width: min(7rem,92vw); height: fit-content; max-height: calc(100dvh - .82rem - 2.82rem - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)); }
+.rs-native-match .rs-native-choice .spcard__icon > .rs-item-icon { width: 100%; height: 100%; }
+.rs-native-match .rs-native-choice .spcard__icon > .rs-pact-icon { width: 82%; height: 82%; }
+.rs-native-match .rs-native-choice .spcard__icon > .uthumb--sm { --ut: 100%; width: 100%; height: 100%; }
 .rs-native-match .rs-native-choice .spov__head { flex: none; align-items: center; padding: .04rem .08rem; }
 .rs-native-match .rs-native-choice__actions { display:flex; flex-direction:column; gap:.08rem; align-items:stretch; flex:none; }
 .rs-native-match .rs-native-choice__later { white-space:nowrap; }
-.rs-native-match .rs-native-choice-tab { position:fixed; z-index:42; top:calc(.9rem + env(safe-area-inset-top,0px)); right:clamp(8px,1vw,18px); display:flex; align-items:center; gap:.28rem; padding:.24rem .38rem; color:var(--mint-100); background:rgba(8,13,11,.96); border:1px solid var(--mint-600); border-radius:.35rem; box-shadow:0 3px 14px #0008; font:inherit; cursor:pointer; }
+.rs-native-match .rs-native-choice-tab { position:fixed; z-index:50; top:calc(.9rem + env(safe-area-inset-top,0px)); right:clamp(8px,1vw,18px); display:flex; align-items:center; gap:.28rem; padding:.24rem .38rem; color:var(--mint-100); background:rgba(8,13,11,.96); border:1px solid var(--mint-600); border-radius:.35rem; box-shadow:0 3px 14px #0008; font:inherit; cursor:pointer; }
 .rs-native-match .rs-native-choice-tab small { color:var(--mint-300); }
 .rs-native-match .rs-native-choice .spov__title { font-size: max(.25rem, 14px); }
 .rs-native-match .rs-native-choice .spov__grid--3 { grid-template-columns: repeat(auto-fit,minmax(min(3.5rem,100%),1fr)); grid-template-rows: auto; justify-content: stretch; align-content: start; gap: .1rem; margin-top: .08rem; }

@@ -98,6 +98,7 @@ export class ResonanceMatch extends Match {
     this.settledBattleIds = new Set();
     this.settlingBattleIds = new Set();
     this._sessionWrite = Promise.resolve();
+    this._supplyAdvancePromise = null;
     this._lastRuntimePersistAt = 0;
     this.activeResonanceMatch = true;
     this.bannedBonds = [];
@@ -349,7 +350,16 @@ export class ResonanceMatch extends Match {
     if (msg?.t === 'g.resonance') {
       if (this.phase !== PHASE.PREP || !['prep', 'choice'].includes(this.state.phase)) return FAIL(ERR.WRONG_PHASE);
       if (!RESONANCE_ACTIONS.has(msg.action?.type)) return FAIL(ERR.BAD_MSG, 'unsupported resonance action');
-      return this.enqueueSessionAction(this.normalizeResonanceAction(msg.action));
+      const action = this.normalizeResonanceAction(msg.action);
+      const queued = this.enqueueSessionAction(action);
+      if (!['claimReward', 'chooseStrategy'].includes(action.type)) return queued;
+      return queued.then(async (result) => {
+        if (!result?.error && !this.state.pendingChoices?.length
+          && (!this.state.nodeStarted || this._isFunnyLogisticsNode())) {
+          await this._advanceSupplyAndStartRound();
+        }
+        return result;
+      });
     }
     if (msg?.t === 'g.buy') {
       const offer = this.state.shop.offers[msg.slot];
@@ -381,7 +391,8 @@ export class ResonanceMatch extends Match {
       return this.enqueueSessionAction({ type: 'equip', pieceUid, itemUid });
     }
     if (msg?.t === 'g.ready' && msg.ready) {
-      if (this.phase !== PHASE.PREP || this.state.phase !== 'prep' || this.state.pendingChoices?.length) return FAIL(ERR.WRONG_PHASE);
+      if (this.phase !== PHASE.PREP || this.state.phase !== 'prep' || !this.state.nodeStarted
+        || this.state.pendingChoices?.length || this._isFunnyLogisticsNode()) return FAIL(ERR.WRONG_PHASE);
       if (!this.state.pieces.some((piece) => piece.row != null)) return FAIL(ERR.BAD_TARGET);
       const result = super.handle(playerId, msg);
       return result;
@@ -656,7 +667,51 @@ export class ResonanceMatch extends Match {
   }
 
   startRound() {
-    const round = this.state.round;
+    if (this.state.pendingChoices?.length) return this._startResonanceRound(this.state.round);
+    if (!this.state.nodeStarted || this._isFunnyLogisticsNode()) return this._advanceSupplyAndStartRound();
+    return this._startResonanceRound(this.state.round);
+  }
+
+  _isFunnyLogisticsNode() {
+    return this.state.difficulty === 'FUNNY' && this.state.round % 2 === 1;
+  }
+
+  _advanceSupplyAndStartRound() {
+    if (this._supplyAdvancePromise) return this._supplyAdvancePromise;
+    const advance = this.enqueueSessionAction({ type: 'advanceSupply' }).then((result) => {
+      if (result?.error) {
+        this.reportError('resonance round supply', new Error(result.detail ?? result.error));
+        return result;
+      }
+      if (this.state.phase === 'complete' || this.state.terminalReason) {
+        this.phase = PHASE.RESULT;
+        this.finish({ victory: this.state.terminalReason === 'victory', reason: this.state.terminalReason });
+        return result;
+      }
+      if (!this.state.nodeStarted) {
+        this.reportError('resonance round supply', new Error('advanceSupply did not start the next node'));
+        return FAIL(ERR.BAD_TARGET, 'SUPPLY_NOT_ADVANCED');
+      }
+      this._startResonanceRound(this.state.round);
+      return result;
+    }).finally(() => {
+      if (this._supplyAdvancePromise === advance) this._supplyAdvancePromise = null;
+    });
+    this._supplyAdvancePromise = advance;
+    return advance;
+  }
+
+  _startResonanceRound(round) {
+    if (this._isFunnyLogisticsNode()) {
+      // Odd FUNNY nodes are real supply/choice windows, but have no Resonance Battle spec.
+      // Keep Native's ROUND_START → PREP presentation while ready remains guarded above.
+      this.currentPrepared = null;
+      this.bossId = null;
+      this.hiddenBossId = null;
+      super.startRound(round);
+      this.syncPlayer();
+      return;
+    }
     const field = getResonanceField(this.state, { data: this.data, catalog: this.catalog });
     this.currentPrepared = { round, prepared: buildResonanceBattle(this.state, { data: this.data, catalog: this.catalog }).prepared };
     this.bossId = field.bossId;

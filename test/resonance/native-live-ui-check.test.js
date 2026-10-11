@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { artifactPaths, attachWsCapture, colorContrastRatio, config, isAllowedHttpRequest, isRunnerResultWarning, missingChecks, parseArgs, REQUIRED_CHECKS, runtimeFaults, screenshotCount, shopPurchaseEvidence, waitForPopup, waitSent, waitSocketClosed } from '../../tools/resonance/native-live-ui-check.mjs';
+import { artifactPaths, attachWsCapture, colorContrastRatio, config, isAllowedHttpRequest, isRunnerResultWarning, missingChecks, nextSupplyReady, parseArgs, REQUIRED_CHECKS, runtimeFaults, screenshotCount, settlementWaitArgs, shopPurchaseEvidence, waitForPopup, waitSent, waitSocketClosed } from '../../tools/resonance/native-live-ui-check.mjs';
 
 const tool = fileURLToPath(new URL('../../tools/resonance/native-live-ui-check.mjs', import.meta.url));
 
@@ -12,7 +12,7 @@ test('prepare mode validates paths without launching a browser or service', () =
   const payload = JSON.parse(result.stdout);
   assert.equal(payload.browserStarted, false);
   assert.equal(payload.port, 19003);
-  assert.equal(payload.deadlineMs, 8 * 60_000);
+  assert.equal(payload.deadlineMs, 10 * 60_000);
   assert.match(payload.sessionDirectory.replaceAll('\\', '/'), /runtime\/resonance\/ui-verification\/native-live-test-sessions$/);
   assert.equal(payload.serverMount.publicDir.replaceAll('\\', '/'), `${config().source.replaceAll('\\', '/')}/public`);
   assert.equal(payload.serverMount.installDirReadOnlyFallback, payload.canonicalInstallDir);
@@ -61,7 +61,7 @@ test('execution requires an explicit one-shot flag and acceptance gaps remain vi
   }
   assert.ok(REQUIRED_CHECKS.includes('native-fullscreen-open-link'), 'live acceptance must verify the independent current-session full-screen link');
   assert.ok(REQUIRED_CHECKS.includes('native-codex-content-and-detail-visible'), 'live acceptance must verify Codex card/detail geometry and controls');
-  for (const check of ['native-entrypoints-unique', 'native-codex-session-and-shortcuts', 'native-panels-open-close', 'native-icons-and-type-readable', 'native-recipe-contrast', 'native-pact-rewards-disclosure', 'native-remaining-controls-live', 'native-visible-text-audit-14px', 'combat-speed-1-2-4-same-battle', 'reload-restores-same-battle', 'one-real-settlement', 'second-server-takeover-settlement-once', 'native-result-back-to-title']) {
+  for (const check of ['native-entrypoints-unique', 'native-codex-session-and-shortcuts', 'native-panels-open-close', 'native-icons-and-type-readable', 'native-recipe-contrast', 'native-pact-rewards-disclosure', 'native-remaining-controls-live', 'native-visible-text-audit-14px', 'combat-speed-1-2-4-same-battle', 'reload-restores-same-battle', 'one-real-settlement', 'second-server-takeover-settlement-once', 'native-next-round-supply-and-strategy', 'native-result-back-to-title']) {
     assert.ok(REQUIRED_CHECKS.includes(check), `live acceptance must verify ${check}`);
   }
 });
@@ -169,6 +169,27 @@ test('shop purchase evidence accepts trailing ping but rejects missing or duplic
     expectedOperatorId: 'op13', expectedCost: 1, before, after }).valid, false, 'revision alone cannot pass without a buy frame');
   assert.equal(shopPurchaseEvidence({ frames: [buy, buy], buy, expectedSlot: 2,
     expectedOperatorId: 'op13', expectedCost: 1, before, after }).valid, false, 'duplicate buy frames must fail');
+});
+
+test('second server settlement wait passes its baseline into the isolated browser callback', async () => {
+  assert.deepEqual(settlementWaitArgs('isolated-session', 4), { id: 'isolated-session', historyCount: 4 });
+  const source = await (await import('node:fs/promises')).readFile(tool, 'utf8');
+  assert.match(source, /page\.waitForFunction\(async \(\{id,historyCount\}\)=>/);
+  assert.match(source, /settlementWaitArgs\(attempt\.sessionId,secondHistoryBefore\)/);
+  assert.doesNotMatch(source, /filter\(row=>row\.type==='fight-settled'\)\.length===secondHistoryBefore\+1/,
+    'page.waitForFunction executes in the browser realm and must not capture a Node local');
+  assert.match(source, /attempt\.secondServerResult\s*=\s*secondServerResult/,
+    'capture server-result diagnostics before waiting so a timeout receipt retains them');
+});
+
+test('the next-round supply gate requires claimed node 2, nodeStarted and no pending choices', () => {
+  const ready = { round: 2, nodeStarted: true, phase: 'prep', claimedNodes: [1, 2], pendingChoices: [] };
+  assert.equal(nextSupplyReady(ready), true);
+  assert.equal(nextSupplyReady({ ...ready, pendingChoices: [{ uid: 'choice-1', type: 'strategy' }] }), false);
+  assert.equal(nextSupplyReady({ ...ready, nodeStarted: false }), false);
+  assert.equal(nextSupplyReady({ ...ready, round: 1 }), false);
+  assert.equal(nextSupplyReady({ ...ready, claimedNodes: [1] }), false);
+  assert.equal(nextSupplyReady({ ...ready, phase: 'choice' }), false);
 });
 
 test('native result projection captures only the resonance player result metrics', async () => {

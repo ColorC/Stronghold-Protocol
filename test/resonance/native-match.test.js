@@ -349,7 +349,29 @@ test('native ResonanceMatch runs a real NORMAL Battle before one session settlem
     assert.equal(prepRestored.gameSpeed, 1, 'normal preference survives a reconnect after field runtime cleanup');
     assert.equal(prepRestored.fields.length, 0, 'PREP restore does not reconstruct a completed 32x combat');
     prepRestored.dispose();
+    let supplyActionCalls = 0;
+    const enqueueSessionAction = match.enqueueSessionAction.bind(match);
+    match.enqueueSessionAction = (action, ...args) => {
+      if (action?.type === 'advanceSupply') supplyActionCalls++;
+      return enqueueSessionAction(action, ...args);
+    };
+    const settledHistoryCount = match.state.history.filter((entry) => entry.type === 'fight-settled').length;
+    match.phase = 'PREP';
+    assert.equal(match.state.nodeStarted, false, 'settlement leaves the next campaign node unstarted');
+    assert.equal(match.handle('resonance', { t: 'g.ready', ready: true }).error, ERR.WRONG_PHASE,
+      'Native cannot start a field while session supply is unadvanced');
+    match.phase = 'SETTLE';
     match.afterSettle();
+    assert.ok(match._supplyAdvancePromise, 'a new unstarted session node is advanced before Native ROUND_START');
+    const supplyPromise = match._supplyAdvancePromise;
+    assert.equal(match.startRound(2), supplyPromise, 'duplicate round entry joins the pending supply transaction');
+    assert.equal(match.handle('resonance', { t: 'g.ready', ready: true }).error, ERR.WRONG_PHASE,
+      'ready cannot bypass the serialized supply step');
+    await supplyPromise;
+    await match._sessionWrite;
+    assert.equal(match.state.nodeStarted, true, 'supply is persisted before entering the next Native round');
+    assert.equal(match.state.claimedNodes.filter((node) => node === 2).length, 1, 'the next node is claimed once');
+    assert.equal(supplyActionCalls, 1, 'the queued supply action is issued exactly once');
     assert.equal(match.round, 2, 'the same real Match advances to its next campaign round');
     assert.equal(match.gameSpeed, 1, 'the next round starts with the selected 1x rate, never 32x');
     assert.equal(scheduler.runUntil(() => match.phase === 'PREP', { maxTime: 5_000 }), true,
@@ -366,6 +388,35 @@ test('native ResonanceMatch runs a real NORMAL Battle before one session settlem
     assert.equal(match.state.nativeRuntime.speed, 1);
     assert.equal(match.state.nativeRuntime.selectedSpeed, 1);
     assert.equal(match.state.nativeRuntime.finishing, false);
+    const secondBattle = createBattleFromSpec(nextField.spec, data, { recordEvents: false, quiet: true });
+    secondBattle.start();
+    while (!secondBattle.finished && secondBattle.tickCount < 20_000) secondBattle.step();
+    assert.equal(secondBattle.finished, true, 'the second Native round produces a natural completed simulation');
+    const secondRaw = compactResult(secondBattle.result());
+    const secondExtras = resonanceResultExtras(secondBattle);
+    if (secondExtras) secondRaw.resonance = secondExtras;
+    const secondProgress = battleProgress(secondBattle);
+    assert.equal(match.handle('resonance', { t: 'b.progress', battleId: nextField.battleId, ...secondProgress,
+      resolved: secondProgress.killed }).ok, true);
+    const secondHistoryCount = match.state.history.filter((entry) => entry.type === 'fight-settled').length;
+    const secondFightResult = fitResult(secondRaw, { battleId: nextField.battleId });
+    assert.equal(match.handle('resonance', { t: 'b.result', battleId: nextField.battleId, result: secondFightResult }).ok, true);
+    scheduler.advance(1_500, 1000 / 60);
+    for (let i = 0; i < 20 && match.phase !== 'SETTLE'; i++) await new Promise((resolve) => setImmediate(resolve));
+    await match._sessionWrite;
+    assert.equal(match.phase, 'SETTLE', 'the second natural result settles through the same Native path');
+    assert.equal(match.state.history.filter((entry) => entry.type === 'fight-settled').length, secondHistoryCount + 1,
+      'the second completed battle appends exactly one settlement');
+    assert.equal(match.state.prototypeMeta.economy.processedBattleIds.filter((id) => id === nextField.battleId).length, 1,
+      'the second battle result is processed exactly once');
+    const secondSettlement = { gold: match.state.gold, xp: match.state.xp, revision: match.state.revision,
+      history: match.state.history.length, claimedNodes: [...match.state.claimedNodes] };
+    match.handle('resonance', { t: 'b.result', battleId: nextField.battleId, result: secondFightResult });
+    await new Promise((resolve) => setImmediate(resolve));
+    await match._sessionWrite;
+    assert.deepEqual({ gold: match.state.gold, xp: match.state.xp, revision: match.state.revision,
+      history: match.state.history.length, claimedNodes: [...match.state.claimedNodes] }, secondSettlement,
+      'duplicate result cannot repeat round economy, supply, or settlement');
   } finally {
     await match._sessionWrite;
     match.dispose();
@@ -1029,7 +1080,7 @@ test('natural R28 winning session closes through the Native Runner and boss cloc
   }
 });
 
-test('native g.resonance advances a FUNNY odd logistics node without constructing a battle', { timeout: 120_000 }, async () => {
+test('Native skips an already-started FUNNY odd logistics node into the next even prep', { timeout: 120_000 }, async () => {
   const data = loadData(NATIVE_DATA);
   const catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 157 });
   const created = createSession({ seed: 157, difficulty: 'FUNNY', catalog });
@@ -1037,19 +1088,137 @@ test('native g.resonance advances a FUNNY odd logistics node without constructin
   const state = created.state;
   state.round = 3;
   state.nodeStarted = true;
+  state.claimedNodes = [...new Set([...state.claimedNodes, 3])];
   const store = { async exclusive(_id, task) { return task(); }, async saveSession() {}, deactivate() {} };
   const scheduler = new VirtualScheduler({ instantCombat: false });
   const match = new ResonanceMatch({ sessionId: 'test-funny-logistics', state, catalog, data, store, scheduler,
     send() {}, broadcast() {}, timerScale: 0, log: { info() {}, warn() {}, error() {}, debug() {} } });
   try {
-    match.phase = 'PREP';
-    const result = match.handle('resonance', { t: 'g.resonance', action: { type: 'advanceSupply' } });
-    assert.ok(result && typeof result.then === 'function');
-    await result;
+    match.startRound();
+    assert.ok(match._supplyAdvancePromise, 'an already-started odd logistics node is advanced before Native battle prep');
+    await match._supplyAdvancePromise;
     await match._sessionWrite;
     assert.equal(match.state.round, 4);
+    assert.equal(match.round, 4);
     assert.ok(match.state.history.some((entry) => entry.round === 3 && entry.type === 'logistics-settled'));
-    assert.equal(match.fields.length, 0, 'logistics node must not start native or resonance combat');
+    assert.equal(scheduler.runUntil(() => match.phase === 'PREP', { maxTime: 1_000 }), true);
+    assert.equal(match.fields.length, 0, 'logistics node advances to the even prep without constructing combat');
+    assert.equal(match.state.claimedNodes.filter((node) => node === 3).length, 1);
+  } finally {
+    await match._sessionWrite;
+    match.dispose();
+    scheduler.dispose();
+  }
+});
+
+test('Native holds FUNNY odd-node choices in PREP, settles logistics, and never battles odd nodes', { timeout: 120_000 }, async () => {
+  const data = loadData(NATIVE_DATA);
+  const sourceCatalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 159 });
+  const catalog = { ...sourceCatalog, campaign: { ...sourceCatalog.campaign, supply: {
+    ...sourceCatalog.campaign.supply, components: { nodes: [3, 5], countPerNode: 1, optionCount: 3 },
+  } } };
+  const created = createSession({ seed: 159, difficulty: 'FUNNY', catalog });
+  assert.equal(created.ok, true, created.error);
+  let state = created.state;
+  state.round = 3;
+  state.nodeStarted = false;
+  state.pendingChoices = [];
+  const field = getResonanceField(state, { data, catalog });
+  const first = state.pieces[0], operator = catalog.operators[first.operatorId];
+  const position = [...field.deployMap.entries()].find(([, cell]) => {
+    const kind = String(cell?.class ?? cell?.type ?? cell?.position ?? cell?.kind ?? cell).toUpperCase();
+    return operator.position === 'RANGED' || kind === 'MELEE' || (kind === 'RANGED' && operator.canDeployHighGround === true);
+  });
+  assert.ok(position, `no legal FUNNY fixture cell for ${first.operatorId}`);
+  const [row, col] = position[0].split(',').map(Number);
+  const deployed = applyAction(state, { type: 'deploy', pieceUid: first.uid, row, col, dir: 'RIGHT' }, {
+    catalog, fieldResolver: () => field, recording: false,
+  });
+  assert.equal(deployed.ok, true, deployed.error);
+  state = deployed.state;
+  let stored = structuredClone(state);
+  const store = { async exclusive(_id, task) { return task(); }, async saveSession(_id, next) { stored = structuredClone(next); }, deactivate() {} };
+  const scheduler = new VirtualScheduler({ instantCombat: false });
+  const match = new ResonanceMatch({ sessionId: 'test-funny-choice-logistics', state, catalog, data, store, scheduler,
+    send() {}, broadcast() {}, timerScale: 0, log: { info() {}, warn() {}, error() {}, debug() {} } });
+  try {
+    match.startRound();
+    await match._supplyAdvancePromise;
+    await match._sessionWrite;
+    assert.equal(match.state.round, 3);
+    assert.equal(match.state.nodeStarted, true);
+    const choice = match.state.pendingChoices.find((entry) => entry.type === 'components');
+    assert.ok(choice, 'Native prep displays the component choice created by odd-node supply');
+    assert.equal(scheduler.runUntil(() => match.phase === 'PREP', { maxTime: 1_000 }), true);
+    assert.equal(match.fields.length, 0, 'odd logistics has a prep/choice UI but no battle field');
+    assert.equal(match.handle('resonance', { t: 'g.ready', ready: true }).error, ERR.WRONG_PHASE,
+      'odd logistics cannot be turned into combat while its reward is pending');
+
+    const selected = choice.options[0];
+    const claim = await match.handle('resonance', { t: 'g.resonance', action: {
+      type: 'claimReward', choiceUid: choice.uid, optionIds: [selected],
+    } });
+    assert.equal(claim.ok, true, claim.detail);
+    await match._sessionWrite;
+    scheduler.runUntil(() => match.phase === 'PREP' && match.state.round === 4, { maxTime: 1_000 });
+    assert.equal(match.state.round, 4, 'clearing the odd-node choice auto-runs the existing logistics advance');
+    assert.equal(match.state.history.filter((entry) => entry.type === 'logistics-settled' && entry.round === 3).length, 1);
+    assert.equal(match.state.claimedNodes.filter((node) => node === 3).length, 1,
+      'choice resolution does not prepare or claim the odd node a second time');
+    assert.equal(match.fields.length, 0, 'Native prep now points at even node 4, with no odd battle constructed');
+    assert.equal(match.state.phase, 'prep');
+    assert.equal(stored.round, 4, 'the even supply state is saved before the Native even-round prep is exposed');
+
+    assert.equal(match.handle('resonance', { t: 'g.ready', ready: true }).ok, true);
+    assert.equal(scheduler.runUntil(() => match.phase === 'COMBAT', { maxTime: 1_000 }), true);
+    const evenField = match.fields.find((entry) => entry.players.includes('resonance'));
+    assert.ok(evenField?.cc && match.round === 4 && evenField.kind === 'normal',
+      'only session even round 4 starts a real Native normal battle');
+    const battle = createBattleFromSpec(evenField.spec, data, { recordEvents: false, quiet: true });
+    battle.start();
+    while (!battle.finished && battle.tickCount < 20_000) battle.step();
+    assert.equal(battle.finished, true, 'even-node battle reaches a natural result');
+    const progress = battleProgress(battle);
+    match.handle('resonance', { t: 'b.progress', battleId: evenField.battleId, ...progress, resolved: progress.killed });
+    const raw = compactResult(battle.result()), extras = resonanceResultExtras(battle);
+    if (extras) raw.resonance = extras;
+    assert.equal(match.handle('resonance', { t: 'b.result', battleId: evenField.battleId,
+      result: fitResult(raw, { battleId: evenField.battleId }) }).ok, true);
+    scheduler.advance(1_500, 1000 / 60);
+    for (let i = 0; i < 20 && match.phase !== 'SETTLE'; i++) await new Promise((resolve) => setImmediate(resolve));
+    await match._sessionWrite;
+    assert.equal(match.phase, 'SETTLE');
+    assert.equal(match.state.round, 5);
+    assert.equal(match.state.nodeStarted, false, 'real even-round settlement leaves odd logistics unstarted');
+
+    assert.equal(scheduler.runUntil(() => !!match._supplyAdvancePromise, { maxTime: 5_000 }), true,
+      'Native afterSettle queues the next unstarted odd-node supply');
+    const oddPrepSupply = await match._supplyAdvancePromise;
+    assert.ok(!oddPrepSupply?.error, `odd supply preparation rejected: ${oddPrepSupply?.detail ?? oddPrepSupply?.error ?? ''}`);
+    await match._sessionWrite;
+    assert.equal(scheduler.runUntil(() => match.phase === 'PREP' && match.state.round === 5, { maxTime: 5_000 }), true);
+    assert.equal(match.state.pendingChoices.length > 0, true,
+      'odd supply choices from the post-battle node appear in Native PREP');
+    assert.equal(match.fields.length, 0, 'the odd post-battle logistics node still has no field');
+    assert.equal(match.handle('resonance', { t: 'g.ready', ready: true }).error, ERR.WRONG_PHASE,
+      'ready remains blocked while an odd-node reward is pending');
+    while (match.state.pendingChoices.length) {
+      const choice = match.state.pendingChoices[0];
+      const optionIds = choice.options.slice(0, Math.max(1, Number(choice.remaining) || 1));
+      const action = choice.type === 'strategy'
+        ? { type: 'chooseStrategy', choiceUid: choice.uid, strategyId: optionIds[0] }
+        : { type: 'claimReward', choiceUid: choice.uid, optionIds };
+      const claimed = await match.handle('resonance', { t: 'g.resonance', action });
+      assert.equal(claimed.ok, true, claimed.detail);
+      await match._sessionWrite;
+    }
+    await match._supplyAdvancePromise;
+    await match._sessionWrite;
+    assert.equal(match.state.round, 6, 'the final odd-node choice auto-advances logistics into round 6');
+    assert.equal(match.state.history.filter((entry) => entry.type === 'logistics-settled' && entry.round === 5).length, 1);
+    assert.equal(match.state.claimedNodes.filter((node) => node === 5).length, 1);
+    assert.equal(scheduler.runUntil(() => match.phase === 'PREP' && match.state.round === 6, { maxTime: 1_000 }), true);
+    assert.equal(match.fields.length, 0, 'odd round 5 never receives a Native combat field');
   } finally {
     await match._sessionWrite;
     match.dispose();
