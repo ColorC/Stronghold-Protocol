@@ -1,4 +1,5 @@
-// Faction season 2 battle side: the fifteen redesigned, non-stacking pacts (shared/resonance/stronghold-pacts.js).
+// Faction season 2 battle side: the seventeen redesigned, non-stacking pacts (shared/resonance/stronghold-pacts.js).
+// None is defense-first: a pact kills or controls (owner rule — enemies that are neither killed nor held leak).
 //
 // Every tier reads its values from the catalogue level the active tier consumed. Effects use the native primitives:
 // statuses (寒冷 → 冻结, 隐匿, 恐惧, 晕眩, 减速, 脆弱, 元素脆弱), shields as 屏障, the native “炎佑” token with its own
@@ -9,7 +10,6 @@ import { STRONGHOLD_EQUIPMENT_SLOTS, STRONGHOLD_HAMMER_ITEM_ID } from '../../../
 import { applyDamageIncrease } from '../../../../shared/damageIncrease.js';
 import { canTargetEnemy, extendedGrid } from '../../targeting.js';
 import { normDir, rotateOffset } from '../../dir.js';
-import { isHpLoss } from '../../damage.js';
 import { COLS } from '../../constants.js';
 import { SkillRuntime } from '../../skills.js';
 import { raidTile } from '../bonds/addon/battle.js';
@@ -203,37 +203,25 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
   };
 
   // ---------------------------------------------------------------------------------------------------------------
-  // 哥伦比亚 — 屏障; breaking it bursts and stuns, then it returns
-  const giveBarrier = (unit) => {
+  // 哥伦比亚 — a member's skill start strikes every enemy in its attack range and stuns it
+  const columbiaShock = (unit, keysOf = unit) => {
     const c = v('rhodes');
-    if (!c || !unit?.alive) return;
-    battle.addBuff(unit, { key: `stronghold:columbia-barrier:${unit.id}`, shield: unit.s.maxHp * num(c.barrier), duration: Infinity, tags: ['resonance', TAG],
-      onRemove: ({ unit: holder, buff }) => {
-        if (num(buff.shield) > 1e-9 || !holder.alive) return;
-        // the shield loop is still walking the holder's buffs: the burst and the next barrier come right after it
-        battle.after(0, () => barrierBroken(holder), { owner: battle });
-      } });
-  };
-  const barrierBroken = (unit) => {
-    const c = v('rhodes');
-    if (!c) return;
-    metric('rhodes', 'barriersBroken');
-    if (num(c.breakDamage) > 0 && unit.alive) {
-      const atk = num(unit.s.atk) > 0 ? num(unit.s.atk) : num(unit.ownerUnit?.s?.atk);
-      for (const enemy of battle.foesInRadius(unit.x, unit.y, 1.5, true)) {
-        hit(unit, enemy, atk * num(c.breakDamage), 'arts');
-        if (num(c.breakStun) > 0 && enemy.alive) battle.applyStatus(enemy, 'stun', { duration: num(c.breakStun), source: unit });
-      }
-      battle.fx('shieldBreak', { x: unit.x, y: unit.y, id: unit.id });
+    if (!c || !unit?.alive) return 0;
+    const atk = num(unit.s.atk) > 0 ? num(unit.s.atk) : num(unit.ownerUnit?.s?.atk);
+    const keys = keysOf.rangeKeys?.length ? keysOf.rangeKeys : null;
+    const foes = keys ? battle.enemiesInKeys(keys, keysOf, keysOf.profile) : battle.foesInRadius(unit.x, unit.y, 1.5, true);
+    for (const enemy of foes) {
+      hit(unit, enemy, atk * num(c.castBlast), 'arts');
+      if (!enemy.alive) continue;
+      if (num(c.castStun) > 0 && battle.applyStatus(enemy, 'stun', { duration: num(c.castStun), source: unit }) && num(c.stunFragile) > 0)
+        battle.applyStatus(enemy, 'fragile', { duration: num(c.castStun), value: num(c.stunFragile), source: unit });
     }
-    if (num(c.rebarrierDelay) > 0 && num(unit.mem.strongholdRebarriers) < num(c.rebarrierCount)) {
-      unit.mem.strongholdRebarriers = num(unit.mem.strongholdRebarriers) + 1;
-      battle.after(num(c.rebarrierDelay), () => { if (unit.alive && unit.deployed) { giveBarrier(unit); metric('rhodes', 'barriersRestored'); } }, { owner: battle });
-    }
+    if (foes.length) { battle.fx('shieldBreak', { x: unit.x, y: unit.y, id: unit.id }); metric('rhodes', 'shocks'); metric('rhodes', 'shockTargets', foes.length); }
+    return foes.length;
   };
-  const barrierSummon = (token) => {
-    if (!v('rhodes')?.summonBarrier || !['token', 'device'].includes(token?.kind) || !isMember(token.ownerUnit, 'rhodes')) return;
-    giveBarrier(token);
+  const shockSummon = (token) => {
+    if (!v('rhodes')?.summonBlast || !['token', 'device'].includes(token?.kind) || !isMember(token.ownerUnit, 'rhodes')) return;
+    columbiaShock(token);
   };
 
   // ---------------------------------------------------------------------------------------------------------------
@@ -241,8 +229,6 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
   battle.on('battleStart', () => {
     cacheReady = true;
     const all = ops();
-    const f = v('flight');
-    if (f) for (const unit of members('flight')) standing(unit, 'abyssal', { hpPct: num(f.hpBonus), hpRegenRatio: num(f.regenRatio) });
     const r = v('resistance');
     if (r) {
       for (const unit of members('resistance')) if (r.temporaryHammer && lendHammer(unit)) metric('resistance', 'temporaryHammers');
@@ -261,21 +247,14 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
         metric('risk', 'stealthed');
       }
     }
-    const e = v('enforcer');
-    if (e) for (const unit of e.teamWide ? battle.allyUnits.filter((row) => row?.alive && row.deployed && row.kind !== 'device') : members('enforcer'))
-      standing(unit, 'rhodes-island-healing', { healingTakenMul: 1 + num(e.healingTaken) });
     const a = v('ammo');
     if (a) {
       for (const unit of members('ammo')) standing(unit, 'precision', { atkPct: num(a.atk), defIgnorePct: num(a.defIgnore), resIgnorePct: num(a.resIgnore) });
       if (num(a.rangedAtk) > 0) for (const unit of all) if (!isMember(unit, 'ammo') && unit.def?.position === 'RANGED') standing(unit, 'precision-ranged', { atkPct: num(a.rangedAtk) });
     }
-    if (v('sentinel')) for (const unit of members('sentinel')) standing(unit, 'steadfast', { hpPct: num(v('sentinel').hpBonus) });
+    if (num(v('sentinel')?.blockBonus) > 0) for (const unit of members('sentinel')) standing(unit, 'hold-the-line', { blockCnt: num(v('sentinel').blockBonus) });
     if (num(v('redeploy')?.hpBonus) > 0) for (const unit of members('redeploy')) standing(unit, 'raid', { hpPct: num(v('redeploy').hpBonus) });
-    // barriers and the 炎佑 read max HP / ATK after every standing bonus above
-    if (v('rhodes')) {
-      for (const unit of members('rhodes')) giveBarrier(unit);
-      for (const token of battle.allyUnits.filter((row) => row?.alive && row.deployed)) barrierSummon(token);
-    }
+    // the 炎佑 reads max HP / ATK after every standing bonus above
     if (v('sui')) {
       summonGuardians();
       for (const token of battle.allyUnits.filter((row) => row?.kind === 'token' && row.alive)) boostSummon(token);
@@ -286,7 +265,7 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
     const unit = event?.unit;
     if (!battle.started || summoningGuardian || unit?.side !== 'ally' || unit.kind === 'op') return;
     boostSummon(unit);
-    barrierSummon(unit);
+    shockSummon(unit);
   }, { owner: battle });
 
   // ---------------------------------------------------------------------------------------------------------------
@@ -330,6 +309,25 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
         }
         battle.fx('yanyouFlame', { x: near[0].x, y: near[0].y, id: guardian.id, target: near[0].id, r: num(y.flameRadius, 1.5), n: near.length, dur: 1 });
         metric('sui', 'flames');
+      }
+    }, { owner: battle });
+  }
+  // 坚阵 / 重装 hold what they block, 守望 slows what is in range: refreshed every quarter second while it lasts
+  const sen = v('sentinel'), heavy = v('bruiser'), watch = v('watcher');
+  if (num(sen?.blockFragile) > 0 || num(heavy?.blockedAspd) > 0 || num(watch?.rangeSlow) > 0 || num(watch?.rangeFragile) > 0) {
+    battle.every(0.25, () => {
+      for (const enemy of battle.enemies) {
+        if (!enemy?.alive || !enemy.blockedBy) continue;
+        const blocker = enemy.blockedBy;
+        if (num(sen?.blockFragile) > 0 && isMember(blocker, 'sentinel')) battle.applyStatus(enemy, 'fragile', { duration: 0.5, value: num(sen.blockFragile), source: blocker });
+        if (num(heavy?.blockedAspd) > 0 && isMember(blocker, 'bruiser'))
+          battle.addBuff(enemy, { key: 'stronghold:heavy-held', mods: { aspd: -num(heavy.blockedAspd) }, duration: 0.5, tags: ['resonance', TAG] });
+      }
+      if (watch) for (const unit of members('watcher')) {
+        for (const enemy of battle.enemiesInKeys(unit.rangeKeys || [], unit, unit.profile)) {
+          if (num(watch.rangeSlow) > 0) battle.applyStatus(enemy, 'slow', { duration: 0.5, value: num(watch.rangeSlow), source: unit });
+          if (num(watch.rangeFragile) > 0) battle.applyStatus(enemy, 'fragile', { duration: 0.5, value: num(watch.rangeFragile), source: unit });
+        }
       }
     }, { owner: battle });
   }
@@ -395,6 +393,13 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
     const k = v('creation');
     if (k && (target.s.flags.cold || target.s.flags.freeze) && isMember(source, 'creation')) applyDamageIncrease(battle, source, dmg, 1 + num(k.coldDamage));
     const f = v('flight');
+    if (num(f?.executeThreshold) > 0 && (dmg.isAttack || dmg.isSkill) && !target.isBoss && target.hpRatio < num(f.executeThreshold) && isMember(source, 'flight')) {
+      // the hunt ends it: a hit on a non-leader below the threshold knocks it out
+      dmg.cancel = true;
+      hit(source, target, target.hp * 2 + 1, 'true');
+      metric('flight', 'executions');
+      return;
+    }
     if (num(f?.huntDamage) > 0 && target.hpRatio < num(f.huntThreshold) && isMember(source, 'flight')) applyDamageIncrease(battle, source, dmg, 1 + num(f.huntDamage));
     const s = v('risk');
     if (s && isMember(source, 'risk')) {
@@ -442,36 +447,27 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
     if (m && (dmg.isAttack || dmg.isSkill) && target.alive && isMember(source, 'arts')) {
       battle.addBuff(target, { key: ARTS_MARK_KEY, duration: num(m.markDuration, 3), source, visible: true, tags: ['resonance', TAG] });
     }
+    const h = v('bruiser');
+    if (h && dmg.isAttack && target.alive && isMember(source, 'bruiser')) {
+      if (num(h.hpStrike) > 0 && hit(source, target, source.s.maxHp * num(h.hpStrike), 'phys') > 0) metric('bruiser', 'strikes');
+      if (num(h.stunEvery) > 0 && target.alive && battle.time + 1e-9 >= num(source.mem.strongholdHeavyStunAt, -Infinity)
+        && battle.applyStatus(target, 'stun', { duration: num(h.stunDuration, 1), source })) {
+        source.mem.strongholdHeavyStunAt = battle.time + num(h.stunEvery);
+        metric('bruiser', 'stuns');
+      }
+    }
   }, { owner: battle });
 
-  // 坚阵 — a share of the damage a neighbour takes goes to the steadiest 坚阵 member next to it
+  // 坚阵 — an attack from an enemy the member blocks is answered
   const g = v('sentinel');
-  if (num(g?.guardShare) > 0) {
-    battle.on('hit', (event) => {
-      const target = event?.target, dmg = event?.dmg;
-      if (target?.side !== 'ally' || !['op', 'token'].includes(target.kind) || !dmg || dmg.cancel || dmg.strongholdGuard || dmg.type === 'element'
-        || isHpLoss(dmg) || hasTag(dmg, 'stronghold-guard-share') || event.source?.side !== 'enemy' || isMember(target, 'sentinel')) return;
-      const guard = members('sentinel').filter((unit) => unit !== target && chebyshev(unit, target) <= 1).sort((x, y) => y.hp - x.hp || x.id - y.id)[0];
-      if (!guard) return;
-      const share = Math.max(0, Math.min(0.95, num(g.guardShare)));
-      dmg.mul *= 1 - share;
-      dmg.strongholdGuard = { unit: guard, share };
-    }, { owner: battle, priority: -20 });
+  if (num(g?.counterDamage) > 0) {
     battle.on('damaged', (event) => {
-      const guarded = event?.dmg?.strongholdGuard;
-      if (!guarded) return;
-      event.dmg.strongholdGuard = null;
-      const { unit: guard, share } = guarded, amount = num(event.amount) / (1 - share) * share;
-      if (!(amount > 0) || !guard.alive) return;
-      battle.dealDamage(null, guard, { amount, type: 'true', canDodge: false, sourceless: true, tags: ['resonance', TAG, 'stronghold-guard-share'] });
-      metric('sentinel', 'sharedDamage', amount);
-      const attacker = event.source;
-      if (num(g.counterDamage) > 0 && attacker?.alive && battle.time + 1e-9 >= num(guard.mem.strongholdCounterAt, -Infinity)) {
-        guard.mem.strongholdCounterAt = battle.time + 1;
-        hit(guard, attacker, guard.s.atk * num(g.counterDamage), 'arts');
-        if (attacker.alive) battle.applyStatus(attacker, 'fragile', { duration: num(g.counterDuration, 5), value: num(g.counterFragile), source: guard });
-        metric('sentinel', 'counters');
-      }
+      const guard = event?.target, attacker = event?.source, dmg = event?.dmg;
+      if (guard?.side !== 'ally' || guard.kind !== 'op' || attacker?.side !== 'enemy' || !dmg?.isAttack || !attacker.alive || attacker.blockedBy !== guard
+        || !isMember(guard, 'sentinel') || battle.time + 1e-9 < num(guard.mem.strongholdCounterAt, -Infinity)) return;
+      guard.mem.strongholdCounterAt = battle.time + 1;
+      hit(guard, attacker, guard.s.atk * num(g.counterDamage), 'arts');
+      metric('sentinel', 'counters');
     }, { owner: battle });
   }
 
@@ -497,7 +493,7 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
       metric('academy', 'wantedKills');
     }
     const f = v('flight');
-    if (num(f?.killHeal) > 0 && killer?.alive && isMember(killer, 'flight')) battle.heal(killer, killer, killer.s.maxHp * num(f.killHeal), { tags: ['resonance', TAG] });
+    if (num(f?.killAspd) > 0 && killer?.alive && isMember(killer, 'flight')) { timed(killer, 'abyssal-hunt', { aspd: num(f.killAspd) }, num(f.killAspdDuration, 8)); metric('flight', 'huntSpeed'); }
     const e = v('enforcer');
     if (num(e?.fallSp) > 0) {
       const key = Math.round(victim.y) * COLS + Math.round(victim.x);
@@ -542,11 +538,17 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
       metric('experiment', 'relays');
     }
     const e = v('enforcer');
-    if (num(e?.castHeal) > 0 && isMember(unit, 'enforcer')) {
-      const patient = battle.allyUnits.filter((ally) => ally.alive && ally.deployed && ['op', 'token'].includes(ally.kind) && chebyshev(ally, unit) <= 1)
-        .sort((x, y) => x.hpRatio - y.hpRatio || x.id - y.id)[0];
-      if (patient) { battle.heal(unit, patient, patient.s.maxHp * num(e.castHeal), { tags: ['resonance', TAG] }); metric('enforcer', 'castHeals'); }
+    if (num(e?.castAspd) > 0 && isMember(unit, 'enforcer')) {
+      const rallied = battle.allyUnits.filter((ally) => ally.alive && ally.deployed && ['op', 'token'].includes(ally.kind) && (e.teamWide || chebyshev(ally, unit) <= 1));
+      for (const ally of rallied) timed(ally, 'rhodes-island-rally', { aspd: num(e.castAspd) }, num(e.castAspdDuration, 8));
+      if (num(e.castSp) > 0) for (const ally of members('enforcer')) {
+        if (ally === unit || battle.time < num(ally.mem.strongholdRallySpAt, -Infinity) + 1 - 1e-9) continue;
+        ally.mem.strongholdRallySpAt = battle.time;
+        gainSp(ally, num(e.castSp), 'strongholdRally');
+      }
+      metric('enforcer', 'rallies');
     }
+    if (v('rhodes') && isMember(unit, 'rhodes')) columbiaShock(unit);
   }, { owner: battle });
 
   battle.on('skillEnd', (event) => {
@@ -560,20 +562,15 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
     }
   }, { owner: battle });
 
-  // 罗德岛 — healing past full becomes a 屏障 (HP regeneration is not healing)
+  // 罗德岛 — an ally a member heals hits harder for a while (HP regeneration is not healing)
   const ri = v('enforcer');
-  if (num(ri?.overflowBarrier) > 0) {
+  if (num(ri?.healAtk) > 0) {
     battle.on('heal', (event) => {
-      const target = event?.target;
-      if (!target?.alive || target.side !== 'ally' || event.opts?.regen || !(ri.teamWide || isMember(target, 'enforcer'))) return;
-      const overflow = num(event.amount) - Math.max(0, target.s.maxHp - target.hp);
-      if (!(overflow > 0)) return;
-      const key = `stronghold:rhodes-island-barrier:${target.id}`, cap = target.s.maxHp * num(ri.overflowBarrier);
-      const current = num(target.buffs.find((buff) => buff.key === key)?.shield);
-      if (current >= cap - 1e-9) return;
-      battle.addBuff(target, { key, shield: Math.min(cap, current + overflow), duration: Infinity, tags: ['resonance', TAG] });
-      metric('enforcer', 'overflowBarrier', Math.min(cap, current + overflow) - current);
-    }, { owner: battle, priority: -100 });
+      const healer = event?.source, target = event?.target;
+      if (!target?.alive || target.side !== 'ally' || !['op', 'token'].includes(target.kind) || event.opts?.regen || !isMember(healer, 'enforcer')) return;
+      timed(target, 'rhodes-island-care', { atkPct: num(ri.healAtk) }, num(ri.healAtkDuration, 5));
+      metric('enforcer', 'caredHeals');
+    }, { owner: battle });
   }
 
   return { tiers: [...tiers.values()].map((row) => ({ id: row.id, tier: row.tier, count: row.count })) };

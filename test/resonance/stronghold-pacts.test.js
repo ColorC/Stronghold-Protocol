@@ -46,6 +46,7 @@ function arena(operators, { star = 1, equipment = {}, extraPacts = {}, seed = 21
   const far = () => [battle.rect.r0, battle.rect.c1];
   return { battle, state, unit, enemy, advance, far, tier: (id) => battle.resonanceMetrics?.prototypeTraits?.[id] };
 }
+const num = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
 const lost = (unit, fn) => { const before = unit.hp; fn(); return before - unit.hp; };
 const trueHit = (battle, source, target, amount = 1000, extra = {}) => battle.dealDamage(source, target, { amount, type: 'true', canDodge: false, ...extra });
 
@@ -60,11 +61,12 @@ test('faction season 2 keeps every season-1 member, tier and fee and replaces on
     assert.equal(!!trait.strongholdPact, STRONGHOLD_PACT_IDS.includes(trait.id), trait.id);
     assert.equal(catalog.pacts[trait.id].levels[0].effects[0].params.mechanic, trait.mechanic ?? catalog.pacts[trait.id].levels[0].effects[0].params.mechanic);
   }
-  assert.equal(STRONGHOLD_PACT_IDS.length, 15);
+  assert.equal(STRONGHOLD_PACT_IDS.length, 17);
   assert.equal(firstCatalog.pacts.academy.levels[0].effects[0].params.mechanic, 'shared_item_training', 'season 1 keeps its own pacts');
   assert.equal(catalog.pacts.academy.levels[0].effects[0].params.mechanic, 'wanted_ammo');
-  assert.equal(catalog.pacts.bruiser.levels.at(-1).effects[0].params.variables.BonusPercentHealth, 0.4, 'kept pacts take the season-2 value corrections');
-  assert.equal(firstCatalog.pacts.bruiser.levels.at(-1).effects[0].params.variables.BonusPercentHealth, factionSeason.traits.find((row) => row.id === 'bruiser').effects.at(-1).variables.BonusPercentHealth);
+  assert.equal(catalog.pacts.artillery.levels.at(-1).effects[0].params.variables.AD, 0.25, 'kept pacts take the season-2 value corrections');
+  assert.equal(firstCatalog.pacts.artillery.levels.at(-1).effects[0].params.variables.AD, factionSeason.traits.find((row) => row.id === 'artillery').effects.at(-1).variables.AD);
+  assert.equal(firstCatalog.pacts.bruiser.levels.at(-1).effects[0].params.mechanic, factionSeason.traits.find((row) => row.id === 'bruiser').mechanic ?? firstCatalog.pacts.bruiser.levels.at(-1).effects[0].params.mechanic, 'season 1 keeps its 重装');
 });
 
 test('every season-2 tier has handwritten copy with its own values and no source-game concepts', () => {
@@ -286,30 +288,44 @@ test('炎 summons a visible native 炎佑 that attacks, flames, and doubles at s
   assert.equal(seven.battle.errorCount, 0);
 });
 
-test('深海猎人 revives each member once at half health and hunts wounded enemies', () => {
-  const three = arena(ops('斯卡蒂', '幽灵鲨', '歌蕾蒂娅'));
-  const skadi = three.unit('斯卡蒂'), foe = three.enemy([10, 9]);
-  close(skadi.s.hpRegen >= skadi.s.maxHp * 0.01 ? 1 : 0, 1, '1% max HP per second regeneration');
-  trueHit(three.battle, foe, skadi, skadi.hp + skadi.s.maxHp);
-  assert.equal(skadi.alive, true, 'the first knock-out is prevented');
-  close(skadi.hp, skadi.s.maxHp * 0.5, 'and the member stands at 50% health', 1e-3);
-  trueHit(three.battle, foe, skadi, skadi.hp + skadi.s.maxHp);
-  assert.equal(skadi.alive, false, 'only once per battle');
-  assert.equal(three.tier('flight').revives, 1);
-  assert.equal(three.battle.errorCount, 0);
+const inRangeTile = (run, unit) => {
+  const own = unit.tileR * COLS + unit.tileC;
+  const keys = [...unit.rangeKeys].filter((row) => run.battle.grid.inRect(Math.floor(row / COLS), row % COLS));
+  const key = keys.find((row) => row !== own) ?? keys.find((row) => row === own);
+  assert.ok(key != null, `${unit.name} has a tile in range`);
+  return [Math.floor(key / COLS), key % COLS];
+};
+const buffOf = (unit, part) => unit.buffs.find((buff) => buff.key.includes(part));
 
-  const two = arena(ops('斯卡蒂', '幽灵鲨'));
-  const shark = two.unit('幽灵鲨');
-  trueHit(two.battle, two.enemy([10, 9]), shark, shark.hp + shark.s.maxHp);
-  assert.equal(shark.alive, false, 'no revive below three members');
+test('深海猎人 hunts wounded enemies, speeds up after a knock-out, revives once at three and executes at four', () => {
+  const two = arena(ops('斯卡蒂', '幽灵鲨'), { idle: true });
+  const skadi = two.unit('斯卡蒂');
+  assert.ok(!skadi.buffs.some((buff) => buff.key.includes('abyssal')), 'no health bonus');
+  const weak = two.enemy([10, 9]), sound = two.enemy([11, 9]);
+  weak.hp = weak.s.maxHp * 0.4; sound.hp = sound.s.maxHp * 0.6;
+  close(lost(weak, () => trueHit(two.battle, skadi, weak)) / lost(sound, () => trueHit(two.battle, skadi, sound)), 1.25, '+25% below half health');
+  const prey = two.enemy([12, 9], { hp: 1000 });
+  trueHit(two.battle, skadi, prey, 5000);
+  assert.equal(prey.alive, false);
+  close(buffOf(skadi, 'abyssal-hunt').mods.aspd, 20, 'attack speed +20 after a knock-out');
+  trueHit(two.battle, sound, skadi, skadi.hp + skadi.s.maxHp);
+  assert.equal(skadi.alive, false, 'no revive below three members');
+  assert.equal(two.battle.errorCount, 0);
+
+  const three = arena(ops('斯卡蒂', '幽灵鲨', '歌蕾蒂娅'));
+  const shark = three.unit('幽灵鲨');
+  trueHit(three.battle, three.enemy([10, 9]), shark, shark.hp + shark.s.maxHp);
+  assert.equal(shark.alive, true, 'the first knock-out is prevented');
+  close(shark.hp, shark.s.maxHp * 0.5, 'at 50% health', 1e-3);
 
   const four = arena([...ops('斯卡蒂', '幽灵鲨', '歌蕾蒂娅'), op('格拉尼')], { extraPacts: { 格拉尼: ['flight'] } });
-  const hunter = four.unit('歌蕾蒂娅'), weak = four.enemy([10, 9]), sound = four.enemy([11, 9]);
-  weak.hp = weak.s.maxHp * 0.4; sound.hp = sound.s.maxHp * 0.6;
-  close(lost(weak, () => trueHit(four.battle, hunter, weak)) / lost(sound, () => trueHit(four.battle, hunter, sound)), 1.3, '+30% below half health');
-  hunter.hp = hunter.s.maxHp * 0.5;
-  const healed = -lost(hunter, () => trueHit(four.battle, hunter, weak, weak.hp + 10));
-  assert.ok(healed >= hunter.s.maxHp * 0.08 - 1e-6, 'a knock-out heals 8% max HP');
+  const hunter = four.unit('歌蕾蒂娅'), low = four.enemy([10, 9], { hp: 10000 }), healthy = four.enemy([11, 9], { hp: 10000 });
+  low.hp = low.s.maxHp * 0.08; healthy.hp = healthy.s.maxHp * 0.2;
+  four.battle.dealDamage(hunter, low, { amount: 1, type: 'phys', isAttack: true });
+  assert.equal(low.alive, false, 'below 10% one hit knocks it out');
+  four.battle.dealDamage(hunter, healthy, { amount: 1, type: 'phys', isAttack: true });
+  assert.equal(healthy.alive, true, 'above it the hit is a hit');
+  assert.equal(four.tier('flight').executions, 1);
   assert.equal(four.battle.errorCount, 0);
 });
 
@@ -371,26 +387,28 @@ test('叙拉古 hides in 隐匿 until its first attack, ambushes with it, then s
   assert.equal(six.battle.errorCount, 0);
 });
 
-test('掌控 gets its 屏障 when an enemy first enters a member\'s attack range in season 2 and at the start in season 1', () => {
-  const shield = (unit) => unit.buffs.find((buff) => buff.key.startsWith('resonance:v3:dominator-shield'));
-  const two = arena(ops('耶拉', '多萝西'), { idle: true });
-  const kjera = two.unit('耶拉'), dorothy = two.unit('多萝西');
-  two.advance(20);
-  assert.ok(!shield(kjera) && !shield(dorothy), 'no 屏障 while the field is empty');
+test('掌控 gains SP when an enemy first enters a member range in season 2 and keeps the start-of-battle shield in season 1', () => {
+  const two = arena(ops('耶拉', '夕'), { idle: true });
+  const kjera = two.unit('耶拉'), dusk = two.unit('夕');
+  for (const unit of [kjera, dusk]) { unit.skill.sp = 0; unit.skill.charges = 0; }
+  two.advance(10);
+  const kjeraIdle = kjera.skill.spTotal, duskIdle = dusk.skill.spTotal;
   const far = two.enemy(two.far());
-  two.advance(0.3);
-  assert.ok(!shield(kjera) && !shield(dorothy), 'an enemy outside every range brings nothing');
   two.battle.dealDamage(kjera, far, { amount: 1, type: 'arts', isAttack: true });
-  close(shield(kjera)?.shield, 1400, 'striking an enemy counts as contact');
-  close(shield(kjera).timeLeft, 15, 'for 15 seconds', 1e-3);
-  assert.ok(!shield(dorothy), 'per member');
-  const near = [...dorothy.rangeKeys][0];
-  two.enemy([Math.floor(near / COLS), near % COLS]);
+  assert.ok(kjera.skill.spTotal - kjeraIdle >= 5 - 1e-6, 'striking an enemy counts as contact: +5 SP');
+  assert.ok(dusk.skill.spTotal - duskIdle < 1, 'per member');
+  assert.ok(!kjera.buffs.some((buff) => buff.key.startsWith('resonance:v3:dominator-shield')), 'no 屏障 in season 2');
+  dusk.skill.sp = 0; dusk.skill.charges = 0;   // a full bar would cap the gain
+  const before = dusk.skill.spTotal;
+  two.enemy(inRangeTile(two, dusk));
   two.advance(0.3);
-  assert.ok(shield(dorothy), 'each member on its own contact');
+  assert.ok(dusk.skill.spTotal - before >= 5 - 1e-6, 'an enemy entering the range is contact too');
+  const kjeraAfter = kjera.skill.spTotal;
+  two.battle.dealDamage(kjera, far, { amount: 1, type: 'arts', isAttack: true });
+  assert.ok(kjera.skill.spTotal - kjeraAfter < 1, 'once per battle');
   assert.equal(two.battle.errorCount, 0);
   const first = arena(ops('耶拉', '夕'), { cat: firstCatalog });
-  assert.ok(shield(first.unit('耶拉')), 'season 1 keeps the start-of-battle shield');
+  assert.ok(first.unit('耶拉').buffs.some((buff) => buff.key.startsWith('resonance:v3:dominator-shield')), 'season 1 keeps the start-of-battle shield');
 });
 
 test('迅击爆发 counts each member\'s bursts from its first attack in season 2', () => {
@@ -529,47 +547,50 @@ test('萨尔贡 skill starts relay speed, leave 流沙 and pass SP', () => {
   assert.equal(seven.battle.errorCount, 0);
 });
 
-test('哥伦比亚 barriers burst and stun when broken and come back at six', () => {
-  const two = arena(ops('香草', '雷蛇'));
+test('哥伦比亚 skill starts strike and stun every enemy in the member range and expose them at six', () => {
+  const two = arena(ops('香草', '雷蛇'), { idle: true });
   const vanilla = two.unit('香草');
-  const barrier = vanilla.buffs.find((buff) => buff.key.startsWith('stronghold:columbia-barrier'));
-  close(barrier.shield, vanilla.s.maxHp * 0.12, 'barrier 12% max HP');
+  assert.ok(!vanilla.buffs.some((buff) => num(buff.shield) > 0), 'no 屏障');
+  const foe = two.enemy(inRangeTile(two, vanilla), { hp: 1000000 }), far = two.enemy(two.far());
+  two.advance(0.05);   // a new enemy is on the field index from the next step
+  const struck = foe.hp;
+  vanilla.skill.activate('test', { free: true });
+  assert.ok(foe.hp < struck && foe.s.flags.stun, 'an enemy in range is struck and stunned');
+  assert.equal(far.hp, far.s.maxHp, 'out of range nothing happens');
+  assert.ok(!foe.buffs.some((buff) => buff.status === 'fragile'), 'no 脆弱 below six');
+  assert.equal(two.tier('rhodes').shocks, 1);
 
-  const six = arena(ops('香草', '罗比菈塔', '雷蛇', '梅尔', '塞雷娅', '多萝西'));
-  const holder = six.unit('香草');
-  const neighbour = six.enemy([holder.tileR, holder.tileC + 1]);
-  const shield = holder.buffs.find((buff) => buff.key.startsWith('stronghold:columbia-barrier')).shield;
-  trueHit(six.battle, neighbour, holder, shield + 10);
-  six.advance(0.1);
-  assert.equal(six.tier('rhodes').barriersBroken, 1);
-  assert.ok(neighbour.hp < neighbour.s.maxHp, 'the break bursts');
-  assert.ok(neighbour.buffs.some((buff) => buff.status === 'stun'), 'and stuns');
-  assert.ok(!holder.buffs.some((buff) => buff.key.startsWith('stronghold:columbia-barrier')));
-  six.advance(12.1);
-  assert.ok(holder.buffs.some((buff) => buff.key.startsWith('stronghold:columbia-barrier') && buff.shield > 0), 'the barrier returns 12 s later');
+  const six = arena(ops('香草', '罗比菈塔', '雷蛇', '梅尔', '塞雷娅', '多萝西'), { idle: true });
+  const caster = six.unit('香草'), target = six.enemy(inRangeTile(six, caster), { hp: 1000000 });
+  six.advance(0.05);
+  caster.skill.activate('test', { free: true });
+  const exposed = target.buffs.find((buff) => buff.status === 'fragile');
+  assert.ok(target.s.flags.stun && exposed, 'stunned and exposed at six');
+  close(target.s.dmgTakenMul, 1.2, 'damage taken +20% while stunned', 1e-3);
   assert.equal(six.battle.errorCount, 0);
 });
 
-test('罗德岛 boosts healing taken, heals on skill start, turns overflow into barrier and refunds SP on a fall in range', () => {
-  const two = arena(ops('调香师', '休谟斯'));
-  close(two.unit('调香师').s.healingTakenMul, 1.15, 'healing taken +15%');
+test('罗德岛 heals make allies hit harder, skill starts rally the neighbours, and an enemy falling in range refunds SP', () => {
+  const two = arena(ops('调香师', '华法琳'), { idle: true });
+  const perfumer = two.unit('调香师'), ally = two.unit('华法琳');
+  assert.equal(perfumer.s.healingTakenMul, 1, 'no healing-taken bonus');
+  two.battle.heal(perfumer, ally, 100);
+  close(buffOf(ally, 'rhodes-island-care').mods.atkPct, 0.1, 'an ally healed by a member: ATK +10%');
+  assert.ok(buffOf(ally, 'rhodes-island-care').timeLeft <= 5);
+  assert.ok(!buffOf(perfumer, 'rhodes-island-rally'), 'no rally below four');
 
-  const eight = arena([...ops('调香师', '休谟斯', '华法琳', '寒芒克洛丝', '百炼嘉维尔', '泥岩', '魔王'), op('格拉尼')], { extraPacts: { 格拉尼: ['enforcer'] } });
-  const perfumer = eight.unit('调香师');
-  perfumer.hp = perfumer.s.maxHp * 0.3;
-  for (const unit of eight.battle.allyUnits) if (unit !== perfumer && unit.alive && Math.max(Math.abs(unit.tileR - perfumer.tileR), Math.abs(unit.tileC - perfumer.tileC)) <= 1) unit.hp = unit.s.maxHp;
-  const before = perfumer.hp;
-  perfumer.skill.activate('test', { free: true });
-  assert.ok(perfumer.hp - before >= perfumer.s.maxHp * 0.12 - 1e-6, 'skill start heals the lowest nearby ally 12%');
-  const full = eight.unit('百炼嘉维尔');
-  full.hp = full.s.maxHp;
-  eight.battle.heal(perfumer, full, 1000);
-  const overflow = full.buffs.find((buff) => buff.key.startsWith('stronghold:rhodes-island-barrier'));
-  close(overflow.shield, Math.min(full.s.maxHp * 0.15, 1000 * full.s.healingTakenMul), 'overflow becomes barrier');
-  const medic = eight.unit('华法琳'), key = medic.rangeKeys.find((row) => row !== medic.tileR * 21 + medic.tileC && eight.battle.grid.inRect(Math.floor(row / 21), row % 21));
+  const eight = arena([...ops('调香师', '休谟斯', '华法琳', '寒芒克洛丝', '百炼嘉维尔', '泥岩', '魔王'), op('格拉尼')], { extraPacts: { 格拉尼: ['enforcer'] }, idle: true });
+  const caster = eight.unit('调香师'), other = eight.unit('华法琳');
+  other.skill.sp = 0; other.skill.charges = 0;
+  const spBefore = other.skill.spTotal;
+  caster.skill.activate('test', { free: true });
+  const near = eight.battle.allyUnits.filter((unit) => unit.alive && unit.kind === 'op' && Math.max(Math.abs(unit.tileR - caster.tileR), Math.abs(unit.tileC - caster.tileC)) <= 1);
+  for (const unit of near) close(buffOf(unit, 'rhodes-island-rally').mods.aspd, 30, `${unit.name} rallied: attack speed +30`);
+  assert.ok(other.skill.spTotal - spBefore >= 3 - 1e-6, 'other members gain 3 SP');
+  const medic = eight.unit('华法琳');
   medic.skill.sp = 0; medic.skill.charges = 0;
-  const victim = eight.enemy([Math.floor(key / 21), key % 21], { hp: 10 });
-  trueHit(eight.battle, full, victim, 100);
+  const victim = eight.enemy(inRangeTile(eight, medic), { hp: 10 });
+  trueHit(eight.battle, eight.unit('百炼嘉维尔'), victim, 100);
   assert.equal(victim.alive, false);
   assert.ok(medic.skill.spTotal >= 2 && eight.tier('enforcer').fallSp >= 1, 'an enemy falling in range refunds 2 SP');
   assert.equal(eight.battle.errorCount, 0);
@@ -599,19 +620,90 @@ test('狙击 and 术式 give precision and arcane marks with their tiered scopes
   assert.equal(eight.battle.errorCount, 0);
 });
 
-test('坚阵 bears a share of a neighbour\'s damage and strikes back at six', () => {
-  const six = arena([...ops('角峰', '香草', '雷蛇', '贾维', '瑕光', '塞雷娅'), op('斯卡蒂')]);
-  const guard = six.unit('角峰'), ward = six.unit('斯卡蒂');
-  const tile = [[guard.tileR, guard.tileC + 1], [guard.tileR + 1, guard.tileC], [guard.tileR - 1, guard.tileC], [guard.tileR, guard.tileC - 1]].find(([r, c]) => six.battle.grid.inRect(r, c) && !six.battle.isReservedTile(r, c));
-  assert.ok(tile && six.battle.relocate(ward, tile[0], tile[1]), 'the ward stands next to the guard');
-  for (const unit of six.battle.allyUnits) if (unit.alive) unit.hp = unit.s.maxHp;
-  const attacker = six.enemy([10, 9]);
-  const guardHp = guard.hp, wardHp = ward.hp;
-  six.battle.dealDamage(attacker, ward, { amount: 1000, type: 'true', canDodge: false });
-  const wardLoss = wardHp - ward.hp, guardLoss = guardHp - guard.hp;
-  close(guardLoss / (wardLoss + guardLoss), 0.35, 'the guard bears 35%', 2e-2);
-  assert.ok(attacker.hp < attacker.s.maxHp && attacker.buffs.some((buff) => buff.status === 'fragile'), 'and strikes the attacker with 脆弱');
+test('坚阵 blocks one more enemy, exposes what it blocks and answers its attacks at six', () => {
+  const two = arena(ops('角峰', '香草'), { idle: true });
+  const guard = two.unit('角峰'), held = two.enemy([guard.tileR, guard.tileC]), loose = two.enemy(two.far());
+  held.blockedBy = guard;
+  two.advance(0.3);
+  close(held.s.dmgTakenMul, 1.15, 'a blocked enemy takes +15%', 1e-3);
+  assert.equal(loose.s.dmgTakenMul, 1, 'an enemy it does not block is untouched');
+
+  const six = arena(ops('角峰', '香草', '雷蛇', '贾维', '瑕光', '塞雷娅'), { idle: true });
+  const wall = six.unit('角峰');
+  assert.equal(wall.s.blockCnt, guard.s.blockCnt + 1, 'block count +1 from four');
+  const attacker = six.enemy([wall.tileR, wall.tileC]);
+  attacker.blockedBy = wall;
+  six.battle.dealDamage(attacker, wall, { amount: 10, type: 'phys', isAttack: true });
+  assert.ok(attacker.hp < attacker.s.maxHp, 'the blocked attacker is struck back');
+  six.battle.dealDamage(attacker, wall, { amount: 10, type: 'phys', isAttack: true });
+  assert.equal(six.tier('sentinel').counters, 1, 'at most once per second');
   assert.equal(six.battle.errorCount, 0);
+});
+
+test('重装 attacks add a share of max HP, slow what they block from four and stun every four seconds at six', () => {
+  const two = arena(ops('艾丝黛尔', '格拉尼'), { idle: true });
+  const estelle = two.unit('艾丝黛尔'), dummy = two.enemy([10, 9], { hp: 1000000 });
+  const before = dummy.hp;
+  two.battle.dealDamage(estelle, dummy, { amount: 1, type: 'phys', isAttack: true });
+  assert.ok(before - dummy.hp >= estelle.s.maxHp * 0.03 - 1e-6, 'an attack adds 3% of max HP as physical damage');
+  assert.equal(two.tier('bruiser').strikes, 1);
+
+  const six = arena(ops('艾丝黛尔', '幽灵鲨', '休谟斯', '泥岩', '百炼嘉维尔', '格拉尼'), { idle: true });
+  const heavy = six.unit('泥岩'), held = six.enemy([heavy.tileR, heavy.tileC], { hp: 1000000 });
+  held.blockedBy = heavy;
+  six.advance(0.3);
+  close(buffOf(held, 'heavy-held').mods.aspd, -30, 'a blocked enemy attacks slower');
+  six.battle.removeStatus(held, 'stun');
+  heavy.mem.strongholdHeavyStunAt = -Infinity;
+  const stuns = six.tier('bruiser').stuns ?? 0;
+  six.battle.dealDamage(heavy, held, { amount: 1, type: 'phys', isAttack: true });
+  assert.equal(held.s.flags.stun, true, 'the next attack stuns');
+  six.battle.removeStatus(held, 'stun');
+  six.battle.dealDamage(heavy, held, { amount: 1, type: 'phys', isAttack: true });
+  assert.equal(six.tier('bruiser').stuns - stuns, 1, 'once every four seconds per member');
+  assert.ok(!held.s.flags.stun);
+  assert.equal(six.battle.errorCount, 0);
+});
+
+test('守望 slows and exposes the enemies in its members attack range', () => {
+  const four = arena(ops('泡泡', '砾', '斯卡蒂', '歌蕾蒂娅'), { idle: true });
+  const bubble = four.unit('泡泡'), near = four.enemy(inRangeTile(four, bubble)), far = four.enemy(four.far());
+  four.advance(0.3);
+  const slowed = (enemy) => enemy.buffs.find((buff) => buff.status === 'slow');
+  close(slowed(near)?.mods?.moveMul, 0.75, 'move speed -25%', 1e-3);
+  close(near.s.dmgTakenMul, 1.1, 'damage taken +10%', 1e-3);
+  assert.ok(!slowed(far) && far.s.dmgTakenMul === 1, 'out of range nothing happens');
+  assert.equal(four.battle.errorCount, 0);
+});
+
+test('双形 front form slows what it hits instead of taking less damage, the back form hits harder', () => {
+  const four = arena([...ops('角峰', '香草', '雷蛇', '贾维'), ...ops('银灰', '夕', '缪尔赛思', '梅尔')], { idle: true });
+  const members = ['银灰', '夕', '缪尔赛思', '梅尔'].map(four.unit);
+  const front = members.filter((unit) => unit.mem.prototypeFormSwap === 'frontline'), back = members.filter((unit) => unit.mem.prototypeFormSwap === 'backline');
+  assert.ok(front.length && back.length, 'both forms on the field');
+  for (const unit of front) assert.ok(!unit.buffs.some((buff) => buff.key.includes('form-swap-frontline')), `${unit.name}: no damage reduction`);
+  const foe = four.enemy([10, 9], { hp: 1000000 });
+  four.battle.dealDamage(front[0], foe, { amount: 1, type: 'phys', isAttack: true });
+  close(foe.buffs.find((buff) => buff.status === 'slow')?.mods?.moveMul, 0.55, 'front form attack: move speed -45%', 1e-3);
+  for (const unit of back) close(unit.s.dmgDealtMul, 1.25, `${unit.name}: damage +25%`, 1e-3);
+  assert.equal(four.battle.errorCount, 0);
+});
+
+test('决斗 adds true damage and attacks faster below half health, without lifesteal or an emergency heal', () => {
+  const two = arena(ops('斯卡蒂', '布洛卡'), { idle: true });
+  const brawler = two.unit('布洛卡'), foe = two.enemy([10, 9], { hp: 1000000 });
+  brawler.hp = brawler.s.maxHp * 0.6;
+  const hp = brawler.hp;
+  two.battle.dealDamage(brawler, foe, { amount: 1000, type: 'phys', isAttack: true });
+  assert.equal(brawler.hp, hp, 'no lifesteal');
+  two.advance(0.3);
+  assert.ok(!buffOf(brawler, 'pit-fury'), 'no speed above half health');
+  trueHit(two.battle, foe, brawler, brawler.hp - brawler.s.maxHp * 0.4);
+  const low = brawler.hp;
+  two.advance(2.5);
+  assert.ok(brawler.hp <= low + brawler.s.maxHp * 0.02, 'no emergency heal');
+  close(buffOf(brawler, 'pit-fury').mods.aspd, 20, 'attack speed +20 below half health');
+  assert.equal(two.battle.errorCount, 0);
 });
 
 test('突袭 keeps SP and moves next to the nearest ground enemy after idling', () => {

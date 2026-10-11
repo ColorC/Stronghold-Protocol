@@ -443,6 +443,12 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
   battle.on('battleStart',()=>{
     const all=liveOps();
     if(active.has('sui'))spawnSion();
+    // season 2 决斗: below the health threshold a member attacks faster (no lifesteal, no emergency heal)
+    const pitSpeed=Number(active.get('breaker')?.variables?.LowHealthAspd??0);
+    if(pitSpeed>0)battle.every(.25,()=>{
+      const threshold=Number(active.get('breaker')?.variables?.HealthThreshold??0.5);
+      for(const unit of traitMembers('breaker'))if(unit.alive&&unit.hpRatio<threshold)battle.addBuff(unit,{key:`resonance:v3:pit-fury:${unit.id}`,mods:{aspd:pitSpeed},duration:.5,tags:['resonance','prototype-trait']});
+    },{owner:battle});
     for(const unit of all){
       if(!formSwapMembers.has(charIdOf(unit)))continue;
       const form=prototypeFormForRow(unit.tileR,battle.rect);
@@ -463,6 +469,8 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
       if(id==='formSwap'){
         for(const unit of members){
           const frontline=unit.mem.prototypeFormSwap==='frontline';
+          // season 2: the front form slows what it hits (FrontSlow) instead of taking less damage
+          if(frontline&&Number(v.FrontSlow)>0){unit.mem.prototypeFrontSlow={value:Number(v.FrontSlow),duration:Number(v.FrontSlowDuration??2)};continue;}
           buff(unit,`form-swap-${frontline?'frontline':'backline'}`,frontline?{dmgTakenMul:1-Number(v.DR??0)}:{dmgDealtMul:1+Number(v.DA??0)});
         }
       }
@@ -487,13 +495,17 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
       if(id==='artillery') for(const unit of members)buff(unit,'artillerist-ad',{atkPct:Number(v.AD??0)});
       if(id==='dominator'){
         const give=(unit)=>battle.addBuff(unit,{key:`resonance:v3:dominator-shield:${unit.id}`,shield:Number(v.ShieldAmount??0),duration:Number(v.ShieldDuration??15),tags:['resonance','prototype-trait']});
-        if(Number(v.ShieldOnFirstContact)>0){
-          // season 2: the field is empty when the battle starts, so each member's 屏障 comes when an enemy first enters its
-          // attack range (members that never attack, such as a trapmaster, included)
+        if(Number(v.ShieldOnFirstContact)>0||Number(v.SpOnFirstContact)>0){
+          // season 2: the field is empty when the battle starts, so each member's reward comes when an enemy first enters its
+          // attack range (members that never attack, such as a trapmaster, included): SP to cast sooner, or the old 屏障
           const waiting=new Set(members);
-          const contact=(unit)=>{if(!waiting.delete(unit))return;give(unit);metric('dominator','contactShields');};
+          const contact=(unit)=>{
+            if(!waiting.delete(unit))return;
+            if(Number(v.SpOnFirstContact)>0){unit.skill?.gainSp?.(Number(v.SpOnFirstContact),'prototypeDominatorContact');metric('dominator','contactSp');}
+            else{give(unit);metric('dominator','contactShields');}
+          };
           battle.every(.25,()=>{
-            for(const unit of waiting)if(unit.alive&&unit.deployed&&battle.enemiesInKeys(unit.rangeKeys||[],unit,unit.profile).length)contact(unit);
+            for(const unit of waiting)if(unit.alive&&unit.deployed&&battle.anyEnemyInKeys(unit.rangeKeys||[]))contact(unit);
           },{owner:battle});
           battle.on('hit',(event)=>{if(waiting.has(event?.source)&&event.target?.side==='enemy')contact(event.source);},{owner:battle});
         }else for(const unit of members)give(unit);
@@ -730,6 +742,7 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
           metric('creation','crystalBlasts');
         }
       }
+      if(source.mem?.prototypeFrontSlow&&event.dmg?.isAttack&&target.alive&&isActiveMember(source,'formSwap'))battle.applyStatus(target,'slow',{duration:source.mem.prototypeFrontSlow.duration,value:source.mem.prototypeFrontSlow.value,source});
       if(isActiveMember(source,'breaker')&&Number(vars('breaker').OmnivampPercent)>0)battle.heal(source,source,event.dealt*Number(vars('breaker').OmnivampPercent),{tags:['resonance','prototype-pitfighter']});
       if(isActiveMember(source,'breaker')&&!(event.dmg?.tags??[]).includes('prototype-pitfighter'))battle.dealDamage(source,target,{amount:event.dealt*Number(vars('breaker').TrueDamagePercent??0),type:'true',canDodge:false,tags:['resonance','prototype-pitfighter']});
       const visionary=active.get('logistics');
