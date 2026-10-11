@@ -456,11 +456,11 @@ test('Silver Chainblade executes low-health enemies and Hexarmor stacks through 
 });
 
 test('Chem initial and attack Mana scale with fixed skill cost; criticals use one authorized shared roll',()=>{
-  const chem=chemBattle('TFT13_Crime_Silver_FleshRipper',{sourceGearId:'prototype_source_gear_last_whisper',spCost:40});
-  const target=chem.h.spawn('dummy');let rolls=0;chem.h.battle.rng=()=>{rolls++;return .6;};
+  const chem=chemBattle('TFT13_Crime_Silver_FleshRipper',{spCost:40});
+  const target=chem.h.spawn('dummy');let rolls=0;chem.h.battle.rng=()=>{rolls++;return .4;};
   const attack={source:chem.holder,target,dmg:{isAttack:true,mul:1}};chem.h.battle.emit('hit',attack);
-  assert.equal(rolls,1,'the source gear and Chem bonus share one critical roll');
-  assert.equal(attack.dmg.mul,1.4,'the single .6 roll uses base 25%, source gear 20%, and Chem 20%');
+  assert.equal(rolls,1,'the attack baseline and Chem bonus share one critical roll');
+  assert.equal(attack.dmg.mul,1.4,'the single .4 roll uses base 25% and Chem 20% (source items no longer add critical chance)');
   const skill={source:chem.holder,target,dmg:{isSkill:true,mul:1}};chem.h.battle.emit('hit',skill);
   assert.equal(rolls,1,'item critical chance does not authorize a skill critical');
   const toxin40=chemBattle('TFT13_Crime_Silver_UnleashedToxins',{spCost:40});
