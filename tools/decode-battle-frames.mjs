@@ -3,9 +3,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { resolveExecutable, resolveFfprobe } from './render-independent-recording.mjs';
 
-const FFPROBE = 'C:/Users/lilithgames/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-9.0.1-full_build/bin/ffprobe.exe';
-const FFMPEG = 'C:/Users/lilithgames/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-9.0.1-full_build/bin/ffmpeg.exe';
 
 function run(exe, args) {
   const child = spawn(exe, args, { stdio: ['ignore', 'pipe', 'pipe'] });
@@ -23,6 +22,8 @@ const args = Object.fromEntries(process.argv.slice(2).reduce((pairs, value, inde
   return pairs;
 }, []));
 for (const key of ['manifest', 'media-dir', 'output-dir', 'rounds']) if (!args[key]) throw new Error(`missing --${key}`);
+const FFMPEG = resolveExecutable(args.ffmpeg || process.env.SP_FFMPEG_PATH || 'ffmpeg');
+const FFPROBE = resolveFfprobe({ explicitPath: args.ffprobe || process.env.SP_FFPROBE_PATH, ffmpegPath: FFMPEG });
 const manifest = JSON.parse(await fs.readFile(path.resolve(args.manifest), 'utf8'));
 const mediaDir = path.resolve(args['media-dir']), outputDir = path.resolve(args['output-dir']);
 const rounds = args.rounds.split(',').map(Number);
