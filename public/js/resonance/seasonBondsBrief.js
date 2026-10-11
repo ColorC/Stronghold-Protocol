@@ -18,7 +18,7 @@ export function SeasonBondsBrief({ catalog }) {
       ${list.map(([id, pact]) => html`<div key=${id} class="rs-brief-season__bond" data-pact=${id} title=${pact.summaryDescription || pact.name}>
         <${PactIcon} catalog=${catalog} id=${id} />
         <b>${pact.name}</b>
-        <span class="num">${(pact.thresholds ?? []).join(' / ')}</span>
+        <span class="num">${(pact.thresholds ?? []).join('/')}</span>
       </div>`)}
     </div>
   </div>`;
