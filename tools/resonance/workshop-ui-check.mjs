@@ -108,6 +108,8 @@ function workshopCredentials() {
 }
 
 function selfTest() {
+  for(const size of [57,60]){const ids=Array.from({length:size},(_,i)=>`op${i}`);if(!sameOperatorRoster(ids,ids)||sameOperatorRoster(ids.slice(1),ids)||sameOperatorRoster([...ids.slice(1),ids[1]],ids))throw new Error('season roster proof failed');}
+  if(sameOperatorRoster([],[]))throw new Error('empty roster proof was accepted');
   const defaultOutputs = outputPaths();
   if (defaultOutputs.receipt !== path.join(ROOT, 'runtime/resonance/ui-verification/native-live-workshop-ui-receipt.json')) throw new Error('default receipt path changed');
   const refinementOutputs = outputPaths('ui-refinement');
@@ -207,6 +209,12 @@ export function cdpTextFramePayload(event) {
   return frame?.opcode === 1 && typeof frame.payloadData === 'string' ? frame.payloadData : null;
 }
 
+export function sameOperatorRoster(actual,expected){
+  return Array.isArray(actual)&&Array.isArray(expected)&&actual.length>0&&actual.length===expected.length
+    &&new Set(actual).size===actual.length&&new Set(expected).size===expected.length
+    &&actual.every(id=>typeof id==='string'&&expected.includes(id));
+}
+
 async function run() {
   const options = parseArgs(process.argv.slice(2));
   OUTPUTS = outputPaths(options.receiptTag);
@@ -215,6 +223,8 @@ async function run() {
     return;
   }
   if (options.selfTest) return selfTest();
+  const expectedOperatorIds=JSON.parse(readFileSync(path.join(ROOT,'runtime/resonance/player-sessions',`${options.session}.json`),'utf8')).activeOperatorIds;
+  if(!sameOperatorRoster(expectedOperatorIds,expectedOperatorIds))throw new Error('Persisted session has no valid season roster');
   let priorReceipt = null;
   if (existsSync(OUTPUTS.receipt)) {
     priorReceipt = JSON.parse(readFileSync(OUTPUTS.receipt, 'utf8'));
@@ -292,6 +302,7 @@ async function run() {
           row.tokenMatchesSession = message.token === options.session;
         } else if (message.t === 'r.catalog') {
           row.activeOperatorCount = Array.isArray(message.catalog?.activeOperatorIds) ? message.catalog.activeOperatorIds.length : null;
+          row.matchesExpectedRoster = sameOperatorRoster(message.catalog?.activeOperatorIds,expectedOperatorIds);
           row.schemaVersion = message.catalog?.schemaVersion ?? null;
         } else if (message.t === 'm.public') {
           row.phase = message.phase ?? null;
@@ -303,6 +314,7 @@ async function run() {
           row.statePhase = state?.phase ?? null;
           row.rulesVersion = state?.rulesVersion ?? null;
           row.activeOperatorCount = Array.isArray(state?.activeOperatorIds) ? state.activeOperatorIds.length : null;
+          row.matchesExpectedRoster = sameOperatorRoster(state?.activeOperatorIds,expectedOperatorIds);
         }
         websocketObservation.messages.push(row);
       });
@@ -389,10 +401,10 @@ async function run() {
     if (!observation) return { ok: false, reason: 'CDP WebSocket observation is unavailable' };
     const socket = observation.sockets.find(row => row.native);
     const welcome = observation.messages.find(row => row.type === 'welcome' && row.playerId === 'resonance' && row.tokenMatchesSession);
-    const catalog = observation.messages.find(row => row.type === 'r.catalog' && row.activeOperatorCount === 60);
+    const catalog = observation.messages.find(row => row.type === 'r.catalog' && row.matchesExpectedRoster);
     const publicPrep = observation.messages.find(row => row.type === 'm.public' && row.phase === 'PREP');
     const privatePrep = observation.messages.find(row => row.type === 'm.private' && row.phase === 'PREP'
-      && row.statePhase === 'prep' && row.rulesVersion === 3 && row.activeOperatorCount === 60);
+      && row.statePhase === 'prep' && row.rulesVersion === 3 && row.matchesExpectedRoster);
     return { ok: !!(socket && welcome && catalog && publicPrep && privatePrep && observation.failures.length === 0),
       socket, welcome, catalog, publicPrep, privatePrep, failures: observation.failures };
   };
@@ -401,10 +413,10 @@ async function run() {
     if (!observation) return { ok: false, reason: 'CDP WebSocket observation is unavailable' };
     const socket = observation.sockets.find(row => row.native);
     const welcome = observation.messages.find(row => row.type === 'welcome' && row.playerId === 'resonance' && row.tokenMatchesSession);
-    const catalog = observation.messages.find(row => row.type === 'r.catalog' && row.activeOperatorCount === 60);
+    const catalog = observation.messages.find(row => row.type === 'r.catalog' && row.matchesExpectedRoster);
     const publicState = [...observation.messages].reverse().find(row => row.type === 'm.public');
     const privateState = [...observation.messages].reverse().find(row => row.type === 'm.private');
-    const privateCatalog = privateState?.rulesVersion === 3 && privateState?.activeOperatorCount === 60;
+    const privateCatalog = privateState?.rulesVersion === 3 && privateState?.matchesExpectedRoster;
     return { ok: !!(socket && welcome && catalog && publicState && privateState && privateCatalog && observation.failures.length === 0),
       socket, welcome, catalog, publicState, privateState, sentTypes: [...observation.sentTypes], failures: observation.failures };
   };
