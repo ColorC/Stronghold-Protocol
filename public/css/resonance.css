@@ -247,7 +247,7 @@ body { background: #101512; color: var(--rs-text); }
 .rs-native-match .rs-native-pact-matrix__tiers > .rs-native-pact-matrix__tier:nth-child(5).is-current { background: #332d1d; border-color: #ffc600; }
 .rs-native-match .rs-native-pact-matrix__tiers > .rs-native-pact-matrix__tier:nth-child(6).is-current { background: #38251f; border-color: #ff6b3d; }
 .rs-native-match .rs-native-resonance-panel--pacts { width: min(760px,calc(100vw - 24px)); }
-.rs-native-match .rs-native-resonance-panel--income { top: auto; right: max(12px,env(safe-area-inset-right,0px)); bottom: calc(2.82rem + env(safe-area-inset-bottom,0px)); width: min(380px,calc(100vw - 24px)); height: auto; max-height: calc(100dvh - 3.1rem - env(safe-area-inset-bottom,0px)); overflow: auto; color: #d7e5dc; background: #101814; }
+.rs-native-match .rs-native-resonance-panel--income { top: calc(max(80px,.96rem) + env(safe-area-inset-top,0px)); right: max(12px,env(safe-area-inset-right,0px)); bottom: calc(2.82rem + env(safe-area-inset-bottom,0px)); width: min(380px,calc(100vw - 24px)); height: auto; max-height: calc(100dvh - 3.1rem - env(safe-area-inset-bottom,0px)); overflow: auto; color: #d7e5dc; background: #101814; }
 .rs-native-match .rs-native-resonance-panel--income .rs-native-resonance-panel__head { justify-content: flex-end; padding: .04rem .08rem; border-bottom: 0; }
 .rs-native-match .rs-native-resonance-panel--income .rs-native-resonance-panel__head > b { display: none; }
 .rs-native-match .rs-native-resonance-panel--shopOdds { width: min(560px, calc(100vw - 24px)); }
