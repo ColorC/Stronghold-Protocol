@@ -107,6 +107,7 @@ import {
 } from '../ui/gameLogic.js';
 import { toast } from '../ui/toasts.js';
 import { BriefingScreen } from '../screens/briefing.js';
+import { SeasonBondsBrief } from './seasonBondsBrief.js';
 import { BandDraftScreen } from '../screens/bandDraft.js';
 import { ResultScreen } from '../screens/result.js';
 import { net } from '../net.js';
@@ -149,6 +150,7 @@ export function GameScreen({ onLeave, libraryCatalog, activeIds }) {
   const away = useStore((s) => s.away, Object.is, awayStore);
   const autoplay = useStore((s) => !!(Array.isArray(s.match.public?.players) && s.match.public.players.find((p) => p && p.playerId === s.me.playerId)?.autoplay));
   const gd = useGameData();
+  const seasonCatalog = useStore((s) => s.match.resonanceCatalog);
   if (!pub || !gd.ready) {
     return html`<div class="screen gload">
       <${Spinner} size="lg" label=${pub ? 'LOADING DATA' : 'ENTERING SIMULATION'} />
@@ -158,7 +160,8 @@ export function GameScreen({ onLeave, libraryCatalog, activeIds }) {
   const mode = phaseMode(pub.phase);
   let body;
   if (hasResult || mode === 'result') body = html`<${ResultScreen} onBack=${onLeave} backLabel="返回首页" />`;
-  else if (mode === 'briefing') body = html`<${BriefingScreen} />`;
+  else if (mode === 'briefing') body = html`<${BriefingScreen} step=${2} of=${2} loadout=${false}
+    right=${html`<${SeasonBondsBrief} catalog=${seasonCatalog} />`} />`;
   else if (mode === 'draft') body = html`<${BandDraftScreen} />`;
   else body = html`<${MatchScreen} onLeave=${onLeave} libraryCatalog=${libraryCatalog} activeIds=${activeIds} />`;
   return html`${body}
@@ -1090,7 +1093,9 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
       const cost = kept && kept.round === pub?.round ? kept : null;
       const sfx = battleOverSfx(cost, pub?.uniteResult?.losses?.[myId]);
       if (sfx) audio.sfx(sfx);
-      const box = uniteResultBox(pub?.uniteResult, myId) || battleResultBox(cost);
+      const nativeBox = uniteResultBox(pub?.uniteResult, myId) || battleResultBox(cost);
+      // 共鸣是单人防守：没有敌人突破时干员仍会受伤，「全员无伤！」不成立；用明日方舟的「完美作战」
+      const box = nativeBox?.tone === 'mint' ? { ...nativeBox, sub: t('完美作战') } : nativeBox;
       resultSeq.current += 1;
       if (box) setResultBox({ ...box, key: `result:${pub?.round}:${resultSeq.current}` });
     }

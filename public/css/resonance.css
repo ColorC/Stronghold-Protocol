@@ -493,3 +493,11 @@ body { background: #101512; color: var(--rs-text); }
 }
 
 .rs-pact-overview { grid-column: 1 / -1; margin: 4px 0 10px; color: #b9c4c3; font-size: 17px; line-height: 1.6; }
+
+/* 确认本局信息：本季盟约总览（resonance/seasonBondsBrief.js），替代原生核心/附加盟约与禁用干员 */
+.rs-brief-season__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(1.5rem, 1fr)); gap: .08rem; }
+.rs-brief-season__bond { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: .08rem; align-items: center;
+  padding: .06rem .1rem; background: rgba(255, 255, 255, .03); border: 1px solid var(--line, rgba(255, 255, 255, .12)); min-width: 0; }
+.rs-brief-season__bond .rs-pact-icon { grid-row: 1 / 3; width: .36rem; height: .36rem; }
+.rs-brief-season__bond b { font-size: max(calc(.16 * var(--t)), 15px); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rs-brief-season__bond .num { font-size: max(calc(.14 * var(--t)), 14px); color: var(--text-lo, #9aa5a2); }

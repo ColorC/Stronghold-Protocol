@@ -58,7 +58,7 @@ function sessionUrl(id) {
 }
 function FlowHeader({ step, title, difficulty, onBack, onGuide }) {
   return html`<div class="rs-flow__header">
-    <${StepHeader} step=${step} of=${1} title=${title} micro="卫戍协议 · 共鸣" pub=${{ difficulty }} onExit=${onBack} onGuide=${onGuide}/>
+    <${StepHeader} step=${step} of=${2} title=${title} micro="卫戍协议 · 共鸣" pub=${{ difficulty }} onExit=${onBack} onGuide=${onGuide}/>
     <a class="rs-fullscreen" href=${location.href} target="_blank" rel="noopener">全屏打开</a>
   </div>`;
 }

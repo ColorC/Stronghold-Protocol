@@ -18,10 +18,11 @@ const detail=read('public/js/resonance/detail.js');
 const chrome=read('public/js/resonance/gameChrome.js');
 const model=read('public/js/resonance/model.js');
 
-test('entry is title then native difficulty then direct preparation; legacy extra-step URLs return to difficulty',()=>{
+test('entry is title, difficulty (1/2), native briefing (2/2), then preparation; legacy extra-step URLs return to difficulty',()=>{
  assert.match(app,/\['difficulty', 'environment', 'briefing'\]\.includes\(stepName\) \? 1 : 0/);
  assert.match(app,/const names = \{ 1: 'difficulty' \}/);
- assert.match(app,/step=\$\{step\} of=\$\{1\}/);
+ // 选择难度是第 1 步，原生「确认本局信息」是第 2 步（共两步），之后直接备战
+ assert.match(app,/step=\$\{step\} of=\$\{2\}/);
  assert.match(app,/onClick=\$\{start\}>开始备战/);
  assert.match(app,/if \(creatingSession\.current \|\| !seedValid \|\| step !== 1 \|\| catalogKey !== String\(numericSeed\)\) return/);
  assert.match(app,/disabled=\$\{busy \|\| !catalogReady\} loading=\$\{busy\} onClick=\$\{start\}/);
@@ -93,4 +94,13 @@ test('current action costs drive XP and free-refresh display without coin pricin
  assert.equal(displayed({actionCosts:{freeRefreshes:0,refreshGold:2},freeRefreshes:0}),0,'exhausted sources remain empty');
  assert.equal(displayed({actionCosts:{refreshGold:0}}),1,'legacy free-price fallback');
  assert.match(panels,/refreshLabel=freeRefreshes>0\?`免费 ×\$\{freeRefreshes\}`:refreshGold===0\?'免费'/);
+});
+
+test('resonance briefing shows the season bonds instead of native core/add-on bonds and bans, and no loadout',()=>{
+ const screen=read('public/js/resonance/native-match-screen.js');
+ const brief=read('public/js/resonance/seasonBondsBrief.js');
+ assert.match(screen,/BriefingScreen\} step=\$\{2\} of=\$\{2\} loadout=\$\{false\}/);
+ assert.match(screen,/SeasonBondsBrief\} catalog=\$\{seasonCatalog\}/);
+ assert.match(brief,/阵营盟约/);assert.match(brief,/职业与机制盟约/);
+ assert.doesNotMatch(brief,/import[^;]*(MatchInfo|BannedOperators)|bannedChess/);
 });

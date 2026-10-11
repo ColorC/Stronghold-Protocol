@@ -17,8 +17,12 @@ import { useStore } from '../store.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
-/** INFO_CHECK screen. */
-export function BriefingScreen() {
+/**
+ * INFO_CHECK screen. A mode that runs this phase without the native bond draft and bans (共鸣) passes its own step
+ * numbering, its own right column and `loadout: false` when the operators' skills are fixed.
+ * @param {{ step?: number, of?: number, right?: any, loadout?: boolean }} [props]
+ */
+export function BriefingScreen({ step = 1, of = 2, right = null, loadout = true } = {}) {
   const pub = useStore((s) => s.match.public);
   const myId = useStore((s) => s.me.playerId);
   const solo = useStore((s) => s.room?.mode === 'solo') || String(pub?.modeId || '').includes('single');
@@ -51,7 +55,7 @@ export function BriefingScreen() {
 
   return html`<div class="screen brief">
     <div class="brief__bg" aria-hidden="true"></div>
-    <${StepHeader} step=${1} of=${2} title="确认本局信息" micro="BRIEFING // INFO CHECK" pub=${pub}
+    <${StepHeader} step=${step} of=${of} title="确认本局信息" micro="BRIEFING // INFO CHECK" pub=${pub}
       total=${phaseTotalSeconds(pub, gd.config)} onExit=${() => setExit(true)} />
     <main class="brief__main">
       <section class="brief__left">
@@ -83,11 +87,11 @@ export function BriefingScreen() {
         </div>
       </section>
       <section class="brief__right">
-        <${MatchInfo} model=${info} />
+        ${right ?? html`<${MatchInfo} model=${info} />`}
       </section>
     </main>
     <footer class="brief__foot">
-      <${LoadoutButton} from="briefing" size="lg" class="brief-loadout" />
+      ${loadout ? html`<${LoadoutButton} from="briefing" size="lg" class="brief-loadout" />` : html`<span class="brief-loadout" aria-hidden="true"></span>`}
       <div class="brief-ready">
         <span class="brief-ready__txt">已就绪 <b class="num">${readyN}</b><span class="num">/${players.length}</span></span>
         <span class="brief-ready__pips">${players.map((p) => html`<i key=${p.playerId} class=${cx(p.ready && 'on', p.playerId === myId && 'me')} title=${p.name}><${Icon} name="user" /></i>`)}</span>
