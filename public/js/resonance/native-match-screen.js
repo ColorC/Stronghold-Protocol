@@ -38,6 +38,8 @@
 // Equipment dropped on an operator whose two slots are used opens the equip-replace dialog (ui/equipReplace.js): the
 // player picks the equipped item to destroy → g.equip {itemUid, targetUid, replaceUid}; 取消 sends nothing. 销毁 is only
 // offered for loose items (equipped ones are locked, ui/facing.js itemDestroyable).
+// 共鸣 has no replace dialog: an operator carries three items; a drop on a full one is refused with its reason and the
+// item stays in the inventory (equipmentSlots.js equipRefusal), and the detail card shows EQUIP n/3.
 // Solo battles (ui/matchStatus.js pauseAvailable): the top bar's pause button / Space send g.pause {on}; m.public.paused
 // shows the paused overlay (继续作战 / 放弃模拟) and freezes the HUD clocks. Boss rounds: the top bar shows the level's
 // 120 s countdown and the red DOT overtime warning (m.public.overtimeAt).
@@ -120,6 +122,7 @@ import { audio, resultSpeaker, resultVoiceSlot } from '../audio.js';
 import { useDocClass } from '../ui/device.js';
 import { IncomePanel, RoundSettlementPanel } from './economyPanels.js';
 import { InventoryDock } from './native/equipmentDock.js';
+import { equipRefusal, RESONANCE_EQUIP_SLOTS } from './equipmentSlots.js';
 import { DetailPanel as ResonanceDetailPanel } from './detail.js';
 import { mountUnitItemOverlay } from './unitItems.js';
 import { ResonanceItemIcon, resonanceItemIconUrl } from './itemIcon.js';
@@ -1333,7 +1336,15 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
       }
       const f = intent.fields;
       if (intent.t === 'g.move') await actions.move(f.uid, f.to);
-      else if (intent.t === 'g.equip') await actions.equip(f.itemUid, f.targetUid);
+      else if (intent.t === 'g.equip') {
+        // 共鸣: three slots — a 4th item (or a second copy of a unique item) is refused with its reason and stays in the inventory
+        const target = L.resonanceState?.pieces?.find(piece => Number(piece.nativeUid) === Number(f.targetUid));
+        const item = L.resonanceState?.inventory?.find(row => Number(row.nativeUid) === Number(f.itemUid));
+        const catalog = resonanceLive.current.catalog;
+        const refusal = target && item ? equipRefusal(catalog, target, item.itemId, catalog?.operators?.[target.operatorId]?.name) : null;
+        if (refusal) { audio.sfx('error', { volume: 0.5 }); toast(refusal, 'warn'); return; }
+        await actions.equip(f.itemUid, f.targetUid);
+      }
       else if (intent.t === 'g.art') await actions.art(f.itemUid, f.row, f.col);
     };
     const refuse = (reason) => {
@@ -1688,6 +1699,8 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
     const item = resonanceState?.inventory?.find((candidate) => Number(candidate.nativeUid) === itemUid);
     setEquipmentDropTarget(null);
     if (!editable || !item || !target) { toast('请把装备拖到一名可操作的干员身上', 'info'); return; }
+    const refusal = equipRefusal(resonanceCatalog, target, item.itemId, resonanceCatalog?.operators?.[target.operatorId]?.name);
+    if (refusal) { audio.sfx('error', { volume: 0.5 }); toast(refusal, 'warn'); return; }
     await actions.equip(item.nativeUid, target.nativeUid);
   };
   // a crate's / turret's card closes with it: destroyed (HP gone, or its tuple left the snapshots once the die animation
@@ -2096,7 +2109,7 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
 
       ${resolved ? html`<${DetailPanel} detail=${resolved} snapHp=${snapHp} onClose=${() => { setDetail(null); setSel(null); }}
         bonds=${detailBonds} offBonds=${offBonds} loadout=${detailLoadout} ops=${priv?.ops ?? null} side=${dSide} shopOpen=${shopOpen} live=${liveStats} voice=${true}
-        onBond=${(id) => openBond(id, detailOwner, 'detail')} />` : null}
+        equipSlots=${resonanceState ? RESONANCE_EQUIP_SLOTS : 2} onBond=${(id) => openBond(id, detailOwner, 'detail')} />` : null}
       ${resonanceDetail && resonanceCatalog ? html`<${ResonanceDetailPanel} detail=${resonanceDetail} catalog=${resonanceCatalog} state=${resonanceState}
         onDetail=${target => setResonanceDetail(target)} onAction=${submitResonanceAction} busy=${!editable || resonanceActionBusy} readOnly=${!editable}
         safeBottom=${resonanceDetailBottom}

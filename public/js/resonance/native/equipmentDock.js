@@ -1,9 +1,7 @@
 import { html, Icon } from '../../ui/components.js';
 import { useEffect, useRef, useState } from '../../../vendor/hooks.module.js';
 import { ResonanceItemIcon } from '../itemIcon.js';
-
-const recipeFor = (recipes, first, second) => (recipes || []).find(recipe => recipe.parts?.length === 2 &&
-  ((recipe.parts[0] === first && recipe.parts[1] === second) || (recipe.parts[1] === first && recipe.parts[0] === second))) || null;
+import { RESONANCE_EQUIP_SLOTS, recipeFor } from '../equipmentSlots.js';
 
 /** Permanent, narrow inventory rail. Equipped items stay on their operator; this rail owns only loose inventory. */
 export function InventoryDock({ state, catalog, onDetail, onOpen, onCombine, fieldTargetUid = null, busy = false, className = '' }) {
@@ -17,6 +15,7 @@ export function InventoryDock({ state, catalog, onDetail, onOpen, onCombine, fie
   const fieldRecipe = source && fieldTarget ? (fieldTarget.equipment || []).map(gear => ({ gear, recipe: recipeFor(catalog.recipes, source.itemId, gear.itemId) })).find(row => row.recipe) || null : null;
   const fieldUniqueConflict = !!fieldRecipe && !!catalog.equipment?.[fieldRecipe.recipe.resultId]?.unique &&
     (fieldTarget.equipment || []).some(gear => gear.itemId === fieldRecipe.recipe.resultId);
+  const fieldFull = !!fieldTarget && !fieldRecipe && (fieldTarget.equipment || []).length >= RESONANCE_EQUIP_SLOTS;
   const hovered = inventory.find(item => String(item.uid) === String(hoverUid)) || null;
   const hoveredRecipe = source && hovered && String(source.uid) !== String(hovered.uid) ? recipeFor(catalog.recipes, source.itemId, hovered.itemId) : null;
   const hoveredResult = hoveredRecipe ? catalog.equipment?.[hoveredRecipe.resultId] : null;
@@ -70,7 +69,7 @@ export function InventoryDock({ state, catalog, onDetail, onOpen, onCombine, fie
     </div>` : null}
     ${fieldTarget && source ? html`<div class="rs-equipment-dock__field-preview" role="status" aria-live="polite">
       ${fieldRecipe && !fieldUniqueConflict ? html`<${ResonanceItemIcon} catalog=${catalog} itemId=${fieldRecipe.recipe.resultId} size="md" showTier=${false}/>` : null}
-      <small>${fieldRecipe ? fieldUniqueConflict ? '该干员已携带此唯一装备' : `装备合成为${fieldRecipe.recipe.resultName}` : '松开即可装备'}</small>
+      <small>${fieldRecipe ? fieldUniqueConflict ? '该干员已携带此唯一装备' : `装备合成为${fieldRecipe.recipe.resultName}` : fieldFull ? `装备栏已满（${RESONANCE_EQUIP_SLOTS}/${RESONANCE_EQUIP_SLOTS}）` : '松开即可装备'}</small>
     </div>` : null}
     <button type="button" class="rs-equipment-dock__open" aria-label="打开装备与配方" title="装备与配方" onClick=${onOpen}><${Icon} name="sword"/><small>${inventory.length}</small></button>
   </aside>`;
