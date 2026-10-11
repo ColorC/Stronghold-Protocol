@@ -100,7 +100,7 @@ export function RangeGrid({ grid, class: cls }) {
 }
 
 function Stat({ k, v, sub, tone = null, title }) {
-  return html`<div class=${cx('dstat', tone && `is-${tone}`)} data-stat=${k} title=${title}><span class="dstat__k">${k}</span><span class="dstat__row"><b class="dstat__v num">${v}</b>${sub ? html`<small>${sub}</small>` : null}</span></div>`;
+  return html`<div class=${cx('dstat', tone && `is-${tone}`)} title=${title}><span class="dstat__k">${k}</span><span class="dstat__row"><b class="dstat__v num">${v}</b>${sub ? html`<small>${sub}</small>` : null}</span></div>`;
 }
 
 /** Tolerance below which a live stat counts as its base (display rounding). */

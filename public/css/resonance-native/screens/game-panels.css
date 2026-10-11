@@ -117,7 +117,7 @@
 .dstat { display: flex; flex-direction: column; justify-content: center; gap: .01rem; min-width: 0; padding: .04rem .035rem; background: #0f1311; }
 /* 共鸣：标签完整显示（不截断成「生命…」），必要时换行；部署免费，不显示原版部署费用 */
 .dstat__k { font-size: max(calc(.12 * var(--t)), 14px); line-height: 1.25; color: var(--text-lo); white-space: normal; overflow-wrap: anywhere; }
-.dstat[data-stat="部署费用"] { display: none; }
+.dstats-wrap > .dstats > .dstat:nth-last-child(2) { display: none; } /* 干员卡的 部署费用（再部署 之前一格） */
 .dstat__row { display: flex; align-items: baseline; min-width: 0; white-space: nowrap; }
 .dstat__v { font-size: max(calc(.17 * var(--t)), 14px); line-height: 1.15; color: #fff; }
 .dstat small { font-size: max(calc(.11 * var(--t)), 14px); color: var(--text-dim); margin-left: .04rem; }
