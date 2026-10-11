@@ -52330,20 +52330,20 @@
       "blade": {
         "kind": "equipment",
         "catalogID": "blade",
-        "name": "长刃",
+        "name": "维式重锤",
         "effectKind": [
           "component_stat"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "攻击力+15",
+          "target": "攻击力+15%",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "atk": 15
+                  "atkPct": 15
                 },
                 "reference": null
               }
@@ -52354,14 +52354,14 @@
             {
               "kind": "component_stat",
               "params": {
-                "atk": 15
+                "atkPct": 15
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "atk": 15
+              "atkPct": 15
             }
           ]
         },
@@ -52392,21 +52392,20 @@
       "staff": {
         "kind": "equipment",
         "catalogID": "staff",
-        "name": "法杖",
+        "name": "萨尔贡浓茶",
         "effectKind": [
           "component_stat"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "攻击力+10，初始技力回复+0.1",
+          "target": "技力自然回复速度+0.15/秒",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "atk": 10,
-                  "sp": 0.1
+                  "sp": 0.15
                 },
                 "reference": null
               }
@@ -52417,16 +52416,14 @@
             {
               "kind": "component_stat",
               "params": {
-                "atk": 10,
-                "sp": 0.1
+                "sp": 0.15
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "atk": 10,
-              "sp": 0.1
+              "sp": 0.15
             }
           ]
         },
@@ -52477,20 +52474,20 @@
       "bow": {
         "kind": "equipment",
         "catalogID": "bow",
-        "name": "弓弦",
+        "name": "叙拉古正装",
         "effectKind": [
           "component_stat"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "攻速+10",
+          "target": "攻击速度+15",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "aspd": 10
+                  "aspd": 15
                 },
                 "reference": null
               }
@@ -52501,14 +52498,14 @@
             {
               "kind": "component_stat",
               "params": {
-                "aspd": 10
+                "aspd": 15
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "aspd": 10
+              "aspd": 15
             }
           ]
         },
@@ -52539,20 +52536,20 @@
       "plate": {
         "kind": "equipment",
         "catalogID": "plate",
-        "name": "板甲",
+        "name": "坚守盾牌",
         "effectKind": [
           "component_stat"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "防御力+40",
+          "target": "防御力+20%",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "def": 40
+                  "defPct": 20
                 },
                 "reference": null
               }
@@ -52563,14 +52560,14 @@
             {
               "kind": "component_stat",
               "params": {
-                "def": 40
+                "defPct": 20
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "def": 40
+              "defPct": 20
             }
           ]
         },
@@ -52601,20 +52598,20 @@
       "cloak": {
         "kind": "equipment",
         "catalogID": "cloak",
-        "name": "斗篷",
+        "name": "耶拉冈德之泪",
         "effectKind": [
           "component_stat"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "法术抗性+8",
+          "target": "法术抗性+15",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "res": 8
+                  "res": 15
                 },
                 "reference": null
               }
@@ -52625,14 +52622,14 @@
             {
               "kind": "component_stat",
               "params": {
-                "res": 8
+                "res": 15
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "res": 8
+              "res": 15
             }
           ]
         },
@@ -52663,20 +52660,20 @@
       "belt": {
         "kind": "equipment",
         "catalogID": "belt",
-        "name": "腰带",
+        "name": "歌利亚头盔",
         "effectKind": [
           "component_stat"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "生命值+150",
+          "target": "生命值+20%",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "hp": 150
+                  "hpPct": 20
                 },
                 "reference": null
               }
@@ -52687,14 +52684,14 @@
             {
               "kind": "component_stat",
               "params": {
-                "hp": 150
+                "hpPct": 20
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "hp": 150
+              "hpPct": 20
             }
           ]
         },
@@ -52725,20 +52722,20 @@
       "tear": {
         "kind": "equipment",
         "catalogID": "tear",
-        "name": "泪滴",
+        "name": "迅捷作战粮",
         "effectKind": [
           "component_stat"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "初始技力+5",
+          "target": "初始技力+6",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "initialSp": 5
+                  "initialSp": 6
                 },
                 "reference": null
               }
@@ -52749,14 +52746,14 @@
             {
               "kind": "component_stat",
               "params": {
-                "initialSp": 5
+                "initialSp": 6
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "initialSp": 5
+              "initialSp": 6
             }
           ]
         },
@@ -52789,13 +52786,13 @@
       "crest": {
         "kind": "equipment",
         "catalogID": "crest",
-        "name": "纹章",
+        "name": "随身身份牌",
         "effectKind": [
           "component_stat"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "不提供基础属性，用于合成转职。",
+          "target": "不提供属性；与其他组件合成盟约徽记。",
           "trigger": {
             "timing": null,
             "effects": [
@@ -52855,36 +52852,35 @@
       "giantSlayer": {
         "kind": "equipment",
         "catalogID": "giantSlayer",
-        "name": "巨人杀手",
+        "name": "铳骑之威",
         "effectKind": [
           "component_stat",
-          "giant_slayer"
+          "item_stat"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "对生命值高于5000的敌人造成伤害+25%",
+          "target": "攻击力+40%",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "atk": 15
+                  "atkPct": 15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "atk": 15
+                  "atkPct": 15
                 },
                 "reference": null
               },
               {
-                "kind": "giant_slayer",
+                "kind": "item_stat",
                 "params": {
-                  "healthAbove": 5000,
-                  "damageBonus": 25
+                  "atkPct": 10
                 },
                 "reference": null
               }
@@ -52895,34 +52891,32 @@
             {
               "kind": "component_stat",
               "params": {
-                "atk": 15
+                "atkPct": 15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "atk": 15
+                "atkPct": 15
               }
             },
             {
-              "kind": "giant_slayer",
+              "kind": "item_stat",
               "params": {
-                "healthAbove": 5000,
-                "damageBonus": 25
+                "atkPct": 10
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "atk": 15
+              "atkPct": 15
             },
             {
-              "atk": 15
+              "atkPct": 15
             },
             {
-              "healthAbove": 5000,
-              "damageBonus": 25
+              "atkPct": 10
             }
           ]
         },
@@ -52962,37 +52956,36 @@
       "spellblade": {
         "kind": "equipment",
         "catalogID": "spellblade",
-        "name": "破法刃",
+        "name": "炎国短刀",
         "effectKind": [
           "component_stat",
-          "resistance_shred"
+          "cast_stack"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "攻击使目标法抗降低12，持续3秒",
+          "target": "攻击力+15%，技力自然回复速度+0.15/秒；每开启一次技能，获得5%的攻击力加成（最多叠加10次）",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "atk": 15
+                  "atkPct": 15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "atk": 10,
-                  "sp": 0.1
+                  "sp": 0.15
                 },
                 "reference": null
               },
               {
-                "kind": "resistance_shred",
+                "kind": "cast_stack",
                 "params": {
-                  "resReduction": 12,
-                  "duration": 3
+                  "atkPercentPerCast": 5,
+                  "maxPercent": 50
                 },
                 "reference": null
               }
@@ -53003,36 +52996,34 @@
             {
               "kind": "component_stat",
               "params": {
-                "atk": 15
+                "atkPct": 15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "atk": 10,
-                "sp": 0.1
+                "sp": 0.15
               }
             },
             {
-              "kind": "resistance_shred",
+              "kind": "cast_stack",
               "params": {
-                "resReduction": 12,
-                "duration": 3
+                "atkPercentPerCast": 5,
+                "maxPercent": 50
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "atk": 15
+              "atkPct": 15
             },
             {
-              "atk": 10,
-              "sp": 0.1
+              "sp": 0.15
             },
             {
-              "resReduction": 12,
-              "duration": 3
+              "atkPercentPerCast": 5,
+              "maxPercent": 50
             }
           ]
         },
@@ -53063,37 +53054,36 @@
       "rapidBlade": {
         "kind": "equipment",
         "catalogID": "rapidBlade",
-        "name": "疾射刃",
+        "name": "加速维式重锤",
         "effectKind": [
           "component_stat",
-          "fifth_strike"
+          "item_stat"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "每第5次攻击追加80%攻击力物理伤害",
+          "target": "攻击力+25%，攻击速度+30",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "atk": 15
+                  "atkPct": 15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "aspd": 10
+                  "aspd": 15
                 },
                 "reference": null
               },
               {
-                "kind": "fifth_strike",
+                "kind": "item_stat",
                 "params": {
-                  "every": 5,
-                  "damage": 80,
-                  "damageType": "physical"
+                  "atkPct": 10,
+                  "aspd": 15
                 },
                 "reference": null
               }
@@ -53104,36 +53094,34 @@
             {
               "kind": "component_stat",
               "params": {
-                "atk": 15
+                "atkPct": 15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "aspd": 10
+                "aspd": 15
               }
             },
             {
-              "kind": "fifth_strike",
+              "kind": "item_stat",
               "params": {
-                "every": 5,
-                "damage": 80,
-                "damageType": "physical"
+                "atkPct": 10,
+                "aspd": 15
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "atk": 15
+              "atkPct": 15
             },
             {
-              "aspd": 10
+              "aspd": 15
             },
             {
-              "every": 5,
-              "damage": 80,
-              "damageType": "physical"
+              "atkPct": 10,
+              "aspd": 15
             }
           ]
         },
@@ -53188,35 +53176,36 @@
       "armorAxe": {
         "kind": "equipment",
         "catalogID": "armorAxe",
-        "name": "破甲斧",
+        "name": "坚固维式重锤",
         "effectKind": [
           "component_stat",
-          "armor_pierce"
+          "undying"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "攻击穿透25%防御",
+          "target": "攻击力+15%，防御力+20%；首次受到致命伤害时生命值不低于1，持续8秒",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "atk": 15
+                  "atkPct": 15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "def": 40
+                  "defPct": 20
                 },
                 "reference": null
               },
               {
-                "kind": "armor_pierce",
+                "kind": "undying",
                 "params": {
-                  "defensePenetration": 25
+                  "duration": 8,
+                  "uses": 1
                 },
                 "reference": null
               }
@@ -53227,32 +53216,34 @@
             {
               "kind": "component_stat",
               "params": {
-                "atk": 15
+                "atkPct": 15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "def": 40
+                "defPct": 20
               }
             },
             {
-              "kind": "armor_pierce",
+              "kind": "undying",
               "params": {
-                "defensePenetration": 25
+                "duration": 8,
+                "uses": 1
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "atk": 15
+              "atkPct": 15
             },
             {
-              "def": 40
+              "defPct": 20
             },
             {
-              "defensePenetration": 25
+              "duration": 8,
+              "uses": 1
             }
           ]
         },
@@ -53295,36 +53286,35 @@
       "vampBlade": {
         "kind": "equipment",
         "catalogID": "vampBlade",
-        "name": "饮血刃",
+        "name": "休眠子裔",
         "effectKind": [
           "component_stat",
-          "lifesteal"
+          "attack_heal"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "物理或法术实际伤害的10%转为生命，冷却0.5秒",
+          "target": "攻击力+15%，法术抗性+15；每攻击1个目标，回复自身2%最大生命值",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "atk": 15
+                  "atkPct": 15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "res": 8
+                  "res": 15
                 },
                 "reference": null
               },
               {
-                "kind": "lifesteal",
+                "kind": "attack_heal",
                 "params": {
-                  "actualDamagePercent": 10,
-                  "cooldown": 0.5
+                  "maxHpPercent": 2
                 },
                 "reference": null
               }
@@ -53335,34 +53325,32 @@
             {
               "kind": "component_stat",
               "params": {
-                "atk": 15
+                "atkPct": 15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "res": 8
+                "res": 15
               }
             },
             {
-              "kind": "lifesteal",
+              "kind": "attack_heal",
               "params": {
-                "actualDamagePercent": 10,
-                "cooldown": 0.5
+                "maxHpPercent": 2
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "atk": 15
+              "atkPct": 15
             },
             {
-              "res": 8
+              "res": 15
             },
             {
-              "actualDamagePercent": 10,
-              "cooldown": 0.5
+              "maxHpPercent": 2
             }
           ]
         },
@@ -53394,38 +53382,44 @@
       "titanArmor": {
         "kind": "equipment",
         "catalogID": "titanArmor",
-        "name": "泰坦战甲",
+        "name": "天马之枪",
         "effectKind": [
           "component_stat",
-          "hit_stack"
+          "item_stat",
+          "pegasus_lance"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "受击后防御+8、攻击+1%，本场最多20层",
+          "target": "攻击力+30%，生命值+20%；若与“天马之盔”一起装备，造成伤害时额外造成相当于攻击力30%的真实伤害",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "atk": 15
+                  "atkPct": 15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "hp": 150
+                  "hpPct": 20
                 },
                 "reference": null
               },
               {
-                "kind": "hit_stack",
+                "kind": "item_stat",
                 "params": {
-                  "defPerHit": 8,
-                  "atkPercentPerHit": 1,
-                  "maxStacks": 20,
-                  "battleOnly": true
+                  "atkPct": 15
+                },
+                "reference": null
+              },
+              {
+                "kind": "pegasus_lance",
+                "params": {
+                  "partnerId": "guardianPlate",
+                  "trueDamageAtk": 30
                 },
                 "reference": null
               }
@@ -53436,38 +53430,43 @@
             {
               "kind": "component_stat",
               "params": {
-                "atk": 15
+                "atkPct": 15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "hp": 150
+                "hpPct": 20
               }
             },
             {
-              "kind": "hit_stack",
+              "kind": "item_stat",
               "params": {
-                "defPerHit": 8,
-                "atkPercentPerHit": 1,
-                "maxStacks": 20,
-                "battleOnly": true
+                "atkPct": 15
+              }
+            },
+            {
+              "kind": "pegasus_lance",
+              "params": {
+                "partnerId": "guardianPlate",
+                "trueDamageAtk": 30
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "atk": 15
+              "atkPct": 15
             },
             {
-              "hp": 150
+              "hpPct": 20
             },
             {
-              "defPerHit": 8,
-              "atkPercentPerHit": 1,
-              "maxStacks": 20,
-              "battleOnly": true
+              "atkPct": 15
+            },
+            {
+              "partnerId": "guardianPlate",
+              "trueDamageAtk": 30
             }
           ]
         },
@@ -53498,37 +53497,44 @@
       "duelistCrest": {
         "kind": "equipment",
         "catalogID": "duelistCrest",
-        "name": "决斗徽记",
+        "name": "灼燃维式重锤",
         "effectKind": [
           "component_stat",
-          "first_cast_haste"
+          "item_stat",
+          "attack_element"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "首次施法后攻速+35，持续8秒",
+          "target": "攻击力+30%，初始技力+6；攻击时附带相当于攻击力10%的灼燃损伤",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "atk": 15
+                  "atkPct": 15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "initialSp": 5
+                  "initialSp": 6
                 },
                 "reference": null
               },
               {
-                "kind": "first_cast_haste",
+                "kind": "item_stat",
                 "params": {
-                  "aspd": 35,
-                  "duration": 8,
-                  "once": true
+                  "atkPct": 15
+                },
+                "reference": null
+              },
+              {
+                "kind": "attack_element",
+                "params": {
+                  "element": "burn",
+                  "atkPercent": 10
                 },
                 "reference": null
               }
@@ -53539,36 +53545,43 @@
             {
               "kind": "component_stat",
               "params": {
-                "atk": 15
+                "atkPct": 15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "initialSp": 5
+                "initialSp": 6
               }
             },
             {
-              "kind": "first_cast_haste",
+              "kind": "item_stat",
               "params": {
-                "aspd": 35,
-                "duration": 8,
-                "once": true
+                "atkPct": 15
+              }
+            },
+            {
+              "kind": "attack_element",
+              "params": {
+                "element": "burn",
+                "atkPercent": 10
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "atk": 15
+              "atkPct": 15
             },
             {
-              "initialSp": 5
+              "initialSp": 6
             },
             {
-              "aspd": 35,
-              "duration": 8,
-              "once": true
+              "atkPct": 15
+            },
+            {
+              "element": "burn",
+              "atkPercent": 10
             }
           ]
         },
@@ -53639,7 +53652,7 @@
               {
                 "kind": "component_stat",
                 "params": {
-                  "atk": 15
+                  "atkPct": 15
                 },
                 "reference": null
               },
@@ -53662,7 +53675,7 @@
             {
               "kind": "component_stat",
               "params": {
-                "atk": 15
+                "atkPct": 15
               }
             },
             {
@@ -53679,7 +53692,7 @@
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "atk": 15
+              "atkPct": 15
             },
             {},
             {
@@ -53714,37 +53727,35 @@
       "resonanceStaff": {
         "kind": "equipment",
         "catalogID": "resonanceStaff",
-        "name": "共鸣法杖",
+        "name": "家族徽章",
         "effectKind": [
           "component_stat",
-          "skill_damage"
+          "item_stat"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "技能伤害+25%",
+          "target": "技力自然回复速度+0.35/秒",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "atk": 10,
-                  "sp": 0.1
+                  "sp": 0.15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "atk": 10,
-                  "sp": 0.1
+                  "sp": 0.15
                 },
                 "reference": null
               },
               {
-                "kind": "skill_damage",
+                "kind": "item_stat",
                 "params": {
-                  "skillDamageBonus": 25
+                  "sp": 0.05
                 },
                 "reference": null
               }
@@ -53755,36 +53766,32 @@
             {
               "kind": "component_stat",
               "params": {
-                "atk": 10,
-                "sp": 0.1
+                "sp": 0.15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "atk": 10,
-                "sp": 0.1
+                "sp": 0.15
               }
             },
             {
-              "kind": "skill_damage",
+              "kind": "item_stat",
               "params": {
-                "skillDamageBonus": 25
+                "sp": 0.05
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "atk": 10,
-              "sp": 0.1
+              "sp": 0.15
             },
             {
-              "atk": 10,
-              "sp": 0.1
+              "sp": 0.15
             },
             {
-              "skillDamageBonus": 25
+              "sp": 0.05
             }
           ]
         },
@@ -53816,39 +53823,37 @@
       "thunderRing": {
         "kind": "equipment",
         "catalogID": "thunderRing",
-        "name": "雷电环",
+        "name": "有限加速器",
         "effectKind": [
           "component_stat",
-          "chain_lightning"
+          "attack_stack"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "每第4次攻击对半径1.5内造成80%攻击力法伤",
+          "target": "攻击速度+15，技力自然回复速度+0.15/秒；每次攻击或治疗后，本场战斗中攻击速度+2，最高20层",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "atk": 10,
-                  "sp": 0.1
+                  "sp": 0.15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "aspd": 10
+                  "aspd": 15
                 },
                 "reference": null
               },
               {
-                "kind": "chain_lightning",
+                "kind": "attack_stack",
                 "params": {
-                  "every": 4,
-                  "radius": 1.5,
-                  "damage": 80,
-                  "damageType": "arts"
+                  "aspdPerAttack": 2,
+                  "maxAspd": 40,
+                  "countsHeals": true
                 },
                 "reference": null
               }
@@ -53859,40 +53864,36 @@
             {
               "kind": "component_stat",
               "params": {
-                "atk": 10,
-                "sp": 0.1
+                "sp": 0.15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "aspd": 10
+                "aspd": 15
               }
             },
             {
-              "kind": "chain_lightning",
+              "kind": "attack_stack",
               "params": {
-                "every": 4,
-                "radius": 1.5,
-                "damage": 80,
-                "damageType": "arts"
+                "aspdPerAttack": 2,
+                "maxAspd": 40,
+                "countsHeals": true
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "atk": 10,
-              "sp": 0.1
+              "sp": 0.15
             },
             {
-              "aspd": 10
+              "aspd": 15
             },
             {
-              "every": 4,
-              "radius": 1.5,
-              "damage": 80,
-              "damageType": "arts"
+              "aspdPerAttack": 2,
+              "maxAspd": 40,
+              "countsHeals": true
             }
           ]
         },
@@ -53964,37 +53965,45 @@
       "counterMirror": {
         "kind": "equipment",
         "catalogID": "counterMirror",
-        "name": "反击镜",
+        "name": "战栗维式重锤",
         "effectKind": [
           "component_stat",
-          "counter_magic"
+          "item_stat",
+          "attack_status"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "受击时造成40%防御力法伤，冷却1秒",
+          "target": "攻击力+20%，防御力+20%，技力自然回复速度+0.15/秒；攻击时有10%概率使目标战栗2秒",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "atk": 10,
-                  "sp": 0.1
+                  "sp": 0.15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "def": 40
+                  "defPct": 20
                 },
                 "reference": null
               },
               {
-                "kind": "counter_magic",
+                "kind": "item_stat",
                 "params": {
-                  "damageFromDef": 40,
-                  "cooldown": 1
+                  "atkPct": 20
+                },
+                "reference": null
+              },
+              {
+                "kind": "attack_status",
+                "params": {
+                  "status": "tremble",
+                  "chance": 10,
+                  "duration": 2
                 },
                 "reference": null
               }
@@ -54005,36 +54014,45 @@
             {
               "kind": "component_stat",
               "params": {
-                "atk": 10,
-                "sp": 0.1
+                "sp": 0.15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "def": 40
+                "defPct": 20
               }
             },
             {
-              "kind": "counter_magic",
+              "kind": "item_stat",
               "params": {
-                "damageFromDef": 40,
-                "cooldown": 1
+                "atkPct": 20
+              }
+            },
+            {
+              "kind": "attack_status",
+              "params": {
+                "status": "tremble",
+                "chance": 10,
+                "duration": 2
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "atk": 10,
-              "sp": 0.1
+              "sp": 0.15
             },
             {
-              "def": 40
+              "defPct": 20
             },
             {
-              "damageFromDef": 40,
-              "cooldown": 1
+              "atkPct": 20
+            },
+            {
+              "status": "tremble",
+              "chance": 10,
+              "duration": 2
             }
           ]
         },
@@ -54097,38 +54115,36 @@
       "arcaneMantle": {
         "kind": "equipment",
         "catalogID": "arcaneMantle",
-        "name": "奥术披肩",
+        "name": "奥术法阵",
         "effectKind": [
           "component_stat",
-          "spell_vulnerability"
+          "skill_silence"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "法抗+12，技能目标受到法伤+15%，持续3秒",
+          "target": "法术抗性+15，技力自然回复速度+0.15/秒；技能命中的敌人失去特殊能力3秒（同一敌人每8秒最多一次）",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "atk": 10,
-                  "sp": 0.1
+                  "sp": 0.15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "res": 8
+                  "res": 15
                 },
                 "reference": null
               },
               {
-                "kind": "spell_vulnerability",
+                "kind": "skill_silence",
                 "params": {
-                  "resBonus": 12,
-                  "targetArtsVulnerability": 15,
-                  "duration": 3
+                  "duration": 3,
+                  "targetCooldown": 8
                 },
                 "reference": null
               }
@@ -54139,38 +54155,34 @@
             {
               "kind": "component_stat",
               "params": {
-                "atk": 10,
-                "sp": 0.1
+                "sp": 0.15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "res": 8
+                "res": 15
               }
             },
             {
-              "kind": "spell_vulnerability",
+              "kind": "skill_silence",
               "params": {
-                "resBonus": 12,
-                "targetArtsVulnerability": 15,
-                "duration": 3
+                "duration": 3,
+                "targetCooldown": 8
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "atk": 10,
-              "sp": 0.1
+              "sp": 0.15
             },
             {
-              "res": 8
+              "res": 15
             },
             {
-              "resBonus": 12,
-              "targetArtsVulnerability": 15,
-              "duration": 3
+              "duration": 3,
+              "targetCooldown": 8
             }
           ]
         },
@@ -54225,38 +54237,35 @@
       "lifeSpring": {
         "kind": "equipment",
         "catalogID": "lifeSpring",
-        "name": "生命泉杖",
+        "name": "天师古鼎",
         "effectKind": [
           "component_stat",
-          "periodic_heal"
+          "item_stat"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "每5秒为生命最低的盟友恢复80%攻击力生命",
+          "target": "生命值+45%，技力自然回复速度+0.15/秒",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "atk": 10,
-                  "sp": 0.1
+                  "sp": 0.15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "hp": 150
+                  "hpPct": 20
                 },
                 "reference": null
               },
               {
-                "kind": "periodic_heal",
+                "kind": "item_stat",
                 "params": {
-                  "interval": 5,
-                  "healFromAtk": 80,
-                  "target": "lowestHpAlly"
+                  "hpPct": 25
                 },
                 "reference": null
               }
@@ -54267,38 +54276,32 @@
             {
               "kind": "component_stat",
               "params": {
-                "atk": 10,
-                "sp": 0.1
+                "sp": 0.15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "hp": 150
+                "hpPct": 20
               }
             },
             {
-              "kind": "periodic_heal",
+              "kind": "item_stat",
               "params": {
-                "interval": 5,
-                "healFromAtk": 80,
-                "target": "lowestHpAlly"
+                "hpPct": 25
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "atk": 10,
-              "sp": 0.1
+              "sp": 0.15
             },
             {
-              "hp": 150
+              "hpPct": 20
             },
             {
-              "interval": 5,
-              "healFromAtk": 80,
-              "target": "lowestHpAlly"
+              "hpPct": 25
             }
           ]
         },
@@ -54371,38 +54374,43 @@
       "archangelStaff": {
         "kind": "equipment",
         "catalogID": "archangelStaff",
-        "name": "大天使杖",
+        "name": "源石溶剂",
         "effectKind": [
           "component_stat",
-          "cast_stack"
+          "item_stat",
+          "self_drain"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "每次施法攻击+8%，本场最多40%",
+          "target": "攻击力+30%，技力自然回复速度+0.15/秒，初始技力+6；携带者每秒流失1%最大生命值",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "atk": 10,
-                  "sp": 0.1
+                  "sp": 0.15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "initialSp": 5
+                  "initialSp": 6
                 },
                 "reference": null
               },
               {
-                "kind": "cast_stack",
+                "kind": "item_stat",
                 "params": {
-                  "atkPercentPerCast": 8,
-                  "maxPercent": 40,
-                  "battleOnly": true
+                  "atkPct": 30
+                },
+                "reference": null
+              },
+              {
+                "kind": "self_drain",
+                "params": {
+                  "maxHpPercentPerSecond": 1
                 },
                 "reference": null
               }
@@ -54413,38 +54421,41 @@
             {
               "kind": "component_stat",
               "params": {
-                "atk": 10,
-                "sp": 0.1
+                "sp": 0.15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "initialSp": 5
+                "initialSp": 6
               }
             },
             {
-              "kind": "cast_stack",
+              "kind": "item_stat",
               "params": {
-                "atkPercentPerCast": 8,
-                "maxPercent": 40,
-                "battleOnly": true
+                "atkPct": 30
+              }
+            },
+            {
+              "kind": "self_drain",
+              "params": {
+                "maxHpPercentPerSecond": 1
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "atk": 10,
-              "sp": 0.1
+              "sp": 0.15
             },
             {
-              "initialSp": 5
+              "initialSp": 6
             },
             {
-              "atkPercentPerCast": 8,
-              "maxPercent": 40,
-              "battleOnly": true
+              "atkPct": 30
+            },
+            {
+              "maxHpPercentPerSecond": 1
             }
           ]
         },
@@ -54525,8 +54536,7 @@
               {
                 "kind": "component_stat",
                 "params": {
-                  "atk": 10,
-                  "sp": 0.1
+                  "sp": 0.15
                 },
                 "reference": null
               },
@@ -54549,8 +54559,7 @@
             {
               "kind": "component_stat",
               "params": {
-                "atk": 10,
-                "sp": 0.1
+                "sp": 0.15
               }
             },
             {
@@ -54567,8 +54576,7 @@
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "atk": 10,
-              "sp": 0.1
+              "sp": 0.15
             },
             {},
             {
@@ -54603,36 +54611,35 @@
       "berserkBow": {
         "kind": "equipment",
         "catalogID": "berserkBow",
-        "name": "狂战弓",
+        "name": "蒸汽之心",
         "effectKind": [
           "component_stat",
-          "attack_stack"
+          "item_stat"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "每次攻击攻速+3，最多45",
+          "target": "攻击速度+35",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "aspd": 10
+                  "aspd": 15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "aspd": 10
+                  "aspd": 15
                 },
                 "reference": null
               },
               {
-                "kind": "attack_stack",
+                "kind": "item_stat",
                 "params": {
-                  "aspdPerAttack": 3,
-                  "maxAspd": 45
+                  "aspd": 5
                 },
                 "reference": null
               }
@@ -54643,34 +54650,32 @@
             {
               "kind": "component_stat",
               "params": {
-                "aspd": 10
+                "aspd": 15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "aspd": 10
+                "aspd": 15
               }
             },
             {
-              "kind": "attack_stack",
+              "kind": "item_stat",
               "params": {
-                "aspdPerAttack": 3,
-                "maxAspd": 45
+                "aspd": 5
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "aspd": 10
+              "aspd": 15
             },
             {
-              "aspd": 10
+              "aspd": 15
             },
             {
-              "aspdPerAttack": 3,
-              "maxAspd": 45
+              "aspd": 5
             }
           ]
         },
@@ -54701,37 +54706,35 @@
       "ironWing": {
         "kind": "equipment",
         "catalogID": "ironWing",
-        "name": "铁羽翼",
+        "name": "防暴盾",
         "effectKind": [
           "component_stat",
-          "death_save"
+          "riot_shield"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "每场首次致死时免于倒下2秒",
+          "target": "攻击速度+15，防御力+20%；阻挡敌人时，受到来自非自身阻挡单位的伤害降低40%",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "aspd": 10
+                  "aspd": 15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "def": 40
+                  "defPct": 20
                 },
                 "reference": null
               },
               {
-                "kind": "death_save",
+                "kind": "riot_shield",
                 "params": {
-                  "duration": 2,
-                  "uses": 1,
-                  "battleOnly": true
+                  "damageReduction": 40
                 },
                 "reference": null
               }
@@ -54742,36 +54745,32 @@
             {
               "kind": "component_stat",
               "params": {
-                "aspd": 10
+                "aspd": 15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "def": 40
+                "defPct": 20
               }
             },
             {
-              "kind": "death_save",
+              "kind": "riot_shield",
               "params": {
-                "duration": 2,
-                "uses": 1,
-                "battleOnly": true
+                "damageReduction": 40
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "aspd": 10
+              "aspd": 15
             },
             {
-              "def": 40
+              "defPct": 20
             },
             {
-              "duration": 2,
-              "uses": 1,
-              "battleOnly": true
+              "damageReduction": 40
             }
           ]
         },
@@ -54811,36 +54810,42 @@
       "lightCloak": {
         "kind": "equipment",
         "catalogID": "lightCloak",
-        "name": "轻羽披风",
+        "name": "浓缩嗅盐",
         "effectKind": [
           "component_stat",
-          "evasion"
+          "status_immunity"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "物理与法术闪避15%",
+          "target": "攻击速度+15，法术抗性+15；生命值大于70%时，免疫晕眩、冻结等特殊状态",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "aspd": 10
+                  "aspd": 15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "res": 8
+                  "res": 15
                 },
                 "reference": null
               },
               {
-                "kind": "evasion",
+                "kind": "status_immunity",
                 "params": {
-                  "physicalDodge": 15,
-                  "artsDodge": 15
+                  "hpAbove": 70,
+                  "statuses": [
+                    "stun",
+                    "freeze",
+                    "sleep",
+                    "levitate",
+                    "palsy"
+                  ]
                 },
                 "reference": null
               }
@@ -54851,34 +54856,46 @@
             {
               "kind": "component_stat",
               "params": {
-                "aspd": 10
+                "aspd": 15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "res": 8
+                "res": 15
               }
             },
             {
-              "kind": "evasion",
+              "kind": "status_immunity",
               "params": {
-                "physicalDodge": 15,
-                "artsDodge": 15
+                "hpAbove": 70,
+                "statuses": [
+                  "stun",
+                  "freeze",
+                  "sleep",
+                  "levitate",
+                  "palsy"
+                ]
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "aspd": 10
+              "aspd": 15
             },
             {
-              "res": 8
+              "res": 15
             },
             {
-              "physicalDodge": 15,
-              "artsDodge": 15
+              "hpAbove": 70,
+              "statuses": [
+                "stun",
+                "freeze",
+                "sleep",
+                "levitate",
+                "palsy"
+              ]
             }
           ]
         },
@@ -54932,36 +54949,37 @@
       "hurricane": {
         "kind": "equipment",
         "catalogID": "hurricane",
-        "name": "飓风机芯",
+        "name": "卡西米尔竞技旗",
         "effectKind": [
           "component_stat",
-          "splash_strike"
+          "opening_damage"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "每第3次攻击追加最近另一敌人60%攻击力物伤",
+          "target": "攻击速度+15，生命值+20%；部署后15秒内造成的伤害提升至135%，随后15秒内逐渐衰减",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "aspd": 10
+                  "aspd": 15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "hp": 150
+                  "hpPct": 20
                 },
                 "reference": null
               },
               {
-                "kind": "splash_strike",
+                "kind": "opening_damage",
                 "params": {
-                  "every": 3,
-                  "otherTargetDamage": 60
+                  "damagePercent": 135,
+                  "duration": 15,
+                  "decay": 15
                 },
                 "reference": null
               }
@@ -54972,34 +54990,36 @@
             {
               "kind": "component_stat",
               "params": {
-                "aspd": 10
+                "aspd": 15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "hp": 150
+                "hpPct": 20
               }
             },
             {
-              "kind": "splash_strike",
+              "kind": "opening_damage",
               "params": {
-                "every": 3,
-                "otherTargetDamage": 60
+                "damagePercent": 135,
+                "duration": 15,
+                "decay": 15
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "aspd": 10
+              "aspd": 15
             },
             {
-              "hp": 150
+              "hpPct": 20
             },
             {
-              "every": 3,
-              "otherTargetDamage": 60
+              "damagePercent": 135,
+              "duration": 15,
+              "decay": 15
             }
           ]
         },
@@ -55052,36 +55072,36 @@
       "quickCharger": {
         "kind": "equipment",
         "catalogID": "quickCharger",
-        "name": "快速充能器",
+        "name": "精准狙击镜",
         "effectKind": [
           "component_stat",
-          "attack_sp"
+          "far_damage"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "攻击获得1技力，每秒最多2",
+          "target": "攻击速度+15，初始技力+6；攻击距离自身3格及以上的目标时，伤害提高30%",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "aspd": 10
+                  "aspd": 15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "initialSp": 5
+                  "initialSp": 6
                 },
                 "reference": null
               },
               {
-                "kind": "attack_sp",
+                "kind": "far_damage",
                 "params": {
-                  "spPerAttack": 1,
-                  "perSecondCap": 2
+                  "distance": 3,
+                  "damageBonus": 30
                 },
                 "reference": null
               }
@@ -55092,34 +55112,34 @@
             {
               "kind": "component_stat",
               "params": {
-                "aspd": 10
+                "aspd": 15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "initialSp": 5
+                "initialSp": 6
               }
             },
             {
-              "kind": "attack_sp",
+              "kind": "far_damage",
               "params": {
-                "spPerAttack": 1,
-                "perSecondCap": 2
+                "distance": 3,
+                "damageBonus": 30
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "aspd": 10
+              "aspd": 15
             },
             {
-              "initialSp": 5
+              "initialSp": 6
             },
             {
-              "spPerAttack": 1,
-              "perSecondCap": 2
+              "distance": 3,
+              "damageBonus": 30
             }
           ]
         },
@@ -55166,7 +55186,7 @@
               {
                 "kind": "component_stat",
                 "params": {
-                  "aspd": 10
+                  "aspd": 15
                 },
                 "reference": null
               },
@@ -55189,7 +55209,7 @@
             {
               "kind": "component_stat",
               "params": {
-                "aspd": 10
+                "aspd": 15
               }
             },
             {
@@ -55206,7 +55226,7 @@
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "aspd": 10
+              "aspd": 15
             },
             {},
             {
@@ -55241,37 +55261,35 @@
       "thornArmor": {
         "kind": "equipment",
         "catalogID": "thornArmor",
-        "name": "棘刺甲",
+        "name": "海沟实验体",
         "effectKind": [
           "component_stat",
-          "thorns"
+          "flat_reduction"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "受敌攻击时对周围造成80%防御力物伤，冷却1秒",
+          "target": "防御力+40%；获得120点伤害减免",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "def": 40
+                  "defPct": 20
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "def": 40
+                  "defPct": 20
                 },
                 "reference": null
               },
               {
-                "kind": "thorns",
+                "kind": "flat_reduction",
                 "params": {
-                  "damageFromDef": 80,
-                  "radius": 1,
-                  "cooldown": 1
+                  "amount": 120
                 },
                 "reference": null
               }
@@ -55282,36 +55300,32 @@
             {
               "kind": "component_stat",
               "params": {
-                "def": 40
+                "defPct": 20
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "def": 40
+                "defPct": 20
               }
             },
             {
-              "kind": "thorns",
+              "kind": "flat_reduction",
               "params": {
-                "damageFromDef": 80,
-                "radius": 1,
-                "cooldown": 1
+                "amount": 120
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "def": 40
+              "defPct": 20
             },
             {
-              "def": 40
+              "defPct": 20
             },
             {
-              "damageFromDef": 80,
-              "radius": 1,
-              "cooldown": 1
+              "amount": 120
             }
           ]
         },
@@ -55343,37 +55357,36 @@
       "golemArmor": {
         "kind": "equipment",
         "catalogID": "golemArmor",
-        "name": "石像铠",
+        "name": "蜂鸣器",
         "effectKind": [
           "component_stat",
-          "block_stack"
+          "taunt_guard"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "每阻挡敌人防御+20、法抗+4，最多3层",
+          "target": "防御力+20%，法术抗性+15；更容易受到攻击，受到的伤害降低10%",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "def": 40
+                  "defPct": 20
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "res": 8
+                  "res": 15
                 },
                 "reference": null
               },
               {
-                "kind": "block_stack",
+                "kind": "taunt_guard",
                 "params": {
-                  "defPerBlock": 20,
-                  "resPerBlock": 4,
-                  "maxStacks": 3
+                  "taunt": 1,
+                  "damageReduction": 10
                 },
                 "reference": null
               }
@@ -55384,36 +55397,34 @@
             {
               "kind": "component_stat",
               "params": {
-                "def": 40
+                "defPct": 20
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "res": 8
+                "res": 15
               }
             },
             {
-              "kind": "block_stack",
+              "kind": "taunt_guard",
               "params": {
-                "defPerBlock": 20,
-                "resPerBlock": 4,
-                "maxStacks": 3
+                "taunt": 1,
+                "damageReduction": 10
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "def": 40
+              "defPct": 20
             },
             {
-              "res": 8
+              "res": 15
             },
             {
-              "defPerBlock": 20,
-              "resPerBlock": 4,
-              "maxStacks": 3
+              "taunt": 1,
+              "damageReduction": 10
             }
           ]
         },
@@ -55444,38 +55455,36 @@
       "guardianPlate": {
         "kind": "equipment",
         "catalogID": "guardianPlate",
-        "name": "守护板甲",
+        "name": "天马之盔",
         "effectKind": [
           "component_stat",
-          "death_barrier"
+          "pegasus_helm"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "生命+15%，每场首次致死获得15%生命屏障",
+          "target": "防御力+20%，生命值+20%；若与“天马之枪”一起装备，每秒回复3%最大生命值",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "def": 40
+                  "defPct": 20
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "hp": 150
+                  "hpPct": 20
                 },
                 "reference": null
               },
               {
-                "kind": "death_barrier",
+                "kind": "pegasus_helm",
                 "params": {
-                  "hpPercent": 15,
-                  "uses": 1,
-                  "battleOnly": true,
-                  "baseHpBonus": 15
+                  "partnerId": "titanArmor",
+                  "healMaxHpPercentPerSecond": 3
                 },
                 "reference": null
               }
@@ -55486,38 +55495,34 @@
             {
               "kind": "component_stat",
               "params": {
-                "def": 40
+                "defPct": 20
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "hp": 150
+                "hpPct": 20
               }
             },
             {
-              "kind": "death_barrier",
+              "kind": "pegasus_helm",
               "params": {
-                "hpPercent": 15,
-                "uses": 1,
-                "battleOnly": true,
-                "baseHpBonus": 15
+                "partnerId": "titanArmor",
+                "healMaxHpPercentPerSecond": 3
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "def": 40
+              "defPct": 20
             },
             {
-              "hp": 150
+              "hpPct": 20
             },
             {
-              "hpPercent": 15,
-              "uses": 1,
-              "battleOnly": true,
-              "baseHpBonus": 15
+              "partnerId": "titanArmor",
+              "healMaxHpPercentPerSecond": 3
             }
           ]
         },
@@ -55549,37 +55554,37 @@
       "shockShield": {
         "kind": "equipment",
         "catalogID": "shockShield",
-        "name": "震荡盾",
+        "name": "突袭手雷",
         "effectKind": [
           "component_stat",
-          "cast_stun"
+          "opening_stun"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "施法使最近敌人眩晕1秒，冷却5秒",
+          "target": "防御力+20%，初始技力+6；部署后10秒内，攻击时使目标晕眩1秒（同一目标每4秒最多一次）",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "def": 40
+                  "defPct": 20
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "initialSp": 5
+                  "initialSp": 6
                 },
                 "reference": null
               },
               {
-                "kind": "cast_stun",
+                "kind": "opening_stun",
                 "params": {
+                  "window": 10,
                   "duration": 1,
-                  "cooldown": 5,
-                  "target": "nearestEnemy"
+                  "targetCooldown": 4
                 },
                 "reference": null
               }
@@ -55590,36 +55595,36 @@
             {
               "kind": "component_stat",
               "params": {
-                "def": 40
+                "defPct": 20
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "initialSp": 5
+                "initialSp": 6
               }
             },
             {
-              "kind": "cast_stun",
+              "kind": "opening_stun",
               "params": {
+                "window": 10,
                 "duration": 1,
-                "cooldown": 5,
-                "target": "nearestEnemy"
+                "targetCooldown": 4
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "def": 40
+              "defPct": 20
             },
             {
-              "initialSp": 5
+              "initialSp": 6
             },
             {
+              "window": 10,
               "duration": 1,
-              "cooldown": 5,
-              "target": "nearestEnemy"
+              "targetCooldown": 4
             }
           ]
         },
@@ -55688,7 +55693,7 @@
               {
                 "kind": "component_stat",
                 "params": {
-                  "def": 40
+                  "defPct": 20
                 },
                 "reference": null
               },
@@ -55711,7 +55716,7 @@
             {
               "kind": "component_stat",
               "params": {
-                "def": 40
+                "defPct": 20
               }
             },
             {
@@ -55728,7 +55733,7 @@
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "def": 40
+              "defPct": 20
             },
             {},
             {
@@ -55763,40 +55768,37 @@
       "holyCloak": {
         "kind": "equipment",
         "catalogID": "holyCloak",
-        "name": "圣佑斗篷",
+        "name": "谢拉格不融冰",
         "effectKind": [
           "component_stat",
-          "resistance_cleanse"
+          "attack_status"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "法抗额外+12，每5秒清除寒冷或冻结",
+          "target": "法术抗性+30；攻击时有12%概率对目标施加1.5秒的寒冷",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "res": 8
+                  "res": 15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "res": 8
+                  "res": 15
                 },
                 "reference": null
               },
               {
-                "kind": "resistance_cleanse",
+                "kind": "attack_status",
                 "params": {
-                  "extraRes": 12,
-                  "interval": 5,
-                  "cleanses": [
-                    "cold",
-                    "freeze"
-                  ]
+                  "status": "cold",
+                  "chance": 12,
+                  "duration": 1.5
                 },
                 "reference": null
               }
@@ -55807,42 +55809,36 @@
             {
               "kind": "component_stat",
               "params": {
-                "res": 8
+                "res": 15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "res": 8
+                "res": 15
               }
             },
             {
-              "kind": "resistance_cleanse",
+              "kind": "attack_status",
               "params": {
-                "extraRes": 12,
-                "interval": 5,
-                "cleanses": [
-                  "cold",
-                  "freeze"
-                ]
+                "status": "cold",
+                "chance": 12,
+                "duration": 1.5
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "res": 8
+              "res": 15
             },
             {
-              "res": 8
+              "res": 15
             },
             {
-              "extraRes": 12,
-              "interval": 5,
-              "cleanses": [
-                "cold",
-                "freeze"
-              ]
+              "status": "cold",
+              "chance": 12,
+              "duration": 1.5
             }
           ]
         },
@@ -55896,39 +55892,35 @@
       "redemptionCloak": {
         "kind": "equipment",
         "catalogID": "redemptionCloak",
-        "name": "救赎斗篷",
+        "name": "伪装服",
         "effectKind": [
           "component_stat",
-          "periodic_heal"
+          "first_hit_stealth"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "每8秒恢复两格内盟友6%生命，不触发共生",
+          "target": "生命值+20%，法术抗性+15；首次受到伤害后获得隐匿，持续5秒",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "res": 8
+                  "res": 15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "hp": 150
+                  "hpPct": 20
                 },
                 "reference": null
               },
               {
-                "kind": "periodic_heal",
+                "kind": "first_hit_stealth",
                 "params": {
-                  "interval": 8,
-                  "healTargetCount": 2,
-                  "healMaxHp": 6,
-                  "range": 2,
-                  "noSymbiosisRecursion": true
+                  "duration": 5
                 },
                 "reference": null
               }
@@ -55939,40 +55931,32 @@
             {
               "kind": "component_stat",
               "params": {
-                "res": 8
+                "res": 15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "hp": 150
+                "hpPct": 20
               }
             },
             {
-              "kind": "periodic_heal",
+              "kind": "first_hit_stealth",
               "params": {
-                "interval": 8,
-                "healTargetCount": 2,
-                "healMaxHp": 6,
-                "range": 2,
-                "noSymbiosisRecursion": true
+                "duration": 5
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "res": 8
+              "res": 15
             },
             {
-              "hp": 150
+              "hpPct": 20
             },
             {
-              "interval": 8,
-              "healTargetCount": 2,
-              "healMaxHp": 6,
-              "range": 2,
-              "noSymbiosisRecursion": true
+              "duration": 5
             }
           ]
         },
@@ -56027,36 +56011,35 @@
       "quietCape": {
         "kind": "equipment",
         "catalogID": "quietCape",
-        "name": "静谧披风",
+        "name": "激光发射器",
         "effectKind": [
           "component_stat",
-          "cast_sp"
+          "item_stat"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "技能结束恢复4技力",
+          "target": "法术抗性+15，初始技力+6；攻击无视目标25%法术抗性",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "res": 8
+                  "res": 15
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "initialSp": 5
+                  "initialSp": 6
                 },
                 "reference": null
               },
               {
-                "kind": "cast_sp",
+                "kind": "item_stat",
                 "params": {
-                  "sp": 4,
-                  "trigger": "skillEnd"
+                  "resIgnorePct": 25
                 },
                 "reference": null
               }
@@ -56067,34 +56050,32 @@
             {
               "kind": "component_stat",
               "params": {
-                "res": 8
+                "res": 15
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "initialSp": 5
+                "initialSp": 6
               }
             },
             {
-              "kind": "cast_sp",
+              "kind": "item_stat",
               "params": {
-                "sp": 4,
-                "trigger": "skillEnd"
+                "resIgnorePct": 25
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "res": 8
+              "res": 15
             },
             {
-              "initialSp": 5
+              "initialSp": 6
             },
             {
-              "sp": 4,
-              "trigger": "skillEnd"
+              "resIgnorePct": 25
             }
           ]
         },
@@ -56153,7 +56134,7 @@
               {
                 "kind": "component_stat",
                 "params": {
-                  "res": 8
+                  "res": 15
                 },
                 "reference": null
               },
@@ -56176,7 +56157,7 @@
             {
               "kind": "component_stat",
               "params": {
-                "res": 8
+                "res": 15
               }
             },
             {
@@ -56193,7 +56174,7 @@
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "res": 8
+              "res": 15
             },
             {},
             {
@@ -56228,36 +56209,36 @@
       "deepSeaBelt": {
         "kind": "equipment",
         "catalogID": "deepSeaBelt",
-        "name": "深海腰带",
+        "name": "M3茧甲",
         "effectKind": [
           "component_stat",
-          "regeneration"
+          "revive"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "生命+25%，每秒恢复最大生命0.6%",
+          "target": "生命值+40%；被击倒时立刻复活并恢复30%最大生命值（一场战斗仅1次）",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "hp": 150
+                  "hpPct": 20
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "hp": 150
+                  "hpPct": 20
                 },
                 "reference": null
               },
               {
-                "kind": "regeneration",
+                "kind": "revive",
                 "params": {
-                  "maxHpBonus": 25,
-                  "healMaxHpPerSecond": 0.6
+                  "hpPercent": 30,
+                  "uses": 1
                 },
                 "reference": null
               }
@@ -56268,34 +56249,34 @@
             {
               "kind": "component_stat",
               "params": {
-                "hp": 150
+                "hpPct": 20
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "hp": 150
+                "hpPct": 20
               }
             },
             {
-              "kind": "regeneration",
+              "kind": "revive",
               "params": {
-                "maxHpBonus": 25,
-                "healMaxHpPerSecond": 0.6
+                "hpPercent": 30,
+                "uses": 1
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "hp": 150
+              "hpPct": 20
             },
             {
-              "hp": 150
+              "hpPct": 20
             },
             {
-              "maxHpBonus": 25,
-              "healMaxHpPerSecond": 0.6
+              "hpPercent": 30,
+              "uses": 1
             }
           ]
         },
@@ -56326,36 +56307,35 @@
       "vitalEngine": {
         "kind": "equipment",
         "catalogID": "vitalEngine",
-        "name": "活力引擎",
+        "name": "护盾无人机",
         "effectKind": [
           "component_stat",
-          "hit_sp"
+          "skill_barrier"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "受敌攻击获得1技力，每秒最多2",
+          "target": "生命值+20%，初始技力+6；部署时及每次开启技能时，获得相当于生命上限12%的屏障",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "hp": 150
+                  "hpPct": 20
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "initialSp": 5
+                  "initialSp": 6
                 },
                 "reference": null
               },
               {
-                "kind": "hit_sp",
+                "kind": "skill_barrier",
                 "params": {
-                  "spPerHit": 1,
-                  "perSecondCap": 2
+                  "maxHpPercent": 12
                 },
                 "reference": null
               }
@@ -56366,34 +56346,32 @@
             {
               "kind": "component_stat",
               "params": {
-                "hp": 150
+                "hpPct": 20
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "initialSp": 5
+                "initialSp": 6
               }
             },
             {
-              "kind": "hit_sp",
+              "kind": "skill_barrier",
               "params": {
-                "spPerHit": 1,
-                "perSecondCap": 2
+                "maxHpPercent": 12
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "hp": 150
+              "hpPct": 20
             },
             {
-              "initialSp": 5
+              "initialSp": 6
             },
             {
-              "spPerHit": 1,
-              "perSecondCap": 2
+              "maxHpPercent": 12
             }
           ]
         },
@@ -56462,7 +56440,7 @@
               {
                 "kind": "component_stat",
                 "params": {
-                  "hp": 150
+                  "hpPct": 20
                 },
                 "reference": null
               },
@@ -56485,7 +56463,7 @@
             {
               "kind": "component_stat",
               "params": {
-                "hp": 150
+                "hpPct": 20
               }
             },
             {
@@ -56502,7 +56480,7 @@
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "hp": 150
+              "hpPct": 20
             },
             {},
             {
@@ -56537,37 +56515,35 @@
       "azureTear": {
         "kind": "equipment",
         "catalogID": "azureTear",
-        "name": "青龙之泪",
+        "name": "黄沙罗盘",
         "effectKind": [
           "component_stat",
-          "skill_sp"
+          "item_stat"
         ],
         "mechanism": {
           "condition": "\"no additional condition declared\"",
-          "target": "技能结束返还5技力，冷却3秒",
+          "target": "初始技力+25",
           "trigger": {
             "timing": null,
             "effects": [
               {
                 "kind": "component_stat",
                 "params": {
-                  "initialSp": 5
+                  "initialSp": 6
                 },
                 "reference": null
               },
               {
                 "kind": "component_stat",
                 "params": {
-                  "initialSp": 5
+                  "initialSp": 6
                 },
                 "reference": null
               },
               {
-                "kind": "skill_sp",
+                "kind": "item_stat",
                 "params": {
-                  "sp": 5,
-                  "cooldown": 3,
-                  "trigger": "skillEnd"
+                  "initialSp": 13
                 },
                 "reference": null
               }
@@ -56578,36 +56554,32 @@
             {
               "kind": "component_stat",
               "params": {
-                "initialSp": 5
+                "initialSp": 6
               }
             },
             {
               "kind": "component_stat",
               "params": {
-                "initialSp": 5
+                "initialSp": 6
               }
             },
             {
-              "kind": "skill_sp",
+              "kind": "item_stat",
               "params": {
-                "sp": 5,
-                "cooldown": 3,
-                "trigger": "skillEnd"
+                "initialSp": 13
               }
             }
           ],
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "initialSp": 5
+              "initialSp": 6
             },
             {
-              "initialSp": 5
+              "initialSp": 6
             },
             {
-              "sp": 5,
-              "cooldown": 3,
-              "trigger": "skillEnd"
+              "initialSp": 13
             }
           ]
         },
@@ -56671,7 +56643,7 @@
               {
                 "kind": "component_stat",
                 "params": {
-                  "initialSp": 5
+                  "initialSp": 6
                 },
                 "reference": null
               },
@@ -56694,7 +56666,7 @@
             {
               "kind": "component_stat",
               "params": {
-                "initialSp": 5
+                "initialSp": 6
               }
             },
             {
@@ -56711,7 +56683,7 @@
           "scope": "run, node, battle, or holder scope as configured",
           "resetCap": [
             {
-              "initialSp": 5
+              "initialSp": 6
             },
             {},
             {
@@ -62406,85 +62378,89 @@
       "items": [
         {
           "catalogID": "tear",
-          "name": "泪滴",
+          "name": "迅捷作战粮",
           "effects": [
             {
               "kind": "component_stat",
-              "initialSp": 5
+              "initialSp": 6
             }
           ]
         },
         {
           "catalogID": "duelistCrest",
-          "name": "决斗徽记",
+          "name": "灼燃维式重锤",
           "effects": [
             {
               "kind": "component_stat",
-              "initialSp": 5
+              "initialSp": 6
             }
           ]
         },
         {
           "catalogID": "archangelStaff",
-          "name": "大天使杖",
+          "name": "源石溶剂",
           "effects": [
             {
               "kind": "component_stat",
-              "initialSp": 5
+              "initialSp": 6
             }
           ]
         },
         {
           "catalogID": "quickCharger",
-          "name": "快速充能器",
+          "name": "精准狙击镜",
           "effects": [
             {
               "kind": "component_stat",
-              "initialSp": 5
+              "initialSp": 6
             }
           ]
         },
         {
           "catalogID": "shockShield",
-          "name": "震荡盾",
+          "name": "突袭手雷",
           "effects": [
             {
               "kind": "component_stat",
-              "initialSp": 5
+              "initialSp": 6
             }
           ]
         },
         {
           "catalogID": "quietCape",
-          "name": "静谧披风",
+          "name": "激光发射器",
           "effects": [
             {
               "kind": "component_stat",
-              "initialSp": 5
+              "initialSp": 6
             }
           ]
         },
         {
           "catalogID": "vitalEngine",
-          "name": "活力引擎",
+          "name": "护盾无人机",
           "effects": [
             {
               "kind": "component_stat",
-              "initialSp": 5
+              "initialSp": 6
             }
           ]
         },
         {
           "catalogID": "azureTear",
-          "name": "青龙之泪",
+          "name": "黄沙罗盘",
           "effects": [
             {
               "kind": "component_stat",
-              "initialSp": 5
+              "initialSp": 6
             },
             {
               "kind": "component_stat",
-              "initialSp": 5
+              "initialSp": 6
+            },
+            {
+              "kind": "item_stat",
+              "initialSp": 13
             }
           ]
         },
@@ -62494,7 +62470,7 @@
           "effects": [
             {
               "kind": "component_stat",
-              "initialSp": 5
+              "initialSp": 6
             }
           ]
         }
