@@ -129,6 +129,7 @@ export function resonanceDisplayCatalog(catalog, data = null) {
     conditionKind: strategy.condition?.kind ?? null,
     // what the strategy icon is chosen by (public/js/resonance/strategyIconMap.js)
     effectKind: strategy.effects?.[0]?.kind ?? null,
+    ...(strategy.iconTheme ? { iconTheme: strategy.iconTheme } : {}),
     pactId: [strategy.effects?.[0]?.params?.traitId, strategy.effects?.[0]?.params?.prototypeTraitId].find((pactId) => pactId && catalog.pacts?.[pactId]) ?? null,
     emblemId: strategy.effects?.[0]?.kind === 'choose_transfer' ? strategy.effects[0].params?.itemIds?.find((itemId) => catalog.equipment?.[itemId]?.kind === 'emblem') ?? null : null,
   }]));

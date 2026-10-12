@@ -1,6 +1,6 @@
 import { activePrototypeTraits } from './prototype-meta.js';
 import { installPrototypePacts, preparePrototypeScrapGear } from './prototype-pacts.js';
-import { installPrototypeBattleAugments } from './prototype-strategies.js';
+import { installPrototypeBattleAugments, installPrototypeTeamStrategies } from './prototype-strategies.js';
 import { installPrototypeSignatures } from './prototype-signatures.js';
 import { installPrototypeEconomy } from './prototype-economy.js';
 import { installPrototypeGearActions } from './prototype-gear.js';
@@ -30,6 +30,7 @@ export function installPrototypeBattleContent(battle,state,catalog) {
   installPrototypePacts(battle,catalog,activeTraits);
   installStrongholdPacts(battle,state,catalog,activeTraits);
   installPrototypeBattleAugments(battle,state,catalog);
+  installPrototypeTeamStrategies(battle,state,catalog);
   installPrototypeSignatures(battle,state,catalog);
   installPrototypeEconomy(battle,state,catalog);
   installPrototypeGearActions(battle,state,catalog);

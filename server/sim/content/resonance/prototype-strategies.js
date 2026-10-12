@@ -206,3 +206,95 @@ export function installPrototypeBattleAugments(battle,state,catalog){
 }
 
 export const prototypeBattleAugmentMechanics=Object.freeze(['automata_second_blast','bruiser_health_strike','conqueror_execute','dominator_shield_rush','quickstriker_burst','sentinel_shield_bash','sorcerer_death_burst','watcher_battle_scars']);
+
+/** Season-2 generic team strategies (shared/resonance/generic-strategies.js, kind prototype_team_battle). */
+export function installPrototypeTeamStrategies(battle,state,catalog){
+  const rows=[];
+  for(const entry of state?.strategies??[]){
+    const id=typeof entry==='string'?entry:entry?.id;
+    if(!id||state?.strategyState?.[id]?.fallbackApplied)continue;
+    for(const effect of catalog?.strategies?.[id]?.effects??[])if(effect.kind==='prototype_team_battle')rows.push({id,...clone(effect.params??{})});
+  }
+  if(!rows.length)return {strategies:0};
+  const bySource=new Map(Object.values(catalog?.operators??{}).map((operator)=>[operator.sourceChessId,operator]));
+  const operatorOf=(unit)=>{const raw=unit?.def?.raw??{};for(const id of [raw.id,raw.chessId,raw.resonanceOperatorId,unit?.def?.id,unit?.defId])if(bySource.has(id))return bySource.get(id);return null;};
+  const costOf=(unit)=>Number(operatorOf(unit)?.cost??0);
+  const starOf=(unit)=>Number(unit?.def?.raw?.resonanceStar??1);
+  const ranged=(unit)=>(unit?.def?.position??unit?.def?.raw?.position)==='RANGED';
+  const ops=()=>battle.allyUnits.filter((unit)=>unit?.kind==='op'&&unit.alive&&unit.deployed&&!unit.removed);
+  const counters={};
+  const metric=(row,key,amount=1)=>{const record=counters[row.id]??={mechanic:row.mechanic};record[key]=(record[key]??0)+amount;};
+  const buff=(unit,row,key,mods,extra={})=>battle.addBuff(unit,{key:`resonance:v3:team-strategy:${row.id}:${key}:${unit.id}`,duration:Infinity,persist:true,allowDead:true,mods,tags:['resonance','prototype-strategy'],...extra});
+  battle.resonanceMetrics??={};
+  battle.resonanceMetrics.prototypeTeamStrategies=counters;
+  battle.on('battleStart',()=>{
+    const all=ops();
+    for(const row of rows){
+      if(row.mechanic==='team_stats'){
+        const mods={};
+        if(Number(row.atkPct)>0)mods.atkPct=Number(row.atkPct);
+        if(Number(row.aspd)>0)mods.aspd=Number(row.aspd);
+        if(Number(row.defPct)>0)mods.defPct=Number(row.defPct);
+        if(Number(row.artsDamage)>0)mods.artsDealtMul=1+Number(row.artsDamage);
+        for(const unit of all){
+          if(Object.keys(mods).length)buff(unit,row,'stats',mods);
+          if(Number(row.initialSp)>0)unit.skill?.gainSp?.(Number(row.initialSp),'init');
+        }
+        metric(row,'allies',all.length);
+      }
+      if(row.mechanic==='ranged_backup'&&all.filter(ranged).length>=Number(row.minRanged??4)){for(const unit of all)buff(unit,row,'aspd',{aspd:Number(row.aspd)});metric(row,'active');}
+      if(row.mechanic==='ranged_sp_regen'){const members=all.filter(ranged);for(const unit of members)buff(unit,row,'sp',{spRecoveryFlat:Number(row.spRegen)});metric(row,'allies',members.length);}
+      if(row.mechanic==='one_cost_unity'){
+        const count=new Set(all.filter((unit)=>costOf(unit)===1).map((unit)=>operatorOf(unit)?.charId)).size;
+        if(count>0)for(const unit of all)buff(unit,row,'unity',{hpPct:Number(row.hpPctPer)*count,dmgDealtMul:1+Number(row.damagePer)*count});
+        metric(row,'oneCost',count);
+      }
+      if(row.mechanic==='little_buddies'){
+        const count=Math.min(Number(row.maxCount??4),all.filter((unit)=>costOf(unit)>=1&&costOf(unit)<=2).length);
+        const seniors=all.filter((unit)=>costOf(unit)>=4);
+        if(count>0)for(const unit of seniors)buff(unit,row,'buddies',{hpPct:Number(row.hpPctPer)*count,aspd:Number(row.aspdPer)*count});
+        metric(row,'buddies',count);
+      }
+      if(row.mechanic==='pair_of_fours'){
+        const fours=all.filter((unit)=>costOf(unit)===4);
+        if(fours.length===2){for(const unit of fours)buff(unit,row,'pair',{hpPct:Number(row.hpPct),aspd:Number(row.aspd)});metric(row,'active');}
+      }
+      if(row.mechanic==='mentorship'){
+        const pupils=all.filter((unit)=>all.some((other)=>other!==unit&&costOf(other)>costOf(unit)&&Math.max(Math.abs(other.tileR-unit.tileR),Math.abs(other.tileC-unit.tileC))===1));
+        for(const unit of pupils)buff(unit,row,'pupil',{aspd:Number(row.aspd),hpPct:Number(row.hpPct)});
+        metric(row,'pupils',pupils.length);
+      }
+      if(row.mechanic==='superstars'){
+        const bonus=Math.min(Number(row.max),Number(row.base)+Number(row.perThreeStar)*all.filter((unit)=>starOf(unit)===3).length);
+        for(const unit of all)buff(unit,row,'stars',{dmgDealtMul:1+bonus});
+        metric(row,'bonusPct',Math.round(bonus*100));
+      }
+      if(row.mechanic==='glass_cannon'){
+        const members=all.filter(ranged);
+        for(const unit of members){buff(unit,row,'glass',{dmgDealtMul:1+Number(row.damage)});unit.hp=Math.min(unit.hp,unit.s.maxHp*Number(row.startHp));}
+        metric(row,'allies',members.length);
+      }
+      if(row.mechanic==='pressure_ramp'){
+        // the field is empty when the battle starts: the ramp only counts while an enemy is on the field
+        let stacks=0;const maxStacks=Math.floor(Number(row.maxAspd)/Number(row.aspd));
+        battle.every(Number(row.interval??3),()=>{
+          if(stacks>=maxStacks||!battle.enemies.some((enemy)=>enemy?.alive&&enemy.deployed))return;
+          stacks++;for(const unit of ops())buff(unit,row,'ramp',{aspd:Number(row.aspd)*stacks});metric(row,'stacks');
+        },{owner:battle});
+      }
+    }
+  },{owner:battle});
+  const epitaphs=rows.filter((row)=>row.mechanic==='epitaph');
+  if(epitaphs.length)battle.on('death',(event)=>{
+    const fallen=event?.unit;if(fallen?.side!=='ally'||fallen.kind!=='op')return;
+    const heir=ops().filter((unit)=>unit!==fallen).sort((a,b)=>Math.hypot(a.x-fallen.x,a.y-fallen.y)-Math.hypot(b.x-fallen.x,b.y-fallen.y)||a.id-b.id)[0];
+    if(!heir)return;
+    for(const row of epitaphs){
+      heir.mem.prototypeEpitaph=Math.min(Number(row.maxStacks??5),Number(heir.mem.prototypeEpitaph??0)+1);
+      buff(heir,row,'aspd',{aspd:Number(row.aspd)*heir.mem.prototypeEpitaph});
+      battle.addBuff(heir,{key:`resonance:v3:team-strategy:${row.id}:shield:${heir.id}:${battle.time}`,shield:heir.s.maxHp*Number(row.shieldPct),duration:Number(row.shieldDuration??8),tags:['resonance','prototype-strategy']});
+      metric(row,'triggers');
+    }
+  },{owner:battle});
+  return {strategies:rows.length};
+}
