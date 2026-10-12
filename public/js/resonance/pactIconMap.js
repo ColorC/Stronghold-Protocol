@@ -27,17 +27,23 @@ const SEMANTIC_ASSETS = Object.freeze([
 // New season pact IDs resolve to existing native art explicitly; these are icon reuses by mechanic/theme,
 // not generated glyphs. Keeping this table keyed by the full catalog ID prevents fallback role art for new bonds.
 // No two pacts of a season may share an icon, and a pact icon may not be the sub-profession icon of any operator of that
-// season (it would repeat on the shop cards): holyGun, artillery, dominator, breaker, formSwap and armory therefore take
-// native art that nothing in the season uses (test/resonance/pact-icons.test.js keeps it that way).
+// season (it would repeat on the shop cards): holyGun, artillery, dominator and armory therefore take native art that
+// nothing in the season uses; breaker and formSwap carry their own SVG (below). test/resonance/pact-icons.test.js keeps it so.
 const CURRENT_PACT_ASSETS = Object.freeze({
   creation:['sub','craftsman'], arts:['bond','arcaneShip'], rhodes:['faction','rhodes'], artillery:['sub','bombarder'],
-  formSwap:['sub','dollkeeper'], emissary:['bond','deputShip'], sentinel:['bond','steadShip'], family:['bond','maniShip'],
+  emissary:['bond','deputShip'], sentinel:['bond','steadShip'], family:['bond','maniShip'],
   redeploy:['sub','executor'], logistics:['bond','investShip'], ammo:['bond','preciShip'], conqueror:['bond','indomShip'],
   holyGun:['bond','lateranoShip'], academy:['bond','skillfulShip'], risk:['bond','miraShip'], resistance:['bond','steadShip'],
-  dominator:['sub','mystic'], breaker:['sub','sword'], enforcer:['bond','emptyShip'], flight:['sub','skywalker'],
+  dominator:['sub','mystic'], enforcer:['bond','emptyShip'], flight:['sub','skywalker'],
   experiment:['sub','ritualist'], bruiser:['bond','indomShip'], armory:['bond','skillfulShip'], sui:['faction','sui'],
   combo:['bond','swiftShip'], watcher:['bond','visiShip'],
 });
+// 决斗 and 双形 have no unused native art that fits, so each carries its own flat white SVG drawn to the bond icons' spec
+// (100 x 100 box, used as a CSS mask like the native ones; provenance in manifest.json). It sits under /css/ because the
+// Workshop gateway forwards only the game's fixed static prefixes to the resonance service.
+export const PACT_ICON_DIR = '/css/resonance-pacts';
+export const PACT_ICON_IDS = Object.freeze(['breaker', 'formSwap']);
+export const ownPactIconUrl = (id) => (PACT_ICON_IDS.includes(id) ? `${PACT_ICON_DIR}/${id}.svg` : null);
 function assetFor(manifest, [group, key]) {
   if (group === 'bond') return bondIconUrl(manifest, key);
   if (group === 'sub') return manifest?.prof?.sub?.[key] || null;
@@ -45,8 +51,10 @@ function assetFor(manifest, [group, key]) {
   return null;
 }
 
-/** Resolve a real bond icon by the pact id first, then by the native bond record with the same name. */
+/** Resolve a pact's icon: its own SVG first, then a real bond icon by the pact id, then by the native bond record with the same name. */
 export function resolvePactIconUrl(catalog, id, manifest, bonds = []) {
+  const own = ownPactIconUrl(id);
+  if (own) return own;
   const pact = catalog?.pacts?.[id];
   if (typeof pact?.nativeIconPath === 'string' && /^\/assets\/ui\/campLogo\/logo_[a-z_]+\.png$/.test(pact.nativeIconPath)) {
     return pact.nativeIconPath;
