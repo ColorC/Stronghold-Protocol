@@ -76,7 +76,7 @@ export function adjacentDeployedPairs(state) {
  return pairs;
 }
 export function actionErrorText(error) {
-  const known={NO_FUNDS:'金币不足',SOLD_OUT:'这名干员已售罄',DEPLOY_CAP:'已达到当前人口上限',POPULATION_OVER_CAPACITY:'已达到当前人口上限',ILLEGAL_TILE:'无法部署在该位置',ILLEGAL_DEPLOYMENT:'无法部署在该位置',CELL_OCCUPIED:'这个位置已有干员',NO_DEPLOYED_PIECES:'至少部署一名干员才能开战',BENCH_FULL:'备战区已满',INVENTORY_CAPACITY:'装备背包已满，请先整理装备',EQUIPMENT_CAPACITY:'这名干员的装备槽已满',CROSS_OPERATOR_COMBINE:'只能合成背包装备或同一名干员身上的装备',ITEM_NOT_IN_INVENTORY:'这件装备当前不在背包中',EQUIPPED_ITEM_NOT_FOUND:'找不到这件已装备的物品',RECIPE_NOT_FOUND:'没有适用于这两件装备的配方',TOKEN_NOT_OWNED:'这名干员没有该召唤物',ILLEGAL_SUMMON_POSITION:'召唤位置不可用',COPY_COST_LIMIT:'低费复制器只能用于低费干员',POOL_EMPTY:'该干员已无可用卡池份数',SESSION_NOT_FOUND:'找不到这局存档，它可能已过期',BAD_SESSION:'存档内容无法读取，请重新载入',STALE_REVISION:'对局状态已变化，正在同步',UNKNOWN_ENVIRONMENT:'请选择有效环境',NETWORK:'连接中断，请检查网络后重试',BAD_RESPONSE:'服务器返回的数据暂时无法读取'};
+  const known={NO_FUNDS:'金币不足',SOLD_OUT:'这名干员已售罄',DEPLOY_CAP:'已达到当前人口上限',POPULATION_OVER_CAPACITY:'已达到当前人口上限',ILLEGAL_TILE:'无法部署在该位置',ILLEGAL_DEPLOYMENT:'无法部署在该位置',PACT_NOT_COUNTED:'该干员不计入盟约',CELL_OCCUPIED:'这个位置已有干员',NO_DEPLOYED_PIECES:'至少部署一名干员才能开战',BENCH_FULL:'备战区已满',INVENTORY_CAPACITY:'装备背包已满，请先整理装备',EQUIPMENT_CAPACITY:'这名干员的装备槽已满',CROSS_OPERATOR_COMBINE:'只能合成背包装备或同一名干员身上的装备',ITEM_NOT_IN_INVENTORY:'这件装备当前不在背包中',EQUIPPED_ITEM_NOT_FOUND:'找不到这件已装备的物品',RECIPE_NOT_FOUND:'没有适用于这两件装备的配方',TOKEN_NOT_OWNED:'这名干员没有该召唤物',ILLEGAL_SUMMON_POSITION:'召唤位置不可用',COPY_COST_LIMIT:'低费复制器只能用于低费干员',POOL_EMPTY:'该干员已无可用卡池份数',SESSION_NOT_FOUND:'找不到这局存档，它可能已过期',BAD_SESSION:'存档内容无法读取，请重新载入',STALE_REVISION:'对局状态已变化，正在同步',UNKNOWN_ENVIRONMENT:'请选择有效环境',NETWORK:'连接中断，请检查网络后重试',BAD_RESPONSE:'服务器返回的数据暂时无法读取'};
   return known[error?.code]||'操作没有完成，请检查当前阶段后重试';
 }
 export function choiceLabel(choice, option, state, catalog) {

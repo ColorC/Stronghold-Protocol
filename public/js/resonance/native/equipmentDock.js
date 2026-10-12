@@ -1,7 +1,7 @@
 import { html, Icon } from '../../ui/components.js';
 import { useEffect, useRef, useState } from '../../../vendor/hooks.module.js';
 import { ResonanceItemIcon } from '../itemIcon.js';
-import { RESONANCE_EQUIP_SLOTS, recipeFor } from '../equipmentSlots.js';
+import { RESONANCE_EQUIP_SLOTS, pactRefusal, recipeFor } from '../equipmentSlots.js';
 
 /** Beside `rect` (right when it fits, else left), kept inside the viewport: where a floating preview box goes. */
 function besideRect(rect, box, margin = 8) {
@@ -32,6 +32,8 @@ export function InventoryDock({ state, catalog, onDetail, onOpen, onCombine, fie
   const fieldUniqueConflict = !!fieldRecipe && !!catalog.equipment?.[fieldRecipe.recipe.resultId]?.unique &&
     (fieldTarget.equipment || []).some(gear => gear.itemId === fieldRecipe.recipe.resultId);
   const fieldFull = !!fieldTarget && !fieldRecipe && (fieldTarget.equipment || []).length >= RESONANCE_EQUIP_SLOTS;
+  // an operator in no 盟约 (正义骑士号) takes no 徽记: the preview says so instead of promising it
+  const fieldNoPact = !!source && pactRefusal(catalog, fieldTarget, fieldRecipe?.recipe.resultId ?? source.itemId);
   const hovered = inventory.find(item => String(item.uid) === String(hoverUid)) || null;
   const hoveredRecipe = source && hovered && String(source.uid) !== String(hovered.uid) ? recipeFor(catalog.recipes, source.itemId, hovered.itemId) : null;
   const hoveredResult = hoveredRecipe ? catalog.equipment?.[hoveredRecipe.resultId] : null;
@@ -56,7 +58,7 @@ export function InventoryDock({ state, catalog, onDetail, onOpen, onCombine, fie
     const box = fieldPreviewRef.current;
     if (!anchored || !box) { setFieldPoint(null); return; }
     setFieldPoint(besideRect(fieldAnchor, box.getBoundingClientRect()));
-  }, [anchored, fieldAnchor?.left, fieldAnchor?.top, fieldAnchor?.right, fieldAnchor?.bottom, fieldRecipe?.recipe.resultId, fieldFull, fieldUniqueConflict]);
+  }, [anchored, fieldAnchor?.left, fieldAnchor?.top, fieldAnchor?.right, fieldAnchor?.bottom, fieldRecipe?.recipe.resultId, fieldFull, fieldUniqueConflict, fieldNoPact]);
   const editable = !busy && ['prep', 'choice'].includes(state.phase);
   const combine = async (target) => {
     if (!editable || !source || String(source.uid) === String(target.uid)) return;
@@ -91,8 +93,8 @@ export function InventoryDock({ state, catalog, onDetail, onOpen, onCombine, fie
     </div>` : null}
     ${fieldTarget && source && !hovered ? html`<div ref=${fieldPreviewRef} class=${`rs-equipment-dock__field-preview${anchored ? ' is-anchored' : ''}`} role="status" aria-live="polite"
       style=${!anchored ? undefined : fieldPoint ? `left:${fieldPoint.x}px;top:${fieldPoint.y}px;visibility:visible` : 'left:-10000px;top:0;visibility:hidden'}>
-      ${fieldRecipe && !fieldUniqueConflict ? html`<${MergePreview} catalog=${catalog} resultId=${fieldRecipe.recipe.resultId} lead="装备合成为"/>`
-        : html`<small>${fieldUniqueConflict ? '该干员已携带此唯一装备' : fieldFull ? `装备栏已满（${RESONANCE_EQUIP_SLOTS}/${RESONANCE_EQUIP_SLOTS}）` : '松开即可装备'}</small>`}
+      ${fieldRecipe && !fieldUniqueConflict && !fieldNoPact ? html`<${MergePreview} catalog=${catalog} resultId=${fieldRecipe.recipe.resultId} lead="装备合成为"/>`
+        : html`<small>${fieldNoPact ? '该干员不计入盟约，无法佩戴徽记' : fieldUniqueConflict ? '该干员已携带此唯一装备' : fieldFull ? `装备栏已满（${RESONANCE_EQUIP_SLOTS}/${RESONANCE_EQUIP_SLOTS}）` : '松开即可装备'}</small>`}
     </div>` : null}
     <button type="button" class="rs-equipment-dock__open" aria-label="打开装备与配方" title="装备与配方" onClick=${onOpen}><${Icon} name="sword"/><small>${inventory.length}</small></button>
   </aside>`;

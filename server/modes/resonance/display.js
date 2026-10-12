@@ -104,6 +104,7 @@ function starView(operator, star, data, playerText) {
 export function resonanceDisplayCatalog(catalog, data = null) {
   const operators = Object.fromEntries(Object.entries(catalog.operators).map(([id, operator]) => [id, {
     name: operator.name, charId: operator.charId, cost: operator.cost, position: operator.position,
+    ...(operator.ignoresDeployLimit ? { ignoresDeployLimit: true } : {}),
     canDeployHighGround: operator.canDeployHighGround, role: ROLE_TEXT[operator.role] ?? '伤害', pacts: [...operator.pacts],
     avatar: operator.assets?.avatar ?? operator.assets?.portrait ?? null,
     ...(resonanceOperatorPresentation(catalog,operator)?{passivePresentation:resonanceOperatorPresentation(catalog,operator)}:{}),

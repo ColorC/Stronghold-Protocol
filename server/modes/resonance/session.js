@@ -50,6 +50,10 @@ export function countedDeployed(state, catalog, pieces = state?.pieces ?? []) {
   }
   return counted;
 }
+/** Items that hand their carrier a 盟约 (徽记, a transferred pact, the pick-a-pact item). */
+const carriesPact=(catalog,itemId)=>{const item=catalog?.equipment?.[itemId];return item?.kind==='emblem'||(item?.effects??[]).some((effect)=>['pact_transfer','transfer_pact','choose_identity_transfer'].includes(effect.kind));};
+/** Operators that belong to no 盟约 this mode (正义骑士号): a pact given to one would count for nothing, so none is. */
+const inNoPact=(catalog,piece)=>catalog?.operators?.[piece?.operatorId]?.ignoresDeployLimit===true;
 export function effectiveDeployCapacity(state) {
   const extra=state?.rulesVersion===3?Math.max(0,Math.min(2,Number(state.prototypeMeta?.economy?.rosterExtraCapacity)||0)):0;
   return Math.min(12,Math.max(1,Number(state?.level)||1)+extra);
@@ -835,6 +839,11 @@ function executeStrategyEffect(state,catalog,strategy,effect,targets={}) {
       if(effect.kind==='risk_exchange'){if(state.hp<=Number(p.minHpExclusive??20))throw new Error('STRATEGY_INELIGIBLE');state.hp-=Number(p.hpCost??0);state.gold+=Number(p.gold??0);}
       if(effect.kind==='late_game'){if(state.gold<Math.abs(Number(p.startGold??-8)))throw new Error('STRATEGY_INELIGIBLE');state.gold+=Number(p.startGold??-8);}
       if(effect.kind==='shop_rule'&&p.lockDisabled)state.shop.locked=false;
+      if(effect.kind==='prototype_battle_augment'&&Array.isArray(p.bonusOperatorIds)&&p.bonusOperatorIds.length){
+        // 招募 on pick (卡西米尔断头台: 砾): the same single-operator choice the other recruiting strategies use
+        const options=[...new Set(p.bonusOperatorIds)].filter((operatorId)=>activeOperatorIds(catalog).includes(operatorId)&&(state.poolRemaining[operatorId]??0)>0);
+        if(options.length)addPendingChoice(state,'operators',strategy.id,options,1,{sourceApiName:p.sourceApiName});
+      }
       if(effect.kind==='choose_transfer') {
         const extra={bonusOperatorIds:[...new Set((p.bonusOperatorIds??[]).filter((operatorId)=>activeOperatorIds(catalog).includes(operatorId)))]};
         const bonusRewardItems=[];
@@ -874,7 +883,7 @@ function executeStrategyEffect(state,catalog,strategy,effect,targets={}) {
       }
       if(effect.kind==='delayed_operator')addPendingChoice(state,'target_operator',strategy.id,activeOperatorIds(catalog).filter((id)=>costOf(catalog,id)===Number(p.cost??4)&&(state.poolRemaining[id]??0)>0),1);
       if(effect.kind==='pair_guard') addPendingChoice(state,'pair',strategy.id,state.pieces.filter((piece)=>piece.row!==null).map((piece)=>piece.uid),2);
-      if(effect.kind==='dual_pact') addPendingChoice(state,'dual_pact',strategy.id,state.pieces.map((piece)=>piece.uid),1);
+      if(effect.kind==='dual_pact'){const targets=state.pieces.filter((piece)=>!inNoPact(catalog,piece)).map((piece)=>piece.uid);if(targets.length)addPendingChoice(state,'dual_pact',strategy.id,targets,1);}
       if(effect.kind==='delayed_operator') state.strategyState[strategy.id].dueRound=state.round+Number(p.delayNodes??4);
       if(effect.kind==='delayed_income') state.strategyState[strategy.id].held=0;
       break;
@@ -1205,12 +1214,14 @@ function claimChoice(state,catalog,choice,optionIds) {
   } else if(choice.type==='dual_pact') {
     if(optionIds.length!==1)throw new Error('BAD_REWARD_SELECTION');
     const piece=pieceByUid(state,optionIds[0]);if(!piece)throw new Error('PIECE_NOT_FOUND');
+    if(inNoPact(catalog,piece))throw new Error('PACT_NOT_COUNTED');
     const mechanismIds=new Set(['ammo','combo','control','creation','symbiosis','logistics','redeploy','flight','arts','breaker','burn','necrosis']);
     const available=Object.keys(catalog.pacts??{}).filter(id=>mechanismIds.has(id)&&pactGrantAllowed(catalog,id)&&!(opTable(catalog)[piece.operatorId]?.pacts??[]).includes(id)&&!(piece.extraPacts??[]).includes(id));if(!available.length)throw new Error('PACT_OPTIONS_MISSING');
     addPendingChoice(state,'pact_tag',choice.source,available,1,{pieceUid:piece.uid});
   } else if(choice.type==='pact_tag') {
     if(optionIds.length!==1)throw new Error('BAD_REWARD_SELECTION');
     const piece=pieceByUid(state,choice.pieceUid);if(!piece||!own(catalog.pacts,optionIds[0]))throw new Error('BAD_PACT_OPTION');
+    if(inNoPact(catalog,piece))throw new Error('PACT_NOT_COUNTED');
     if(!pactGrantAllowed(catalog,optionIds[0]))throw new Error('PACT_GRANT_NOT_ALLOWED');
     piece.extraPacts??=[];if(!piece.extraPacts.includes(optionIds[0]))piece.extraPacts.push(optionIds[0]);
   } else if(choice.type==='prototype_economy') {
@@ -1310,6 +1321,7 @@ function combineEquipment(state,catalog,found,recipe) {
   if(found.some(entry=>itemTable(catalog)[entry.item.itemId]?.kind!=='component'))throw new Error('RECIPE_NOT_FOUND');
   if(!own(itemTable(catalog),recipe.resultId))throw new Error('RECIPE_RESULT_UNKNOWN');
   const owner=found.find(entry=>entry.owner)?.owner??null;
+  if(owner&&inNoPact(catalog,owner)&&carriesPact(catalog,recipe.resultId))throw new Error('PACT_NOT_COUNTED');
   if(owner&&uniqueEquipmentConflict(catalog,owner.equipment,recipe.resultId,found.map(entry=>entry.item.uid)))throw new Error('UNIQUE_EQUIPMENT_CONFLICT');
   const slot=owner?Math.min(...found.filter(entry=>entry.owner===owner).map(entry=>entry.index)):null;
   for(const entry of [...found].sort((a,b)=>b.index-a.index))consumeEquipmentLocation(state,entry);
@@ -1628,6 +1640,8 @@ export function applyAction(state, action, { catalog, battleRunner, fieldResolve
       case 'equip': {
         requirePrep(draft);const piece=pieceByUid(draft,action.pieceUid);if(!piece)throw new Error('PIECE_NOT_FOUND');const index=draft.inventory.findIndex((item)=>item.uid===action.itemUid);if(index<0)throw new Error('ITEM_NOT_IN_INVENTORY');
         const item=draft.inventory[index],plan=equipmentPlacement(catalog,piece.equipment,item);
+        // a 徽记 (or a component that completes one in its slot) on an operator in no 盟约 would do nothing: refused, the item stays in the inventory
+        if(inNoPact(catalog,piece)&&carriesPact(catalog,plan?.recipe?.resultId??item.itemId))throw new Error('PACT_NOT_COUNTED');
         draft.inventory.splice(index,1);
         const combined=placeEquipment(draft,piece,item,plan);
         events.push(combined??{type:'item-equipped',uid:item.uid,pieceUid:piece.uid,itemId:item.itemId});break;

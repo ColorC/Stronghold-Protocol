@@ -134,6 +134,7 @@ export const ERR = Object.freeze({
   BOARD_FULL: 'BOARD_FULL',
   BAD_TILE: 'BAD_TILE',
   BAD_TARGET: 'BAD_TARGET',
+  NO_PACT: 'NO_PACT',             // a 盟约 (徽记, transferred or extra pact) given to an operator that belongs to none
   SOLD_OUT: 'SOLD_OUT',
   MAX_LEVEL: 'MAX_LEVEL',
   NOT_YOUR_TURN: 'NOT_YOUR_TURN',
@@ -148,7 +149,7 @@ export const ERR_TEXT = {
   BAD_MSG: '无效的请求', RATE: '操作过于频繁', NOT_IN_ROOM: '你不在房间中', ROOM_NOT_FOUND: '未找到该同盟密钥对应的房间',
   ROOM_FULL: '房间已满', ROOM_STARTED: '模拟已开始', NOT_HOST: '只有房主可以操作', NOT_READY: '仍有玩家未就绪',
   WRONG_PHASE: '当前阶段无法进行该操作', NO_FUNDS: '资金不足', HAND_FULL: '整备区已满', BOARD_FULL: '已达到部署上限',
-  BAD_TILE: '无法部署在该位置', BAD_TARGET: '无效的目标', SOLD_OUT: '已售出', MAX_LEVEL: '调度中心已达最高等级',
+  BAD_TILE: '无法部署在该位置', BAD_TARGET: '无效的目标', NO_PACT: '该干员不计入盟约', SOLD_OUT: '已售出', MAX_LEVEL: '调度中心已达最高等级',
   NOT_YOUR_TURN: '尚未轮到你', ALREADY: '已完成该操作', TEMP_NOT_EMPTY: '临时整备区不为空', ELIMINATED: '你已被淘汰',
   SPECTATOR: '观战中无法进行该操作', INTERNAL: '服务器内部错误',
 };

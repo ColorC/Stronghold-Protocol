@@ -164,6 +164,8 @@ export const STRONGHOLD_STRATEGY_OVERRIDES = freeze({
   }),
   TFT13_Augment_Conqueror: freeze({
     variables: freeze({ NativeDefPctPerKill: 0.08, NativeResPerKill: 4, MaxKills: 5 }),
+    // the source hands out two champions; this season picking it recruits one 1-cost 卡西米尔 member (正义骑士号 is in no 盟约 here)
+    recruitCharIds: freeze(['char_237_gravel']),
     adaptation: (v) => `【卡西米尔】干员对生命低于${Number(v.BaseExecuteThreshold)}%的敌人造成伤害时，直接将其击倒；每以此击倒1名敌人，防御力+${pct(v.NativeDefPctPerKill)}、法术抗性+${Number(v.NativeResPerKill)}，至多叠加${Number(v.MaxKills)}次。`,
   }),
   TFT13_Augment_Sorcerer: freeze({

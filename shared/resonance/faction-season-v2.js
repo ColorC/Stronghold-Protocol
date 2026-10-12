@@ -10,7 +10,16 @@ const corrected=row=>{
   const fix=STRONGHOLD_STRATEGY_OVERRIDES[row.apiName];
   if(!fix)return row;
   const effects={...clone(row.effects??{}),...clone(fix.variables??{})};
-  return {...clone(row),effects,...(fix.adaptation?{adaptation:fix.adaptation(effects)}:{})};
+  // a strategy that recruits named operators when picked: they replace what the source row granted, and the text says who
+  const recruits=(fix.recruitCharIds??[]).map(charId=>{
+    const hero=factionSeason.heroes.find(entry=>entry.charId===charId);
+    requireValue(hero,`STRONGHOLD_STRATEGY_RECRUIT_UNKNOWN:${row.apiName}:${charId}`);
+    return {name:hero.operatorName,charId:hero.charId,operatorId:hero.sourceChessId,cost:hero.cost,modeAdaptation:{kind:'strategy-recruit-override',sourceApiName:row.apiName}};
+  });
+  const text=fix.adaptation?fix.adaptation(effects):null;
+  return {...clone(row),effects,
+    ...(recruits.length?{grantedHeroes:recruits,recruitGrant:true}:{}),
+    ...(text?{adaptation:recruits.length?`招募${recruits.map(hero=>hero.name).join('、')}；${text}`:text}:{})};
 };
 
 // Same heroes, members, thresholds, fees and emblems as faction season 1; only tier effects change.

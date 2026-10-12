@@ -73,7 +73,9 @@ export function applyPrototypeStrategies(catalog) {
     if(augment.adapter==='choose_transfer'&&!rewards)continue;
     const isAcademyCrown=augment.apiName==='TFT13_Augment_AcademyCrown';
     const effects=augment.adapter==='battle'
-      ? [{kind:'prototype_battle_augment',params:{traitId:augment.traitId,mechanic:augment.mechanic,variables:augment.effects,sourceApiName:augment.apiName,grantedHeroIds:(augment.grantedHeroes??[]).map((hero)=>hero.operatorId).filter(Boolean),grantedItemIds:(augment.grantedItems??[]).map((item)=>item.apiName)}}]
+      ? [{kind:'prototype_battle_augment',params:{traitId:augment.traitId,mechanic:augment.mechanic,variables:augment.effects,sourceApiName:augment.apiName,grantedHeroIds:(augment.grantedHeroes??[]).map((hero)=>hero.operatorId).filter(Boolean),grantedItemIds:(augment.grantedItems??[]).map((item)=>item.apiName),
+        // a battle augment that also recruits when picked (the season's strategy override marks it): the operators the player is handed
+        ...(augment.recruitGrant?{bonusOperatorIds:(augment.grantedHeroes??[]).map((hero)=>hero.operatorId).filter(Boolean)}:{})}}]
       : [{kind:'choose_transfer',params:{itemIds:[itemId],prototypeTraitId:augment.traitId,bonusOperatorIds:rewards.bonusOperatorIds,bonusRewards:rewards.bonusRewards,...(rewards.sawRandomSponsored?{bonusSponsorItem:true}:{})},reference:{...augment.reference,recordId:augment.apiName}}];
     const traitName=catalog.pacts?.[augment.traitId]?.name??augment.traitId;
     const heroNames=rewards?.bonusOperatorIds.map((operatorId)=>catalog.operators[operatorId]?.name).filter(Boolean)??[];

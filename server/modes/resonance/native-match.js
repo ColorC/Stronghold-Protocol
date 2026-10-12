@@ -17,7 +17,7 @@ const FAIL = (error, detail) => ({ error, ...(detail ? { detail } : {}) });
 /** Placement refusals of the session rules, as the shared game-worded ERR codes the client turns into its toast (the rest stay 无效的目标). */
 const SESSION_FAILURE_CODE = Object.freeze({
   POPULATION_OVER_CAPACITY: ERR.BOARD_FULL, ILLEGAL_DEPLOYMENT: ERR.BAD_TILE, ILLEGAL_SWAP: ERR.BAD_TILE, BAD_POSITION: ERR.BAD_TILE,
-  CELL_OCCUPIED: ERR.BAD_TILE, ILLEGAL_SUMMON_POSITION: ERR.BAD_TILE,
+  CELL_OCCUPIED: ERR.BAD_TILE, ILLEGAL_SUMMON_POSITION: ERR.BAD_TILE, PACT_NOT_COUNTED: ERR.NO_PACT,
 });
 const isNativeUid = (value) => Number.isSafeInteger(value) && value > 0;
 const finiteNumber = (value) => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
