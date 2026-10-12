@@ -6,7 +6,7 @@ import { applyCurrentStrategies } from '../../../shared/resonance/current-strate
 import { applyCurrentPacts } from '../../../shared/resonance/current-pacts.js';
 import { applyCurrentOperators } from '../../../shared/resonance/current-operators.js';
 import { applyCurrentEquipment } from '../../../shared/resonance/current-equipment.js';
-import { getActivePrototypeSeason, getPrototypeSeason } from '../../../shared/resonance/season-registry.js';
+import { getActivePrototypeSeason, getPrototypeSeason, retiredEconomyTraitIds } from '../../../shared/resonance/season-registry.js';
 import { buildNativePowerStars, buildNativePowerReference } from '../../../shared/resonance/native-power.js';
 import { tftArmorToNativeDefense, tftMrToNativeResistance } from '../../../shared/resonance/prototype-resistance.js';
 import { applyPrototypePacts } from '../../sim/content/resonance/prototype-pacts.js';
@@ -140,6 +140,10 @@ export function getResonanceCatalog(data = getData(), options = {}) {
     }))));
     if(currentCatalog.pacts.conqueror)currentCatalog.pacts.conqueror={...currentCatalog.pacts.conqueror,
       rewardThresholds:[...prototypeEconomyRules.conqueror.chestThresholds]};
+    // a season that retired the 叙拉古 market (season 2) never hands out its tiered passive items: they stay readable
+    // and leave the codex like every other never-granted item
+    if(retiredEconomyTraitIds(season).has('risk'))for(const [id,item] of Object.entries(currentCatalog.equipment))
+      if(item.kind==='passive'&&item.prototypeEconomyTier)currentCatalog.equipment[id]={...item,grantAllowed:false};
     const prototypeEmblemIds=new Set(currentCatalog.prototypeEmblemItems);
     const legacyEmblemIds=new Set(Object.values(currentCatalog.equipment).filter((item)=>item.kind==='emblem'&&!prototypeEmblemIds.has(item.id)).map((item)=>item.id));
     currentCatalog.equipment=Object.fromEntries(Object.entries(currentCatalog.equipment).filter(([,item])=>item.kind!=='emblem'||prototypeEmblemIds.has(item.id)));
