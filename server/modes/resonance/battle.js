@@ -27,6 +27,12 @@ const starChessId = (operatorId, star) => `resonance_${operatorId}_star${star}`;
 const ENEMY_BALANCE_FIELDS=Object.freeze({hpMultiplier:'hpMul',atkMultiplier:'atkMul',defMultiplier:'defMul',resMultiplier:'resMul',speedMultiplier:'speedMul',bossPoolMultiplier:null});
 const ENEMY_BALANCE_ONE=Object.freeze({hpMultiplier:1,atkMultiplier:1,defMultiplier:1,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
 const DIFFICULTIES=new Set(['FUNNY','NORMAL','HARD','ABYSS']);
+// the multipliers every enemy of a node takes, wave or summoned: balance field, base stat, spawn mod, and the mod that records the factor already applied
+const NODE_ENEMY_SCALES=Object.freeze([
+  {field:'hpMultiplier',stat:'maxHp',modKey:'hpMul',appliedKey:'resonanceHpMul'},
+  {field:'atkMultiplier',stat:'atk',modKey:'atkMul',appliedKey:'resonanceAtkMul'},
+  {field:'defMultiplier',stat:'def',modKey:'defMul',appliedKey:'resonanceDefMul'},
+]);
 
 function mergeBalanceProfile(base,override,label){
   const out={...base};
@@ -73,32 +79,39 @@ function scaleWaveSpawnMods(wave,multipliers){
       if(!Number.isFinite(scaled)||scaled<=0)throw new TypeError(`invalid scaled native wave modifier: ${modKey}`);
       mods[modKey]=scaled;
     }
-    // the DEF factor already in these mods; enemies spawned with mods that lack it take it on spawn
-    if(multipliers.defMultiplier!==1)mods.resonanceDefMul=multipliers.defMultiplier;
+    // the factors already in these mods; enemies spawned with mods that lack them take them on spawn
+    for(const {field,appliedKey} of NODE_ENEMY_SCALES)if(multipliers[field]!==1)mods[appliedKey]=multipliers[field];
     return {...spawn,mods:Object.keys(mods).length?mods:undefined};
   });
   return {...wave,spawns};
 }
 
 /**
- * The node's DEF multiplier reaches every enemy, not only the scheduled wave: an enemy spawned in the fight (summons,
- * 不祥幻影, parts) takes the factor its mods lack, and passes it on through its mods to what it spawns; the flat DEF an
+ * The node's HP, ATK and DEF multipliers reach every enemy, not only the scheduled wave: an enemy spawned in the fight
+ * (summons, 不祥幻影, parts) takes the factors its mods lack, and passes them on through its mods to what it spawns, so a
+ * chain of summons is scaled once, not once per link. A leader on the shared pool keeps the pool's HP. The flat DEF an
  * enemy gains from its own auras and states (方阵 +200 per neighbour, 禁锢 +300) is scaled like its base DEF
  * (Unit.defFlatScale). DEF reductions from operators keep their full value.
  */
-function installEnemyDefBalance(battle,enemyBalance){
-  const factor=Number(enemyBalance?.defMultiplier);
-  if(!(factor>0)||factor===1)return;
+function installEnemyBalance(battle,enemyBalance){
+  const scales=NODE_ENEMY_SCALES.filter(({field})=>{const factor=Number(enemyBalance?.[field]);return factor>0&&factor!==1;});
+  if(!scales.length)return;
   battle.on('enemySpawn',({enemy})=>{
     if(enemy?.side!=='enemy')return;
-    const applied=Number(enemy.mods?.resonanceDefMul)>0?Number(enemy.mods.resonanceDefMul):1;
-    if(applied!==factor){
+    const mods={...(enemy.mods??{})},fullHp=enemy.hp>=enemy.s.maxHp-1e-9;
+    for(const {field,stat,modKey,appliedKey} of scales){
+      const factor=Number(enemyBalance[field]);
+      const applied=Number(mods[appliedKey])>0?Number(mods[appliedKey]):1;
+      if(applied===factor)continue;
       const missing=factor/applied;
-      enemy.base.def*=missing;
-      enemy.mods={...(enemy.mods??{}),defMul:(enemy.mods?.defMul??1)*missing,resonanceDefMul:factor};
+      if(!(stat==='maxHp'&&enemy.bossPool))enemy.base[stat]*=missing;
+      mods[modKey]=(mods[modKey]??1)*missing;
+      mods[appliedKey]=factor;
     }
-    enemy.defFlatScale=factor;
+    enemy.mods=mods;
+    if(enemyBalance.defMultiplier>0)enemy.defFlatScale=Number(enemyBalance.defMultiplier);
     enemy.markDirty();
+    if(fullHp&&!enemy.bossPool)enemy.hp=enemy.s.maxHp;
   },{owner:battle,priority:1000});
 }
 
@@ -466,7 +479,7 @@ export function buildResonanceBattle(state, { data = null, catalog = null, recor
         module.install(b);
       }
     }, b => {
-      installEnemyDefBalance(b,prepared.enemyBalance);
+      installEnemyBalance(b,prepared.enemyBalance);
       b.resonanceOutcome={won:false};
       b.on('battleEnd',({result})=>{b.resonanceOutcome.won=resonanceBattleWon(result,prepared.nodeKind);},{owner:b,priority:1000});
       installResonanceBattle(b, { catalog, state: input });

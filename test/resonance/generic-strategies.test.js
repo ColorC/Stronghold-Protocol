@@ -1,11 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { loadData } from '../../server/data.js';
 import { getResonanceCatalog } from '../../server/modes/resonance/catalog.js';
 import { createSession, applyAction, drawStrategies } from '../../server/modes/resonance/session.js';
 import { buildResonanceBattle, getResonanceField } from '../../server/modes/resonance/battle.js';
 import { factionSeason } from '../../shared/resonance/faction-season.js';
 import { factionSeasonV2 } from '../../shared/resonance/faction-season-v2.js';
+import { resonanceDisplayCatalog } from '../../server/modes/resonance/display.js';
 import { GENERIC_STRATEGIES } from '../../shared/resonance/generic-strategies.js';
 
 const data = loadData(process.env.SP_DATA_DIR, { log: { warn() {}, error() {} } });
@@ -79,7 +82,7 @@ test('generic economy and equipment strategies hand out exactly what they say', 
   const named = (name) => genericIds.find((id) => catalog.strategies[id].name === name);
   let run = choose(named('加急许可'));
   assert.equal((run.state.freeRefreshes ?? 0) - (run.before.freeRefreshes ?? 0), 10);
-  run = choose(named('物资包'));
+  run = choose(named('外勤补给'));
   assert.equal(run.state.gold - run.before.gold, 2);
   assert.deepEqual(run.state.consumables.map((row) => row.kind), ['prototype_reforger']);
   const parts = run.state.pendingChoices.find((choice) => choice.type === 'components');
@@ -121,4 +124,61 @@ test('generic team strategies reach the real Battle: 战术指挥 stats, 持续�
   battle.step();
   assert.ok(rest.some((unit) => unit.buffs.some((buff) => buff.key.includes(`${epitaph}:shield`) && buff.shield > 0)), 'the nearest ally gains the 屏障');
   assert.equal(battle.errorCount, 0);
+});
+
+// consumable and strategy names built from original-text nouns: every noun is found in the game data (the verb 卸除 is
+// from the official 帮助 page: "佩戴的装备无法手动卸除")
+const CONSUMABLE_NAMES = {
+  prototype_completed_anvil: ['列装券', ['choices.json', '列装'], ['items.json', '紧急调度券']],
+  prototype_artifact_anvil: ['机密列装券', ['choices.json', '机密商店']],
+  prototype_support_anvil: ['支援列装券', ['chess.json', '定向支援信号']],
+  prototype_radiant_anvil: ['辉光列装券', ['chess.json', '慑敌辉光']],
+  prototype_radiant_conversion: ['辉光改装模块', ['chess.json', '终结改装'], ['items.json', '寻呼模块']],
+  prototype_thiefs_gloves: ['道具补给包', ['choices.json', '道具补给'], ['chess.json', '外勤私人补给包']],
+  prototype_reforger: ['重构模块', ['chess.json', '编织重构现世'], ['items.json', '寻呼模块']],
+  prototype_item_remover: ['卸除许可', ['chess.json', '跨境追缉许可']],
+  prototype_roster_crown: ['编队许可', ['chess.json', '编队中有四'], ['chess.json', '跨境追缉许可']],
+};
+const SOURCE_SEASON_TERMS = [/铁砧/, /窃盗/, /重铸/, /卸除器/, /战术王冠/, /转化器/, /(?<!合)成装/, /遗物/, /一二五/, /后勤装备/];
+
+test('gear consumables take names made of original-text nouns, keep their ids, and no player text keeps the names of the source season', () => {
+  const dataDir = process.env.SP_DATA_DIR;
+  const text = new Map();
+  const nativeHas = (file, noun) => { if (!text.has(file)) text.set(file, readFileSync(path.join(dataDir, file), 'utf8')); return text.get(file).includes(noun); };
+  const consumables = catalog.prototypeEconomy.gearConsumables;
+  const shown = new Set();
+  for (const [id, [name, ...sources]] of Object.entries(CONSUMABLE_NAMES)) {
+    assert.equal(consumables[id]?.name, name, id);
+    assert.ok(!shown.has(name), `${name} is unique`);
+    shown.add(name);
+    for (const [file, noun] of sources) assert.ok(nativeHas(file, noun), `${name}: ${noun} is in ${file}`);
+  }
+  const economy = catalog.prototypeEconomy;
+  const options = [...Object.values(economy.conqueror.chestOptionsByThreshold), ...Object.values(economy.family.heistOptionsByThreshold), ...Object.values(economy.chemBaron.marketOptionsByThreshold)].flat();
+  const player = [
+    ...Object.keys(CONSUMABLE_NAMES).flatMap((id) => [consumables[id].name, consumables[id].description]),
+    ...options.flatMap((option) => [option.label, option.description]),
+    ...genericIds.flatMap((id) => [catalog.strategies[id].name, catalog.strategies[id].description]),
+  ];
+  for (const line of player) for (const term of SOURCE_SEASON_TERMS) assert.ok(!term.test(line), `${line}: ${term}`);
+  for (const option of options) for (const grant of option.grant ?? []) if (grant.kind === 'consumable' && grant.id.startsWith('prototype_') && !grant.id.includes('chem')) assert.ok(consumables[grant.id], `${option.label} grants ${grant.id}`);
+  // a renamed consumable keeps working under its old id
+  const run = (() => { let state = createSession({ seed: 7, difficulty: 'NORMAL', catalog, fieldResolver }).state; state.consumables = [{ uid: 'k1', kind: 'prototype_completed_anvil' }]; return state; })();
+  assert.equal(catalog.prototypeEconomy.gearConsumables[run.consumables[0].kind].name, '列装券');
+  assert.equal(new Set(genericIds.map((id) => catalog.strategies[id].name)).size, 26, 'generic strategy names are unique');
+});
+
+test('the player catalog names every gear consumable the inventory lists, without source notes', () => {
+  const shown = resonanceDisplayCatalog(catalog, data).prototypeEconomy.gearConsumables;
+  const own = catalog.prototypeEconomy.gearConsumables;
+  assert.deepEqual(Object.keys(shown).sort(), Object.keys(own).sort());
+  for (const [id, item] of Object.entries(shown)) {
+    assert.equal(item.name, own[id].name, id);
+    assert.equal(item.description, own[id].description, id);
+    assert.equal(item.kind, own[id].kind, id);
+    assert.ok(item.name && item.description, `${id} has a name and a description to show`);
+    assert.ok(!('source' in item) && !('adaptation' in item), `${id} carries no source notes`);
+  }
+  assert.equal(shown.prototype_reforger.name, '重构模块');
+  assert.equal(shown.prototype_item_remover.kind, 'remover');
 });

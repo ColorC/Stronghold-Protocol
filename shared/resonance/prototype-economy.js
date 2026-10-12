@@ -220,17 +220,17 @@ const CHEST_REWARDS=Object.freeze({
   35:[rewardOption('unit-cost-2','2费干员','获得一名2费干员。',[{kind:'operator',targetCost:2}],'Conqueror Chest 35: 2 Cost Unit')],
   65:[rewardOption('unit-cost-4','4费干员','获得一名4费干员。',[{kind:'operator',targetCost:4}],'Conqueror Chest 65: 4 Cost Unit')],
   100:[rewardOption('copy-3','低阶复制券与3费干员','获得一张低阶复制券与一名3费干员。',[{kind:'consumable',id:'smallCopy'},{kind:'operator',targetCost:3}],'Conqueror Chest 100: Lesser Champion Duplicator + 3 Cost Unit')],
-  150:[rewardOption('component-reforger','组件与重铸器','获得一件组件和一枚重铸器。',[{kind:'component',pool:'components'},{kind:'consumable',id:'prototype_reforger'}],'Conqueror Chest 150: Random Component + Reforger; the component is drawn from allowed mode components')],
+  150:[rewardOption('component-reforger','组件与重构模块','获得一件组件和一个重构模块。',[{kind:'component',pool:'components'},{kind:'consumable',id:'prototype_reforger'}],'Conqueror Chest 150: Random Component + Reforger; the component is drawn from allowed mode components')],
   200:[rewardOption('units-4-5','4费与5费干员','获得一名4费干员与一名5费干员。',[{kind:'operator',targetCost:4},{kind:'operator',targetCost:5}],'Conqueror Chest 200: 4 Cost Unit + 5 Cost Unit')],
   330:[rewardOption('unit-5','5费干员','获得一名5费干员。',[{kind:'operator',targetCost:5}],'Conqueror Chest 330: 5 Cost Unit')],
-  440:[rewardOption('thief-gloves','窃盗手套','获得两件随机成装。',[{kind:'consumable',id:'prototype_thiefs_gloves'}],'Conqueror Chest 440: Thief’s Item; mode grants two seeded completed items')],
-  550:[rewardOption('completed-anvil','成装铁砧','选择一件本模式成装。',[{kind:'consumable',id:'prototype_completed_anvil'}],'Conqueror Chest 550: Completed Item Anvil; opens an actual Resonance gear selection')],
-  660:[rewardOption('artifact-anvil','遗物铁砧','选择一件本模式遗物装备。',[{kind:'consumable',id:'prototype_artifact_anvil'}],'Conqueror Chest 660: Artifact Anvil; opens an actual tagged Resonance gear selection')],
-  750:[rewardOption('support-anvil','辅助装备铁砧','选择一件本模式辅助装备。',[{kind:'consumable',id:'prototype_support_anvil'}],'Conqueror Chest 750: Support Item Anvil; opens an actual current support gear selection')],
+  440:[rewardOption('thief-gloves','道具补给包','获得两件随机合成装备。',[{kind:'consumable',id:'prototype_thiefs_gloves'}],'Conqueror Chest 440: Thief’s Item; mode grants two seeded completed items')],
+  550:[rewardOption('completed-anvil','列装券','选择一件合成装备。',[{kind:'consumable',id:'prototype_completed_anvil'}],'Conqueror Chest 550: Completed Item Anvil; opens an actual Resonance gear selection')],
+  660:[rewardOption('artifact-anvil','机密列装券','选择一件合成装备，额外获得其基础属性的50%。',[{kind:'consumable',id:'prototype_artifact_anvil'}],'Conqueror Chest 660: Artifact Anvil; opens an actual tagged Resonance gear selection')],
+  750:[rewardOption('support-anvil','支援列装券','选择一件合成装备，其基础属性提高25%，所有干员攻击力提高5%。',[{kind:'consumable',id:'prototype_support_anvil'}],'Conqueror Chest 750: Support Item Anvil; opens an actual current support gear selection')],
   850:[rewardOption('gold-20','20枚金币','获得20枚金币。',[{kind:'gold',amount:20}],'Conqueror Chest 850: x20 Gold')],
-  1000:[rewardOption('remover-gold','卸除器与金币','获得一枚卸除器和20枚金币。',[{kind:'consumable',id:'prototype_item_remover'},{kind:'gold',amount:20}],'Conqueror Chest 1000: Remover + x20 Gold')],
-  1200:[rewardOption('radiant-artifact-remover','辉光装备、遗物铁砧、卸除器与金币','选择辉光装备与遗物装备，获得卸除器和50枚金币。',[{kind:'consumable',id:'prototype_radiant_anvil'},{kind:'consumable',id:'prototype_artifact_anvil'},{kind:'consumable',id:'prototype_item_remover'},{kind:'gold',amount:50}],'Conqueror Chest 1200: Radiant Item + Artifact Anvil + Remover + x50 Gold')],
-  1500:[rewardOption('radiant-conversion-gold','辉光升格与金币','获得一枚辉光转化器和80枚金币。',[{kind:'consumable',id:'prototype_radiant_conversion'},{kind:'gold',amount:80}],'Conqueror Chest 1500: Radiant Conversion + x80 Gold')],
+  1000:[rewardOption('remover-gold','卸除许可与金币','获得一个卸除许可和20枚金币。',[{kind:'consumable',id:'prototype_item_remover'},{kind:'gold',amount:20}],'Conqueror Chest 1000: Remover + x20 Gold')],
+  1200:[rewardOption('radiant-artifact-remover','辉光列装券、机密列装券、卸除许可与金币','获得一张辉光列装券、一张机密列装券和一个卸除许可，以及50枚金币。',[{kind:'consumable',id:'prototype_radiant_anvil'},{kind:'consumable',id:'prototype_artifact_anvil'},{kind:'consumable',id:'prototype_item_remover'},{kind:'gold',amount:50}],'Conqueror Chest 1200: Radiant Item + Artifact Anvil + Remover + x50 Gold')],
+  1500:[rewardOption('radiant-conversion-gold','辉光改装与金币','获得一个辉光改装模块和80枚金币。',[{kind:'consumable',id:'prototype_radiant_conversion'},{kind:'gold',amount:80}],'Conqueror Chest 1500: Radiant Conversion + x80 Gold')],
 });
 const FAMILY_REWARDS=Object.freeze({
   10:[rewardOption('training-dummies','三只训练纸偶','获得三只训练纸偶，可放置在战场并承受敌方攻击。',[{kind:'special_entity',id:'TFT_TrainingDummy',count:3}],'Family Heist 10: x3 Training Dummy; source object uses native sand-obelisk appearance only')],
@@ -240,7 +240,7 @@ const FAMILY_REWARDS=Object.freeze({
   ],
   20:[
     rewardOption('family20-gold','20枚金币','获得20枚金币。',[{kind:'gold',amount:20}],'Family Heist 20: x20 Gold'),
-    rewardOption('family20-artifact','遗物装备','选择一件本模式遗物装备。',[{kind:'consumable',id:'prototype_artifact_anvil'}],'Family Heist 20: Artifact Item; project maps this to its supported Artifact selection'),
+    rewardOption('family20-artifact','机密装备','选择一件合成装备，额外获得其基础属性的50%。',[{kind:'consumable',id:'prototype_artifact_anvil'}],'Family Heist 20: Artifact Item; project maps this to its supported Artifact selection'),
   ],
   30:[
     rewardOption('family30-gold','30枚金币','获得30枚金币。',[{kind:'gold',amount:30}],'Family Heist 30: x30 Gold'),
@@ -267,7 +267,7 @@ function chemMarketOptions() {
     add('copies','smallCopy');add('removers','prototype_item_remover');
     if(bundle.gold)grant.push({kind:'gold',amount:bundle.gold});
     const choices=(bundle.t0??0)+(bundle.t1??0)+(bundle.t2??0)+(bundle.t3??0)+(bundle.t4??0);
-    const label=[choices?`${choices}件装备选择`:null,bundle.copies?`${bundle.copies}张复制券`:null,bundle.removers?`${bundle.removers}枚卸除器`:null,bundle.gold?`${bundle.gold}枚金币`:null].filter(Boolean).join('、')||'卸除器';
+    const label=[choices?`${choices}件装备选择`:null,bundle.copies?`${bundle.copies}张复制券`:null,bundle.removers?`${bundle.removers}个卸除许可`:null,bundle.gold?`${bundle.gold}枚金币`:null].filter(Boolean).join('、')||'卸除许可';
     return rewardOption(`chem-${threshold}-${index+1}`,label,'领取这组奖励；装备选择可在背包中打开并挑选可用装备。',grant,`Chem-Baron Black Market ${threshold}: source reward row ${index+1}; item tiers map to implemented Resonance pools`);
   })]));
 }
@@ -361,15 +361,15 @@ export function applyPrototypeEconomy(catalog={}) {
     }
   }
   const gearConsumables={
-    prototype_item_remover:{id:'prototype_item_remover',name:'卸除器',kind:'remover',description:'将一件干员携带的装备卸下并放回背包。',source:'Set 13 Chem-Baron / Conqueror reward tables',adaptation:'保留本模式原装备及品质；背包满时无法使用。'},
-    prototype_reforger:{id:'prototype_reforger',name:'重铸器',kind:'reforger',description:'将一件装备重铸为同类的另一件可用装备。',source:'Set 13 Conqueror reward table',adaptation:'按本模式当前可获得的同类装备池确定性重铸。'},
-    prototype_completed_anvil:{id:'prototype_completed_anvil',name:'成装铁砧',kind:'anvil',quality:'completed',description:'从本模式已完成装备中选择一件。',source:'Set 13 Conqueror reward table',adaptation:'装备效果遵循本模式规则。'},
-    prototype_artifact_anvil:{id:'prototype_artifact_anvil',name:'遗物铁砧',kind:'anvil',quality:'artifact',description:'从本模式已完成装备中选择一件遗物强化装备；额外获得该装备基础属性的50%。',source:'Set 13 Family Heist / Conqueror reward tables',adaptation:'以本模式装备与战斗属性实现遗物强化。'},
-    prototype_support_anvil:{id:'prototype_support_anvil',name:'辅助装备铁砧',kind:'anvil',quality:'support',description:'选择一件辅助强化装备；装备基础属性提高25%，全队攻击提高5%。',source:'Set 13 Conqueror reward table',adaptation:'将辅助装备团队增益映射到本模式全队攻击属性。'},
-    prototype_radiant_anvil:{id:'prototype_radiant_anvil',name:'辉光铁砧',kind:'anvil',quality:'radiant',description:'从本模式已完成装备中选择一件辉光强化装备；额外获得该装备基础属性。',source:'Set 13 Conqueror reward table',adaptation:'以本模式装备与战斗属性实现辉光强化。'},
-    prototype_radiant_conversion:{id:'prototype_radiant_conversion',name:'辉光转化器',kind:'radiant_conversion',description:'将一件未强化装备升为辉光品质；其基础属性提高50%。',source:'Set 13 Conqueror reward table',adaptation:'对已装备或背包装备添加本模式辉光强化品质。'},
-    prototype_thiefs_gloves:{id:'prototype_thiefs_gloves',name:'窃盗手套',kind:'thiefs_gloves',description:'打开后获得两件随机本模式成装。',source:'Set 13 Conqueror reward table',adaptation:'从本模式可获得成装池各抽取一件。'},
-    prototype_roster_crown:{id:'prototype_roster_crown',name:'战术王冠',kind:'roster_crown',description:'提高一格上阵容量，最多提高两格。',source:'Set 13 Conqueror reward table',adaptation:'用于本模式战场部署容量。'},
+    prototype_item_remover:{id:'prototype_item_remover',name:'卸除许可',kind:'remover',description:'使用后卸除一名干员配发的一件装备，放回背包。',source:'Set 13 Chem-Baron / Conqueror reward tables',adaptation:'保留本模式原装备及品质；背包满时无法使用。'},
+    prototype_reforger:{id:'prototype_reforger',name:'重构模块',kind:'reforger',description:'使用后将一件装备重构为同类的另一件可用装备。',source:'Set 13 Conqueror reward table',adaptation:'按本模式当前可获得的同类装备池确定性重铸。'},
+    prototype_completed_anvil:{id:'prototype_completed_anvil',name:'列装券',kind:'anvil',quality:'completed',description:'使用后从合成装备中选择一件。',source:'Set 13 Conqueror reward table',adaptation:'装备效果遵循本模式规则。'},
+    prototype_artifact_anvil:{id:'prototype_artifact_anvil',name:'机密列装券',kind:'anvil',quality:'artifact',description:'使用后从合成装备中选择一件，额外获得该装备基础属性的50%。',source:'Set 13 Family Heist / Conqueror reward tables',adaptation:'以本模式装备与战斗属性实现遗物强化。'},
+    prototype_support_anvil:{id:'prototype_support_anvil',name:'支援列装券',kind:'anvil',quality:'support',description:'使用后从合成装备中选择一件，其基础属性提高25%，所有干员攻击力提高5%。',source:'Set 13 Conqueror reward table',adaptation:'将辅助装备团队增益映射到本模式全队攻击属性。'},
+    prototype_radiant_anvil:{id:'prototype_radiant_anvil',name:'辉光列装券',kind:'anvil',quality:'radiant',description:'使用后从合成装备中选择一件辉光强化装备，额外获得该装备基础属性。',source:'Set 13 Conqueror reward table',adaptation:'以本模式装备与战斗属性实现辉光强化。'},
+    prototype_radiant_conversion:{id:'prototype_radiant_conversion',name:'辉光改装模块',kind:'radiant_conversion',description:'使用后将一件未强化装备改装为辉光品质，其基础属性提高50%。',source:'Set 13 Conqueror reward table',adaptation:'对已装备或背包装备添加本模式辉光强化品质。'},
+    prototype_thiefs_gloves:{id:'prototype_thiefs_gloves',name:'道具补给包',kind:'thiefs_gloves',description:'打开后获得两件随机合成装备。',source:'Set 13 Conqueror reward table',adaptation:'从本模式可获得成装池各抽取一件。'},
+    prototype_roster_crown:{id:'prototype_roster_crown',name:'编队许可',kind:'roster_crown',description:'使用后上阵人数上限+1，最多+2。',source:'Set 13 Conqueror reward table',adaptation:'用于本模式战场部署容量。'},
   };
   const familyHeistOptions={...Object.fromEntries(Object.entries(FAMILY_REWARDS).map(([threshold,rows])=>[threshold,rows.map((row)=>({...row}))]))};
   return {...catalog,equipment,prototypeEconomy:{...(catalog.prototypeEconomy??{}),
