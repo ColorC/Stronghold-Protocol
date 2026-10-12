@@ -14,6 +14,10 @@ import { resonanceEmblemIconUrl } from '../../../public/js/resonance/itemIconMap
 const PLAYER = 'resonance';
 const OK = Object.freeze({ ok: true });
 const FAIL = (error, detail) => ({ error, ...(detail ? { detail } : {}) });
+/** Placement refusals of the session rules, as the shared game-worded ERR codes the client turns into its toast (the rest stay 无效的目标). */
+const SESSION_FAILURE_CODE = Object.freeze({
+  POPULATION_OVER_CAPACITY: ERR.BOARD_FULL, ILLEGAL_DEPLOYMENT: ERR.BAD_TILE, ILLEGAL_SWAP: ERR.BAD_TILE, BAD_POSITION: ERR.BAD_TILE,
+});
 const isNativeUid = (value) => Number.isSafeInteger(value) && value > 0;
 const finiteNumber = (value) => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
 const RESONANCE_ACTIONS = new Set(['advanceSupply', 'claimReward', 'chooseStrategy', 'clearSummonOrder', 'combine',
@@ -326,7 +330,7 @@ export class ResonanceMatch extends Match {
       const result = applyAction(this.state, action, { catalog: this.catalog,
         fieldResolver: (s) => getResonanceField(s, { data: this.data, catalog: this.catalog }),
         recording: false, completedResult });
-      if (!result.ok) return FAIL(ERR.BAD_TARGET, result.error);
+      if (!result.ok) return FAIL(SESSION_FAILURE_CODE[result.error] ?? ERR.BAD_TARGET, result.error);
       this.state = result.state;
       if (action.type === 'fight') {
         delete this.state.nativeRuntime;
@@ -386,7 +390,7 @@ export class ResonanceMatch extends Match {
       if (!piece) return FAIL(ERR.BAD_TARGET);
       if (msg.to.area === 'hand') return this.enqueueSessionAction({ type: 'bench', pieceUid, slot: msg.to.idx });
       return this.enqueueSessionAction({ type: piece.row == null ? 'deploy' : 'move', pieceUid,
-        row: msg.to.row, col: msg.to.col, dir: msg.dir ?? piece.dir ?? 'RIGHT' });
+        row: msg.to.row, col: msg.to.col, dir: msg.dir ?? msg.to.dir ?? piece.dir ?? 'RIGHT' });
     }
     if (msg?.t === 'g.equip') {
       const pieceUid = this.uidMap.session(msg.targetUid), itemUid = this.uidMap.session(msg.itemUid);

@@ -1526,15 +1526,18 @@ export function applyAction(state, action, { catalog, battleRunner, fieldResolve
       }
       case 'deploy': {
         requirePrep(draft); const piece=pieceByUid(draft,action.pieceUid); if(!piece) throw new Error('PIECE_NOT_FOUND');
-        if (piece.row!==null) throw new Error('PIECE_ALREADY_DEPLOYED'); if (draft.pieces.filter((entry)=>entry.row!==null).length>=effectiveDeployCapacity(draft)) throw new Error('POPULATION_OVER_CAPACITY');
-        if(uniqueCoreEnabled(draft,catalog)){const charId=opTable(catalog)[piece.operatorId]?.charId;if(draft.pieces.some((entry)=>entry.row!==null&&opTable(catalog)[entry.operatorId]?.charId===charId))throw new Error('DUPLICATE_CORE_IDENTITY');}
+        if (piece.row!==null) throw new Error('PIECE_ALREADY_DEPLOYED');
+        // dropping on an operator swaps: the occupant goes back to the dragged one's bench slot, so the deployed count does not change
+        const occupant=draft.pieces.find((entry)=>entry!==piece&&entry.row===action.row&&entry.col===action.col);
+        if (!occupant&&draft.pieces.filter((entry)=>entry.row!==null).length>=effectiveDeployCapacity(draft)) throw new Error('POPULATION_OVER_CAPACITY');
+        if(uniqueCoreEnabled(draft,catalog)){const charId=opTable(catalog)[piece.operatorId]?.charId;if(draft.pieces.some((entry)=>entry!==occupant&&entry.row!==null&&opTable(catalog)[entry.operatorId]?.charId===charId))throw new Error('DUPLICATE_CORE_IDENTITY');}
         if (!isInt(action.row)||!isInt(action.col)||!['UP','RIGHT','DOWN','LEFT'].includes(action.dir)) throw new Error('BAD_POSITION');
         const check=cellIsLegal(fieldResolver,draft,catalog,action.row,action.col); if(!check.known)throw new Error('FIELD_RESOLVER_REQUIRED');if(!check.legal||!canDeployAt(check.cells,action.row,action.col,opTable(catalog)[piece.operatorId]))throw new Error('ILLEGAL_DEPLOYMENT');
-        const occupant=draft.pieces.find((entry)=>entry!==piece&&entry.row===action.row&&entry.col===action.col);
-        if(occupant&&!canDeployAt(check.cells,action.row,action.col,opTable(catalog)[occupant.operatorId]))throw new Error('ILLEGAL_SWAP');
         if(occupant){
+          benchSlotMap(draft);
           const slot=piece.benchSlot;
           if(!Number.isInteger(slot)||slot<0||slot>=benchCapacity(draft,catalog))throw new Error('BENCH_FULL');
+          // the occupant keeps its facing and gear on the bench
           occupant.row=null;occupant.col=null;occupant.benchSlot=slot;
         }
         piece.benchSlot=null;
@@ -1567,7 +1570,9 @@ export function applyAction(state, action, { catalog, battleRunner, fieldResolve
             const check=cellIsLegal(fieldResolver,draft,catalog,piece.row,piece.col);
             if(!check.known)throw new Error('FIELD_RESOLVER_REQUIRED');
             if(!check.legal||!canDeployAt(check.cells,piece.row,piece.col,opTable(catalog)[occupant.operatorId]))throw new Error('ILLEGAL_SWAP');
-            occupant.row=piece.row;occupant.col=piece.col;occupant.benchSlot=null;
+            if(uniqueCoreEnabled(draft,catalog)){const charId=opTable(catalog)[occupant.operatorId]?.charId;if(draft.pieces.some((entry)=>entry!==piece&&entry!==occupant&&entry.row!==null&&opTable(catalog)[entry.operatorId]?.charId===charId))throw new Error('DUPLICATE_CORE_IDENTITY');}
+            // the bench operator takes the withdrawn one's tile with that tile's facing (as in the original game); the withdrawn one keeps its own
+            occupant.row=piece.row;occupant.col=piece.col;occupant.dir=piece.dir;occupant.benchSlot=null;
           } else if(benchCount(draft)>=benchCapacity(draft,catalog))throw new Error('BENCH_FULL');
           piece.row=null;piece.col=null;piece.benchSlot=slot;
         }
