@@ -8,6 +8,7 @@ import {MIN_DAMAGE_RATIO} from '../../server/sim/constants.js';
 import {factionSeason} from '../../shared/resonance/faction-season.js';
 import {factionSeasonV2} from '../../shared/resonance/faction-season-v2.js';
 import {nativePowerBudget,nativePowerBudgetV2} from '../../shared/resonance/native-power.js';
+import {OPERATOR_ADAPTATIONS} from '../../shared/resonance/operator-adaptations.js';
 const data=loadData(process.env.SP_DATA_DIR,{log:{warn(){},error(){}}});
 const v2=getResonanceCatalog(data,{rulesVersion:3,seasonId:factionSeasonV2.id});
 const v1=getResonanceCatalog(data,{rulesVersion:3,seasonId:factionSeason.id});
@@ -30,7 +31,9 @@ test('season 2 physical ATK is the season budget plus the 150 reference DEF at e
       const stats=op.stars[star].stats;
       assert.equal(stats.atk,old.stars[star].stats.atk+(physical(op)?REFERENCE:0),`${op.name} ${star}★`);
       assert.equal(op.stars[star].record.stats.atk,stats.atk,`${op.name} ${star}★ record`);
-      assert.equal(stats.maxHp,old.stars[star].stats.maxHp);assert.equal(stats.def,old.stars[star].stats.def);
+      // an adaptation that pays for an economy effect with a weaker body (格拉尼) scales its health budget
+      const hpScale=OPERATOR_ADAPTATIONS[op.id]?.budget?.hp??1;
+      assert.ok(Math.abs(stats.maxHp-old.stars[star].stats.maxHp*hpScale)<=star,`${op.name} ${star}★ health`);assert.equal(stats.def,old.stars[star].stats.def);
     }
     // stars still multiply the budget part (the damage left after the reference DEF) by 1.8 and 3.24
     const budget=star=>op.stars[star].stats.atk-(physical(op)?REFERENCE:0);

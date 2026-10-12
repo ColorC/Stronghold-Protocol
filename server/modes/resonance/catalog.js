@@ -13,6 +13,7 @@ import { applyPrototypePacts } from '../../sim/content/resonance/prototype-pacts
 import { applyPrototypeStrategies } from '../../../shared/resonance/prototype-strategies.js';
 import { applyPrototypeEconomy, prototypeEconomyRules } from '../../../shared/resonance/prototype-economy.js';
 import { applyPrototypeSourceGear } from '../../../shared/resonance/prototype-source-gear.js';
+import { applyOperatorAdaptations } from '../../../shared/resonance/operator-adaptations.js';
 
 const clone = (value) => structuredClone(value);
 const operatorCache = new WeakMap();
@@ -149,6 +150,8 @@ export function getResonanceCatalog(data = getData(), options = {}) {
     currentCatalog.equipment=Object.fromEntries(Object.entries(currentCatalog.equipment).filter(([,item])=>item.kind!=='emblem'||prototypeEmblemIds.has(item.id)));
     currentCatalog.recipes=currentCatalog.recipes.filter((recipe)=>!legacyEmblemIds.has(recipe.resultId));
     Object.assign(currentCatalog,applyPrototypeStrategies(currentCatalog));
+    // a season may rewrite operators' own effects for the mode (season 2: shared/resonance/operator-adaptations.js)
+    if(season.operatorAdaptations)Object.assign(currentCatalog,applyOperatorAdaptations(currentCatalog,season.operatorAdaptations));
     const campaign=clone(currentCatalog.campaign);
     campaign.strategyNodes=[5,13,20];
     campaign.shopOdds=clone(prototypeEconomyRules.shopOddsByLevel);

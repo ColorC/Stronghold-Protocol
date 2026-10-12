@@ -7,6 +7,7 @@ import { installPrototypeGearActions } from './prototype-gear.js';
 import { installStrongholdPacts } from './stronghold-pacts.js';
 import { prototypeSeasonForCatalog, redesignedTraitIds } from '../../../../shared/resonance/season-registry.js';
 import { installPrototypeSourceGear } from './prototype-source-gear.js';
+import { installOperatorAdaptations } from './operator-adaptations.js';
 
 const installedBattles=new WeakMap();
 export function prototypePveWinCount(state) {
@@ -34,6 +35,7 @@ export function installPrototypeBattleContent(battle,state,catalog) {
   installPrototypeSignatures(battle,state,catalog);
   installPrototypeEconomy(battle,state,catalog);
   installPrototypeGearActions(battle,state,catalog);
+  installOperatorAdaptations(battle,state,catalog);
   installedBattles.set(battle,activeTraits);
   return activeTraits;
 }

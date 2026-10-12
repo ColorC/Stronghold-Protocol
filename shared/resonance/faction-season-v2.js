@@ -2,6 +2,7 @@ import {factionSeason} from './faction-season.js';
 import {nativePowerBudgetV2} from './native-power.js';
 import {junkerKingUpgradesV2} from './prototype-economy.js';
 import {GENERIC_STRATEGIES} from './generic-strategies.js';
+import {OPERATOR_ADAPTATIONS,adaptedHeroes} from './operator-adaptations.js';
 import {STRONGHOLD_PACT_TIERS,STRONGHOLD_PACT_TUNING,STRONGHOLD_PACT_IDS,STRONGHOLD_RETIRED_ECONOMY_TRAITS,
   STRONGHOLD_RETIRED_AUGMENTS,STRONGHOLD_REWARD_ITEM_SUBSTITUTIONS,STRONGHOLD_STRATEGY_OVERRIDES} from './stronghold-pacts.js';
 
@@ -39,6 +40,10 @@ requireValue(STRONGHOLD_PACT_IDS.every(id=>traits.some(trait=>trait.id===id&&tra
 
 export const factionSeasonV2=Object.freeze({...factionSeason,
   id:'resonance-factions-2',
+  // operators whose own effects are rewritten for the mode or adapted as pilots (shared/resonance/operator-adaptations.js);
+  // only an adaptation's budget scale changes a hero record
+  heroes:Object.freeze(adaptedHeroes(factionSeason.heroes)),
+  operatorAdaptations:OPERATOR_ADAPTATIONS,
   nativePowerBudget:nativePowerBudgetV2,
   junkerKingUpgrades:junkerKingUpgradesV2,
   // strategy pool: 26 generic strategies beside the emblem, crown and pact ones; at most one 徽记 / 王冠 per offer, one
