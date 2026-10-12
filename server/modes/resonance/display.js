@@ -148,6 +148,8 @@ export function resonanceDisplayCatalog(catalog, data = null) {
     recipes: catalog.recipes.map((recipe) => ({ parts: [...recipe.parts], resultId: recipe.resultId,
       names: recipe.parts.map((id) => catalog.equipment[id]?.name ?? '装备'), resultName: catalog.equipment[recipe.resultId]?.name ?? '装备' })),
     strategies, environments: (catalog.config?.rulesVersion??1)>=2?{}:environments, campaign: structuredClone(catalog.campaign),
+    // the gear consumables the inventory lists by name and description (no source or adaptation notes)
+    ...(catalog.prototypeEconomy?.gearConsumables?{prototypeEconomy:{gearConsumables:Object.fromEntries(Object.entries(catalog.prototypeEconomy.gearConsumables).map(([id,item])=>[id,{id,name:item.name,kind:item.kind,...(item.quality?{quality:item.quality}:{}),description:item.description}]))}}:{}),
     ...((catalog.config?.rulesVersion??1)>=2?{season:{name:catalog.season?.displayName??'共鸣'},...(catalog.config.rulesVersion===2?{openingEvent:openingEventView(catalog.config.openingId),openingEvents:Object.fromEntries(Object.keys(resonanceOpenings).map(id=>[id,openingEventView(id)]))}:{})}:{}),
   };
 }

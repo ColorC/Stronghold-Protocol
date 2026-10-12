@@ -324,11 +324,16 @@ function NativeResonanceInventoryActions({ state, catalog, editable, busy, onAct
     ${consumables.length ? consumables.map(row => {
       const record = catalog?.prototypeEconomy?.gearConsumables?.[row.kind] || {};
       const kind = record.kind || '';
+      // the targets the session accepts: 卸除许可 an item an operator wears, 重构模块 a gear that is neither a component nor an emblem,
+      // 辉光改装模块 an item without a quality mark yet
+      const needsTarget = ['remover', 'reforger', 'radiant_conversion'].includes(kind);
       const targets = kind === 'remover' ? itemTargets.filter(item => pieces.some(piece => (piece.equipment || []).some(gear => gear.uid === item.uid)))
-        : kind === 'reforger' || kind === 'radiant_conversion' ? itemTargets : [];
+        : kind === 'reforger' ? itemTargets.filter(item => !['component', 'emblem'].includes(catalog?.equipment?.[item.itemId]?.kind))
+        : kind === 'radiant_conversion' ? itemTargets.filter(item => !item.quality) : [];
       return html`<article class="rs-detail__item" key=${row.uid}>
         <span class="rs-detail__text"><b>${record.name || '战术消耗品'}</b><span>${record.description || ''}</span></span>
         ${targets.length ? html`<label class="rs-detail__select"><span>${kind === 'remover' ? '选择已装备物品' : '选择目标装备'}</span><select disabled=${busy || !editable} value="" onChange=${event => { const itemUid = event.currentTarget.value; event.currentTarget.value = ''; if (itemUid) void use(row, itemUid); }}><option value="">选择装备</option>${targets.map(item => html`<option value=${item.uid} key=${item.uid}>${itemName(item)} · ${item.ownerName}</option>`)}</select></label>`
+          : needsTarget ? html`<small class="rs-detail__select">暂无可选装备</small>`
           : html`<button type="button" disabled=${busy || !editable} onClick=${() => void use(row)}>${kind === 'anvil' ? '打开选择' : '使用'}</button>`}
       </article>`;
     }) : html`<p class="dtext">暂无可用消耗品。</p>`}
@@ -449,7 +454,7 @@ function ResonanceChoiceOverlay({ state, catalog, onAction, busy }) {
   const needsPair = strategy && needsAdjacentStrategyPair(catalog?.strategies?.[selectedStrategy]);
   const pair = strategyTargets[selectedStrategy] || '';
   const pairs = needsPair ? adjacentDeployedPairs(state) : [];
-  const economyTitles = { academy_sponsor: `${catalog?.pacts?.academy?.name||'研发'}赞助`, chem_market: `${catalog?.pacts?.risk?.name||'险境'}黑市`, war_chest: `${catalog?.pacts?.conqueror?.name||'远征'}宝箱`, family_heist: `${catalog?.pacts?.family?.name||'家族'}战利品`, junker_armory: '铸军军械铺' };
+  const economyTitles = { academy_sponsor: `${catalog?.pacts?.academy?.name||'研发'}赞助`, chem_market: `${catalog?.pacts?.risk?.name||'险境'}黑市`, war_chest: `${catalog?.pacts?.conqueror?.name||'远征'}宝箱`, family_heist: `${catalog?.pacts?.family?.name||'家族'}战利品`, junker_armory: '铸军军械铺', gear_anvil: '列装' };
   const choiceTitle = strategy ? '选择策略' : economy ? (economyTitles[choice.economyKind] || '盟约奖励') : ['operators', 'target_operator'].includes(choice.type) ? '干员补给'
     : ['identity_transfer', 'pact_tag', 'dual_pact'].includes(choice.type) ? '盟约选择' : '领取补给';
   if (collapsed) return html`<button type="button" class="rs-native-choice-tab" aria-label="重新打开待领取选择" onClick=${() => setCollapsed(false)}>
@@ -634,6 +639,8 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
     catch (error) { toast(error?.message || '装备操作未能提交，请检查连接后重试', 'warn'); return false; }
     finally { setResonanceActionBusy(false); }
   };
+  // a choice that opens while a side panel is up (a 列装券 used from the inventory) takes the screen: the panel (z 70) would cover half of its cards
+  useEffect(() => { if (resonanceState?.phase === 'choice' && resonanceState.pendingChoices?.length) setResonancePanel(null); }, [resonanceState?.phase, resonanceState?.pendingChoices?.length]);
   const toggleResonancePanel = (panel) => {
     setResonanceHelp(false);
     const closing = resonancePanel === panel;
