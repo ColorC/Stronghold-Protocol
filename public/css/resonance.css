@@ -569,3 +569,19 @@ body { background: #101512; color: var(--rs-text); }
 /* codex: a framed square icon, not a frame round the whole art area */
 .rs-codex .rs-codex__catalog-card .rs-codex__art:has(> .rs-item-icon) { display: grid; place-items: center; }
 .rs-codex .rs-codex__catalog-card .rs-codex__art > .rs-item-icon { width: auto; height: 74%; aspect-ratio: 1; }
+/* 召唤栏: a card per summon of each deployed summoner, under the bond strip; kept off the bench so a full bench never hides one */
+.rs-native-match .rs-summon-bar { position: absolute; z-index: 12; left: max(10px,env(safe-area-inset-left,0px)); bottom: calc(max(62px,.62rem) + env(safe-area-inset-bottom,0px)); width: min(240px,30vw); max-height: min(46dvh,340px); display: flex; flex-direction: column; box-sizing: border-box; padding: 6px 8px 8px; color: var(--text-hi); background: rgba(8,13,11,.94); border: 1px solid var(--line-2); pointer-events: auto; }
+.rs-summon-bar > header { flex: none; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
+.rs-summon-bar > header b { color: var(--mint-300); font-size: max(15px,.15rem); }
+.rs-summon-bar > header small { color: var(--text-lo); font-size: 14px; white-space: nowrap; }
+.rs-summon-bar__list { min-height: 0; display: grid; gap: 5px; overflow: auto; scrollbar-width: thin; }
+.rs-summon-card { display: grid; grid-template-columns: 40px minmax(0,1fr) auto; align-items: center; gap: 7px; padding: 4px 6px; background: rgba(255,255,255,.05); border: 1px solid var(--line); cursor: grab; user-select: none; }
+.rs-summon-card[draggable="true"]:hover { border-color: var(--mint-400); }
+.rs-summon-card.is-empty { opacity: .5; cursor: default; }
+.rs-summon-card.is-dragging { border-color: var(--mint-300); background: rgba(60,224,140,.14); }
+.rs-summon-card .uthumb { width: 40px; height: 40px; }
+.rs-summon-card__text { display: grid; min-width: 0; }
+.rs-summon-card__text b { overflow: hidden; font-size: 15px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+.rs-summon-card__text small { overflow: hidden; color: var(--text-lo); font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.rs-summon-card__count { color: var(--text-md); font-size: 14px; white-space: nowrap; }
+.rs-summon-card__count b { color: var(--text-hi); font-size: 17px; }

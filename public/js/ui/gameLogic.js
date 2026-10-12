@@ -1139,9 +1139,9 @@ export function indexPieces(priv) {
  * cards, `stageOverrides`), like the server's per-player deploy map, on the field the pieces are deployed on
  * (`field` = `deployFieldOf(pub, myId)`: the own board, or the player's half of the boss field in a boss round).
  * @param {{ priv:any, stage:any, editable:boolean, field?:'normal'|'bossL'|'bossR', getChess?:(id:string)=>any,
- *   getToken?:(id:string)=>any, getItem?:(id:string)=>any, getEffect?:(id:string)=>any }} o
+ *   getToken?:(id:string)=>any, getItem?:(id:string)=>any, getEffect?:(id:string)=>any, noSummonSwap?:boolean }} o
  */
-export function placementContext({ priv, stage, editable, field = 'normal', getChess = () => null, getToken = () => null, getItem = () => null, getEffect = () => null }) {
+export function placementContext({ priv, stage, editable, field = 'normal', getChess = () => null, getToken = () => null, getItem = () => null, getEffect = () => null, noSummonSwap = false }) {
   const pieces = indexPieces(priv);
   const boardAt = new Map();
   for (const e of pieces.values()) if (e.area === 'board') boardAt.set(tileKey(e.row, e.col), e);
@@ -1157,7 +1157,7 @@ export function placementContext({ priv, stage, editable, field = 'normal', getC
   const deploy = field === 'bossL' || field === 'bossR'
     ? deploySets(stage, field, ov)
     : deploySets(effectiveStage(stage, ov));
-  return { priv, pieces, boardAt, handAt, deploy, cap, count, field, editable: !!editable, getChess, getToken, getItem };
+  return { priv, pieces, boardAt, handAt, deploy, cap, count, field, editable: !!editable, getChess, getToken, getItem, noSummonSwap: !!noSummonSwap };
 }
 
 /**
@@ -1276,6 +1276,8 @@ export function canPlace(ctx, uid, target) {
     }
     // its own tile: re-orient in place through the direction wheel (research 09 §1.2)
     if (src.area === 'board' && src.row === row && src.col === col) return { ok: true, action: 'orient' };
+    // a mode whose summons are only tiles (共鸣: no bench stack to swap them with) never swaps one with the operator on a tile
+    if (ctx.noSummonSwap && piece.kind === 'token' && occ) return no('BAD_TILE', '该位置已有单位');
     if (!tileAllows(ctx, piece, row, col)) {
       const deployable = ctx.deploy.ranged.has(tileKey(row, col));
       return no('BAD_TILE', deployable && piecePosition(ctx, piece) === 'MELEE' ? '近战单位只能部署在地面' : '无法部署在该位置');

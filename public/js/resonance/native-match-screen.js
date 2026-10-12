@@ -135,7 +135,8 @@ import { pactReadableCopy } from './pactPresentation.js';
 import { CoinGlyph } from '../ui/gameComponents.js';
 import { interestFor } from '../../../shared/resonance/economy-view.js';
 import { pactCurrentTier, pactTierStatus, pactTierStatusLabel, levelExactCounts, nativeStripTier } from './pactTierState.js';
-import { specialBoardTile } from './specialEntityPlacement.js';
+import { fieldTileAt, specialBoardTile } from './specialEntityPlacement.js';
+import { NativeSummonBar, SUMMON_DRAG_TYPE, summonCardRows, summonDropRefusal } from './summonBar.js';
 import { prototypeLabCells } from './nativeLabCells.js';
 import { choiceDescription, choiceLabel, needsAdjacentStrategyPair, adjacentDeployedPairs, parseDetailHash } from './model.js';
 import { resonanceChoiceAction } from './choiceAction.js';
@@ -333,6 +334,10 @@ function NativeResonanceInventoryActions({ state, catalog, editable, busy, onAct
     }) : html`<p class="dtext">暂无可用消耗品。</p>`}
   </section>`;
 }
+/** Tiles a dragged summon card may take (green, like a piece drag) and the one under the pointer (gold). */
+const SUMMON_LEGAL_STYLE = Object.freeze({ color: 0x3ce08c, fill: 0.26, line: 0.9, group: 'resonance-summon' });
+const SUMMON_OVER_STYLE = Object.freeze({ color: 0xffd34d, fill: 0.36, line: 1, group: 'resonance-summon-over' });
+
 function NativeSpecialEntityList({ state, catalog, editable, busy, onRecall }) {
   const rows = state?.specialEntities || [];
   if (!rows.length) return null;
@@ -533,6 +538,9 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
   const [resonanceDetailBottom, setResonanceDetailBottom] = useState(null);
   const [equipmentDropTarget, setEquipmentDropTarget] = useState(null);
   const [specialDropTile, setSpecialDropTile] = useState(null);
+  const [summonDrag, setSummonDrag] = useState(null);     // key of the summon card being dragged from the 召唤栏
+  const pendingSummonFacing = useRef(null);              // { ownerUid, row, col, at }: a summon just placed from a card — its direction wheel opens once it shows
+  const openFacingRef = useRef(null);                    // the direction wheel opener of the view-events effect
   // every shop / reward card opened by a tap is a new tap — `tap` in the target: two cards of one operator (the pool
   // deals duplicates) carry the same chess id and no piece, and each must say its 选中干员 (detailPanel selectVoiceKey)
   const cardTap = useRef(0);
@@ -736,6 +744,7 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
     priv, stage: gd.stage(pub?.stageId), editable, field: deployField,
     getChess: (id) => { const c = gd.chess(id); return ownDiyRecord(c, priv, { chess: data.get('chess'), backups: data.get('backups') }) || c; },
     getToken: gd.token, getItem: gd.item, getEffect: gd.effect, backups: gd.backups,
+    noSummonSwap: true, // a placed summon is not swapped with an operator: the 共鸣 session only knows its tile, not a bench stack
   }), [priv, pub?.stageId, editable, gd.ready, deployField]);
   live.current = { pub, priv, field, editable, hasPersonalChoice, placeCtx, watching, watchWho, home, myId, alive, spectator, detail, drawer, bondOpen, emoteOpen, settingsOpen, exitOpen, drag, facing, sel, selBusy, pen, resonanceState, showPrep: (mode === 'prep' || mode === 'boot') && !watchingOther, hoverUid: live.current.hoverUid ?? null, collapsedNow: collapsed, localDone: false, canPause: false, paused };
 
@@ -1394,6 +1403,7 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
       setFacing({ uid: piece.uid, piece, row: t.row, col: t.col, grid: previewGrid(lookups, piece), name: rec?.name || '' });
       audio.sfx('pick', { volume: 0.5 });
     };
+    openFacingRef.current = openFacing;
     const offs = [
       view.on('pieceDragStart', (e) => {
         const L = live.current;
@@ -1503,7 +1513,7 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
         setDetail({ kind: 'terrain', terrain: info });
       }),
     ];
-    return () => { moveOff?.(); for (const off of offs) { try { off?.(); } catch { /* ignore */ } } };
+    return () => { openFacingRef.current = null; moveOff?.(); for (const off of offs) { try { off?.(); } catch { /* ignore */ } } };
   }, [view]);
 
   // ---- equip-replace dialog (ui/equipReplace.js): one at a time; resolves the picked replaceUid or null (cancel) ----------
@@ -1704,7 +1714,54 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
       return !!rect && event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
     }) ?? null;
   };
+  // ---- summon cards: a card of the 召唤栏 dragged onto the field (the placed copy then is an ordinary piece of the field) ----
+  const summonRows = resonanceState && editable && showPrep && !pen ? summonCardRows(resonanceState) : [];
+  const summonDragRow = summonDrag ? summonRows.find((row) => row.key === summonDrag) || null : null;
+  const summonLegalKey = summonDragRow ? summonDragRow.legalTiles.join(';') : '';
+  useEffect(() => {
+    if (!view || !summonDragRow) return undefined;
+    view.highlightTiles(summonDragRow.legalTiles.map((key) => key.split(',').map(Number)), SUMMON_LEGAL_STYLE);
+    return () => { view.highlightTiles([], SUMMON_LEGAL_STYLE); view.highlightTiles([], SUMMON_OVER_STYLE); };
+  }, [view, summonDrag, summonLegalKey]);
+  // the placed copy shows up in the next m.private: open its direction wheel then (a cancelled wheel keeps the summoner's facing)
+  useEffect(() => {
+    const want = pendingSummonFacing.current;
+    if (!want || !openFacingRef.current) return;
+    if (Date.now() - want.at > 4000) { pendingSummonFacing.current = null; return; }
+    const entry = [...placeCtx.pieces.values()].find((e) => e.area === 'board' && e.piece.kind === 'token'
+      && Number(e.piece.ownerUid) === Number(want.ownerUid) && e.row === want.row && e.col === want.col);
+    if (!entry) return;
+    pendingSummonFacing.current = null;
+    openFacingRef.current(entry, { row: want.row, col: want.col });
+  }, [placeCtx]);
+  const placeSummon = async (row, tile) => {
+    // asked for before the request: the server's m.private (with the placed copy) can reach the screen before the answer does
+    pendingSummonFacing.current = { ownerUid: row.ownerUid, row: tile.row, col: tile.col, at: Date.now() };
+    try {
+      await net.request('g.resonance', { action: { type: 'setSummonOrder', pieceUid: row.ownerUid, tokenId: row.tokenId, row: tile.row, col: tile.col, dir: row.ownerDir } });
+      audio.sfx('pick', { volume: 0.6 });
+    } catch (error) { pendingSummonFacing.current = null; audio.sfx('error', { volume: 0.5 }); toast(error?.message || '无法部署在该位置', 'warn'); }
+  };
+  const summonOver = (event) => {
+    if (!editable) return;
+    event.preventDefault();
+    const tile = event.target?.closest?.('.gm__field') ? fieldTileAt(view, event.clientX, event.clientY) : null;
+    view?.highlightTiles(tile && summonDragRow && !summonDropRefusal(summonDragRow, tile) ? [[tile.row, tile.col]] : [], SUMMON_OVER_STYLE);
+  };
+  const summonDrop = async (event) => {
+    event.preventDefault();
+    let payload = null;
+    try { payload = JSON.parse(event.dataTransfer.getData(SUMMON_DRAG_TYPE)); } catch { /* a foreign drag */ }
+    const row = summonRows.find((entry) => String(entry.ownerUid) === String(payload?.ownerUid) && entry.tokenId === payload?.tokenId);
+    const tile = event.target?.closest?.('.gm__field') ? fieldTileAt(view, event.clientX, event.clientY) : null;
+    setSummonDrag(null);
+    if (!editable || !row) return;
+    const refusal = summonDropRefusal(row, tile);
+    if (refusal) { audio.sfx('error', { volume: 0.5 }); toast(refusal, 'warn'); return; }
+    await placeSummon(row, tile);
+  };
   const equipmentDropOver = (event) => {
+    if (event.dataTransfer?.types?.includes(SUMMON_DRAG_TYPE)) { summonOver(event); return; }
     if (event.dataTransfer?.types?.includes('application/x-resonance-special')) {
       if (!editable) return;
       event.preventDefault();
@@ -1718,6 +1775,7 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
     setEquipmentDropTarget(piece?.nativeUid ?? null);
   };
   const equipmentDrop = async (event) => {
+    if (event.dataTransfer?.types?.includes(SUMMON_DRAG_TYPE)) { await summonDrop(event); return; }
     if (event.dataTransfer?.types?.includes('application/x-resonance-special')) {
       if (!editable) return;
       event.preventDefault();
@@ -2035,6 +2093,8 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
     ${resonanceDockState && resonanceCatalog ? html`<${InventoryDock} className="rs-native-equipment-rail" state=${resonanceDockState} catalog=${resonanceCatalog}
       busy=${!editable} fieldTargetUid=${equipmentDropTarget ?? sel?.uid ?? null} fieldAnchor=${equipmentFieldAnchor} onOpen=${() => toggleResonancePanel('equipment')}
       onDetail=${openNativeResonanceDetail} onCombine=${combineResonanceItems} />` : null}
+    <${NativeSummonBar} rows=${summonRows} editable=${editable} busy=${resonanceActionBusy} activeKey=${summonDrag}
+      onDragStart=${(row) => { setSummonDrag(row.key); setSel(null); setDetail((d) => (d?.kind === 'piece' ? null : d)); }} onDragEnd=${() => setSummonDrag(null)} />
     ${draggedSellValue != null && sellRect ? html`<div ref=${sellZoneRef} class="rs-native-sell-zone" aria-live="polite"
       style=${`left:${sellRect.left}px;top:${sellRect.top}px;width:${sellRect.width}px;height:${sellRect.height}px`}>
       <span>出售</span><${CoinGlyph} /><b>+${draggedSellValue}</b>

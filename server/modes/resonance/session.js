@@ -1,4 +1,4 @@
-import { legalSummonCells,selectedSummonIds } from './summons.js';
+import { legalSummonCells,orderCopy,ordersStillInRange,selectedSummonIds,summonLimit } from './summons.js';
 import { resonanceOpenings, selectResonanceOpening, resonanceRulesVersion } from '../../../shared/resonance/openings.js';
 import { getResonanceSeason } from '../../../shared/resonance/season-roster.js';
 import { getPrototypeSeason, prototypeSeasonForCatalog } from '../../../shared/resonance/season-registry.js';
@@ -1537,8 +1537,8 @@ export function applyAction(state, action, { catalog, battleRunner, fieldResolve
           benchSlotMap(draft);
           const slot=piece.benchSlot;
           if(!Number.isInteger(slot)||slot<0||slot>=benchCapacity(draft,catalog))throw new Error('BENCH_FULL');
-          // the occupant keeps its facing and gear on the bench
-          occupant.row=null;occupant.col=null;occupant.benchSlot=slot;
+          // the occupant keeps its facing and gear on the bench; its placed summons go back onto their cards
+          occupant.row=null;occupant.col=null;occupant.benchSlot=slot;if(occupant.summonOrders?.length)occupant.summonOrders=[];
         }
         piece.benchSlot=null;
         piece.row=action.row;piece.col=action.col;piece.dir=action.dir;events.push({type:'piece-deployed',uid:piece.uid,row:piece.row,col:piece.col,dir:piece.dir});break;
@@ -1555,7 +1555,12 @@ export function applyAction(state, action, { catalog, battleRunner, fieldResolve
           if(!sourceCheck.legal||!canDeployAt(sourceCheck.cells,piece.row,piece.col,opTable(catalog)[occupant.operatorId]))throw new Error('ILLEGAL_SWAP');
           occupant.row=piece.row;occupant.col=piece.col;
         }
-        piece.row=action.row;piece.col=action.col;piece.dir=action.dir;events.push({type:'piece-moved',uid:piece.uid,row:piece.row,col:piece.col,dir:piece.dir});break;
+        const turnedInPlace=piece.row===action.row&&piece.col===action.col;
+        piece.row=action.row;piece.col=action.col;piece.dir=action.dir;
+        // an operator that changes tile takes its placed summons back onto their cards (the swapped occupant too); one turned in place keeps those its new range still covers
+        if(turnedInPlace){if(piece.summonOrders?.length)piece.summonOrders=ordersStillInRange(fieldResolver?.(draft,{catalog}),piece,opTable(catalog)[piece.operatorId]);}
+        else{if(piece.summonOrders?.length)piece.summonOrders=[];if(occupant?.summonOrders?.length)occupant.summonOrders=[];}
+        events.push({type:'piece-moved',uid:piece.uid,row:piece.row,col:piece.col,dir:piece.dir});break;
       }
       case 'bench': {
         requirePrep(draft);const piece=pieceByUid(draft,action.pieceUid);if(!piece)throw new Error('PIECE_NOT_FOUND');
@@ -1574,7 +1579,7 @@ export function applyAction(state, action, { catalog, battleRunner, fieldResolve
             // the bench operator takes the withdrawn one's tile with that tile's facing (as in the original game); the withdrawn one keeps its own
             occupant.row=piece.row;occupant.col=piece.col;occupant.dir=piece.dir;occupant.benchSlot=null;
           } else if(benchCount(draft)>=benchCapacity(draft,catalog))throw new Error('BENCH_FULL');
-          piece.row=null;piece.col=null;piece.benchSlot=slot;
+          piece.row=null;piece.col=null;piece.benchSlot=slot;if(piece.summonOrders?.length)piece.summonOrders=[];
         }
         events.push({type:'piece-benched',uid:piece.uid,slot});break;
       }
@@ -1600,7 +1605,9 @@ export function applyAction(state, action, { catalog, battleRunner, fieldResolve
         events.push({type:'special-entity-stored',uid:entity.uid});break;
       }
       case 'turn': {
-        requirePrep(draft);const piece=pieceByUid(draft,action.pieceUid);if(!piece)throw new Error('PIECE_NOT_FOUND');if(!['UP','RIGHT','DOWN','LEFT'].includes(action.dir))throw new Error('BAD_DIRECTION');piece.dir=action.dir;events.push({type:'piece-turned',uid:piece.uid,dir:piece.dir});break;
+        requirePrep(draft);const piece=pieceByUid(draft,action.pieceUid);if(!piece)throw new Error('PIECE_NOT_FOUND');if(!['UP','RIGHT','DOWN','LEFT'].includes(action.dir))throw new Error('BAD_DIRECTION');piece.dir=action.dir;
+        if(piece.row!==null&&piece.summonOrders?.length)piece.summonOrders=ordersStillInRange(fieldResolver?.(draft,{catalog}),piece,opTable(catalog)[piece.operatorId]);
+        events.push({type:'piece-turned',uid:piece.uid,dir:piece.dir});break;
       }
       case 'equip': {
         requirePrep(draft);const piece=pieceByUid(draft,action.pieceUid);if(!piece)throw new Error('PIECE_NOT_FOUND');const index=draft.inventory.findIndex((item)=>item.uid===action.itemUid);if(index<0)throw new Error('ITEM_NOT_IN_INVENTORY');
@@ -1669,17 +1676,29 @@ export function applyAction(state, action, { catalog, battleRunner, fieldResolve
       case 'clearSummonOrder': {
         requirePrep(draft);const piece=pieceByUid(draft,action.pieceUid);if(!piece)throw new Error('PIECE_NOT_FOUND');
         if(action.tokenId!==undefined&&!selectedSummonIds(opTable(catalog)[piece.operatorId],piece.star).includes(action.tokenId))throw new Error('TOKEN_NOT_OWNED');
-        piece.summonOrders=(piece.summonOrders??[]).filter((entry)=>action.tokenId!==undefined&&entry.tokenId!==action.tokenId);
-        events.push({type:'summon-order-cleared',pieceUid:piece.uid,tokenId:action.tokenId??null});break;
+        // no token: every placed summon goes back; a token alone: all its copies; with a copy number: only that one
+        piece.summonOrders=(piece.summonOrders??[]).filter((entry)=>action.tokenId!==undefined&&(entry.tokenId!==action.tokenId||(Number.isInteger(action.copy)&&orderCopy(entry)!==action.copy)));
+        events.push({type:'summon-order-cleared',pieceUid:piece.uid,tokenId:action.tokenId??null,...(Number.isInteger(action.copy)?{copy:action.copy}:{})});break;
       }
       case 'setSummonOrder': {
         requirePrep(draft);const piece=pieceByUid(draft,action.pieceUid);if(!piece||piece.row===null)throw new Error('PIECE_NOT_DEPLOYED');
         const op=opTable(catalog)[piece.operatorId],tokenIds=selectedSummonIds(op,piece.star);
         if(!tokenIds.includes(action.tokenId))throw new Error('TOKEN_NOT_OWNED');if(!isInt(action.row)||!isInt(action.col))throw new Error('BAD_POSITION');
+        if(action.dir!==undefined&&!['UP','RIGHT','DOWN','LEFT'].includes(action.dir))throw new Error('BAD_DIRECTION');
         if(draft.pieces.some((entry)=>entry.row===action.row&&entry.col===action.col))throw new Error('CELL_OCCUPIED');const check=cellIsLegal(fieldResolver,draft,catalog,action.row,action.col);if(!check.known)throw new Error('FIELD_RESOLVER_REQUIRED');if(!check.legal)throw new Error('ILLEGAL_DEPLOYMENT');
         const field=fieldResolver?.(draft,{catalog});
-        if(!legalSummonCells(field,draft,piece,op,action.tokenId).includes(`${action.row},${action.col}`))throw new Error('ILLEGAL_SUMMON_POSITION');
-        piece.summonOrders??=[];piece.summonOrders=piece.summonOrders.filter((entry)=>entry.tokenId!==action.tokenId);piece.summonOrders.push({tokenId:action.tokenId,row:action.row,col:action.col});events.push({type:'summon-order-set',pieceUid:piece.uid,tokenId:action.tokenId,row:action.row,col:action.col});break;
+        // which copy: a placed one being moved (action.copy), else the next free one up to the token's deploy limit; a token with a limit of one is simply re-placed
+        const limit=summonLimit(field?.resolveToken?.(action.tokenId,op.id,op.fixedSkillIndex)),mine=(piece.summonOrders??[]).filter((entry)=>entry.tokenId===action.tokenId);
+        let copy;
+        if(Number.isInteger(action.copy)){if(!mine.some((entry)=>orderCopy(entry)===action.copy))throw new Error('SUMMON_NOT_PLACED');copy=action.copy;}
+        else if(mine.length<limit){copy=0;while(mine.some((entry)=>orderCopy(entry)===copy))copy++;}
+        else if(limit===1)copy=orderCopy(mine[0]);
+        else throw new Error('SUMMON_LIMIT');
+        if(!legalSummonCells(field,draft,piece,op,action.tokenId,{pieceUid:piece.uid,tokenId:action.tokenId,copy}).includes(`${action.row},${action.col}`))throw new Error('ILLEGAL_SUMMON_POSITION');
+        const previous=mine.find((entry)=>orderCopy(entry)===copy),dir=action.dir??previous?.dir;
+        piece.summonOrders=(piece.summonOrders??[]).filter((entry)=>!(entry.tokenId===action.tokenId&&orderCopy(entry)===copy));
+        piece.summonOrders.push({tokenId:action.tokenId,row:action.row,col:action.col,...(dir?{dir}:{}),...(copy?{copy}:{})});
+        events.push({type:'summon-order-set',pieceUid:piece.uid,tokenId:action.tokenId,row:action.row,col:action.col,copy});break;
       }
       case 'fight': {
         const result=settleFight(draft,catalog,action,{battleRunner,fieldResolver,recording,completedResult});events.push(...result.events);replay=result.replay;break;

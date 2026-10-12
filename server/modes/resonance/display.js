@@ -1,4 +1,4 @@
-import { legalSummonCells,selectedSummonIds } from './summons.js';
+import { legalSummonCells,orderCopy,placeableSummons,selectedSummonIds } from './summons.js';
 import { resonanceOpenings, openingEventView } from '../../../shared/resonance/openings.js';
 const RECOVERY_TEXT = {
   INCREASE_WITH_TIME: '自然回复', INCREASE_WHEN_ATTACK: '攻击回复',
@@ -234,7 +234,14 @@ export function resonanceSessionDisplay(state, { data, catalog, viewSession, fie
       .map((order) => ({ name: tokenNames.get(order.tokenId), row: order.row, col: order.col }))
       .filter((order) => order.name);
     const summonLegalTiles=Object.fromEntries((starDetails?.summons??[]).map(token=>[token.id,legalSummonCells(resolved,state,piece,operator,token.id)]));
-    return { ...piece, legalTiles, summonLegalTiles, summonOrders, operator: operator ? { name: operator.name, cost: operator.cost, position: operator.position,
+    // the summon cards of a deployed summoner: one per placeable summon, the copies already placed and the tiles a new copy may take
+    const savedOrders=state.pieces.find((entry)=>entry.uid===piece.uid)?.summonOrders??[];
+    const summonCards=piece.row==null||!operator?[]:placeableSummons(resolved,operator,piece.star).map(({tokenId,limit})=>{
+      const placed=savedOrders.filter((order)=>order.tokenId===tokenId).map((order)=>({copy:orderCopy(order),row:order.row,col:order.col,dir:order.dir??piece.dir})).sort((a,b)=>a.copy-b.copy).slice(0,limit);
+      return {tokenId,name:tokenNames.get(tokenId)??'召唤物',limit,remaining:Math.max(0,limit-placed.length),placed,
+        legalTiles:placed.length>=limit?[]:legalSummonCells(resolved,state,piece,operator,tokenId,null)};
+    });
+    return { ...piece, legalTiles, summonLegalTiles, summonCards, summonOrders, operator: operator ? { name: operator.name, cost: operator.cost, position: operator.position,
       role: ROLE_TEXT[operator.role] ?? '伤害', pacts: [...operator.pacts], stats: { health: stats.maxHp, attack: stats.atk, defense: stats.def, resistance: stats.res },
       summons: starDetails.summons, statsKind:unitStats[piece.uid]?'deployed':'base',
       starDetails } : null };
