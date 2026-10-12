@@ -72,7 +72,9 @@ test('the icon files, their provenance manifest and the id list agree', () => {
   assert.deepEqual(fs.readdirSync(PACT_DIR).sort(), ['manifest.json', ...PACT_ICON_IDS.map((id) => `${id}.svg`)].sort());
   for (const [id, entry] of Object.entries(manifest.pacts)) {
     assert.equal(entry.file, `${id}.svg`);
-    assert.equal(entry.bytes, fs.statSync(path.join(PACT_DIR, entry.file)).size, `${id} manifest size is current`);
+    // sizes are of the repository (LF) form; a Windows checkout with core.autocrlf turns the line ends into CRLF
+    const repoForm = fs.readFileSync(path.join(PACT_DIR, entry.file), 'utf8').replace(/\r\n/g, '\n');
+    assert.equal(entry.bytes, Buffer.byteLength(repoForm), `${id} manifest size is current`);
     assert.equal(entry.replaces, SHARED[id].icon, `${id} records the icon it stopped sharing`);
     assert.equal(entry.sharedWith, SHARED[id].sibling);
     assert.match(entry.generatedAt, /^2026-\d\d-\d\dT/, `${id} records when the shape was made`);
