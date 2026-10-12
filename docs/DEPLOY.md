@@ -31,7 +31,7 @@
      ```powershell
      git clone --branch workshop https://github.com/ColorC/Stronghold-Protocol.git C:\Stronghold-Protocol
      ```
-3. 安装后从开始菜单或桌面启动「卫戍协议：工坊」；完整包 / 轻量包解压后双击根目录的 `启动游戏.exe`。轻量包首次运行会准备前端库并下载公开资源（约 270 MB），显示进度且支持续传；完整包直接启动。若检测到本机客户端资源，会询问是否提取，可跳过。源码安装则用 `scripts\start-windows.bat`。
+3. 安装后从开始菜单或桌面启动「卫戍协议：工坊」；完整包 / 轻量包解压后双击根目录的 `启动游戏.exe`。轻量包首次运行会准备前端库并下载公开资源（约 580 MB，以启动窗口显示的为准），显示进度且支持续传；完整包直接启动。若检测到本机客户端资源，会询问是否提取，可跳过。源码安装则运行 `node scripts/launch.mjs --workshop`。
 4. 窗口里会打印朋友可用的地址，例如 `http://192.168.1.23:3000`。用另一台设备打开它确认能进入。关闭窗口即停止服务器。
 
 等价的手动命令：`npm ci`、`node tools/setup.mjs`、`npm start`。
