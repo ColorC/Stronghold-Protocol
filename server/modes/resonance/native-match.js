@@ -10,6 +10,7 @@ import { previewOf } from '../../match/waves.js';
 import { compactResonanceResult, resonanceResultExtras } from '../../sim/spec.js';
 import { summarizeResonanceResult } from '../../../shared/resonance/result-summary.js';
 import { resonanceOwnItemIconUrl } from '../../../public/js/resonance/itemIconMap.js';
+import { star3Talent, starThreePassive } from '../../../shared/resonance/operator-adaptations.js';
 
 const PLAYER = 'resonance';
 const OK = Object.freeze({ ok: true });
@@ -1004,6 +1005,19 @@ export function resonanceCatalogPacket(match) {
           ...(presentation?{resonancePresentationIcon:presentation.icon}:{}) },
         skills: variant.skills ?? [], skill: variant.skill ?? null, stats: { ...(variant.stats ?? {}) } };
       if (operator.ignoresDeployLimit) projected.trait = { ...(projected.trait ?? {}), desc: DEPLOY_FREE_TRAIT_TEXT, descRaw: DEPLOY_FREE_TRAIT_TEXT };
+      // the skill text at this star, numbers scaled by the mode (display.js reads the same player text): the native record's own
+      // text is the one-star wording, so a 2- or 3-star card would show 125% where the skill does 313%
+      const skillText = match.catalog.playerText?.operators?.[id]?.stars?.[star]?.skillDescription;
+      if (projected.skill) {
+        const chosen = projected.skill.index;
+        const restate = (skill) => (typeof skillText === 'string' && skillText ? { ...skill, desc: skillText, descRaw: skillText } : skill);
+        projected.skill = restate(projected.skill);
+        // the card shows the skill the mode fixes (`fixedSkillId`), not the record's native default (令 and 贾维 differ)
+        projected.skills = projected.skills.map((skill) => ({ ...(skill.index === chosen ? restate(skill) : skill), isDefault: skill.index === chosen }));
+      }
+      // 升星特性: every operator with a three-star passive lists it on its card, a one- or two-star card marking it locked
+      const star3 = starThreePassive(operator);
+      projected.talents = [...(projected.talents ?? []).filter((talent) => !talent?.resonancePassive), ...(star3 ? [star3Talent(star3.description)] : [])];
       if (match.catalog.config?.rulesVersion === 3 && Array.isArray(projected.garrisonIds)) {
         projected.garrisonIds = projected.garrisonIds.filter((garrisonId) => data.garrisons?.[garrisonId]?.effectType !== 'SERVER_GAIN_EQUIP');
       }

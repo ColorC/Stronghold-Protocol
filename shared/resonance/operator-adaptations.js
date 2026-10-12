@@ -128,9 +128,19 @@ function editTarget(record, field) {
 }
 /** A three-star passive also listed as a talent row: the in-match operator card lists talents but no passive. */
 export const STAR3_TALENT_INDEX = 90;
-function star3Talent(description) {
+export function star3Talent(description) {
   return { index: STAR3_TALENT_INDEX, name: '升星特性', desc: description, descRaw: description, bb: {}, bbStr: {}, rangeGrid: null,
-    tokenKey: null, hidden: false, fromModule: false, resonancePassive: true };
+    tokenKey: null, hidden: false, fromModule: false, resonancePassive: true, unlockStar: 3 };
+}
+/**
+ * The passive an operator gains at three stars: its star-three passive, or null when it has none or already has a passive
+ * at one star (正义骑士号's 被动支援 is there from the start, so it is no 升星特性).
+ */
+export function starThreePassive(operator) {
+  const has = (passive) => passive && passive.kind && passive.kind !== 'none';
+  const gained = operator?.stars?.[3]?.passive;
+  if (!has(gained) || !gained.description) return null;
+  return [1, 2].some((star) => has(operator.stars?.[star]?.passive)) ? null : gained;
 }
 /** The battle and economy parameters an adapted operator carries (catalog.operators[id].adaptation). */
 function adaptationView(id, row) {

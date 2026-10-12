@@ -2167,7 +2167,7 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
         onMinimize=${(m) => { setRewardMin(m); if (!m) setCollapsed(false); }} />` : null}
 
       ${combat || mode === 'settle' ? html`<${CombatHud} pub=${pub} myId=${myId} watching=${watchingNow} hud=${hud} myDone=${!!myDone && alive}
-        spectating=${!alive} spectator=${spectator} onWatch=${watchField}
+        spectating=${!alive} spectator=${spectator} onWatch=${watchField} showDp=${false}
         client=${cc ? { progress, observing: observingName ? { name: observingName } : null, onBack: alive ? backHome : null, layers, layer, onLayer: setLayer } : null} />` : null}
 
       ${showDeadPill(alive, phase) ? (spectator

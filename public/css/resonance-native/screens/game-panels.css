@@ -162,6 +162,10 @@
 .dsp__num .icon { width: .14rem; height: .14rem; color: var(--gold); }
 .dtalent { display: flex; flex-direction: column; gap: .02rem; }
 .dtalent b { font-size: max(calc(.15 * var(--t)), 14px); color: var(--text-hi); }
+/* a talent the operator gains at a later star (升星特性): its text dimmed, a gold tag naming the star */
+.dtalent.is-locked .dtext { color: var(--text-lo); }
+.dtalent__lock { display: inline-block; margin-left: .08rem; vertical-align: .02rem; font-size: max(calc(.11 * var(--t)), 14px); font-weight: 700; letter-spacing: .06em;
+  padding: 0 .06rem; line-height: 1.6; color: var(--gold); border: 1px solid var(--gold-2); border: 1px solid color-mix(in srgb, var(--gold-2) 60%, transparent); }
 /* the operator's own effect (特质, user playtest #3 item 8): compact, right under the header, gold accent */
 .dgarrison {
   display: flex; flex-direction: column; gap: .04rem; padding: .07rem .1rem .08rem; flex: none;

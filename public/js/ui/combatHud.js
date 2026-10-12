@@ -34,15 +34,15 @@ function ProgressList({ list }) {
  *   client?: null | { progress?: any[]|null, observing?: { name: string }|null, onBack?: () => void,
  *                     layers?: Array<{ key: string, label: string, self: boolean, watch: boolean }>, layer?: string, onLayer?: (k: string) => void } }} props
  */
-export function CombatHud({ pub, myId, watching, hud, myDone, onWatch, spectating = false, spectator = false, client = null }) {
+export function CombatHud({ pub, myId, watching, hud, myDone, onWatch, spectating = false, spectator = false, client = null, showDp = true }) {
   // `spectator`: a spectator seat (community report #26) watches like an eliminated player, under its own caption
-  if (client) return ClientHud({ hud, myDone, spectating, spectator, client });
+  if (client) return ClientHud({ hud, myDone, spectating, spectator, client, showDp });
   const fields = (Array.isArray(pub?.fields) ? pub.fields : []).filter((f) => f && f.live !== false);
   // the watched field may already have finished (not live): still name it
   const label = switcherLabel(pub, watching, myId, spectating);
   const canCycle = fields.length > 1;
   return html`<div class="chud">
-    <${DpCounter} dp=${hud?.dp} />
+    ${showDp ? html`<${DpCounter} dp=${hud?.dp} />` : null}
     <div class="chud__bottom">
       ${myDone ? html`<div class="chud__msg" role="status"><${Icon} name="hourglass" /><span>作战结束，等待队友完成作战</span></div>` : null}
       ${spectating ? (spectator ? html`<div class="chud__msg" role="status"><${GIcon} name="eye" /><span>观战中</span></div>`
@@ -58,7 +58,7 @@ export function CombatHud({ pub, myId, watching, hud, myDone, onWatch, spectatin
   </div>`;
 }
 
-function ClientHud({ hud, myDone, spectating, spectator = false, client }) {
+function ClientHud({ hud, myDone, spectating, spectator = false, client, showDp = true }) {
   const layers = Array.isArray(client.layers) ? client.layers : [];
   const idx = Math.max(0, layers.findIndex((l) => l.key === (client.layer || 'ALL')));
   const cur = layers[idx] || null;
@@ -70,7 +70,7 @@ function ClientHud({ hud, myDone, spectating, spectator = false, client }) {
   const observing = client.observing;
   const halves = layers.length > 0;
   return html`<div class="chud">
-    <${DpCounter} dp=${hud?.dp} />
+    ${showDp ? html`<${DpCounter} dp=${hud?.dp} />` : null}
     <div class="chud__bottom">
       ${myDone && !observing ? html`<div class="chud__msg chud__wait" role="status"><${Icon} name="hourglass" /><span>作战结束，等待队友完成作战</span></div>
         <${ProgressList} list=${client.progress} />` : null}

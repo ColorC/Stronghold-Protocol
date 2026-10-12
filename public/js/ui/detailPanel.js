@@ -41,6 +41,7 @@ import { data } from '../data.js';
 import { attackRangeGrid } from '../../../shared/loadoutRecord.js';
 import { SKILL_SUMMON_START_DEPLOY } from '../../../shared/constants.js';
 import { moduleBadge } from './loadoutModel.js';
+import { talentLockLabel } from './talentLock.js';
 import { audio } from '../audio.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
@@ -445,7 +446,12 @@ export function ChessDetail({ chess, piece, unit, snapHp, editable, onSell, bond
     <//>` : null;
   const talents = chessTalents(fr);
   blocks.talents = talents.length ? html`<${Section} key="talents" title="天赋" micro="TALENT" class="dsec--talent">
-      ${talents.map((t, i) => html`<div key=${i} class="dtalent"><b>${t.name}</b><${RichText} text=${t.descRaw || t.desc} class="dtext" /></div>`)}
+      ${talents.map((t, i) => {
+        // a talent gained at a later star (resonance 升星特性): listed on every star's card, marked while the unit is below it
+        const lock = talentLockLabel(t, c?.resonanceStar);
+        return html`<div key=${i} class=${cx('dtalent', lock && 'is-locked')}><b>${t.name}${lock ? html`<span class="dtalent__lock">${lock}</span>` : null}</b>
+          <${RichText} text=${t.descRaw || t.desc} class="dtext" /></div>`;
+      })}
     <//>` : null;
   blocks.actions = piece && editable && piece.kind !== 'item' ? html`<div key="actions" class="dactions">
       <${Button} variant="amber" icon="close" class="dpanel__sell" onClick=${() => onSell(piece, c)}>出售<span class="dsell num">+${sell}</span><//>
