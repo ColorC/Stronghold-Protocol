@@ -13,6 +13,7 @@ import { KITS, MODULES } from '../../sim/content/index.js';
 import { localOrder } from '../../sim/dir.js';
 import { SKILL_SUMMON_START_DEPLOY } from '../../../shared/constants.js';
 import { getResonanceCatalog } from './catalog.js';
+import { orderCopy, summonLimit } from './summons.js';
 import { finishResonanceTerminalIfEscaped as finishNativeTerminalIfEscaped, installResonanceBattle } from '../../sim/content/resonance/battle.js';
 import { createResonanceKits } from '../../sim/content/resonance/kits.js';
 import { installPrototypeBattleContent } from '../../sim/content/resonance/prototype-installer.js';
@@ -258,8 +259,8 @@ function battleInputUnits(state, data, catalog, prepared, starData) {
       const rangeGrid = Array.isArray(raw.rangeGrid) ? raw.rangeGrid : [];
       const range = ownerRangeKeys(rangeGrid, Number(piece.row), Number(piece.col), piece.dir ?? 'RIGHT');
       const pos = positionClass(token);
-      const explicit = (piece.summonOrders ?? []).find((order) => order?.tokenId === tokenId);
-      const candidates = [...deployMap.keys()].map((key) => key.split(',').map(Number))
+      // the free legal tiles for a copy of this summon, nearest to where the owner's range wants it first (re-read per copy: placed ones take tiles)
+      const freeTiles = () => [...deployMap.keys()].map((key) => key.split(',').map(Number))
         .filter(([row, col]) => {
           const key = `${row},${col}`;
           if (occupied.has(key) || !canPlace(deployMap, pos, row, col) || (token.ownerRange === true && !range.has(key))) return false;
@@ -276,22 +277,36 @@ function battleInputUnits(state, data, catalog, prepared, starData) {
           const b = localOrder(br - Number(piece.row), bc - Number(piece.col), piece.dir ?? 'RIGHT');
           return b[1] - a[1] || a[0] - b[0];
         });
-      const requested = explicit ? candidates.find(([row,col]) => row === explicit.row && col === explicit.col) : null;
-      if (explicit && !requested) {
-        summonAnchorGaps.push({ ownerUid: piece.uid, tokenId, reason: token.ownerRange === true
-          ? 'explicit-summon-order-not-legal-in-native-owner-range' : 'explicit-summon-order-not-legal-on-field' });
+      const place = (tile, copy, dir) => {
+        // the first copy keeps its historical id; further copies (凯瑟琳's second device, …) take the copy number
+        const uid = `resonance-summon-${String(piece.uid)}-${tokenId}${copy ? `-${copy}` : ''}`;
+        units.push({ uid, kind: 'token', tokenId, ownerUid: piece.uid, row: tile[0], col: tile[1], dir: dir ?? piece.dir ?? 'RIGHT' });
+        occupied.add(`${tile[0]},${tile[1]}`);
+        summonAnchors.push({ ownerUid: piece.uid, tokenId, row: tile[0], col: tile[1], startDeploy: SKILL_SUMMON_START_DEPLOY });
+      };
+      // the player's placements, one summon per placed copy (up to the token's deploy limit)
+      const explicit = (piece.summonOrders ?? []).filter((order) => order?.tokenId === tokenId && Number.isInteger(order.row) && Number.isInteger(order.col))
+        .sort((a, b) => orderCopy(a) - orderCopy(b)).slice(0, summonLimit(token));
+      if (explicit.length) {
+        for (const order of explicit) {
+          const requested = freeTiles().find(([row, col]) => row === order.row && col === order.col);
+          if (!requested) {
+            summonAnchorGaps.push({ ownerUid: piece.uid, tokenId, reason: token.ownerRange === true
+              ? 'explicit-summon-order-not-legal-in-native-owner-range' : 'explicit-summon-order-not-legal-on-field' });
+            continue;
+          }
+          place(requested, orderCopy(order), order.dir);
+        }
         continue;
       }
-      const tile = requested ?? candidates[0];
+      // nothing placed: one summon on the first free legal tile
+      const tile = freeTiles()[0];
       if (!tile) {
         summonAnchorGaps.push({ ownerUid: piece.uid, tokenId, reason: token.ownerRange === true
           ? 'no-free-legal-tile-in-native-owner-range' : 'no-free-legal-tile-on-field' });
         continue;
       }
-      const uid = `resonance-summon-${String(piece.uid)}-${tokenId}`;
-      units.push({ uid, kind: 'token', tokenId, ownerUid: piece.uid, row: tile[0], col: tile[1], dir: piece.dir ?? 'RIGHT' });
-      occupied.add(`${tile[0]},${tile[1]}`);
-      summonAnchors.push({ ownerUid: piece.uid, tokenId, row: tile[0], col: tile[1], startDeploy: SKILL_SUMMON_START_DEPLOY });
+      place(tile, 0, null);
     }
   }
   return { units, summonAnchors, summonAnchorGaps };

@@ -393,7 +393,7 @@ const RESONANCE_ACTION_FIELDS = Object.freeze({
   deploy: ['pieceUid', 'row', 'col', 'dir'], move: ['pieceUid', 'row', 'col', 'dir'], bench: ['pieceUid'], turn: ['pieceUid', 'dir'],
   equip: ['pieceUid', 'itemUid'], unequip: ['itemUid'], combine: ['itemUids'], advanceSupply: [],
   chooseStrategy: ['choiceUid', 'strategyId', 'targets'], claimReward: ['choiceUid', 'optionIds'], useCopy: ['consumableUid', 'pieceUid'],
-  disassemble: ['itemUid'], recycleEquipment: ['itemUid'], clearSummonOrder: ['pieceUid', 'tokenId'], setSummonOrder: ['pieceUid', 'tokenId', 'row', 'col'],
+  disassemble: ['itemUid'], recycleEquipment: ['itemUid'], clearSummonOrder: ['pieceUid', 'tokenId', 'copy'], setSummonOrder: ['pieceUid', 'tokenId', 'copy', 'row', 'col', 'dir'],
 });
 const resonanceUid = (v) => isId(v) || isUid(v);
 function isResonanceAction(v) {
@@ -405,6 +405,7 @@ function isResonanceAction(v) {
   }
   for (const key of ['row', 'col']) if (v[key] !== undefined && !isInt(v[key], 0, GEO.ROWS - 1)) return false;
   if (v.dir !== undefined && !isDir(v.dir)) return false;
+  if (v.copy !== undefined && !isInt(v.copy, 0, 9)) return false;   // which placed copy of a summon (data deployLimit ≤ 10)
   if (v.locked !== undefined && !isBool(v.locked)) return false;
   if (v.itemUids !== undefined && (!Array.isArray(v.itemUids) || v.itemUids.length !== 2 || !v.itemUids.every(resonanceUid))) return false;
   if (v.optionIds !== undefined && !isList(v.optionIds, 12, isId)) return false;

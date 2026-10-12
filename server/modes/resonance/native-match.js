@@ -14,6 +14,11 @@ import { resonanceOwnItemIconUrl } from '../../../public/js/resonance/itemIconMa
 const PLAYER = 'resonance';
 const OK = Object.freeze({ ok: true });
 const FAIL = (error, detail) => ({ error, ...(detail ? { detail } : {}) });
+/** Placement refusals of the session rules, as the shared game-worded ERR codes the client turns into its toast (the rest stay 无效的目标). */
+const SESSION_FAILURE_CODE = Object.freeze({
+  POPULATION_OVER_CAPACITY: ERR.BOARD_FULL, ILLEGAL_DEPLOYMENT: ERR.BAD_TILE, ILLEGAL_SWAP: ERR.BAD_TILE, BAD_POSITION: ERR.BAD_TILE,
+  CELL_OCCUPIED: ERR.BAD_TILE, ILLEGAL_SUMMON_POSITION: ERR.BAD_TILE,
+});
 const isNativeUid = (value) => Number.isSafeInteger(value) && value > 0;
 const finiteNumber = (value) => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
 const RESONANCE_ACTIONS = new Set(['advanceSupply', 'claimReward', 'chooseStrategy', 'clearSummonOrder', 'combine',
@@ -28,6 +33,14 @@ function displayCatalogFor(catalog) {
     levels: (pact.levels ?? []).map((level) => ({ description: level.description })),
   }]));
   return { ...catalog, pacts, playerText: { ...catalog.playerText, pacts: { ...catalog.playerText?.pacts, ...playerPacts } } };
+}
+
+/** Session id of one placed copy of a summoner's summon (its native uid is what the client drags). */
+export const summonSessionId = (ownerUid, tokenId, copy) => `summon:${ownerUid}:${tokenId}:${copy}`;
+const SUMMON_SESSION_ID = /^summon:([^:]+):(.+):([0-9]+)$/;
+export function parseSummonSessionId(id) {
+  const match = typeof id === 'string' ? SUMMON_SESSION_ID.exec(id) : null;
+  return match ? { ownerUid: match[1], tokenId: match[2], copy: Number(match[3]) } : null;
 }
 
 /** Stable numeric native combat IDs over the session's string identifiers. */
@@ -125,6 +138,10 @@ export class ResonanceMatch extends Match {
     for (const piece of view.pieces ?? []) {
         piece.nativeUid = this.uidMap.native(piece.uid);
         for (const item of piece.equipment ?? []) item.nativeUid = this.uidMap.native(item.uid);
+      }
+      for (const piece of view.pieces ?? []) for (const card of piece.summonCards ?? []) {
+        card.ownerNativeUid = piece.nativeUid;
+        for (const placed of card.placed) placed.nativeUid = this.uidMap.native(summonSessionId(piece.uid, card.tokenId, placed.copy));
       }
       for (const item of view.inventory ?? []) item.nativeUid = this.uidMap.native(item.uid);
       for (const offer of view.shop?.offers ?? []) if (offer.uid) offer.nativeUid = this.uidMap.native(offer.uid);
@@ -255,6 +272,11 @@ export class ResonanceMatch extends Match {
       uid, kind: 'chess', id: this.nativeChessId(piece.operatorId, piece.star), resonanceStar: piece.star, star: piece.star, row: piece.row, col: piece.col, dir: piece.dir,
       items: piece.equipment.map((item) => ({ uid: this.uidMap.native(item.uid), id: item.itemId })),
     }));
+    // the summons a deployed summoner's player placed: token pieces on the field, owned by the summoner, no deploy slot of their own
+    for (const piece of state.pieces ?? []) for (const card of piece.summonCards ?? []) for (const placed of card.placed) {
+      board.push({ uid: placed.nativeUid, kind: 'token', id: card.tokenId, ownerUid: piece.nativeUid, count: 1, summonOrder: true,
+        row: placed.row, col: placed.col, dir: placed.dir ?? 'RIGHT' });
+    }
     const specialEntities=(state.specialEntities??[]).map((entity)=>({uid:this.uidMap.native(entity.uid),entityId:entity.entityId,
       kind:'token',id:this.catalog.specialEntities?.[entity.entityId]?.nativeTokenId??null,row:entity.row??null,col:entity.col??null,
       definition:entity.definition??null}));
@@ -326,7 +348,7 @@ export class ResonanceMatch extends Match {
       const result = applyAction(this.state, action, { catalog: this.catalog,
         fieldResolver: (s) => getResonanceField(s, { data: this.data, catalog: this.catalog }),
         recording: false, completedResult });
-      if (!result.ok) return FAIL(ERR.BAD_TARGET, result.error);
+      if (!result.ok) return FAIL(SESSION_FAILURE_CODE[result.error] ?? ERR.BAD_TARGET, result.error);
       this.state = result.state;
       if (action.type === 'fight') {
         delete this.state.nativeRuntime;
@@ -378,6 +400,14 @@ export class ResonanceMatch extends Match {
     if (msg?.t === 'g.move') {
       const pieceUid = this.uidMap.session(msg.uid);
       if (!pieceUid || !['board', 'hand'].includes(msg.to?.area)) return FAIL(ERR.BAD_TARGET);
+      const summon = parseSummonSessionId(pieceUid);
+      if (summon) {
+        // a placed copy of a summon: to the field sets (moves / turns) its order, to the bench takes it back onto its card
+        if (msg.to.area === 'hand') return this.enqueueSessionAction({ type: 'clearSummonOrder', pieceUid: summon.ownerUid, tokenId: summon.tokenId, copy: summon.copy });
+        const dir = msg.dir ?? msg.to.dir;
+        return this.enqueueSessionAction({ type: 'setSummonOrder', pieceUid: summon.ownerUid, tokenId: summon.tokenId, copy: summon.copy,
+          row: msg.to.row, col: msg.to.col, ...(dir ? { dir } : {}) });
+      }
       const piece = this.state.pieces.find((entry) => entry.uid === pieceUid);
       if(!piece&&(this.state.specialEntities??[]).some((entry)=>entry.uid===pieceUid)){
         if(msg.to.area==='hand')return this.enqueueSessionAction({type:'storeSpecialEntity',entityUid:pieceUid});
@@ -386,7 +416,7 @@ export class ResonanceMatch extends Match {
       if (!piece) return FAIL(ERR.BAD_TARGET);
       if (msg.to.area === 'hand') return this.enqueueSessionAction({ type: 'bench', pieceUid, slot: msg.to.idx });
       return this.enqueueSessionAction({ type: piece.row == null ? 'deploy' : 'move', pieceUid,
-        row: msg.to.row, col: msg.to.col, dir: msg.dir ?? piece.dir ?? 'RIGHT' });
+        row: msg.to.row, col: msg.to.col, dir: msg.dir ?? msg.to.dir ?? piece.dir ?? 'RIGHT' });
     }
     if (msg?.t === 'g.equip') {
       const pieceUid = this.uidMap.session(msg.targetUid), itemUid = this.uidMap.session(msg.itemUid);
