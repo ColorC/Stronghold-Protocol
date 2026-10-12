@@ -379829,11 +379829,9 @@ export const resonanceContent = {
     },
     "bow": {
       "id": "bow",
-      "name": "叙拉古正装",
+      "name": "装置",
       "description": "攻击速度+15",
       "kind": "component",
-      "iconId": "trap_1121_acarm121",
-      "nativeItemId": "chess_item_3_01_e_a",
       "effects": [
         {
           "kind": "component_stat",
@@ -379861,11 +379859,9 @@ export const resonanceContent = {
     },
     "cloak": {
       "id": "cloak",
-      "name": "耶拉冈德之泪",
+      "name": "固源岩",
       "description": "法术抗性+15",
       "kind": "component",
-      "iconId": "trap_1102_acarm102",
-      "nativeItemId": "chess_item_6_06_e_a",
       "effects": [
         {
           "kind": "component_stat",
@@ -379877,11 +379873,9 @@ export const resonanceContent = {
     },
     "belt": {
       "id": "belt",
-      "name": "歌利亚头盔",
+      "name": "糖",
       "description": "生命值+20%",
       "kind": "component",
-      "iconId": "trap_1049_acarm049",
-      "nativeItemId": "chess_item_3_06_e_a",
       "effects": [
         {
           "kind": "component_stat",
@@ -379893,11 +379887,9 @@ export const resonanceContent = {
     },
     "tear": {
       "id": "tear",
-      "name": "迅捷作战粮",
+      "name": "技巧概要·卷1",
       "description": "初始技力+6",
       "kind": "component",
-      "iconId": "trap_1051_acarm051",
-      "nativeItemId": "chess_item_3_05_e_a",
       "effects": [
         {
           "kind": "component_stat",

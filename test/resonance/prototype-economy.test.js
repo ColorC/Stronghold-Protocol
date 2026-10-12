@@ -154,8 +154,9 @@ test('all 28 Chem-Baron tier descriptions expand source values into readable Chi
   for(const row of rows){
     assert.ok(row.description.length>12,`${row.id} has a usable effect description`);
     assert.doesNotMatch(row.description,/@[A-Za-z{}]|<[^>]+>|source unknown|未实现/i,`${row.id} has no unresolved source template or process copy`);
+    assert.doesNotMatch(row.description,/评分|护盾|法术强度|暴击率|全能吸血|普攻|双抗/,`${row.id} is written in the game's own terms`);
   }
-  assert.match(rows.find(row=>row.source.apiName==='TFT13_Crime_Prismatic_ShimmerBloom').description,/每6秒.*600点护盾.*30点法术强度.*30%攻击速度/);
+  assert.match(rows.find(row=>row.source.apiName==='TFT13_Crime_Prismatic_ShimmerBloom').description,/每6秒.*600点屏障.*法术伤害提高30%.*攻击速度\+30/);
   assert.match(rows.find(row=>row.source.apiName==='TFT13_Crime_Prismatic_VirulentVirus').description,/25%.*1600.*8秒/);
   assert.match(rows.find(row=>row.source.apiName==='TFT13_Crime_Gold_FleshRipper').description,/持续5秒/);
   assert.match(rows.find(row=>row.source.apiName==='TFT13_Crime_OmegaPrismatic_DimensionalHeirloom').prototypeModeAdaptation,/35%生命与攻击、持续6秒/);
@@ -186,7 +187,7 @@ test('paid Junker purchases persist as live combat stats and periodic effects',(
   const enemy={id:'e',alive:true,deployed:true,s:{def:100,res:100}};let heals=0,damage=[];
   const battle={time:0,allyUnits:units,enemies:[enemy],on(name,fn){(listeners[name]??=[]).push(fn);},addBuff(unit,buff){applied.push({unit,buff});},heal(_src,_dst,amount){heals+=amount;return amount;},dealDamage(_src,target,dmg){damage.push({target,dmg});},foesInRadius(){return [enemy];}};
   const purchase=[{id:'TFT13_JunkerKing_SuperPass'},{id:'TFT13_JunkerKing_RepairingMicrobots'},{id:'TFT13_JunkerKing_Tankbuster'},{id:'TFT13_JunkerKing_SelfDestructButton'}];
-  installPrototypeEconomy(battle,{pieces:[{uid:'r1',charId:rumble,star:1}],prototypeMeta:{activeTraits:[tier('armory',1,{},[rumble])],economy:{junkerKing:{upgrades:purchase.map((row)=>({...row,targetUid:'r1'}))}}}},{operators:{rumble:{charId:rumble,stars:{1:{stats:{atk:100,maxHp:1000}}}}}});
+  installPrototypeEconomy(battle,{pieces:[{uid:'r1',charId:rumble,star:1}],prototypeMeta:{activeTraits:[tier('armory',1,{},[rumble])],economy:{junkerKing:{upgrades:purchase.map((row)=>({...row,targetUid:'r1'}))}}}},{config:{seasonId:prototypeSeason.id},operators:{rumble:{charId:rumble,stars:{1:{stats:{atk:100,maxHp:1000}}}}}});
   for(const fn of listeners.battleStart)fn();
   const mods=applied.find(row=>row.buff.mods?.hpFlat===300)?.buff.mods;assert.equal(mods.hpFlat,300);assert.equal(mods.artsDealtMul,1.25);
   const power=prototypeSeason.heroes.find(row=>row.charId===rumble).powerReference;

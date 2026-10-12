@@ -166,14 +166,16 @@ profiles('crown','crown_memory',[{byStar:{1:{perCast:3},2:{perCast:5},3:{perCast
 // (cross-round stacks removed; in-battle effects capped or timed), with numbers at native scale — ATK/DEF/HP in
 // percent, RES/ASPD in points, SP as natural recovery per second or initial SP. A completed item adds its own
 // item_stat and effect rows on top of the stats of its two components. Equipment ids are the save-compatible ids.
+// Four components are not native items: they are the Arknights 养成材料 装置 / 糖 / 固源岩 / 技巧概要·卷1, so they
+// keep no iconId / nativeItemId; their art is public/css/resonance-components (public/js/resonance/itemIconMap.js).
 const componentInfo = [
   ['blade','维式重锤','攻击力+15%','trap_1041_acarm041','chess_item_1_01_e_a'],['staff','萨尔贡浓茶','技力自然回复速度+0.15/秒','trap_1050_acarm050','chess_item_2_04_e_a'],
-  ['bow','叙拉古正装','攻击速度+15','trap_1121_acarm121','chess_item_3_01_e_a'],['plate','坚守盾牌','防御力+20%','trap_1047_acarm047','chess_item_1_02_e_a'],
-  ['cloak','耶拉冈德之泪','法术抗性+15','trap_1102_acarm102','chess_item_6_06_e_a'],['belt','歌利亚头盔','生命值+20%','trap_1049_acarm049','chess_item_3_06_e_a'],
-  ['tear','迅捷作战粮','初始技力+6','trap_1051_acarm051','chess_item_3_05_e_a'],['crest','随身身份牌','不提供属性；与其他组件合成盟约徽记。','trap_1124_acarm124','chess_item_1_04_e_a'],
+  ['bow','装置','攻击速度+15'],['plate','坚守盾牌','防御力+20%','trap_1047_acarm047','chess_item_1_02_e_a'],
+  ['cloak','固源岩','法术抗性+15'],['belt','糖','生命值+20%'],
+  ['tear','技巧概要·卷1','初始技力+6'],['crest','随身身份牌','不提供属性；与其他组件合成盟约徽记。','trap_1124_acarm124','chess_item_1_04_e_a'],
 ];
 const componentEffects=[{atkPct:15},{sp:.15},{aspd:15},{defPct:20},{res:15},{hpPct:20},{initialSp:6},{ }];
-const equipment=Object.fromEntries(componentInfo.map(([id,name,description,iconId,nativeItemId],i)=>[id,{id,name,description,kind:'component',iconId,nativeItemId,effects:[E('component_stat',componentEffects[i])]}]));
+const equipment=Object.fromEntries(componentInfo.map(([id,name,description,iconId,nativeItemId],i)=>[id,{id,name,description,kind:'component',...(iconId?{iconId,nativeItemId}:{}),effects:[E('component_stat',componentEffects[i])]}]));
 const S=(params)=>E('item_stat',params);
 // [id, native name, player text (both components' stats + this item), icon, native record, item_stat/effect rows]
 const recipeRows=[

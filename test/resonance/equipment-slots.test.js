@@ -34,7 +34,7 @@ test('an operator carries three items; a fourth is refused without loss, a match
   assert.equal(equipRefusal(display,holder,'bow',name),null,'a matching component may still be dropped on a full operator');
   state=act(state,{type:'equip',itemUid:state.inventory[1].uid,pieceUid});
   holder=state.pieces.find((piece)=>piece.uid===pieceUid);
-  assert.deepEqual(ids(holder.equipment),['giantSlayer','lifeSpring','rapidBlade'],'维式重锤 + 叙拉古正装 becomes 加速维式重锤 in its original slot');
+  assert.deepEqual(ids(holder.equipment),['giantSlayer','lifeSpring','rapidBlade'],'维式重锤 + 装置 becomes 加速维式重锤 in its original slot');
   assert.match(equipRefusal(display,holder,'giantSlayer',name),/已携带铳骑之威，每名干员限1件/,'one copy per operator');
 
   const sold=act(state,{type:'sell',pieceUid});

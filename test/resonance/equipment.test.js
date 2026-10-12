@@ -14,6 +14,7 @@ const [{ getData }, { getResonanceCatalog }, { Battle }, { installResonanceEquip
 const { performAttack } = await import('../../server/sim/ai.js');
 const { elementIntake } = await import('../../server/sim/damage.js');
 const { enemyRec, flatStage } = await import('../helpers/battleHarness.js');
+const { COMPONENT_ICON_IDS } = await import('../../public/js/resonance/itemIconMap.js');
 const data=getData();
 const catalog=getResonanceCatalog(data,{environmentId:'origin_laterano',seed:420});
 const nativeItems=JSON.parse(fs.readFileSync(`${process.env.SP_DATA_DIR}/items.json`,'utf8'));
@@ -40,17 +41,23 @@ const close=(actual,expected,message,eps=1e-6)=>assert.ok(Math.abs(actual-expect
 const statusOn=(unit,status)=>unit.buffs.some((row)=>row.status===status);
 const loss=(battle,source,target,dmg)=>{const before=target.hp;battle.dealDamage(source,target,{canDodge:false,...dmg});return before-target.hp;};
 
-test('the 36 items are native 卫戍协议 equipment with their own name, art and two-component recipes',()=>{
+test('the 36 items are native 卫戍协议 equipment, or the four 养成材料 components, with their own name, art and two-component recipes',()=>{
   const items=Object.values(catalog.equipment).filter((item)=>item.kind==='component'||item.kind==='completed');
   assert.deepEqual(Object.values(catalog.equipment).filter((item)=>item.kind==='component').map((item)=>item.id),COMPONENTS);
   assert.equal(items.length,36);
   assert.equal(catalog.recipes.length,36,'28 completed recipes and eight 随身身份牌 recipes');
   const names=new Set();
   for(const item of items){
-    const native=nativeById.get(item.nativeItemId);
-    assert.ok(native,`${item.id} names its native record`);
-    assert.equal(item.name,native.name,`${item.id} keeps the native name`);
-    assert.equal(item.iconId,native.iconId,`${item.id} keeps the native art`);
+    if(COMPONENT_ICON_IDS.includes(item.id)){
+      assert.equal(item.kind,'component');
+      assert.equal(item.nativeItemId,undefined,`${item.id} is a 养成材料, not a native item`);
+      assert.equal(item.iconId,undefined,`${item.id} carries no native art id`);
+    }else{
+      const native=nativeById.get(item.nativeItemId);
+      assert.ok(native,`${item.id} names its native record`);
+      assert.equal(item.name,native.name,`${item.id} keeps the native name`);
+      assert.equal(item.iconId,native.iconId,`${item.id} keeps the native art`);
+    }
     assert.ok(!names.has(item.name),`${item.name} is used once`);names.add(item.name);
   }
   for(const recipe of catalog.recipes.filter((row)=>catalog.equipment[row.resultId].kind==='completed')){
@@ -91,17 +98,17 @@ test('three items on one operator each apply their stats in the real Battle',()=
   close(unit.s.res,Math.min(100,base.res+15),'激光发射器 法术抗性+15');
   close(unit.s.spRecovery,base.spRecovery+.15,'天师古鼎 keeps its 萨尔贡浓茶 component');
   close(unit.s.resIgnorePct,.25,'激光发射器 ignores 25% RES');
-  assert.equal(unit.skill.sp,unit.skill.initSp+6,'迅捷作战粮 initial SP after the native battle-start reset');
+  assert.equal(unit.skill.sp,unit.skill.initSp+6,'技巧概要·卷1 initial SP after the native battle-start reset');
   assert.equal(battle.errorCount,0);
 });
 
 test('every component contributes its native-scale stat',()=>{
   const {battle,unit}=makeBattle(solo,['blade','plate','belt'],{skillHarness:true,skillCost:60});const base=unit.base;battle.start();
-  close(unit.s.atk,base.atk*1.15,'维式重锤');close(unit.s.def,base.def*1.2,'坚守盾牌');close(unit.s.maxHp,base.maxHp*1.2,'歌利亚头盔');
+  close(unit.s.atk,base.atk*1.15,'维式重锤');close(unit.s.def,base.def*1.2,'坚守盾牌');close(unit.s.maxHp,base.maxHp*1.2,'糖');
   const other=makeBattle(solo,['bow','cloak','staff']);other.battle.start();
-  close(other.unit.s.aspd,other.unit.base.aspd+15,'叙拉古正装');close(other.unit.s.res,Math.min(100,other.unit.base.res+15),'耶拉冈德之泪');close(other.unit.s.spRecovery,other.unit.base.spRecovery+.15,'萨尔贡浓茶');
+  close(other.unit.s.aspd,other.unit.base.aspd+15,'装置');close(other.unit.s.res,Math.min(100,other.unit.base.res+15),'固源岩');close(other.unit.s.spRecovery,other.unit.base.spRecovery+.15,'萨尔贡浓茶');
   const sp=makeBattle(solo,['azureTear'],{skillHarness:true,skillCost:60});sp.battle.start();
-  assert.equal(sp.unit.skill.sp,sp.unit.skill.initSp+25,'黄沙罗盘 = two 迅捷作战粮 + 13');
+  assert.equal(sp.unit.skill.sp,sp.unit.skill.initSp+25,'黄沙罗盘 = two 技巧概要·卷1 + 13');
   assert.equal(battle.errorCount+other.battle.errorCount+sp.battle.errorCount,0);
 });
 

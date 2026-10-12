@@ -73,9 +73,33 @@ function scaleWaveSpawnMods(wave,multipliers){
       if(!Number.isFinite(scaled)||scaled<=0)throw new TypeError(`invalid scaled native wave modifier: ${modKey}`);
       mods[modKey]=scaled;
     }
+    // the DEF factor already in these mods; enemies spawned with mods that lack it take it on spawn
+    if(multipliers.defMultiplier!==1)mods.resonanceDefMul=multipliers.defMultiplier;
     return {...spawn,mods:Object.keys(mods).length?mods:undefined};
   });
   return {...wave,spawns};
+}
+
+/**
+ * The node's DEF multiplier reaches every enemy, not only the scheduled wave: an enemy spawned in the fight (summons,
+ * 不祥幻影, parts) takes the factor its mods lack, and passes it on through its mods to what it spawns; the flat DEF an
+ * enemy gains from its own auras and states (方阵 +200 per neighbour, 禁锢 +300) is scaled like its base DEF
+ * (Unit.defFlatScale). DEF reductions from operators keep their full value.
+ */
+function installEnemyDefBalance(battle,enemyBalance){
+  const factor=Number(enemyBalance?.defMultiplier);
+  if(!(factor>0)||factor===1)return;
+  battle.on('enemySpawn',({enemy})=>{
+    if(enemy?.side!=='enemy')return;
+    const applied=Number(enemy.mods?.resonanceDefMul)>0?Number(enemy.mods.resonanceDefMul):1;
+    if(applied!==factor){
+      const missing=factor/applied;
+      enemy.base.def*=missing;
+      enemy.mods={...(enemy.mods??{}),defMul:(enemy.mods?.defMul??1)*missing,resonanceDefMul:factor};
+    }
+    enemy.defFlatScale=factor;
+    enemy.markDirty();
+  },{owner:battle,priority:1000});
 }
 
 export function resonanceBattleWon(result,nodeKind,{capped=false}={}) {
@@ -442,6 +466,7 @@ export function buildResonanceBattle(state, { data = null, catalog = null, recor
         module.install(b);
       }
     }, b => {
+      installEnemyDefBalance(b,prepared.enemyBalance);
       b.resonanceOutcome={won:false};
       b.on('battleEnd',({result})=>{b.resonanceOutcome.won=resonanceBattleWon(result,prepared.nodeKind);},{owner:b,priority:1000});
       installResonanceBattle(b, { catalog, state: input });

@@ -17,7 +17,9 @@ test('registry resolves the three registered season objects without cross-mappin
   assert.equal(getPrototypeSeason(factionSeasonV2.id),factionSeasonV2);
   assert.equal(getActivePrototypeSeason(),factionSeasonV2);
   assert.equal(factionSeasonV2.id,'resonance-factions-2');
-  assert.deepEqual(factionSeasonV2.heroes,factionSeason.heroes,'season 2 keeps the season-1 roster');
+  // season 2 keeps the season-1 roster; an operator adaptation may only scale a hero's budget (shared/resonance/operator-adaptations.js)
+  assert.deepEqual(factionSeasonV2.heroes.map(({nativeKitBudget,...hero})=>hero),factionSeason.heroes,'season 2 keeps the season-1 roster');
+  assert.deepEqual(factionSeasonV2.heroes.filter(hero=>hero.nativeKitBudget).map(hero=>hero.operatorName),['格拉尼']);
   assert.throws(()=>getPrototypeSeason('__proto__'),new RegExp(`RESONANCE_UNKNOWN_SEASON:__proto__`));
 
   const oldCatalog={config:{seasonId:prototypeSeason.id},prototypeSeason};

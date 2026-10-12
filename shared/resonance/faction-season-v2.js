@@ -1,4 +1,8 @@
 import {factionSeason} from './faction-season.js';
+import {nativePowerBudgetV2} from './native-power.js';
+import {junkerKingUpgradesV2} from './prototype-economy.js';
+import {GENERIC_STRATEGIES} from './generic-strategies.js';
+import {OPERATOR_ADAPTATIONS,adaptedHeroes} from './operator-adaptations.js';
 import {STRONGHOLD_PACT_TIERS,STRONGHOLD_PACT_TUNING,STRONGHOLD_PACT_IDS,STRONGHOLD_RETIRED_ECONOMY_TRAITS,
   STRONGHOLD_RETIRED_AUGMENTS,STRONGHOLD_REWARD_ITEM_SUBSTITUTIONS,STRONGHOLD_STRATEGY_OVERRIDES} from './stronghold-pacts.js';
 
@@ -22,7 +26,8 @@ const corrected=row=>{
     ...(text?{adaptation:recruits.length?`招募${recruits.map(hero=>hero.name).join('、')}；${text}`:text}:{})};
 };
 
-// Same heroes, members, thresholds, fees and emblems as faction season 1; only tier effects change.
+// Same heroes, members, thresholds, fees and emblems as faction season 1; tier effects, the physical ATK reference
+// (native-power.js nativePowerBudgetV2) and the native-scale armory (prototype-economy.js junkerKingUpgradesV2) change.
 const traits=factionSeason.traits.map(trait=>{
   const redesign=STRONGHOLD_PACT_TIERS[trait.id];
   if(redesign){
@@ -44,6 +49,18 @@ requireValue(STRONGHOLD_PACT_IDS.every(id=>traits.some(trait=>trait.id===id&&tra
 
 export const factionSeasonV2=Object.freeze({...factionSeason,
   id:'resonance-factions-2',
+  // operators whose own effects are rewritten for the mode or adapted as pilots (shared/resonance/operator-adaptations.js);
+  // only an adaptation's budget scale changes a hero record
+  heroes:Object.freeze(adaptedHeroes(factionSeason.heroes)),
+  operatorAdaptations:OPERATOR_ADAPTATIONS,
+  nativePowerBudget:nativePowerBudgetV2,
+  junkerKingUpgrades:junkerKingUpgradesV2,
+  // strategy pool: 26 generic strategies beside the emblem, crown and pact ones; at most one 徽记 / 王冠 per offer, one
+  // pact-transfer supply node instead of three and a rarer 随身身份牌 in component offers (a run gains one to three)
+  genericStrategies:GENERIC_STRATEGIES,
+  strategyOfferEmblemCap:1,
+  supplyTransfers:Object.freeze([Object.freeze({node:18,count:1})]),
+  componentOfferWeights:Object.freeze({crest:0.25}),
   traits,
   strongholdPacts:Object.freeze([...STRONGHOLD_PACT_IDS]),
   retiredEconomyTraits:Object.freeze([...STRONGHOLD_RETIRED_ECONOMY_TRAITS]),

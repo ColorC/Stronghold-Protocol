@@ -135,14 +135,14 @@
 | 蒸汽之心 | berserkBow | completed | 是 | 攻击速度+35 |
 | 灼燃维式重锤 | duelistCrest | completed | 是 | 攻击力+30%，初始技力+6；攻击时附带相当于攻击力10%的灼燃损伤 |
 | M3茧甲 | deepSeaBelt | completed | 是 | 生命值+40%；被击倒时立刻复活并恢复30%最大生命值（一场战斗仅1次） |
-| 歌利亚头盔 | belt | component | 否 | 生命值+20% |
+| 固源岩 | cloak | component | 否 | 法术抗性+15 |
+| 技巧概要·卷1 | tear | component | 否 | 初始技力+6 |
 | 坚守盾牌 | plate | component | 否 | 防御力+20% |
 | 萨尔贡浓茶 | staff | component | 否 | 技力自然回复速度+0.15/秒 |
 | 随身身份牌 | crest | component | 否 | 不提供属性；与其他组件合成盟约徽记。 |
+| 糖 | belt | component | 否 | 生命值+20% |
 | 维式重锤 | blade | component | 否 | 攻击力+15% |
-| 叙拉古正装 | bow | component | 否 | 攻击速度+15 |
-| 迅捷作战粮 | tear | component | 否 | 初始技力+6 |
-| 耶拉冈德之泪 | cloak | component | 否 | 法术抗性+15 |
+| 装置 | bow | component | 否 | 攻击速度+15 |
 | Academy Emblem | prototype_emblem_academy | emblem | 是 | 佩戴者获得【研发】盟约身份。 |
 | Ambusher Emblem | prototype_emblem_redeploy | emblem | 是 | 佩戴者获得【突袭】盟约身份。 |
 | Artillerist Emblem | prototype_emblem_artillery | emblem | 是 | 佩戴者获得【炮术】盟约身份。 |
@@ -168,30 +168,30 @@
 | 白银·处决链刃 | prototype_chem13_silver_executionersvorpalblade | passive | 否 | 攻击力提高25%，攻击速度+10。攻击或技能可处决生命低于10%的敌人；击倒后5秒内伤害提高10%、受到伤害降低10%。 |
 | 白银·电涌军刀 | prototype_chem13_silver_voltaicsaber | passive | 否 | 法术伤害提高15%，攻击力提高15%，伤害转化为20%生命恢复。每累计6次伤害，对生命最低的2名敌人各造成150点物理伤害。 |
 | 白银·毒性病毒 | prototype_chem13_silver_virulentvirus | passive | 否 | 法术伤害提高25%，攻击速度+15。技能伤害使敌人额外承受15%伤害，持续3秒。 |
-| 白银·化学储罐 | prototype_chem13_silver_destabilizedchemtank | passive | 否 | 生命值+200，护甲评分+15，法抗评分+15。生命降至50%时，获得相当于最大生命20%的护盾；之后每8秒获得10%护盾。 |
-| 白银·六边装甲 | prototype_chem13_silver_piltovenhexplating | passive | 否 | 生命值+100，护甲评分+25，法抗评分+25。每次受击获得3护甲评分与法抗评分，最多15层；叠满后每2秒对1格内敌人造成相当于自身双抗评分总和50%的法术伤害。 |
-| 白银·释放毒素 | prototype_chem13_silver_unleashedtoxins | passive | 否 | 法术伤害提高15%，开战技力为固定技能消耗的10%。每次普攻额外获得固定技能消耗的5%技力；技能结束后向当前目标发射3枚毒弹，每枚造成100点法术伤害。 |
-| 白银·微光绽放 | prototype_chem13_silver_shimmerbloom | passive | 否 | 生命值+150，法术伤害提高20%。治疗与护盾效果提高20%；每8秒为自己及生命最低的2名队友提供300点护盾，持续10秒。 |
-| 白银·血肉撕裂者 | prototype_chem13_silver_fleshripper | passive | 是 | 攻击力提高15%，暴击率+20%。生命降至40%时短暂无法被敌人选中，恢复最大生命25%，并获得攻击力10%与全能吸血10%，持续5秒。 |
+| 白银·化学储罐 | prototype_chem13_silver_destabilizedchemtank | passive | 否 | 生命值+200，受到的物理与法术伤害降低13%。生命降至50%时，获得相当于生命上限20%的屏障；之后每8秒获得相当于生命上限10%的屏障。 |
+| 白银·六边装甲 | prototype_chem13_silver_piltovenhexplating | passive | 否 | 生命值+100，受到的物理与法术伤害降低20%。每次受击使受到的物理与法术伤害降幅提高，最多15层，叠满后共降低41%；叠满后每2秒对1格内敌人造成相当于自身防御力与法术抗性之和50%的法术伤害。 |
+| 白银·释放毒素 | prototype_chem13_silver_unleashedtoxins | passive | 否 | 法术伤害提高15%，开战技力为固定技能消耗的10%。每次普通攻击额外获得固定技能消耗的5%技力；技能结束后向当前目标发射3枚毒弹，每枚造成100点法术伤害。 |
+| 白银·微光绽放 | prototype_chem13_silver_shimmerbloom | passive | 否 | 生命值+150，法术伤害提高20%。治疗与屏障效果提高20%；每8秒为自己及生命最低的2名队友提供300点屏障，持续10秒。 |
+| 白银·血肉撕裂者 | prototype_chem13_silver_fleshripper | passive | 是 | 攻击力提高15%，攻击造成140%伤害的概率+20%。生命降至40%时短暂无法被敌人选中，恢复最大生命25%，并使攻击力提高10%、伤害的10%转化为生命恢复，持续5秒。 |
 | 黄金·处决链刃 | prototype_chem13_gold_executionersvorpalblade | passive | 否 | 攻击力提高40%，攻击速度+15。攻击或技能可处决生命低于15%的敌人；击倒后5秒内伤害提高15%、受到伤害降低15%。 |
 | 黄金·电涌军刀 | prototype_chem13_gold_voltaicsaber | passive | 否 | 法术伤害提高25%，攻击力提高25%，伤害转化为35%生命恢复。每累计6次伤害，对生命最低的2名敌人各造成250点物理伤害。 |
 | 黄金·毒性病毒 | prototype_chem13_gold_virulentvirus | passive | 否 | 法术伤害提高40%，攻击速度+25。技能伤害使敌人额外承受25%伤害，持续3秒。 |
-| 黄金·化学储罐 | prototype_chem13_gold_destabilizedchemtank | passive | 否 | 生命值+350，护甲评分+25，法抗评分+25。生命降至50%时，获得相当于最大生命35%的护盾；之后每8秒获得10%护盾。 |
-| 黄金·六边装甲 | prototype_chem13_gold_piltovenhexplating | passive | 否 | 生命值+175，护甲评分+40，法抗评分+40。每次受击获得5护甲评分与法抗评分，最多15层；叠满后每2秒对1格内敌人造成相当于自身双抗评分总和75%的法术伤害。 |
-| 黄金·释放毒素 | prototype_chem13_gold_unleashedtoxins | passive | 否 | 法术伤害提高25%，开战技力为固定技能消耗的15%。每次普攻额外获得固定技能消耗的5%技力；技能结束后向当前目标发射3枚毒弹，每枚造成175点法术伤害。 |
-| 黄金·微光绽放 | prototype_chem13_gold_shimmerbloom | passive | 否 | 生命值+250，法术伤害提高35%。治疗与护盾效果提高35%；每8秒为自己及生命最低的2名队友提供525点护盾，持续10秒。 |
-| 黄金·血肉撕裂者 | prototype_chem13_gold_fleshripper | passive | 是 | 攻击力提高25%，暴击率+35%。生命降至40%时短暂无法被敌人选中，恢复最大生命40%，并获得攻击力20%与全能吸血15%，持续5秒。 |
-| 回收式法术增幅器 | prototype_chem_salvaged_revolver | passive | 否 | 法术伤害提高20%，开战技力为固定技能消耗的15%。每5秒额外获得10点法术强度。 |
-| 回收式减伤装置 | prototype_chem_salvaged_contraption | passive | 否 | 生命值+200，护甲评分+10，法抗评分+10。受到的伤害降低10%。 |
+| 黄金·化学储罐 | prototype_chem13_gold_destabilizedchemtank | passive | 否 | 生命值+350，受到的物理与法术伤害降低20%。生命降至50%时，获得相当于生命上限35%的屏障；之后每8秒获得相当于生命上限10%的屏障。 |
+| 黄金·六边装甲 | prototype_chem13_gold_piltovenhexplating | passive | 否 | 生命值+175，受到的物理与法术伤害降低29%。每次受击使受到的物理与法术伤害降幅提高，最多15层，叠满后共降低53%；叠满后每2秒对1格内敌人造成相当于自身防御力与法术抗性之和75%的法术伤害。 |
+| 黄金·释放毒素 | prototype_chem13_gold_unleashedtoxins | passive | 否 | 法术伤害提高25%，开战技力为固定技能消耗的15%。每次普通攻击额外获得固定技能消耗的5%技力；技能结束后向当前目标发射3枚毒弹，每枚造成175点法术伤害。 |
+| 黄金·微光绽放 | prototype_chem13_gold_shimmerbloom | passive | 否 | 生命值+250，法术伤害提高35%。治疗与屏障效果提高35%；每8秒为自己及生命最低的2名队友提供525点屏障，持续10秒。 |
+| 黄金·血肉撕裂者 | prototype_chem13_gold_fleshripper | passive | 是 | 攻击力提高25%，攻击造成140%伤害的概率+35%。生命降至40%时短暂无法被敌人选中，恢复最大生命40%，并使攻击力提高20%、伤害的15%转化为生命恢复，持续5秒。 |
+| 回收式法术增幅器 | prototype_chem_salvaged_revolver | passive | 否 | 法术伤害提高20%，开战技力为固定技能消耗的15%。每5秒法术伤害额外提高10%，可叠加。 |
+| 回收式减伤装置 | prototype_chem_salvaged_contraption | passive | 否 | 生命值+200，受到的物理与法术伤害降低9%。受到的伤害降低10%。 |
 | 回收式真伤护手 | prototype_chem_salvaged_gauntlet | passive | 否 | 攻击力提高25%，攻击速度+10。普通攻击额外造成15点真实伤害。 |
 | 棱彩·处决链刃 | prototype_chem13_prismatic_executionersvorpalblade | passive | 否 | 攻击力提高75%，攻击速度+30。攻击或技能可处决生命低于20%的敌人；击倒后10秒内伤害提高20%、受到伤害降低20%。处决另获3枚金币并恢复400生命。 |
 | 棱彩·电涌军刀 | prototype_chem13_prismatic_voltaicsaber | passive | 否 | 法术伤害提高45%，攻击力提高45%，伤害转化为60%生命恢复。每累计4次伤害，对生命最低的3名敌人各造成300点物理伤害。每次电击另提高20%攻击速度。 |
 | 棱彩·毒性病毒 | prototype_chem13_prismatic_virulentvirus | passive | 否 | 法术伤害提高75%，攻击速度+45。技能伤害使敌人额外承受45%伤害，持续3秒。感染敌人造成的伤害降低25%；其阵亡后成为我方援军，生命1600并逐渐衰减（8秒）。 |
-| 棱彩·化学储罐 | prototype_chem13_prismatic_destabilizedchemtank | passive | 否 | 生命值+600，护甲评分+45，法抗评分+45。生命降至50%时，获得相当于最大生命60%的护盾；之后每4秒获得10%护盾。每次获得护盾后，对附近3名敌人造成其最大生命10%的法术伤害。 |
-| 棱彩·六边装甲 | prototype_chem13_prismatic_piltovenhexplating | passive | 否 | 生命值+300，护甲评分+75，法抗评分+75。每次受击获得10护甲评分与法抗评分，最多15层；叠满后每2秒对4格内敌人造成相当于自身双抗评分总和50%的真实伤害。 |
-| 棱彩·释放毒素 | prototype_chem13_prismatic_unleashedtoxins | passive | 否 | 法术伤害提高45%，开战技力为固定技能消耗的30%。每次普攻额外获得固定技能消耗的10%技力；技能结束后向当前目标发射5枚毒弹，每枚造成250点法术伤害。另造成450点范围法术伤害并使敌人停顿1.5秒。 |
-| 棱彩·微光绽放 | prototype_chem13_prismatic_shimmerbloom | passive | 否 | 生命值+450，法术伤害提高60%。治疗与护盾效果提高60%；每6秒为自己及生命最低的3名队友提供600点护盾，持续10秒。受治疗或护盾的队友另获30点法术强度与30%攻击速度。 |
-| 棱彩·血肉撕裂者 | prototype_chem13_prismatic_fleshripper | passive | 是 | 攻击力提高45%，暴击率+60%。生命降至40%时短暂无法被敌人选中，恢复最大生命100%，并获得攻击力60%与全能吸血25%，持续5秒。首次阵亡后以最大生命100%复起。 |
+| 棱彩·化学储罐 | prototype_chem13_prismatic_destabilizedchemtank | passive | 否 | 生命值+600，受到的物理与法术伤害降低31%。生命降至50%时，获得相当于生命上限60%的屏障；之后每4秒获得相当于生命上限10%的屏障。每次获得屏障后，对附近3名敌人造成其最大生命10%的法术伤害。 |
+| 棱彩·六边装甲 | prototype_chem13_prismatic_piltovenhexplating | passive | 否 | 生命值+300，受到的物理与法术伤害降低43%。每次受击使受到的物理与法术伤害降幅提高，最多15层，叠满后共降低69%；叠满后每2秒对4格内敌人造成相当于自身防御力与法术抗性之和50%的真实伤害。 |
+| 棱彩·释放毒素 | prototype_chem13_prismatic_unleashedtoxins | passive | 否 | 法术伤害提高45%，开战技力为固定技能消耗的30%。每次普通攻击额外获得固定技能消耗的10%技力；技能结束后向当前目标发射5枚毒弹，每枚造成250点法术伤害。另造成450点范围法术伤害并使敌人停顿1.5秒。 |
+| 棱彩·微光绽放 | prototype_chem13_prismatic_shimmerbloom | passive | 否 | 生命值+450，法术伤害提高60%。治疗与屏障效果提高60%；每6秒为自己及生命最低的3名队友提供600点屏障，持续10秒。受屏障的队友另获法术伤害提高30%、攻击速度+30。 |
+| 棱彩·血肉撕裂者 | prototype_chem13_prismatic_fleshripper | passive | 是 | 攻击力提高45%，攻击造成140%伤害的概率+60%。生命降至40%时短暂无法被敌人选中，恢复最大生命100%，并使攻击力提高60%、伤害的25%转化为生命恢复，持续5秒。首次被击倒时立刻复活并恢复100%最大生命值。 |
 | 欧米伽棱彩·维度遗珍 | prototype_chem13_omegaprismatic_dimensionalheirloom | passive | 是 | 生命值+5000。战斗中每4秒召唤一名纸偶幻影，继承持有者35%生命与攻击，持续6秒。 |
 
 | 配方 | 材料 | 成品 |

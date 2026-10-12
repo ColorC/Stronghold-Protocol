@@ -518,15 +518,17 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
           const star=Number(ally?.def?.raw?.resonanceStar??ally?.def?.resonance?.star??1);
           buff(ally,'emissary-tristana-team',{aspd:Number(v.StarAS??0)*100*star});
         }
+        // season 2 瑕光: 技力自然回复速度 for every ally (the attack handler's per-attack SP is 0)
+        if(emissaryApis.has('TFT13_Nami')&&Number(v.NamiSpRegen)>0)for(const ally of all)buff(ally,'emissary-nami-team',{spRecoveryFlat:Number(v.NamiSpRegen)});
         if(emissaryApis.has('TFT13_Garen')){
           const garen=emissaryUnits.find((unit)=>sourceApiOf(unit)==='TFT13_Garen');
           if(garen)for(const ally of all){
             if(ally===garen||(ally.tileR===garen.tileR&&Math.abs(ally.tileC-garen.tileC)===1))
-              buff(ally,`emissary-garen-${ally.id}`,{hpFlat:garen.s.maxHp*Number(v.GarenHealthPercent??0)});
+              buff(ally,`emissary-garen-${ally.id}`,Number.isFinite(Number(v.GarenHpPct))?{hpPct:Number(v.GarenHpPct)}:{hpFlat:garen.s.maxHp*Number(v.GarenHealthPercent??0)});
           }
         }
         if(Number(active.get(id)?.count)===4)for(const unit of emissaryUnits)
-          buff(unit,'emissary-four-member',{hpFlat:Number(v.BonusHealth??0),dmgDealtMul:1+Number(v.SelfishDamageAmp??0)});
+          buff(unit,'emissary-four-member',{...(Number.isFinite(Number(v.BonusHpPct))?{hpPct:Number(v.BonusHpPct)}:{hpFlat:Number(v.BonusHealth??0)}),dmgDealtMul:1+Number(v.SelfishDamageAmp??0)});
         if(emissaryApis.has('TFT13_Ambessa')&&[1,4].includes(Number(active.get(id)?.count))){
           if(Number.isFinite(Number(v.AmbessaDefPct))){
             // season 2: a fixed native DEF% / RES share instead of the win-count armor rating
@@ -628,7 +630,7 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
   },{owner:battle});
   battle.on('attack',(event)=>{
     const unit=event?.attacker,target=(event?.targets??[]).find((row)=>row?.side==='enemy'&&row.alive);
-    if(unit?.side==='ally'&&unit.kind==='op'&&active.has('emissary')&&liveOps().some((row)=>isActiveMember(row,'emissary')&&sourceApiOf(row)==='TFT13_Nami'))
+    if(unit?.side==='ally'&&unit.kind==='op'&&Number(vars('emissary')?.NamiMana)>0&&liveOps().some((row)=>isActiveMember(row,'emissary')&&sourceApiOf(row)==='TFT13_Nami'))
       unit.skill?.gainSp(Number(vars('emissary').NamiMana??0),'resonanceEmissaryAttack');
     if(!unit||unit.side!=='ally'||unit.kind!=='op'||!target)return;
     const charId=charIdOf(unit),artillery=active.get('artillery');
@@ -662,18 +664,25 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
       const v=roller.variables??{},rng=Math.max(0,Math.min(0.999999,battle.rng())),rolled=['rocket','shield','coin','triple'][Math.floor(rng*4)];
       const mode=rolled==='triple'?(unit.mem.prototypeHighRollerLast??'rocket'):rolled;
       unit.mem.prototypeHighRollerLast=mode;
-      buff(unit,'high-roller-durability',{dmgTakenMul:1-Number(v.Durability??0.8)},Number(v.Duration??1.5));
+      if(Number(v.Durability??0.8)>0)buff(unit,'high-roller-durability',{dmgTakenMul:1-Number(v.Durability??0.8)},Number(v.Duration??1.5));
       const rockets=(multiplier)=>{
         const enemies=battle.enemies.filter((enemy)=>enemy?.alive&&enemy.deployed&&!enemy.hidden).sort((a,b)=>Math.hypot(a.x-unit.x,a.y-unit.y)-Math.hypot(b.x-unit.x,b.y-unit.y)||a.id-b.id);
         if(!enemies.length)return 0;
         const count=Math.max(1,Math.floor(Number(v.Bonus1NumRockets??8)*multiplier));
         for(let index=0;index<count;index++){
           const target=enemies[index%enemies.length];
-          battle.dealDamage(unit,target,{amount:Number(v.Bonus1RocketDamage??100),type:'phys',canDodge:false,tags:['resonance','prototype-high-roller','rocket']});
+          const amount=Number.isFinite(Number(v.Bonus1RocketAtk))?unit.s.atk*Number(v.Bonus1RocketAtk):Number(v.Bonus1RocketDamage??100);
+          battle.dealDamage(unit,target,{amount,type:'phys',canDodge:false,tags:['resonance','prototype-high-roller','rocket']});
         }
         return count;
       };
       if(mode==='rocket')metric('holyGun','rockets',rockets(rolled==='triple'?3:1));
+      else if(mode==='shield'&&Number(v.Bonus2StunDuration)>0){
+        // season 2: the 屏障 roll stuns the enemies in the attack range instead
+        const multiplier=rolled==='triple'?3:1,inRange=battle.enemiesInKeys(unit.rangeKeys??[],unit,unit.profile);
+        for(const enemy of inRange)battle.applyStatus(enemy,'stun',{duration:Number(v.Bonus2StunDuration)*multiplier,source:unit});
+        metric('holyGun','stuns',inRange.length);
+      }
       else if(mode==='shield'){
         const multiplier=rolled==='triple'?3:1;
         battle.addBuff(unit,{key:`resonance:v3:high-roller-shield:${unit.id}:${battle.time}`,shield:Number(v.Bonus2ShieldAmount??500)*multiplier,duration:Number(v.Bonus2ShieldDuration??4),tags:['resonance','prototype-high-roller']});
@@ -703,7 +712,7 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
       }
     }
     const quick=active.get('combo');
-    if(killer?.side==='ally'&&killer.kind==='op'&&isActiveMember(killer,'combo')&&Number(quick?.variables?.ShieldAmount)>0){
+    if(killer?.side==='ally'&&killer.kind==='op'&&isActiveMember(killer,'combo')&&(Number(quick?.variables?.ShieldAmount)>0||Number(quick?.variables?.ShieldMaxHpPct)>0)){
       const target=battle.enemies.filter((enemy)=>enemy?.alive&&enemy.deployed&&!enemy.hidden&&enemy!==victim)
         .sort((a,b)=>Math.hypot(a.x-killer.x,a.y-killer.y)-Math.hypot(b.x-killer.x,b.y-killer.y)||a.id-b.id)[0];
       let moved=false;
@@ -714,7 +723,8 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
         const destination=candidates.find(([row,col])=>battle.grid.canStand(row,col,{ranged:false})&&!battle.unitAt(row,col)&&!battle.downOn(row,col));
         if(destination)moved=battle.moveRedeploy(killer,destination[0],destination[1],{clearSp:false});
       }
-      battle.addBuff(killer,{key:`resonance:v3:quickstriker-kill-shield:${killer.id}:${battle.time}`,shield:Number(quick.variables.ShieldAmount),duration:Number(quick.variables.ShieldDuration??3),tags:['resonance','prototype-trait']});
+      const shieldAmount=Number(quick.variables.ShieldMaxHpPct)>0?killer.s.maxHp*Number(quick.variables.ShieldMaxHpPct):Number(quick.variables.ShieldAmount);
+      battle.addBuff(killer,{key:`resonance:v3:quickstriker-kill-shield:${killer.id}:${battle.time}`,shield:shieldAmount,duration:Number(quick.variables.ShieldDuration??3),tags:['resonance','prototype-trait']});
       if(moved){killer.mem.prototypeQuickstrikerDashTargetId=target?.id??null;metric('combo','targetDeathDashes');}
       metric('combo','targetDeathShields');
     }

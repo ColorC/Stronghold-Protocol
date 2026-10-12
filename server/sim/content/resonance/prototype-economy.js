@@ -218,7 +218,7 @@ export function installPrototypeEconomy(battle,state,catalog={}) {
     const uid=item?.uid??item?.itemUid;return inventory.find((entry)=>String(entry.uid)===String(uid))?.itemId??null;
   }).filter(Boolean);};
   const chemItems=new Map(Object.values(catalog.equipment??{}).filter((item)=>item?.prototypeEconomyEffect).map((item)=>[item.id,item]));
-  const definitions=new Map(junkerKingUpgrades.map((row)=>[row.id,row]));
+  const definitions=new Map((season.junkerKingUpgrades??junkerKingUpgrades).map((row)=>[row.id,row]));
   const rumbleCharIds=new Set(season.traits.find((row)=>row.sourceName==='Junker King')?.members??[]);
   const sourcePowerByChar=new Map((season.heroes??[]).map((hero)=>[hero.charId,hero.nativePowerReference??hero.powerReference??{}]));
   const ratingReference=(unit)=>resolvePrototypeRatingReference(unit,sourcePowerByChar.get(charIdFor(unit))??{}).powerReference;
@@ -297,6 +297,8 @@ export function installPrototypeEconomy(battle,state,catalog={}) {
         else if(key==='armorPct')armorRating+=Number(power.armor??0)*value;
         else if(key==='resistPct')magicResistRating+=Number(power.magicResist??0)*value;
         else if(key==='durability')mods.dmgTakenMul=(mods.dmgTakenMul??1)*(1-value);
+        else if(key==='hpPct'||key==='defPct')mods[key]=(mods[key]??0)+value;
+        else if(key==='resFlat')mods.resFlat=(mods.resFlat??0)+value;
       }
       setPrototypeRatingBonus(battle,unit,'prototype-junker-upgrades',{armor:armorRating,magicResist:magicResistRating},power);
       if(Object.keys(mods).length)battle.addBuff(unit,{key:`resonance:v3:junker-king:${unit.id}`,mods,persist:true,allowDead:true,tags:['resonance','prototype-economy']});
@@ -376,10 +378,11 @@ export function installPrototypeEconomy(battle,state,catalog={}) {
     const unit=event?.unit;if(!unit||!rumbleCharIds.has(charIdFor(unit)))return;
     const targetUid=[...upgrades].reverse().find((row)=>row.targetUid)?.targetUid;if(targetUid&&String(inputFor(unit)?.uid??unit.uid)!==String(targetUid))return;
     const upgrade=purchased.find((row)=>row.combat?.kind==='self_destruct');if(!upgrade)return;
-    const star=Math.max(0,Math.min(2,Number(unit.resonanceStar??inputFor(unit)?.star??1)-1)),pct=upgrade.combat.armorMrPctByStar?.[star]??0;
+    const star=Math.max(0,Math.min(2,Number(unit.resonanceStar??inputFor(unit)?.star??1)-1)),pct=(upgrade.combat.defPctByStar??upgrade.combat.armorMrPctByStar)?.[star]??0;
     const power=ratingReference(unit);
-    const sourceResistance=Number(power.armor??0)+prototypeRatingTotal(unit,'armor')+Number(power.magicResist??0)+prototypeRatingTotal(unit,'magicResist');
-    for(const enemy of battle.foesInRadius(unit.x,unit.y,upgrade.combat.radius,true)??[])battle.dealDamage(unit,enemy,{amount:sourceResistance*pct/100,type:'arts',canDodge:false,tags:['resonance','prototype-junker-king']});
+    // season 2: a share of the unit's own DEF; season 1: the source armor + magic-resist rating
+    const base=upgrade.combat.defPctByStar?Number(unit.s.def??0):Number(power.armor??0)+prototypeRatingTotal(unit,'armor')+Number(power.magicResist??0)+prototypeRatingTotal(unit,'magicResist');
+    for(const enemy of battle.foesInRadius(unit.x,unit.y,upgrade.combat.radius,true)??[])battle.dealDamage(unit,enemy,{amount:base*pct/100,type:'arts',canDodge:false,tags:['resonance','prototype-junker-king']});
   },{owner:battle});
   battle.on('hit',(event)=>{
     const unit=event?.attacker??event?.source,target=event?.target;

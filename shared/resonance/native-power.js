@@ -18,6 +18,14 @@ export const nativePowerBudget = Object.freeze({
   },
 });
 
+/** Faction season 2 budgets physical output after a reference flat DEF. A physical operator's ATK is
+ * budget × BAT × star + 150, so against 150 DEF it deals exactly its budget, and the cost and star
+ * ratios of the budget hold against armoured enemies too. With the season-1 rule the budget only held
+ * at 0 DEF: 1★ cost 1–2 physical operators (mostly 190–390 ATK) hit the 300–400 DEF regular enemies of the
+ * harder waves for the 5% minimum. Arts and healing ATK are unchanged; season-1 saves keep their budget.
+ */
+export const nativePowerBudgetV2 = Object.freeze({...nativePowerBudget, physicalDefenseReference:150});
+
 function baseStats(original,hero,season){
   const budget=season.nativePowerBudget??nativePowerBudget;
   const cost=Number(hero.cost), index=cost-1;
@@ -42,10 +50,11 @@ function baseStats(original,hero,season){
 
 export function buildNativePowerStars(original,hero,season){
   const base=baseStats(original,hero,season),budget=season.nativePowerBudget??nativePowerBudget;
+  const reference=original.source.normalChess.dmgType==='phys'?Number(budget.physicalDefenseReference??0):0;
   const stars={};
   for(const star of [1,2,3]){
     const previous=original.stars[star];
-    const stats={...base,maxHp:Math.round(base.maxHp*budget.stars.hp[star-1]),atk:Math.round(base.atk*budget.stars.atk[star-1])};
+    const stats={...base,maxHp:Math.round(base.maxHp*budget.stars.hp[star-1]),atk:Math.round(base.atk*budget.stars.atk[star-1])+reference};
     const record=structuredClone(previous.record);
     record.tier=hero.cost;record.resonanceStar=star;record.stats={...record.stats,...stats};
     // Original web garrisons consume abolished bond layers. Native class traits,

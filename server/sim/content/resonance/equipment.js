@@ -44,7 +44,7 @@ export function equipmentRowMods(row, mods = {}) {
   }
   return mods;
 }
-/** Initial SP of one stat row (每件迅捷作战粮 / 黄沙罗盘 adds its own). */
+/** Initial SP of one stat row (每件技巧概要·卷1 / 黄沙罗盘 adds its own). */
 export const equipmentRowInitialSp = (row) => STAT_KINDS.has(row?.kind) ? n(row.params?.initialSp ?? row.params?.initSp) : 0;
 
 function actualItemEffects(content, unit) {

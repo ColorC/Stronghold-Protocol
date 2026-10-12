@@ -546,6 +546,9 @@ function mergeOperatorCopies(state, catalog, preferredUid = null) {
       keep.star++;
       state.pieces = state.pieces.filter((piece) => !removed.includes(piece));
       events.push({ type: 'operator-merged', operatorId, uid: keep.uid, star: keep.star, consumedUids: removed.map((piece) => piece.uid), equipmentReturned: overflow.length });
+      // a season-2 adaptation (砾): a cheaper operator pays part of its copies back when it gains a star
+      const mergeGold = Number(opTable(catalog)[operatorId]?.adaptation?.mergeGold?.gold ?? 0);
+      if (mergeGold > 0) { state.gold += mergeGold; events.push({ type: 'operator-merge-gold', operatorId, uid: keep.uid, star: keep.star, gold: mergeGold }); }
       events.push(...equipmentEvents);
       merged = true;
       break;
@@ -616,8 +619,18 @@ function settleBattleRewards(state, catalog, result) {
     piece.growth[growth.key] = Math.min(growth.cap ?? Infinity, Number(piece.growth[growth.key] ?? 0) + growth.amount);
   }
   let battleGold = 0;
+  const bountyLeft = new Map();
   for (const reward of result.coins ?? []) {
     if (!isInt(reward.amount) || reward.amount < 0) throw new Error('BAD_COIN_RESULT');
+    // season-2 kill bounties (格拉尼) are capped per battle by the best star of that operator on the field
+    if (reward.reason === 'operator_bounty') {
+      if (!bountyLeft.has(reward.source)) bountyLeft.set(reward.source, Math.max(0, ...state.pieces.filter((piece) => piece.row !== null && piece.operatorId === reward.source)
+        .map((piece) => Number(opTable(catalog)[piece.operatorId]?.adaptation?.bounty?.capByStar?.[piece.star - 1] ?? 0))));
+      const amount = Math.min(reward.amount, bountyLeft.get(reward.source));
+      bountyLeft.set(reward.source, bountyLeft.get(reward.source) - amount);
+      battleGold += amount;
+      continue;
+    }
     battleGold += reward.amount;
   }
   state.gold += battleGold;
@@ -686,6 +699,7 @@ function strategyEligible(strategy,state,catalog,targets={}) {
     if(effect.kind==='choose_transfer')return availableItemOptions(catalog,'emblem').length>0;
     if(effect.kind==='choose_viable_transfer')return viableTransferOptions(catalog).length>0;
     if(effect.kind==='choose_components')return availableItemOptions(catalog,'component').length>0;
+    if(effect.kind==='prototype_grant')return (effect.params?.operators??[]).every((row)=>activeOperatorIds(catalog).filter((id)=>costOf(catalog,id)===Number(row.cost)&&(state.poolRemaining[id]??0)>0).length>=Number(row.count??1));
     if(effect.kind==='late_game')return state.gold>=Math.abs(Number(effect.params?.startGold??-8));
     if(effect.kind==='target_copy')return state.pieces.some((piece)=>piece.row!==null&&costOf(catalog,piece.operatorId)>=Number(effect.params?.costMin??1)&&costOf(catalog,piece.operatorId)<=Number(effect.params?.costMax??3));
     if(effect.kind==='delayed_operator')return activeOperatorIds(catalog).some((id)=>costOf(catalog,id)===Number(effect.params?.cost??4)&&(state.poolRemaining[id]??0)>0);
@@ -703,6 +717,9 @@ export function drawStrategies(state,catalog) {
     && !strategy.mutuallyExclusive?.some((id)=>chosen.has(id))
     && strategyEligible(strategy,state,catalog));
   const picked=[];
+  // a season may cap the 徽记 / 王冠 options of one offer (season 2: at most one)
+  const emblemCap=Number(catalog.prototypeSeason?.strategyOfferEmblemCap);
+  const grantsEmblem=(strategy)=>(strategy.effects??[]).some((effect)=>effect.kind==='choose_transfer');
   while (candidates.length && picked.length<3) {
     const weights=candidates.map((strategy)=>Number(strategy.weight));
     const total=weights.reduce((sum,weight)=>sum+(Number.isFinite(weight)&&weight>0?weight:0),0);
@@ -714,6 +731,8 @@ export function drawStrategies(state,catalog) {
       cursor-=weight;
     }
     picked.push(candidates.splice(index,1)[0].id);
+    if(emblemCap>0&&picked.filter((id)=>grantsEmblem(defs[id])).length>=emblemCap)
+      for(let i=candidates.length-1;i>=0;i--)if(grantsEmblem(candidates[i]))candidates.splice(i,1);
   }
   return picked;
 }
@@ -748,11 +767,49 @@ export function unbiasedTransferChoices(state,catalog,count=4) {
   while(candidates.length&&picked.length<Math.max(1,count))picked.push(candidates.splice(Math.floor(random(state)*candidates.length),1)[0]);
   return picked;
 }
-function componentOptions(state,catalog,optionCount) {
-  const available=availableItemOptions(catalog,'component'),picked=[];
-  const count=Math.min(available.length,Math.max(1,Math.trunc(optionCount)));
-  while (picked.length<count) picked.push(available.splice(Math.floor(random(state)*available.length),1)[0]);
+/** Draw distinct components; a season may weight them (season 2: 随身身份牌 at a quarter of the others). */
+function drawComponents(state,catalog,pool,count) {
+  const weights=catalog.prototypeSeason?.componentOfferWeights??{},weightOf=(id)=>Number.isFinite(Number(weights[id]))?Math.max(0,Number(weights[id])):1;
+  const available=[...pool],picked=[];
+  while(picked.length<count&&available.length){
+    const total=available.reduce((sum,id)=>sum+weightOf(id),0);
+    let cursor=random(state)*total,index=available.length-1;
+    if(total>0)for(let i=0;i<available.length;i++){if(cursor<weightOf(available[i])){index=i;break;}cursor-=weightOf(available[i]);}
+    else index=Math.floor(random(state)*available.length);
+    picked.push(available.splice(index,1)[0]);
+  }
   return picked;
+}
+function componentOptions(state,catalog,optionCount) {
+  const available=availableItemOptions(catalog,'component');
+  return drawComponents(state,catalog,available,Math.min(available.length,Math.max(1,Math.trunc(optionCount))));
+}
+/** Season-2 generic strategy rewards (generic-strategies.js): gold, XP, refreshes, items, gear consumables and operators. */
+function grantStrategyRewards(state,catalog,strategy,p) {
+  if(state.rulesVersion<3)throw new Error('STRATEGY_RULES_VERSION');
+  state.gold+=Number(p.gold??0);
+  if(Number(p.xp)>0)applyXp(state,Number(p.xp),catalog);
+  if(Number(p.freeRefreshes)>0)state.freeRefreshes=(Number(state.freeRefreshes)||0)+Number(p.freeRefreshes);
+  const items=[...(p.items??[])];
+  if(Number(p.randomCompleted)>0){
+    const pool=availableItemOptions(catalog,'completed');
+    for(let index=0;index<Number(p.randomCompleted)&&pool.length;index++)items.push(pool.splice(Math.floor(random(state)*pool.length),1)[0]);
+  }
+  if(state.inventory.length+items.length>INVENTORY_CAPACITY)throw new Error('INVENTORY_CAPACITY');
+  for(const itemId of items){if(!itemGrantAllowed(catalog,itemId))throw new Error('EQUIPMENT_GRANT_NOT_ALLOWED');state.inventory.push({uid:uid(state,'i'),itemId});}
+  for(const kind of p.consumables??[]){
+    if(!own(catalog.prototypeEconomy?.gearConsumables??{},kind))throw new Error('STRATEGY_CONSUMABLE_UNAVAILABLE');
+    state.consumables.push({uid:uid(state,'u'),kind,source:strategy.id});
+  }
+  if(Number(p.randomComponents)>0){
+    const options=drawComponents(state,catalog,availableItemOptions(catalog,'component'),Number(p.randomComponents));
+    if(options.length)addPendingChoice(state,'components',strategy.id,options,options.length);
+  }
+  if(p.componentChoice)addPendingChoice(state,'components',strategy.id,componentOptions(state,catalog,Number(p.componentChoice.optionCount??3)),Number(p.componentChoice.count??1));
+  for(const row of p.operators??[]){
+    const pool=activeOperatorIds(catalog).filter((id)=>costOf(catalog,id)===Number(row.cost)&&(state.poolRemaining[id]??0)>0);
+    for(let index=0;index<Number(row.count??1)&&pool.length;index++)addPendingChoice(state,'operators',strategy.id,[pool.splice(Math.floor(random(state)*pool.length),1)[0]],1);
+  }
 }
 function executeStrategyEffect(state,catalog,strategy,effect,targets={}) {
   const p=effect.params??{};
@@ -811,6 +868,8 @@ function executeStrategyEffect(state,catalog,strategy,effect,targets={}) {
       addPendingChoice(state,'components',strategy.id,componentOptions(state,catalog,1),1);
       state.strategyState[strategy.id]={...clone(p),selectedRound:state.round,ammoSpent:0,rewarded:false,lastBattleNode:null};
       break;
+    case 'prototype_grant': grantStrategyRewards(state,catalog,strategy,p); break;
+    case 'prototype_team_battle': state.strategyState[strategy.id]={...clone(p),selectedRound:state.round}; break;
     case 'gold': state.gold+=Number(p.amount??0); break;
     case 'xp': applyXp(state,Number(p.amount??0),catalog); break;
     case 'choose_components': addPendingChoice(state,'components',strategy.id,componentOptions(state,catalog,Number(p.optionCount??8)),Number(p.count??1)); break;
@@ -852,10 +911,7 @@ function executeStrategyEffect(state,catalog,strategy,effect,targets={}) {
           else if(reward?.kind==='random-components'){
             const count=Number(reward.count),pool=Object.values(itemTable(catalog)).filter((item)=>item.kind==='component'&&itemGrantAllowed(catalog,item.id)).map((item)=>item.id);
             if(!Number.isInteger(count)||count<1||count>pool.length)throw new Error('SOURCE_COMPONENT_REWARD_UNAVAILABLE');
-            for(let index=0;index<count;index++){
-              const selected=Math.floor(random(state)*pool.length);
-              bonusRewardItems.push({itemId:pool.splice(selected,1)[0],kind:'component'});
-            }
+            for(const itemId of drawComponents(state,catalog,pool,count))bonusRewardItems.push({itemId,kind:'component'});
           } else throw new Error('SOURCE_REWARD_UNAVAILABLE');
         }
         if(bonusRewardItems.length)extra.bonusRewardItems=bonusRewardItems;

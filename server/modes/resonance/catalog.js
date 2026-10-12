@@ -6,13 +6,14 @@ import { applyCurrentStrategies } from '../../../shared/resonance/current-strate
 import { applyCurrentPacts } from '../../../shared/resonance/current-pacts.js';
 import { applyCurrentOperators } from '../../../shared/resonance/current-operators.js';
 import { applyCurrentEquipment } from '../../../shared/resonance/current-equipment.js';
-import { getActivePrototypeSeason, getPrototypeSeason } from '../../../shared/resonance/season-registry.js';
+import { getActivePrototypeSeason, getPrototypeSeason, retiredEconomyTraitIds } from '../../../shared/resonance/season-registry.js';
 import { buildNativePowerStars, buildNativePowerReference } from '../../../shared/resonance/native-power.js';
 import { tftArmorToNativeDefense, tftMrToNativeResistance } from '../../../shared/resonance/prototype-resistance.js';
 import { applyPrototypePacts } from '../../sim/content/resonance/prototype-pacts.js';
 import { applyPrototypeStrategies } from '../../../shared/resonance/prototype-strategies.js';
 import { applyPrototypeEconomy, prototypeEconomyRules } from '../../../shared/resonance/prototype-economy.js';
 import { applyPrototypeSourceGear } from '../../../shared/resonance/prototype-source-gear.js';
+import { applyOperatorAdaptations } from '../../../shared/resonance/operator-adaptations.js';
 
 const clone = (value) => structuredClone(value);
 const operatorCache = new WeakMap();
@@ -152,17 +153,24 @@ export function getResonanceCatalog(data = getData(), options = {}) {
     }))));
     if(currentCatalog.pacts.conqueror)currentCatalog.pacts.conqueror={...currentCatalog.pacts.conqueror,
       rewardThresholds:[...prototypeEconomyRules.conqueror.chestThresholds]};
+    // a season that retired the 叙拉古 market (season 2) never hands out its tiered passive items: they stay readable
+    // and leave the codex like every other never-granted item
+    if(retiredEconomyTraitIds(season).has('risk'))for(const [id,item] of Object.entries(currentCatalog.equipment))
+      if(item.kind==='passive'&&item.prototypeEconomyTier)currentCatalog.equipment[id]={...item,grantAllowed:false};
     const prototypeEmblemIds=new Set(currentCatalog.prototypeEmblemItems);
     const legacyEmblemIds=new Set(Object.values(currentCatalog.equipment).filter((item)=>item.kind==='emblem'&&!prototypeEmblemIds.has(item.id)).map((item)=>item.id));
     currentCatalog.equipment=Object.fromEntries(Object.entries(currentCatalog.equipment).filter(([,item])=>item.kind!=='emblem'||prototypeEmblemIds.has(item.id)));
     currentCatalog.recipes=currentCatalog.recipes.filter((recipe)=>!legacyEmblemIds.has(recipe.resultId));
     Object.assign(currentCatalog,applyPrototypeStrategies(currentCatalog));
+    // a season may rewrite operators' own effects for the mode (season 2: shared/resonance/operator-adaptations.js)
+    if(season.operatorAdaptations)Object.assign(currentCatalog,applyOperatorAdaptations(currentCatalog,season.operatorAdaptations));
     const campaign=clone(currentCatalog.campaign);
     campaign.strategyNodes=[5,13,20];
     campaign.shopOdds=clone(prototypeEconomyRules.shopOddsByLevel);
     campaign.economy={...campaign.economy,xpToLevel:clone(prototypeEconomyRules.xpToLevel),xpCurveSource:clone(prototypeEconomyRules.sourceVersions)};
     delete campaign.supply.acceleratedStrategy;
-    campaign.supply.transfers=(campaign.supply.transfers??[]).map((entry)=>({...entry,selection:'viable-pact'}));
+    // a season may name its own pact-transfer supply nodes (season 2: one, so a run gains one to three transfers)
+    campaign.supply.transfers=(season.supplyTransfers??campaign.supply.transfers??[]).map((entry)=>({...entry,selection:'viable-pact'}));
     campaign.poolByCost=Object.fromEntries([1,2,3,4,5].map((cost)=>[cost,activeOperatorIds.filter((id)=>seasonOperators[id].cost===cost).length]));
     currentCatalog.campaign=campaign;
     currentCatalog.season={id:seasonForConsumers.id,displayName:seasonForConsumers.displayName};

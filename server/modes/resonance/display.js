@@ -95,7 +95,8 @@ function starView(operator, star, data, playerText) {
       const record = tokenId ? data?.tokens?.[tokenId] : null;
       return tokenId ? { id: tokenId, name: record?.name ?? record?.nameCn ?? '召唤物' } : null;
     }).filter(Boolean),
-    talents: (record.talents ?? []).filter((talent) => !talent.hidden).map((talent) => ({ name: talent.name, description: talent.desc })),
+    // the star-three passive row an adaptation adds for the in-match card is shown here as `passive`
+    talents: (record.talents ?? []).filter((talent) => !talent.hidden && !talent.resonancePassive).map((talent) => ({ name: talent.name, description: talent.desc })),
     passive: spec.passive?.description || '',
   };
 }
@@ -136,6 +137,7 @@ export function resonanceDisplayCatalog(catalog, data = null) {
     conditionKind: strategy.condition?.kind ?? null,
     // what the strategy icon is chosen by (public/js/resonance/strategyIconMap.js)
     effectKind: strategy.effects?.[0]?.kind ?? null,
+    ...(strategy.iconTheme ? { iconTheme: strategy.iconTheme } : {}),
     pactId: [strategy.effects?.[0]?.params?.traitId, strategy.effects?.[0]?.params?.prototypeTraitId].find((pactId) => pactId && catalog.pacts?.[pactId]) ?? null,
     emblemId: strategy.effects?.[0]?.kind === 'choose_transfer' ? strategy.effects[0].params?.itemIds?.find((itemId) => catalog.equipment?.[itemId]?.kind === 'emblem') ?? null : null,
   }]));

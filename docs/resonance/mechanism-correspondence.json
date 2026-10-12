@@ -52474,7 +52474,7 @@
       "bow": {
         "kind": "equipment",
         "catalogID": "bow",
-        "name": "叙拉古正装",
+        "name": "装置",
         "effectKind": [
           "component_stat"
         ],
@@ -52598,7 +52598,7 @@
       "cloak": {
         "kind": "equipment",
         "catalogID": "cloak",
-        "name": "耶拉冈德之泪",
+        "name": "固源岩",
         "effectKind": [
           "component_stat"
         ],
@@ -52660,7 +52660,7 @@
       "belt": {
         "kind": "equipment",
         "catalogID": "belt",
-        "name": "歌利亚头盔",
+        "name": "糖",
         "effectKind": [
           "component_stat"
         ],
@@ -52722,7 +52722,7 @@
       "tear": {
         "kind": "equipment",
         "catalogID": "tear",
-        "name": "迅捷作战粮",
+        "name": "技巧概要·卷1",
         "effectKind": [
           "component_stat"
         ],
@@ -62378,7 +62378,7 @@
       "items": [
         {
           "catalogID": "tear",
-          "name": "迅捷作战粮",
+          "name": "技巧概要·卷1",
           "effects": [
             {
               "kind": "component_stat",

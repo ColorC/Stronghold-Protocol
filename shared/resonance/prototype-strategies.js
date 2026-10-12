@@ -139,6 +139,16 @@ export function applyPrototypeStrategies(catalog) {
       source:{...row.reference,recordId:row.apiName,sourceEffectText:row.description,sourceEffects:row.effects,associatedTraits:row.associatedTraits??[],adapterState:'mode-adapted'},
       effects:[adapt(row)],order:strategies.length+index};
   }
+  // season 2: generic strategies (team stats and skills, equipment, economy) at the native scale (generic-strategies.js)
+  for(const [index,row] of (season.genericStrategies??[]).entries()){
+    const source=season.strategyCandidates.find((candidate)=>candidate.apiName===row.apiName);
+    if(!source)throw new Error(`GENERIC_STRATEGY_SOURCE_MISSING:${row.apiName}`);
+    const id=`prototype_generic_${row.apiName.replace(/^TFT\d*_?Augment_?/,'').replace(/[^a-zA-Z0-9]+/g,'_').toLowerCase()}`;
+    strategies[id]={id,name:row.name,group:'rule',description:row.description,timing:'run-or-node',condition:{kind:'always'},mutuallyExclusive:[],unique:true,prototype:true,weight:1,
+      ...(row.iconTheme?{iconTheme:row.iconTheme}:{}),
+      source:{...source.reference,recordId:source.apiName,sourceEffectText:source.description,sourceEffects:source.effects,associatedTraits:source.associatedTraits??[],adapterState:'mode-adapted-native-scale'},
+      effects:structuredClone(row.effects),order:1000+index};
+  }
   const sourceEmblemCount=season.strategyCandidates.filter((row)=>(row.grantedItems??[]).some((item)=>/emblem/i.test(item.apiName??''))).length;
   const sourceOtherCount=season.strategyCandidates.length-sourceEmblemCount;
   const playable=Object.values(strategies),playableEmblems=playable.filter((strategy)=>strategy.effects?.some((effect)=>effect.kind==='choose_transfer'));
