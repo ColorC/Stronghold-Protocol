@@ -147,6 +147,12 @@ import { MatchEnded, PausedOverlay } from '../screens/game/overlays.js';
 import { inspectRange } from '../screens/game/range.js';
 import { t, tParts } from '../../../shared/i18n.js';
 
+/** The campaign's leader node (the server's gd.mode.bossRound: min(28, roundLimit)), not the native mode's R14. */
+export function resonanceBossRound(roundLimit) {
+  const limit = Number(roundLimit);
+  return Number.isInteger(limit) && limit > 0 ? Math.min(28, limit) : null;
+}
+
 /** Router for the in-match screens. */
 export function GameScreen({ onLeave, libraryCatalog, activeIds }) {
   const pub = useStore((s) => s.match.public);
@@ -156,6 +162,7 @@ export function GameScreen({ onLeave, libraryCatalog, activeIds }) {
   const autoplay = useStore((s) => !!(Array.isArray(s.match.public?.players) && s.match.public.players.find((p) => p && p.playerId === s.me.playerId)?.autoplay));
   const gd = useGameData();
   const seasonCatalog = useStore((s) => s.match.resonanceCatalog);
+  const bossRound = useStore((s) => resonanceBossRound(s.match.private?.resonance?.state?.roundLimit));
   if (!pub || !gd.ready) {
     return html`<div class="screen gload">
       <${Spinner} size="lg" label=${pub ? 'LOADING DATA' : 'ENTERING SIMULATION'} />
@@ -165,7 +172,7 @@ export function GameScreen({ onLeave, libraryCatalog, activeIds }) {
   const mode = phaseMode(pub.phase);
   let body;
   if (hasResult || mode === 'result') body = html`<${ResultScreen} onBack=${onLeave} backLabel="返回首页" />`;
-  else if (mode === 'briefing') body = html`<${BriefingScreen} step=${2} of=${2} loadout=${false}
+  else if (mode === 'briefing') body = html`<${BriefingScreen} step=${2} of=${2} loadout=${false} bossRound=${bossRound}
     right=${html`<${SeasonBondsBrief} catalog=${seasonCatalog} />`} />`;
   else if (mode === 'draft') body = html`<${BandDraftScreen} />`;
   else body = html`<${MatchScreen} onLeave=${onLeave} libraryCatalog=${libraryCatalog} activeIds=${activeIds} />`;
@@ -2194,6 +2201,7 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
       ${pen ? html`<${PenEnemyList} list=${priv?.nextEnemies} onEnemy=${(k, n) => setDetail({ kind: 'enemy', id: k, count: n })} />` : null}
 
       ${drawer ? html`<${EnemyDrawer} tab=${drawer} onTab=${setDrawer} pub=${pub} priv=${priv} onClose=${() => setDrawer(null)}
+        bossRound=${resonanceBossRound(resonanceState?.roundLimit)}
         bandId=${scoutBandId} bandOwner=${scoutBandOwner}
         onEnemy=${(k, n) => setDetail({ kind: 'enemy', id: k, count: n })} onChess=${(id) => setDetail({ kind: 'chess', id, foreign: true })} />` : null}
 

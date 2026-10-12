@@ -24,7 +24,7 @@ function FactionChips({ types }) {
     <${Img} src=${factionIconUrl(m, f[t]?.icon)} class="fchip__icon" /><span>${f[t]?.name || t}</span></span>`)}</div>`;
 }
 
-function EnemiesTab({ pub, priv, onEnemy }) {
+function EnemiesTab({ pub, priv, onEnemy, bossRound = null }) {
   const rows = groupEnemies(priv?.nextEnemies, (k) => data.lookup('enemies', k));
   const types = factionTypes(pub?.factions);
   const f = data.get('factions')?.types || {};
@@ -54,7 +54,7 @@ function EnemiesTab({ pub, priv, onEnemy }) {
     ${boss ? html`<div class="eboss">
       <${UnitThumb} kind="enemy" id=${boss.enemyKey} size="md" />
       <div><${MicroLabel} tone="gold">ENEMY LEADER // 敌方领袖</${MicroLabel}><b>${boss.name}</b>
-        <span class="t-lo">第 ${data.get('config')?.modes?.[pub.modeId]?.bossRound ?? pub.lastRound ?? 14} 回合 · 最终攻势</span></div>
+        <span class="t-lo">第 ${bossRound ?? data.get('config')?.modes?.[pub.modeId]?.bossRound ?? pub.lastRound ?? 14} 回合 · 最终攻势</span></div>
     </div>` : null}
   </div>`;
 }
@@ -95,12 +95,12 @@ function InfoTab({ pub, priv, onChess, bandId = null, bandOwner = null }) {
  *   replaces one's own in the 本局信息 tab (game.js scoutBandId; user playtest #2 item 2)
  *   info (optional): a mode's own 本局信息 tab body in place of the original's (strategy / banned bonds)
  */
-export function EnemyDrawer({ tab, onTab, pub, priv, onClose, onEnemy, onChess, bandId = null, bandOwner = null, info = null }) {
+export function EnemyDrawer({ tab, onTab, pub, priv, onClose, onEnemy, onChess, bandId = null, bandOwner = null, info = null, bossRound = null }) {
   return html`<div class="edrawer brackets" role="dialog" aria-label=${tab === 'info' ? '本局信息' : '敌方情报'}>
     <div class="edrawer__top">
       <${Tabs} size="sm" value=${tab} onChange=${onTab} items=${[{ id: 'info', label: '本局信息' }, { id: 'enemies', label: '敌方情报' }]} />
       <button type="button" class="edrawer__close tapx" aria-label="关闭" onClick=${onClose}><${Icon} name="close" /></button>
     </div>
-    ${tab === 'info' ? (info || html`<${InfoTab} pub=${pub} priv=${priv} onChess=${onChess} bandId=${bandId} bandOwner=${bandOwner} />`) : html`<${EnemiesTab} pub=${pub} priv=${priv} onEnemy=${onEnemy} />`}
+    ${tab === 'info' ? (info || html`<${InfoTab} pub=${pub} priv=${priv} onChess=${onChess} bandId=${bandId} bandOwner=${bandOwner} />`) : html`<${EnemiesTab} pub=${pub} priv=${priv} onEnemy=${onEnemy} bossRound=${bossRound} />`}
   </div>`;
 }

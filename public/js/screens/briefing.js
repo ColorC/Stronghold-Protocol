@@ -22,7 +22,7 @@ const cx = (...p) => p.flat().filter(Boolean).join(' ');
  * numbering, its own right column and `loadout: false` when the operators' skills are fixed.
  * @param {{ step?: number, of?: number, right?: any, loadout?: boolean }} [props]
  */
-export function BriefingScreen({ step = 1, of = 2, right = null, loadout = true } = {}) {
+export function BriefingScreen({ step = 1, of = 2, right = null, loadout = true, bossRound = null } = {}) {
   const pub = useStore((s) => s.match.public);
   const myId = useStore((s) => s.me.playerId);
   const solo = useStore((s) => s.room?.mode === 'solo') || String(pub?.modeId || '').includes('single');
@@ -68,7 +68,7 @@ export function BriefingScreen({ step = 1, of = 2, right = null, loadout = true 
           </div>
           <div class="brief-boss__text">
             <h2 class="brief-boss__name">${boss?.name || bossEnemy?.name || '未知领袖'}</h2>
-            <span class="brief-boss__when">第 <b class="num">${mode?.bossRound ?? pub.lastRound ?? 14}</b> 回合 · 最终攻势</span>
+            <span class="brief-boss__when">第 <b class="num">${bossRound ?? mode?.bossRound ?? pub.lastRound ?? 14}</b> 回合 · 最终攻势</span>
             ${Array.isArray(boss?.abilities) && boss.abilities.length ? html`<ul class="brief-boss__abil">
               ${boss.abilities.slice(0, 3).map((a, i) => html`<li key=${i}><${RichText} text=${a} /></li>`)}
             </ul>` : null}
