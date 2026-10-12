@@ -40,7 +40,7 @@ function arena(operators, { star = 1, equipment = {}, extraPacts = {}, seed = 21
   let serial = 0;
   const enemy = (pos, options = {}) => {
     const key = `stronghold_test_${++serial}`;
-    return battle.spawnEnemy(key, { pos, def: enemyRec({ key, hp: options.hp ?? 100000, atk: 0, speed: 0, rank: options.rank ?? 'NORMAL', def: 0, res: 0, range: options.range ?? 0 }) });
+    return battle.spawnEnemy(key, { pos, def: enemyRec({ key, hp: options.hp ?? 100000, atk: 0, speed: 0, rank: options.rank ?? 'NORMAL', def: options.def ?? 0, res: 0, range: options.range ?? 0 }) });
   };
   const advance = (seconds) => { const until = battle.time + seconds; while (battle.time + 1e-9 < until && !battle.finished) battle.step(); };
   const far = () => [battle.rect.r0, battle.rect.c1];
@@ -64,7 +64,7 @@ test('faction season 2 keeps every season-1 member, tier and fee and replaces on
   assert.equal(STRONGHOLD_PACT_IDS.length, 17);
   assert.equal(firstCatalog.pacts.academy.levels[0].effects[0].params.mechanic, 'shared_item_training', 'season 1 keeps its own pacts');
   assert.equal(catalog.pacts.academy.levels[0].effects[0].params.mechanic, 'wanted_ammo');
-  assert.equal(catalog.pacts.artillery.levels.at(-1).effects[0].params.variables.AD, 0.25, 'kept pacts take the season-2 value corrections');
+  assert.equal(catalog.pacts.artillery.levels.at(-1).effects[0].params.variables.AD, 0.2, 'kept pacts take the season-2 value corrections');
   assert.equal(firstCatalog.pacts.artillery.levels.at(-1).effects[0].params.variables.AD, factionSeason.traits.find((row) => row.id === 'artillery').effects.at(-1).variables.AD);
   assert.equal(firstCatalog.pacts.bruiser.levels.at(-1).effects[0].params.mechanic, factionSeason.traits.find((row) => row.id === 'bruiser').mechanic ?? firstCatalog.pacts.bruiser.levels.at(-1).effects[0].params.mechanic, 'season 1 keeps its 重装');
 });
@@ -395,14 +395,14 @@ test('掌控 gains SP when an enemy first enters a member range in season 2 and 
   const kjeraIdle = kjera.skill.spTotal, duskIdle = dusk.skill.spTotal;
   const far = two.enemy(two.far());
   two.battle.dealDamage(kjera, far, { amount: 1, type: 'arts', isAttack: true });
-  assert.ok(kjera.skill.spTotal - kjeraIdle >= 5 - 1e-6, 'striking an enemy counts as contact: +5 SP');
+  assert.ok(kjera.skill.spTotal - kjeraIdle >= 4 - 1e-6, 'striking an enemy counts as contact: +4 SP');
   assert.ok(dusk.skill.spTotal - duskIdle < 1, 'per member');
   assert.ok(!kjera.buffs.some((buff) => buff.key.startsWith('resonance:v3:dominator-shield')), 'no 屏障 in season 2');
   dusk.skill.sp = 0; dusk.skill.charges = 0;   // a full bar would cap the gain
   const before = dusk.skill.spTotal;
   two.enemy(inRangeTile(two, dusk));
   two.advance(0.3);
-  assert.ok(dusk.skill.spTotal - before >= 5 - 1e-6, 'an enemy entering the range is contact too');
+  assert.ok(dusk.skill.spTotal - before >= 4 - 1e-6, 'an enemy entering the range is contact too');
   const kjeraAfter = kjera.skill.spTotal;
   two.battle.dealDamage(kjera, far, { amount: 1, type: 'arts', isAttack: true });
   assert.ok(kjera.skill.spTotal - kjeraAfter < 1, 'once per battle');
@@ -645,8 +645,15 @@ test('重装 attacks add a share of max HP, slow what they block from four and s
   const estelle = two.unit('艾丝黛尔'), dummy = two.enemy([10, 9], { hp: 1000000 });
   const before = dummy.hp;
   two.battle.dealDamage(estelle, dummy, { amount: 1, type: 'phys', isAttack: true });
-  assert.ok(before - dummy.hp >= estelle.s.maxHp * 0.03 - 1e-6, 'an attack adds 3% of max HP as physical damage');
+  assert.ok(before - dummy.hp >= estelle.s.maxHp * 0.03 - 1e-6, 'an attack adds 3% of max HP to its damage');
   assert.equal(two.tier('bruiser').strikes, 1);
+  // one instance: DEF is taken once from attack + share, not a second time from a small separate hit
+  const armored = two.enemy([11, 9], { hp: 1000000, def: 300 }), share = estelle.s.maxHp * 0.03;
+  const armoredBefore = armored.hp;
+  two.battle.dealDamage(estelle, armored, { amount: 400, type: 'phys', isAttack: true, canDodge: false });
+  close(armoredBefore - armored.hp, 400 + share - armored.s.def, 'attack + share − DEF', 1e-6);
+  assert.ok(armored.s.def > 50, 'the target really has DEF');
+  assert.equal(two.tier('bruiser').strikes, 2);
 
   const six = arena(ops('艾丝黛尔', '幽灵鲨', '休谟斯', '泥岩', '百炼嘉维尔', '格拉尼'), { idle: true });
   const heavy = six.unit('泥岩'), held = six.enemy([heavy.tileR, heavy.tileC], { hp: 1000000 });
@@ -685,7 +692,7 @@ test('双形 front form slows what it hits instead of taking less damage, the ba
   const foe = four.enemy([10, 9], { hp: 1000000 });
   four.battle.dealDamage(front[0], foe, { amount: 1, type: 'phys', isAttack: true });
   close(foe.buffs.find((buff) => buff.status === 'slow')?.mods?.moveMul, 0.55, 'front form attack: move speed -45%', 1e-3);
-  for (const unit of back) close(unit.s.dmgDealtMul, 1.25, `${unit.name}: damage +25%`, 1e-3);
+  for (const unit of back) close(unit.s.dmgDealtMul, 1.2, `${unit.name}: damage +20%`, 1e-3);
   assert.equal(four.battle.errorCount, 0);
 });
 
@@ -702,7 +709,7 @@ test('决斗 adds true damage and attacks faster below half health, without life
   const low = brawler.hp;
   two.advance(2.5);
   assert.ok(brawler.hp <= low + brawler.s.maxHp * 0.02, 'no emergency heal');
-  close(buffOf(brawler, 'pit-fury').mods.aspd, 20, 'attack speed +20 below half health');
+  close(buffOf(brawler, 'pit-fury').mods.aspd, 15, 'attack speed +15 below half health');
   assert.equal(two.battle.errorCount, 0);
 });
 
@@ -768,4 +775,80 @@ test('技力协同 refunds SP when a member skill ends', () => {
   member.skill.end('test');
   assert.equal(member.skill.sp, second, 'no refund when the roll fails');
   assert.equal(two.battle.errorCount, 0);
+});
+
+test('the nine season-1 adapters run at the native scale in season 2: no flat HP or 屏障, no SP per attack, no damage reduction', () => {
+  const tierVars = (id) => catalog.pacts[id].levels.map((level) => level.effects[0].params.variables);
+  for (const v of tierVars('combo')) { assert.ok(v.MaxBonusAS <= 0.45); assert.ok(!(v.ShieldAmount > 0)); }
+  assert.equal(tierVars('combo').at(-1).ShieldMaxHpPct, 0.15);
+  for (const v of tierVars('artillery')) assert.ok(v.AD <= 0.2);
+  for (const v of tierVars('formSwap')) assert.ok(v.DA <= 0.2 && v.DR === 0);
+  for (const v of tierVars('dominator')) assert.ok(v.APCapPercent <= 35 && v.SpOnFirstContact <= 8);
+  const duel = tierVars('breaker');
+  assert.ok(duel.slice(0, -1).every((v) => v.TrueDamagePercent <= 0.15) && duel.at(-1).TrueDamagePercent === 0.25, 'only the two-emblem eight tier exceeds 20%');
+  for (const v of tierVars('emissary')) { assert.equal(v.NamiMana, 0); assert.equal(v.NamiSpRegen, 0.15); assert.equal(v.BonusHealth, 0); assert.ok(v.GarenHpPct <= 0.2 && v.BonusHpPct <= 0.2); }
+  for (const v of tierVars('family')) assert.ok(v.DamageReduction === 0 && v.ManaReduction <= 0.2 && v.AttackSpeed <= 0.2);
+  const gun = tierVars('holyGun')[0];
+  assert.ok(gun.Durability === 0 && gun.Bonus2ShieldAmount === 0 && gun.Bonus1RocketDamage === 0 && gun.Bonus1RocketAtk === 0.35);
+  for (const option of catalog.prototypeEconomy.junkerKing.upgradeOptions) assert.ok(!/法术强度|评分|双抗|护甲|耐久/.test(option.description), option.description);
+  for (const option of firstCatalog.prototypeEconomy.junkerKing.upgradeOptions.filter((row) => row.id === 'TFT13_JunkerKing_Pass'))
+    assert.match(option.description, /法术强度/, 'season 1 keeps its armory text');
+});
+
+test('领军 瑕光 gives every ally 技力自然回复速度+0.15/秒 instead of SP per attack; 塞雷娅 and four members add shares of 生命上限', () => {
+  const names = ['瑕光', '格拉尼', '凯瑟琳'];
+  const one = arena(ops(...names));
+  for (const name of names) close(one.unit(name).s.spRecovery - one.unit(name).base.spRecovery, 0.15, `${name} SP regen +0.15/s`);
+  const ally = one.unit('格拉尼'), foe = one.enemy([10, 9]), sp = ally.skill?.sp ?? 0;
+  one.battle.emit('attack', { attacker: ally, targets: [foe] });
+  assert.equal(ally.skill?.sp ?? 0, sp, 'an attack brings no SP');
+  assert.equal(one.battle.errorCount, 0);
+  const four = arena(ops('雷蛇', '瑕光', '号角', '塞雷娅'));
+  for (const name of ['雷蛇', '瑕光', '号角', '塞雷娅']) {
+    const share = buffOf(four.unit(name), 'emissary-four-member');
+    close(share.mods.hpPct, 0.15, `${name} 生命上限+15%`);
+    assert.equal(share.mods.hpFlat, undefined, 'no flat HP');
+    close(share.mods.dmgDealtMul, 1.15, `${name} damage +15%`);
+  }
+  const guard = buffOf(four.unit('塞雷娅'), 'emissary-garen');
+  close(guard.mods.hpPct, 0.15, '塞雷娅 生命上限+15%');
+  assert.equal(four.battle.errorCount, 0);
+});
+
+test('同袍 attacks faster and casts sooner without taking less damage in season 2', () => {
+  const three = arena(ops('香草', '罗比菈塔', '华法琳'));
+  const member = three.unit('香草');
+  close(buffOf(member, 'family').mods.aspd, 10, 'attack speed +10');
+  assert.equal(member.s.dmgTakenMul, 1, 'no damage reduction');
+  if (member.skill) close(member.skill.spCostMul, 0.9, 'SP cost −10%');
+  assert.equal(three.battle.errorCount, 0);
+});
+
+test('圣枪 rockets scale with ATK, the 屏障 roll stuns what is in range, and no damage reduction follows a cast', () => {
+  const roll = (value) => {
+    const one = arena(ops('蕾缪安'));
+    const lemuen = one.unit('蕾缪安'), foe = one.enemy(inRangeTile(one, lemuen), { hp: 1000000 });
+    one.advance(0.1);   // the enemy is on the field's tile buckets
+    one.battle.rng = () => value;
+    const before = foe.hp;
+    one.battle.emit('skillStart', { unit: lemuen, skill: lemuen.skill });
+    return { one, lemuen, foe, lost: before - foe.hp };
+  };
+  const rocket = roll(0);
+  close(rocket.lost, 8 * rocket.lemuen.s.atk * 0.35, 'eight rockets of 35% ATK on the only enemy');
+  assert.ok(!rocket.lemuen.buffs.some((buff) => buff.key.includes('high-roller-durability')), 'no damage reduction');
+  const stun = roll(0.3);
+  assert.equal(stun.foe.s.flags.stun, true, 'the 屏障 roll stuns the enemy in range');
+  assert.ok(!stun.lemuen.buffs.some((buff) => buff.shield > 0), 'no 屏障');
+  assert.equal(rocket.one.battle.errorCount + stun.one.battle.errorCount, 0);
+});
+
+test('迅击 four: a kill dash grants a 屏障 of 15% 生命上限', () => {
+  const four = arena(ops('谜图', '流星', '寒芒克洛丝', '焰尾'), { idle: true });
+  const striker = four.unit('流星'), victim = four.enemy([10, 9], { hp: 10 }), next = four.enemy([12, 9], { hp: 100000 });
+  four.battle.dealDamage(striker, victim, { amount: 1000, type: 'true', isAttack: true, canDodge: false });
+  const shield = striker.buffs.find((buff) => buff.key.includes('quickstriker-kill-shield'));
+  assert.ok(shield && next.alive, 'the kill grants the 屏障');
+  close(shield.shield, striker.s.maxHp * 0.15, '15% 生命上限');
+  assert.equal(four.battle.errorCount, 0);
 });

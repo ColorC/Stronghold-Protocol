@@ -5112,23 +5112,23 @@
           "cost": 4
         }
       ],
-      "description": "【重装】干员的攻击额外造成相当于自身生命上限一定比例的物理伤害；高档时被其阻挡的敌人攻击速度降低。",
+      "description": "【重装】干员攻击时，伤害额外加上自身生命上限的一定比例；高档时被其阻挡的敌人攻击速度降低。",
       "detailNotes": [],
       "levels": [
         {
           "min": 2,
           "max": 3,
-          "text": "攻击额外造成相当于自身生命上限3%的物理伤害。"
+          "text": "攻击时伤害额外加上自身生命上限的3%。"
         },
         {
           "min": 4,
           "max": 5,
-          "text": "攻击额外造成相当于自身生命上限5%的物理伤害。被【重装】干员阻挡的敌人攻击速度-20。"
+          "text": "攻击时伤害额外加上自身生命上限的5%。被【重装】干员阻挡的敌人攻击速度-20。"
         },
         {
           "min": 6,
           "max": 25000,
-          "text": "攻击额外造成相当于自身生命上限8%的物理伤害。被【重装】干员阻挡的敌人攻击速度-30。每4秒，下一次攻击使目标晕眩1秒。"
+          "text": "攻击时伤害额外加上自身生命上限的8%。被【重装】干员阻挡的敌人攻击速度-30。每4秒，下一次攻击使目标晕眩1秒。"
         }
       ]
     },
@@ -5322,16 +5322,19 @@
       "redesigned": false,
       "tuning": {
         "2": {
-          "APCapPercent": 25,
-          "SpOnFirstContact": 5
+          "APPercent": 0.25,
+          "APCapPercent": 15,
+          "SpOnFirstContact": 4
         },
         "4": {
-          "APCapPercent": 35,
-          "SpOnFirstContact": 8
+          "APPercent": 0.35,
+          "APCapPercent": 25,
+          "SpOnFirstContact": 6
         },
         "6": {
-          "APCapPercent": 45,
-          "SpOnFirstContact": 12
+          "APPercent": 0.45,
+          "APCapPercent": 35,
+          "SpOnFirstContact": 8
         }
       },
       "fees": [
@@ -5374,17 +5377,17 @@
         {
           "min": 2,
           "max": 3,
-          "text": "敌人首次进入攻击范围时回复5点技力；每消耗1点技力，法术伤害+0.25%，至多+25%。"
+          "text": "敌人首次进入攻击范围时回复4点技力；每消耗1点技力，法术伤害+0.25%，至多+15%。"
         },
         {
           "min": 4,
           "max": 5,
-          "text": "敌人首次进入攻击范围时回复8点技力；每消耗1点技力，法术伤害+0.45%，至多+35%。"
+          "text": "敌人首次进入攻击范围时回复6点技力；每消耗1点技力，法术伤害+0.35%，至多+25%。"
         },
         {
           "min": 6,
           "max": 25000,
-          "text": "敌人首次进入攻击范围时回复12点技力；每消耗1点技力，法术伤害+0.65%，至多+45%。"
+          "text": "敌人首次进入攻击范围时回复8点技力；每消耗1点技力，法术伤害+0.45%，至多+35%。"
         }
       ]
     },
@@ -5399,23 +5402,26 @@
         "2": {
           "OmnivampPercent": 0,
           "HealPercent": 0,
-          "LowHealthAspd": 20
+          "TrueDamagePercent": 0.05,
+          "LowHealthAspd": 15
         },
         "4": {
           "OmnivampPercent": 0,
           "HealPercent": 0,
-          "LowHealthAspd": 30
+          "TrueDamagePercent": 0.1,
+          "LowHealthAspd": 25
         },
         "6": {
           "OmnivampPercent": 0,
           "HealPercent": 0,
-          "LowHealthAspd": 40
+          "TrueDamagePercent": 0.15,
+          "LowHealthAspd": 35
         },
         "8": {
           "OmnivampPercent": 0,
           "HealPercent": 0,
-          "LowHealthAspd": 60,
-          "TrueDamagePercent": 0.35
+          "TrueDamagePercent": 0.25,
+          "LowHealthAspd": 45
         }
       },
       "fees": [
@@ -5458,22 +5464,22 @@
         {
           "min": 2,
           "max": 3,
-          "text": "造成伤害时，追加相当于该伤害6%的真实伤害；生命低于50%时攻击速度+20。"
+          "text": "造成伤害时，追加相当于该伤害5%的真实伤害；生命低于50%时攻击速度+15。"
         },
         {
           "min": 4,
           "max": 5,
-          "text": "造成伤害时，追加相当于该伤害12%的真实伤害；生命低于50%时攻击速度+30。"
+          "text": "造成伤害时，追加相当于该伤害10%的真实伤害；生命低于50%时攻击速度+25。"
         },
         {
           "min": 6,
           "max": 7,
-          "text": "造成伤害时，追加相当于该伤害20%的真实伤害；生命低于50%时攻击速度+40。"
+          "text": "造成伤害时，追加相当于该伤害15%的真实伤害；生命低于50%时攻击速度+35。"
         },
         {
           "min": 8,
           "max": 25000,
-          "text": "造成伤害时，追加相当于该伤害35%的真实伤害；生命低于50%时攻击速度+60。"
+          "text": "造成伤害时，追加相当于该伤害25%的真实伤害；生命低于50%时攻击速度+45。"
         }
       ]
     },
@@ -5486,16 +5492,18 @@
       "redesigned": false,
       "tuning": {
         "2": {
+          "MinBonusAS": 0.1,
+          "MaxBonusAS": 0.3
+        },
+        "3": {
           "MinBonusAS": 0.15,
           "MaxBonusAS": 0.4
         },
-        "3": {
-          "MinBonusAS": 0.2,
-          "MaxBonusAS": 0.5
-        },
         "4": {
-          "MinBonusAS": 0.25,
-          "MaxBonusAS": 0.6
+          "MinBonusAS": 0.2,
+          "MaxBonusAS": 0.45,
+          "ShieldAmount": 0,
+          "ShieldMaxHpPct": 0.15
         }
       },
       "fees": [
@@ -5528,17 +5536,17 @@
         {
           "min": 2,
           "max": 2,
-          "text": "攻击速度+15至+40。"
+          "text": "攻击速度+10至+30。"
         },
         {
           "min": 3,
           "max": 3,
-          "text": "攻击速度+20至+50。"
+          "text": "攻击速度+15至+40。"
         },
         {
           "min": 4,
           "max": 25000,
-          "text": "攻击速度+25至+60。击倒目标后转移到下一名敌人身边，获得800点屏障，持续3秒。"
+          "text": "攻击速度+20至+45。击倒目标后转移到下一名敌人身边，获得生命上限15%的屏障，持续3秒。"
         }
       ]
     },
@@ -5551,13 +5559,16 @@
       "redesigned": false,
       "tuning": {
         "2": {
-          "AD": 0.1
+          "AD": 0.08,
+          "PercentDamage": 1.2
         },
         "4": {
-          "AD": 0.18
+          "AD": 0.14,
+          "PercentDamage": 1.5
         },
         "6": {
-          "AD": 0.25
+          "AD": 0.2,
+          "PercentDamage": 2
         }
       },
       "fees": [
@@ -5590,17 +5601,17 @@
         {
           "min": 2,
           "max": 3,
-          "text": "攻击力+10%；每5次攻击对目标周围造成攻击力125%的物理伤害。"
+          "text": "攻击力+8%；每5次攻击对目标周围造成攻击力120%的物理伤害。"
         },
         {
           "min": 4,
           "max": 5,
-          "text": "攻击力+18%；每5次攻击对目标周围造成攻击力125%的物理伤害。"
+          "text": "攻击力+14%；每5次攻击对目标周围造成攻击力150%的物理伤害。"
         },
         {
           "min": 6,
           "max": 25000,
-          "text": "攻击力+25%；每4次攻击对目标周围造成攻击力250%的物理伤害。"
+          "text": "攻击力+20%；每4次攻击对目标周围造成攻击力200%的物理伤害。"
         }
       ]
     },
@@ -5613,13 +5624,13 @@
       "redesigned": false,
       "tuning": {
         "2": {
-          "DA": 0.15,
+          "DA": 0.12,
           "DR": 0,
           "FrontSlow": 0.3,
           "FrontSlowDuration": 2
         },
         "4": {
-          "DA": 0.25,
+          "DA": 0.2,
           "DR": 0,
           "FrontSlow": 0.45,
           "FrontSlowDuration": 2
@@ -5655,12 +5666,12 @@
         {
           "min": 2,
           "max": 3,
-          "text": "靠前时攻击使目标减速30%，持续2秒；靠后时伤害+15%。"
+          "text": "靠前时攻击使目标减速30%，持续2秒；靠后时伤害+12%。"
         },
         {
           "min": 4,
           "max": 25000,
-          "text": "靠前时攻击使目标减速45%，持续2秒；靠后时伤害+25%。"
+          "text": "靠前时攻击使目标减速45%，持续2秒；靠后时伤害+20%。"
         }
       ]
     },
@@ -5674,11 +5685,23 @@
       "tuning": {
         "1": {
           "AmbessaDefPct": 0.08,
-          "AmbessaResFlat": 8
+          "AmbessaResFlat": 8,
+          "NamiMana": 0,
+          "NamiSpRegen": 0.15,
+          "GarenHpPct": 0.15,
+          "BonusHealth": 0,
+          "BonusHpPct": 0.15,
+          "SelfishDamageAmp": 0.15
         },
         "4": {
           "AmbessaDefPct": 0.08,
-          "AmbessaResFlat": 8
+          "AmbessaResFlat": 8,
+          "NamiMana": 0,
+          "NamiSpRegen": 0.15,
+          "GarenHpPct": 0.15,
+          "BonusHealth": 0,
+          "BonusHpPct": 0.15,
+          "SelfishDamageAmp": 0.15
         }
       },
       "fees": [
@@ -5711,12 +5734,12 @@
         {
           "min": 1,
           "max": 1,
-          "text": "雷蛇：全体友军每星攻击速度+6；瑕光：全体友军每次攻击额外回复2点技力；号角：全体友军防御力+8%，法术抗性+8；塞雷娅：自身与左右相邻友军获得其最大生命20%的生命。"
+          "text": "雷蛇：全体友军每星攻击速度+6；瑕光：全体友军技力自然回复速度+0.15/秒；号角：全体友军防御力+8%，法术抗性+8；塞雷娅：自身与左右相邻友军生命上限+15%。"
         },
         {
           "min": 4,
           "max": 4,
-          "text": "雷蛇：全体友军每星攻击速度+6；瑕光：全体友军每次攻击额外回复2点技力；号角：全体友军防御力+8%，法术抗性+8；塞雷娅：自身与左右相邻友军获得其最大生命20%的生命。4名【领军】干员各额外获得800点生命，伤害+20%。"
+          "text": "雷蛇：全体友军每星攻击速度+6；瑕光：全体友军技力自然回复速度+0.15/秒；号角：全体友军防御力+8%，法术抗性+8；塞雷娅：自身与左右相邻友军生命上限+15%。4名【领军】干员生命上限+15%，伤害+15%。"
         }
       ]
     },
@@ -5727,7 +5750,23 @@
       "sourceName": "Family",
       "mechanic": "living_family_loot",
       "redesigned": false,
-      "tuning": null,
+      "tuning": {
+        "3": {
+          "AttackSpeed": 0.1,
+          "DamageReduction": 0,
+          "ManaReduction": 0.1
+        },
+        "4": {
+          "AttackSpeed": 0.15,
+          "DamageReduction": 0,
+          "ManaReduction": 0.15
+        },
+        "5": {
+          "AttackSpeed": 0.2,
+          "DamageReduction": 0,
+          "ManaReduction": 0.2
+        }
+      },
       "fees": [
         1,
         1,
@@ -5747,23 +5786,23 @@
           "cost": 2
         }
       ],
-      "description": "【同袍】干员攻击速度提升、受到的伤害降低，技能所需技力减少。",
+      "description": "【同袍】干员攻击速度提升，技能所需技力减少。",
       "detailNotes": [],
       "levels": [
         {
           "min": 3,
           "max": 3,
-          "text": "攻击速度+20，受到的伤害-15%，技能所需技力-25%。"
+          "text": "攻击速度+10，技能所需技力-10%。"
         },
         {
           "min": 4,
           "max": 4,
-          "text": "攻击速度+20，受到的伤害-15%，技能所需技力-30%。"
+          "text": "攻击速度+15，技能所需技力-15%。"
         },
         {
           "min": 5,
           "max": 25000,
-          "text": "攻击速度+20，受到的伤害-15%，技能所需技力-40%。战斗结束后，每名存活的【同袍】干员积累1点行动进度，达到10、17、20、30点时各领取一次奖励。"
+          "text": "攻击速度+20，技能所需技力-20%。战斗结束后，每名存活的【同袍】干员积累1点行动进度，达到10、17、20、30点时各领取一次奖励。"
         }
       ]
     },
@@ -5774,7 +5813,15 @@
       "sourceName": "High Roller",
       "mechanic": "sevika_random_cast_mod",
       "redesigned": false,
-      "tuning": null,
+      "tuning": {
+        "1": {
+          "Bonus1RocketDamage": 0,
+          "Bonus1RocketAtk": 0.35,
+          "Bonus2ShieldAmount": 0,
+          "Bonus2StunDuration": 1,
+          "Durability": 0
+        }
+      },
       "fees": [
         5
       ],
@@ -5790,7 +5837,7 @@
         {
           "min": 1,
           "max": 25000,
-          "text": "发射8枚炮弹，每枚造成400点物理伤害；或获得2000点屏障，持续4秒；或战斗结束时获得3金币；也可能使上次的强化变为三倍。开启技能后1.5秒内受到的伤害-80%。"
+          "text": "发射8枚炮弹，每枚造成攻击力35%的物理伤害；或使攻击范围内的敌人晕眩1秒；或战斗结束时获得3金币；也可能使上次的强化变为三倍。"
         }
       ]
     },

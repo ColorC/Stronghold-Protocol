@@ -415,6 +415,13 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
       }
       if (num(s.fearDamage) > 0 && target.s.flags.fear) applyDamageIncrease(battle, source, dmg, 1 + num(s.fearDamage));
     }
+    const h = v('bruiser');
+    if (num(h?.hpStrike) > 0 && dmg.isAttack && isMember(source, 'bruiser')) {
+      // the 生命上限 share joins the attack it rides on, so the target's DEF is taken once from the sum: as a separate
+      // small instance it sat at the 5% minimum against almost any DEF
+      dmg.strongholdHpStrike = source.s.maxHp * num(h.hpStrike);
+      dmg.amount += dmg.strongholdHpStrike;
+    }
     const m = v('arts');
     if (m && dmg.type === 'arts' && (m.teamWide || isMember(source, 'arts')) && target.buffs.some((buff) => buff.key === ARTS_MARK_KEY)) {
       const low = num(m.lowHealth) > 0 && target.hpRatio < num(m.lowHealth);
@@ -448,8 +455,8 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
       battle.addBuff(target, { key: ARTS_MARK_KEY, duration: num(m.markDuration, 3), source, visible: true, tags: ['resonance', TAG] });
     }
     const h = v('bruiser');
-    if (h && dmg.isAttack && target.alive && isMember(source, 'bruiser')) {
-      if (num(h.hpStrike) > 0 && hit(source, target, source.s.maxHp * num(h.hpStrike), 'phys') > 0) metric('bruiser', 'strikes');
+    if (h && dmg.isAttack && isMember(source, 'bruiser')) {
+      if (dmg.strongholdHpStrike > 0) metric('bruiser', 'strikes');
       if (num(h.stunEvery) > 0 && target.alive && battle.time + 1e-9 >= num(source.mem.strongholdHeavyStunAt, -Infinity)
         && battle.applyStatus(target, 'stun', { duration: num(h.stunDuration, 1), source })) {
         source.mem.strongholdHeavyStunAt = battle.time + num(h.stunEvery);

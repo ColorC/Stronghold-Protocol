@@ -160,6 +160,20 @@ export const junkerKingUpgrades = Object.freeze([
   {id:'TFT13_JunkerKing_3Star',name:'全套机甲',description:'仅3星维娜可购买；耐久提高90%，并解锁其余升级。',price:10,stats:{durability:0.9},combat:{kind:'unlock_all'}},
 ].map((row)=>Object.freeze({...row,sourceApiName:row.id,priceAdaptation:'本模式PvE金币定价；来源确认可购买，但未提供可核实的原始金币价格。'})));
 
+/** Faction season 2 armory at the native scale: shares of 生命上限, 法术伤害 and 防御力 instead of TFT health, AP and
+ * ratings; the 3★ steps no longer multiply ATK tens of times (喷焰器 600% → 80%, 源石棒 6000% → 800%, 破甲弹 1600% →
+ * 300%) and 全套机甲 takes 20% less damage instead of 90%. Same ids, prices and kinds as the season-1 list. */
+export const junkerKingUpgradesV2 = Object.freeze([
+  {id:'TFT13_JunkerKing_Pass',name:'备用零件',description:'生命上限+3%，法术伤害+3%。',price:0,stats:{hpPct:0.03,apPct:0.03}},
+  {id:'TFT13_JunkerKing_SuperPass',name:'强化零件',description:'生命上限+10%，法术伤害+12%。',price:5,stats:{hpPct:0.1,apPct:0.12}},
+  {id:'TFT13_JunkerKing_Flamethrower',name:'喷焰器',description:'每2秒对周围的敌人造成攻击力35%（二星50%，三星80%）的法术伤害。',price:5,combat:{kind:'flamethrower',interval:2,damagePctByStar:[35,50,80]}},
+  {id:'TFT13_JunkerKing_PertriciteRod',name:'源石棒',description:'每5秒选中4格内最远的敌人，15秒内共造成攻击力350%（二星525%，三星800%）的法术伤害。',price:5,combat:{kind:'pertricite',interval:5,duration:15,range:4,damagePctByStar:[350,525,800]}},
+  {id:'TFT13_JunkerKing_RepairingMicrobots',name:'修复微型机器人',description:'每3秒回复生命上限6%的生命（三星10%）。',price:5,combat:{kind:'repair',interval:3,healPctByStar:[0.06,0.06,0.1]}},
+  {id:'TFT13_JunkerKing_SelfDestructButton',name:'自毁按钮',description:'防御力+20%，法术抗性+10；倒下时对周围的敌人造成防御力200%（二星300%，三星600%）的法术伤害。',price:5,stats:{defPct:0.2,resFlat:10},combat:{kind:'self_destruct',defPctByStar:[200,300,600],radius:2}},
+  {id:'TFT13_JunkerKing_Tankbuster',name:'破甲弹',description:'每3秒对防御力与法术抗性之和最高的敌人造成攻击力120%（二星180%，三星300%）的真实伤害。',price:5,combat:{kind:'tankbuster',interval:3,trueDamagePctByStar:[120,180,300]}},
+  {id:'TFT13_JunkerKing_3Star',name:'全套机甲',description:'仅三星时可购买；受到的伤害-20%，并解锁其余升级。',price:10,stats:{durability:0.2},combat:{kind:'unlock_all'}},
+].map((row)=>Object.freeze({...row,sourceApiName:row.id,priceAdaptation:'本模式PvE金币定价；来源确认可购买，但未提供可核实的原始金币价格。'})));
+
 // LoLCHESS Set 13 table lists fixed groups of three sponsored items. Each
 // source item is explicitly projected onto an existing Resonance equipment
 // mechanic; the project-level mapping is disclosed above and not presented as
@@ -367,6 +381,6 @@ export function applyPrototypeEconomy(catalog={}) {
     conqueror:{...(catalog.prototypeEconomy?.conqueror??{}),chestOptionsByThreshold:Object.fromEntries(Object.entries(CHEST_REWARDS).map(([threshold,rows])=>[threshold,rows.map((row)=>({...row}))]))},
     family:{...(catalog.prototypeEconomy?.family??{}),heistOptionsByThreshold:familyHeistOptions},
     gearConsumables:{...gearConsumables,...Object.fromEntries(Object.entries(CHEM_CONSUMABLE_BY_TIER).map(([tier,id])=>[id,{id,name:`${CHEM_TIER_NAMES[tier]}违禁装备选择`,kind:'anvil',quality:`chemBaron${tier}`,description:`从${CHEM_TIER_NAMES[tier]}${riskName}装备中选择一件。`,source:'Set 13 Chem-Baron Black Market reward rows',adaptation:'保留来源装备属性与效果，转译为本模式干员战斗属性及事件。'}]))},gearPools,qualityEffects,
-    junkerKing:{...(catalog.prototypeEconomy?.junkerKing??{}),upgradeOptions:[...junkerKingUpgrades.map((row)=>({id:row.id,label:row.name,description:row.description,cost:{currency:'gold',amount:row.price},grant:[{kind:'rumble_upgrade',id:row.id}],sourceApiName:row.sourceApiName,priceAdaptation:row.priceAdaptation})),{id:'skip-armory',label:'暂不购买',description:'本轮保留金币。',action:'skip',cost:{currency:'gold',amount:0}}]},
+    junkerKing:{...(catalog.prototypeEconomy?.junkerKing??{}),upgradeOptions:[...(catalog.prototypeSeason?.junkerKingUpgrades??junkerKingUpgrades).map((row)=>({id:row.id,label:row.name,description:row.description,cost:{currency:'gold',amount:row.price},grant:[{kind:'rumble_upgrade',id:row.id}],sourceApiName:row.sourceApiName,priceAdaptation:row.priceAdaptation})),{id:'skip-armory',label:'暂不购买',description:'本轮保留金币。',action:'skip',cost:{currency:'gold',amount:0}}]},
   }};
 }

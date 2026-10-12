@@ -117,21 +117,37 @@ export const STRONGHOLD_PACT_TIERS = freeze({
 export const STRONGHOLD_PACT_IDS = freeze(Object.keys(STRONGHOLD_PACT_TIERS));
 
 /**
- * Season-1 adapters kept for the other nine pacts, with values brought into the faction magnitude (owner rule 4:
- * conditional damage ≤ 45 %, standing stats ≤ 20 % outside a top tier) and in-battle stacking capped (rule 6).
+ * Season-1 adapters kept for the other nine pacts, converted to the native scale of the faction pacts: standing stats
+ * ≤ 20 % and conditional damage ≤ 45 % (a top tier that needs emblems may exceed it, noted on the row), no flat HP or
+ * 屏障 (a share of the holder's 生命上限 instead), SP per attack becomes 技力自然回复速度 at the magnitude of one
+ * 萨尔贡浓茶 (+0.15/秒), no damage reduction as a main effect, in-battle stacking capped.
  */
 export const STRONGHOLD_PACT_TUNING = freeze({
-  combo: tiers({ 2: { MinBonusAS: 0.15, MaxBonusAS: 0.4 }, 3: { MinBonusAS: 0.2, MaxBonusAS: 0.5 }, 4: { MinBonusAS: 0.25, MaxBonusAS: 0.6 } }),
-  artillery: tiers({ 2: { AD: 0.1 }, 4: { AD: 0.18 }, 6: { AD: 0.25 } }),
+  // the kill dash keeps its 屏障 as a share of 生命上限
+  combo: tiers({ 2: { MinBonusAS: 0.1, MaxBonusAS: 0.3 }, 3: { MinBonusAS: 0.15, MaxBonusAS: 0.4 },
+    4: { MinBonusAS: 0.2, MaxBonusAS: 0.45, ShieldAmount: 0, ShieldMaxHpPct: 0.15 } }),
+  artillery: tiers({ 2: { AD: 0.08, PercentDamage: 1.2 }, 4: { AD: 0.14, PercentDamage: 1.5 }, 6: { AD: 0.2, PercentDamage: 2 } }),
   // no defense-first forms: the front form slows what it hits instead of taking less damage
-  formSwap: tiers({ 2: { DA: 0.15, DR: 0, FrontSlow: 0.3, FrontSlowDuration: 2 }, 4: { DA: 0.25, DR: 0, FrontSlow: 0.45, FrontSlowDuration: 2 } }),
-  // the first enemy in range brings SP (a skill sooner) instead of a 屏障
-  dominator: tiers({ 2: { APCapPercent: 25, SpOnFirstContact: 5 }, 4: { APCapPercent: 35, SpOnFirstContact: 8 }, 6: { APCapPercent: 45, SpOnFirstContact: 12 } }),
-  // no lifesteal or emergency heal: below half health the member attacks faster instead
-  breaker: tiers({ 2: { OmnivampPercent: 0, HealPercent: 0, LowHealthAspd: 20 }, 4: { OmnivampPercent: 0, HealPercent: 0, LowHealthAspd: 30 },
-    6: { OmnivampPercent: 0, HealPercent: 0, LowHealthAspd: 40 }, 8: { OmnivampPercent: 0, HealPercent: 0, LowHealthAspd: 60, TrueDamagePercent: 0.35 } }),
-  // 号角: a fixed native DEF% / RES share replaces the win-count armor rating (no growth across battles)
-  emissary: tiers({ 1: { AmbessaDefPct: 0.08, AmbessaResFlat: 8 }, 4: { AmbessaDefPct: 0.08, AmbessaResFlat: 8 } }),
+  formSwap: tiers({ 2: { DA: 0.12, DR: 0, FrontSlow: 0.3, FrontSlowDuration: 2 }, 4: { DA: 0.2, DR: 0, FrontSlow: 0.45, FrontSlowDuration: 2 } }),
+  // the first enemy in range brings SP (a skill sooner) instead of a 屏障; the arts bonus grows with the SP spent
+  dominator: tiers({ 2: { APPercent: 0.25, APCapPercent: 15, SpOnFirstContact: 4 }, 4: { APPercent: 0.35, APCapPercent: 25, SpOnFirstContact: 6 },
+    6: { APPercent: 0.45, APCapPercent: 35, SpOnFirstContact: 8 } }),
+  // no lifesteal or emergency heal: below half health the member attacks faster instead; eight (two emblems) adds 25%
+  breaker: tiers({ 2: { OmnivampPercent: 0, HealPercent: 0, TrueDamagePercent: 0.05, LowHealthAspd: 15 },
+    4: { OmnivampPercent: 0, HealPercent: 0, TrueDamagePercent: 0.1, LowHealthAspd: 25 },
+    6: { OmnivampPercent: 0, HealPercent: 0, TrueDamagePercent: 0.15, LowHealthAspd: 35 },
+    8: { OmnivampPercent: 0, HealPercent: 0, TrueDamagePercent: 0.25, LowHealthAspd: 45 } }),
+  // 号角: a fixed native DEF% / RES share replaces the win-count armor rating (no growth across battles);
+  // 瑕光: 技力自然回复速度 instead of +2 SP per attack (about ×2.7 SP); 塞雷娅 and four members: shares of 生命上限
+  emissary: tiers({
+    1: { AmbessaDefPct: 0.08, AmbessaResFlat: 8, NamiMana: 0, NamiSpRegen: 0.15, GarenHpPct: 0.15, BonusHealth: 0, BonusHpPct: 0.15, SelfishDamageAmp: 0.15 },
+    4: { AmbessaDefPct: 0.08, AmbessaResFlat: 8, NamiMana: 0, NamiSpRegen: 0.15, GarenHpPct: 0.15, BonusHealth: 0, BonusHpPct: 0.15, SelfishDamageAmp: 0.15 },
+  }),
+  // no damage reduction; a smaller SP cut (−40% was a skill every 0.6 of the time)
+  family: tiers({ 3: { AttackSpeed: 0.1, DamageReduction: 0, ManaReduction: 0.1 }, 4: { AttackSpeed: 0.15, DamageReduction: 0, ManaReduction: 0.15 },
+    5: { AttackSpeed: 0.2, DamageReduction: 0, ManaReduction: 0.2 } }),
+  // rockets scale with ATK, the 屏障 roll stuns what is in range, no damage reduction after a cast
+  holyGun: tiers({ 1: { Bonus1RocketDamage: 0, Bonus1RocketAtk: 0.35, Bonus2ShieldAmount: 0, Bonus2StunDuration: 1, Durability: 0 } }),
 });
 
 /** Season-1 economies that depend on a replaced faction mechanism; they never trigger in season 2. */
@@ -260,8 +276,8 @@ export function strongholdPactCopy(trait, season, { itemName = (id) => id } = {}
       `${p(v.refundChance)}概率回复${v.refundSp}点技力。`,
       v.teamChance ? `其他干员技能结束时有${p(v.teamChance)}概率回复${v.teamSp}点技力。` : '',
     ]],
-    bruiser: ['【重装】干员的攻击额外造成相当于自身生命上限一定比例的物理伤害；高档时被其阻挡的敌人攻击速度降低。', (v) => [
-      `攻击额外造成相当于自身生命上限${p(v.hpStrike)}的物理伤害。`,
+    bruiser: ['【重装】干员攻击时，伤害额外加上自身生命上限的一定比例；高档时被其阻挡的敌人攻击速度降低。', (v) => [
+      `攻击时伤害额外加上自身生命上限的${p(v.hpStrike)}。`,
       v.blockedAspd ? `被【重装】干员阻挡的敌人攻击速度-${v.blockedAspd}。` : '',
       v.stunEvery ? `每${n(v.stunEvery)}秒，下一次攻击使目标晕眩${n(v.stunDuration)}秒。` : '',
     ]],
@@ -277,7 +293,7 @@ export function strongholdPactCopy(trait, season, { itemName = (id) => id } = {}
     ]],
     combo: ['【迅击】干员的目标已损失的生命越多，攻击速度越高。', (v) => [
       `攻击速度+${Math.round(v.MinBonusAS * 100)}至+${Math.round(v.MaxBonusAS * 100)}。`,
-      v.ShieldAmount ? `击倒目标后转移到下一名敌人身边，获得${Math.round(v.ShieldAmount)}点屏障，持续${n(v.ShieldDuration)}秒。` : '',
+      v.ShieldMaxHpPct ? `击倒目标后转移到下一名敌人身边，获得生命上限${p(v.ShieldMaxHpPct)}的屏障，持续${n(v.ShieldDuration)}秒。` : '',
     ]],
     artillery: ['【连轰】干员攻击力提升，每数次攻击发射炮弹轰击目标周围。', (v) => [
       `攻击力+${p(v.AD)}；每${v.NumOfAttacks}次攻击对目标周围造成攻击力${p(v.PercentDamage)}的物理伤害。`,
@@ -286,15 +302,15 @@ export function strongholdPactCopy(trait, season, { itemName = (id) => id } = {}
       `靠前时攻击使目标减速${p(v.FrontSlow)}，持续${n(v.FrontSlowDuration)}秒；靠后时伤害+${p(v.DA)}。`,
     ]],
     emissary: ['仅在恰好上阵1名或4名【领军】干员时生效；每名成员提供自己的效果。', (v, tier) => [
-      `${hero('TFT13_Tristana')}：全体友军每星攻击速度+${Math.round(v.StarAS * 100)}；${hero('TFT13_Nami')}：全体友军每次攻击额外回复${v.NamiMana}点技力；${hero('TFT13_Ambessa')}：全体友军防御力+${p(v.AmbessaDefPct)}，法术抗性+${n(v.AmbessaResFlat)}；${hero('TFT13_Garen')}：自身与左右相邻友军获得其最大生命${p(v.GarenHealthPercent)}的生命。`,
-      tier.minUnits === 4 ? `4名【领军】干员各额外获得${Math.round(v.BonusHealth)}点生命，伤害+${p(v.SelfishDamageAmp)}。` : '',
+      `${hero('TFT13_Tristana')}：全体友军每星攻击速度+${Math.round(v.StarAS * 100)}；${hero('TFT13_Nami')}：全体友军技力自然回复速度+${n(v.NamiSpRegen)}/秒；${hero('TFT13_Ambessa')}：全体友军防御力+${p(v.AmbessaDefPct)}，法术抗性+${n(v.AmbessaResFlat)}；${hero('TFT13_Garen')}：自身与左右相邻友军生命上限+${p(v.GarenHpPct)}。`,
+      tier.minUnits === 4 ? `4名【领军】干员生命上限+${p(v.BonusHpPct)}，伤害+${p(v.SelfishDamageAmp)}。` : '',
     ]],
-    family: ['【同袍】干员攻击速度提升、受到的伤害降低，技能所需技力减少。', (v) => [
-      `攻击速度+${Math.round(v.AttackSpeed * 100)}，受到的伤害-${p(v.DamageReduction)}，技能所需技力-${p(v.ManaReduction)}。`,
+    family: ['【同袍】干员攻击速度提升，技能所需技力减少。', (v) => [
+      `攻击速度+${Math.round(v.AttackSpeed * 100)}，技能所需技力-${p(v.ManaReduction)}。`,
       v['{01fcc30b}'] != null ? '战斗结束后，每名存活的【同袍】干员积累1点行动进度，达到10、17、20、30点时各领取一次奖励。' : '',
     ]],
     holyGun: [`${hero('TFT13_Lieutenant') || '【圣枪】干员'}开启技能时随机获得一种强化。`, (v) => [
-      `发射${v.Bonus1NumRockets}枚炮弹，每枚造成${Math.round(v.Bonus1RocketDamage)}点物理伤害；或获得${Math.round(v.Bonus2ShieldAmount)}点屏障，持续${n(v.Bonus2ShieldDuration)}秒；或战斗结束时获得${v.Bonus4Gold}金币；也可能使上次的强化变为三倍。开启技能后${n(v.Duration)}秒内受到的伤害-${p(v.Durability)}。`,
+      `发射${v.Bonus1NumRockets}枚炮弹，每枚造成攻击力${p(v.Bonus1RocketAtk)}的物理伤害；或使攻击范围内的敌人晕眩${n(v.Bonus2StunDuration)}秒；或战斗结束时获得${v.Bonus4Gold}金币；也可能使上次的强化变为三倍。`,
     ]],
     armory: [`每隔数场战斗开放一次升级，为场上最强的${hero('TFT13_Rumble') || '【铸军】干员'}购买强化。`, (v) => [
       `每${v.NumRounds1Star}场战斗开放一次，按标价购买，也可以略过。`,

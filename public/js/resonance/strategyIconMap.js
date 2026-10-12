@@ -44,7 +44,7 @@ export function strategyIcon(catalog, id) {
   if (emblemId && resonanceEmblemIconUrl(catalog, emblemId)) return { kind: 'emblem', itemId: emblemId, pactId };
   if (pactId) return { kind: 'pact', pactId };
   const strategy = catalog?.strategies?.[id];
-  const theme = EFFECT_THEME[strategy?.effectKind ?? strategy?.effects?.[0]?.kind] || 'group';
+  const theme = STRATEGY_UI_ICONS[strategy?.iconTheme] ? strategy.iconTheme : EFFECT_THEME[strategy?.effectKind ?? strategy?.effects?.[0]?.kind] || 'group';
   return { kind: 'ui', theme, ...STRATEGY_UI_ICONS[theme] };
 }
 

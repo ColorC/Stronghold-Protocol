@@ -1027,7 +1027,10 @@ function equipAndCombine(state,catalog){
   for(const item of ordered){
     const owners=state.pieces.filter(p=>p.row!==null&&p.equipment.length<3&&!p.equipment.some(owned=>owned.itemId===item.itemId)&&policyEquipmentOwnerUtility(catalog.equipment[item.itemId],p,state,catalog)>0).sort((a,b)=>policyEquipmentOwnerUtility(catalog.equipment[item.itemId],b,state,catalog)*(1+b.star*.35)-policyEquipmentOwnerUtility(catalog.equipment[item.itemId],a,state,catalog)*(1+a.star*.35)||a.uid.localeCompare(b.uid));
     const owner=owners[0];if(!owner)continue;
-    state=runAction(state,{type:'equip',pieceUid:owner.uid,itemUid:item.uid},catalog).state;
+    // equipping may combine with a held component into a 成装 the piece already carries (one of each per operator):
+    // the session refuses it unchanged, and the item stays in the inventory
+    try{state=runAction(state,{type:'equip',pieceUid:owner.uid,itemUid:item.uid},catalog).state;}
+    catch(error){if(!String(error?.message).endsWith(':UNIQUE_EQUIPMENT_CONFLICT'))throw error;}
   }
   return state;
 }
