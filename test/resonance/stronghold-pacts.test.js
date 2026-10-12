@@ -40,7 +40,7 @@ function arena(operators, { star = 1, equipment = {}, extraPacts = {}, seed = 21
   let serial = 0;
   const enemy = (pos, options = {}) => {
     const key = `stronghold_test_${++serial}`;
-    return battle.spawnEnemy(key, { pos, def: enemyRec({ key, hp: options.hp ?? 100000, atk: 0, speed: 0, rank: options.rank ?? 'NORMAL', def: 0, res: 0, range: options.range ?? 0 }) });
+    return battle.spawnEnemy(key, { pos, def: enemyRec({ key, hp: options.hp ?? 100000, atk: 0, speed: 0, rank: options.rank ?? 'NORMAL', def: options.def ?? 0, res: 0, range: options.range ?? 0 }) });
   };
   const advance = (seconds) => { const until = battle.time + seconds; while (battle.time + 1e-9 < until && !battle.finished) battle.step(); };
   const far = () => [battle.rect.r0, battle.rect.c1];
@@ -645,8 +645,14 @@ test('重装 attacks add a share of max HP, slow what they block from four and s
   const estelle = two.unit('艾丝黛尔'), dummy = two.enemy([10, 9], { hp: 1000000 });
   const before = dummy.hp;
   two.battle.dealDamage(estelle, dummy, { amount: 1, type: 'phys', isAttack: true });
-  assert.ok(before - dummy.hp >= estelle.s.maxHp * 0.03 - 1e-6, 'an attack adds 3% of max HP as physical damage');
+  assert.ok(before - dummy.hp >= estelle.s.maxHp * 0.03 - 1e-6, 'an attack adds 3% of max HP to its damage');
   assert.equal(two.tier('bruiser').strikes, 1);
+  // one instance: DEF is taken once from attack + share, not a second time from a small separate hit
+  const armored = two.enemy([11, 9], { hp: 1000000, def: 300 }), share = estelle.s.maxHp * 0.03;
+  const armoredBefore = armored.hp;
+  two.battle.dealDamage(estelle, armored, { amount: 400, type: 'phys', isAttack: true, canDodge: false });
+  close(armoredBefore - armored.hp, 400 + share - 300, 'attack + share − DEF 300', 1e-6);
+  assert.equal(two.tier('bruiser').strikes, 2);
 
   const six = arena(ops('艾丝黛尔', '幽灵鲨', '休谟斯', '泥岩', '百炼嘉维尔', '格拉尼'), { idle: true });
   const heavy = six.unit('泥岩'), held = six.enemy([heavy.tileR, heavy.tileC], { hp: 1000000 });

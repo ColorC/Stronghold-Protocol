@@ -260,8 +260,8 @@ export function strongholdPactCopy(trait, season, { itemName = (id) => id } = {}
       `${p(v.refundChance)}概率回复${v.refundSp}点技力。`,
       v.teamChance ? `其他干员技能结束时有${p(v.teamChance)}概率回复${v.teamSp}点技力。` : '',
     ]],
-    bruiser: ['【重装】干员的攻击额外造成相当于自身生命上限一定比例的物理伤害；高档时被其阻挡的敌人攻击速度降低。', (v) => [
-      `攻击额外造成相当于自身生命上限${p(v.hpStrike)}的物理伤害。`,
+    bruiser: ['【重装】干员攻击时，伤害额外加上自身生命上限的一定比例；高档时被其阻挡的敌人攻击速度降低。', (v) => [
+      `攻击时伤害额外加上自身生命上限的${p(v.hpStrike)}。`,
       v.blockedAspd ? `被【重装】干员阻挡的敌人攻击速度-${v.blockedAspd}。` : '',
       v.stunEvery ? `每${n(v.stunEvery)}秒，下一次攻击使目标晕眩${n(v.stunDuration)}秒。` : '',
     ]],
