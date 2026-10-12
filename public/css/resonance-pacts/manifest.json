@@ -1,0 +1,59 @@
+{
+ "version": 1,
+ "format": "svg",
+ "viewBox": "0 0 100 100",
+ "note": "One flat white SVG per pact that could not take unused native art (the other repeated pacts did), written out by hand as plain path/polygon geometry (no tracing tool, no embedded bitmap, white only, 100 x 100 box like the native bond icons). Entries with shapeSource \"hand-designed\" were drawn without an AIGC step.",
+ "generatedFor": "resonance-pact-icons",
+ "pacts": {
+  "breaker": {
+   "file": "breaker.svg",
+   "bytes": 683,
+   "replaces": "/assets/bond/raidShip.png",
+   "sharedWith": "redeploy",
+   "concept": "四条剑臂围住中央带孔的菱形：两柄交叉的长剑，剑尖朝上，护手与剑柄朝下。",
+   "shapeSource": "hand-designed",
+   "model": null,
+   "promptSummary": "No AIGC run (LiClick gateway login unavailable): four hand drafts, refined against a spec measured from the 23 native bond icons.",
+   "generatedAt": "2026-10-12T11:09:00Z",
+   "pickedVariant": "B",
+   "refinedAs": "final",
+   "candidateVariants": [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   "selection": "A crossed swords with fullers, B four sword arms round a diamond, C crossed curved sabres, D shield split by a gap. B picked: the diamond and the even gaps give it the native icons' cut-and-gap look; A's guards clump together, C is too thin, D carries no blade.",
+   "references": [
+    "bond/raidShip.png",
+    "bond/preciShip.png",
+    "bond/indomShip.png"
+   ]
+  },
+  "formSwap": {
+   "file": "formSwap.svg",
+   "bytes": 344,
+   "replaces": "/assets/bond/swiftShip.png",
+   "sharedWith": "combo",
+   "concept": "菱形分成左右两半、上下错位：左半空心带实心核，右半实心带空心核，形态互换。",
+   "shapeSource": "hand-designed",
+   "model": null,
+   "promptSummary": "No AIGC run (LiClick gateway login unavailable): four hand drafts, refined against a spec measured from the 23 native bond icons.",
+   "generatedAt": "2026-10-12T11:09:00Z",
+   "pickedVariant": "A",
+   "refinedAs": "final",
+   "candidateVariants": [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   "selection": "A split diamond with swapped cores, B two interlocking hooks, C bow-tie of two arrowheads, D two stacked diamonds. A picked: carries the 'two forms' idea in one silhouette with ink share 0.33 like the originals; B is a solid square (ink 0.76), C is too flat, D loses the diamond.",
+   "references": [
+    "bond/swiftShip.png",
+    "bond/miraShip.png",
+    "bond/indomShip.png"
+   ]
+  }
+ }
+}
