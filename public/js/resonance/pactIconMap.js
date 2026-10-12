@@ -24,14 +24,23 @@ const SEMANTIC_ASSETS = Object.freeze([
   [/mira|奇迹/,['bond','miraShip']], [/indom|不屈/,['bond','indomShip']],
   [/mani|调和/,['bond','maniShip']], [/empty|协防/,['bond','emptyShip']], [/solo|独行/,['bond','soloShip']],
 ]);
+// Five pacts used to share one native icon with a sibling pact (连轰/狙击, 掌控/术式, 决斗/突袭, 双形/迅击, 圣枪/拉特兰).
+// Each of them now carries its own flat white SVG drawn in the bond icons' style, one <pactId>.svg per pact with its
+// provenance in manifest.json. They sit under /css/ because the Workshop gateway forwards only the game's fixed static
+// prefixes to the resonance service; the siblings keep their native art.
+export const PACT_ICON_DIR = '/css/resonance-pacts';
+export const PACT_ICON_IDS = Object.freeze(['artillery', 'breaker', 'dominator', 'formSwap', 'holyGun']);
+export const ownPactIconUrl = (id) => (PACT_ICON_IDS.includes(id) ? `${PACT_ICON_DIR}/${id}.svg` : null);
+
 // New season pact IDs resolve to existing native art explicitly; these are icon reuses by mechanic/theme,
 // not generated glyphs. Keeping this table keyed by the full catalog ID prevents fallback role art for new bonds.
+// The pacts with their own art (PACT_ICON_IDS) are not listed here.
 const CURRENT_PACT_ASSETS = Object.freeze({
-  creation:['sub','craftsman'], arts:['bond','arcaneShip'], rhodes:['faction','rhodes'], artillery:['bond','preciShip'],
-  formSwap:['bond','swiftShip'], emissary:['bond','deputShip'], sentinel:['bond','steadShip'], family:['bond','maniShip'],
+  creation:['sub','craftsman'], arts:['bond','arcaneShip'], rhodes:['faction','rhodes'],
+  emissary:['bond','deputShip'], sentinel:['bond','steadShip'], family:['bond','maniShip'],
   redeploy:['sub','executor'], logistics:['bond','investShip'], ammo:['bond','preciShip'], conqueror:['bond','indomShip'],
-  holyGun:['faction','laterano'], academy:['bond','skillfulShip'], risk:['bond','miraShip'], resistance:['bond','steadShip'],
-  dominator:['bond','arcaneShip'], breaker:['bond','raidShip'], enforcer:['bond','emptyShip'], flight:['sub','skywalker'],
+  academy:['bond','skillfulShip'], risk:['bond','miraShip'], resistance:['bond','steadShip'],
+  enforcer:['bond','emptyShip'], flight:['sub','skywalker'],
   experiment:['sub','ritualist'], bruiser:['bond','indomShip'], armory:['sub','craftsman'], sui:['faction','sui'],
   combo:['bond','swiftShip'], watcher:['bond','visiShip'],
 });
@@ -42,8 +51,10 @@ function assetFor(manifest, [group, key]) {
   return null;
 }
 
-/** Resolve a real bond icon by the pact id first, then by the native bond record with the same name. */
+/** Resolve a pact's icon: its own art first, then a real bond icon by the pact id, then by the native bond record with the same name. */
 export function resolvePactIconUrl(catalog, id, manifest, bonds = []) {
+  const own = ownPactIconUrl(id);
+  if (own) return own;
   const pact = catalog?.pacts?.[id];
   if (typeof pact?.nativeIconPath === 'string' && /^\/assets\/ui\/campLogo\/logo_[a-z_]+\.png$/.test(pact.nativeIconPath)) {
     return pact.nativeIconPath;
@@ -63,7 +74,7 @@ export function resolvePactIconUrl(catalog, id, manifest, bonds = []) {
   }
   const semantic = normalize(`${id} ${pact?.name || ''}`);
   const factionKey = FACTION_LOGOS[String(id || '').toLocaleLowerCase()] ||
-    ({ babel:'rhodes', holyGun:'laterano', yela:'kjerag' }[String(id || '')]);
+    ({ babel:'rhodes', yela:'kjerag' }[String(id || '')]);
   if (factionKey) {
     const url = assetFor(manifest, ['faction', factionKey]);
     if (url) return url;

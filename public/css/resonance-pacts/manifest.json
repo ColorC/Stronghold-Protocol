@@ -1,0 +1,99 @@
+{
+ "version": 1,
+ "format": "svg",
+ "viewBox": "0 0 100 100",
+ "note": "One flat white SVG per pact that used to share its icon with a sibling pact, written out by hand as plain path/polygon geometry (no tracing tool, no embedded bitmap, white only, 100 x 100 box like the native bond icons). Entries with shapeSource \"hand-designed\" were drawn without an AIGC step.",
+ "generatedFor": "resonance-pact-icons",
+ "pacts": {
+  "holyGun": {
+   "file": "holyGun.svg",
+   "bytes": 736,
+   "replaces": "/assets/ui/campLogo/logo_laterano.png",
+   "sharedWith": "academy",
+   "concept": "横置的手枪，枪上悬一圈光环，向两侧和下方放射尖翼：带翼的圣枪。",
+   "shapeSource": "hand-designed",
+   "model": null,
+   "promptSummary": "No AIGC run (LiClick gateway login expired): drawn by hand from the pact text and the bond icons' style.",
+   "generatedAt": "2026-10-12T10:40:00Z",
+   "pickedVariant": null,
+   "candidateVariants": [],
+   "references": [
+    "bond/lateranoShip.png",
+    "bond/indomShip.png",
+    "bond/soloShip.png"
+   ]
+  },
+  "artillery": {
+   "file": "artillery.svg",
+   "bytes": 616,
+   "replaces": "/assets/bond/preciShip.png",
+   "sharedWith": "ammo",
+   "concept": "一枚带尾翼的炮弹斜落，砸向右下角炸开的星芒。",
+   "shapeSource": "hand-designed",
+   "model": null,
+   "promptSummary": "No AIGC run (LiClick gateway login expired): drawn by hand from the pact text and the bond icons' style.",
+   "generatedAt": "2026-10-12T10:40:00Z",
+   "pickedVariant": null,
+   "candidateVariants": [],
+   "references": [
+    "bond/preciShip.png",
+    "bond/kazimierzShip.png",
+    "bond/investShip.png"
+   ]
+  },
+  "dominator": {
+   "file": "dominator.svg",
+   "bytes": 483,
+   "replaces": "/assets/bond/arcaneShip.png",
+   "sharedWith": "arts",
+   "concept": "展开的手掌（掌控）：三根尖指加左右各一枚拇指，掌心一个菱形孔。",
+   "shapeSource": "hand-designed",
+   "model": null,
+   "promptSummary": "No AIGC run (LiClick gateway login expired): drawn by hand from the pact text and the bond icons' style.",
+   "generatedAt": "2026-10-12T10:40:00Z",
+   "pickedVariant": null,
+   "candidateVariants": [],
+   "references": [
+    "bond/arcaneShip.png",
+    "bond/siracusaShip.png",
+    "bond/deputShip.png"
+   ]
+  },
+  "breaker": {
+   "file": "breaker.svg",
+   "bytes": 680,
+   "replaces": "/assets/bond/raidShip.png",
+   "sharedWith": "redeploy",
+   "concept": "两柄交叉的直剑，剑尖朝上、护手朝下，剑身带血槽。",
+   "shapeSource": "hand-designed",
+   "model": null,
+   "promptSummary": "No AIGC run (LiClick gateway login expired): drawn by hand from the pact text and the bond icons' style.",
+   "generatedAt": "2026-10-12T10:40:00Z",
+   "pickedVariant": null,
+   "candidateVariants": [],
+   "references": [
+    "bond/raidShip.png",
+    "bond/kazimierzShip.png",
+    "bond/indomShip.png"
+   ]
+  },
+  "formSwap": {
+   "file": "formSwap.svg",
+   "bytes": 296,
+   "replaces": "/assets/bond/swiftShip.png",
+   "sharedWith": "combo",
+   "concept": "一个菱形分成左右两半、上下错位：左半是空心带实心核，右半是实心带空心核，形态互换。",
+   "shapeSource": "hand-designed",
+   "model": null,
+   "promptSummary": "No AIGC run (LiClick gateway login expired): drawn by hand from the pact text and the bond icons' style.",
+   "generatedAt": "2026-10-12T10:40:00Z",
+   "pickedVariant": null,
+   "candidateVariants": [],
+   "references": [
+    "bond/swiftShip.png",
+    "bond/miraShip.png",
+    "bond/indomShip.png"
+   ]
+  }
+ }
+}

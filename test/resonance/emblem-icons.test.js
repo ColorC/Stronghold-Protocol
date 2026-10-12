@@ -52,7 +52,7 @@ test('the badge list, the files and the provenance manifest agree', () => {
   assert.deepEqual(files, EMBLEM_ICON_PACT_IDS.map((id) => `${id}.webp`).sort());
   for (const [pactId, entry] of Object.entries(manifest.emblems)) {
     assert.equal(entry.file, `${pactId}.webp`);
-    assert.match(entry.sourcePactIcon, /^\/assets\//, `${pactId} records the pact icon it was drawn from`);
+    assert.match(entry.sourcePactIcon, /^\/(assets\/|css\/resonance-pacts\/)/, `${pactId} records the pact icon it was drawn from (native art, or its own svg once redrawn)`);
     assert.ok(entry.model && entry.generatedAt, `${pactId} records model and time`);
   }
 });
