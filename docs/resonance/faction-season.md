@@ -47,12 +47,14 @@
 
 ### 沿用盟约的数值修正
 
-- 掌控：2人 APCapPercent=25，SpOnFirstContact=5；4人 APCapPercent=35，SpOnFirstContact=8；6人 APCapPercent=45，SpOnFirstContact=12
-- 决斗：2人 OmnivampPercent=0，HealPercent=0，LowHealthAspd=20；4人 OmnivampPercent=0，HealPercent=0，LowHealthAspd=30；6人 OmnivampPercent=0，HealPercent=0，LowHealthAspd=40；8人 OmnivampPercent=0，HealPercent=0，LowHealthAspd=60，TrueDamagePercent=0.35
-- 迅击：2人 MinBonusAS=0.15，MaxBonusAS=0.4；3人 MinBonusAS=0.2，MaxBonusAS=0.5；4人 MinBonusAS=0.25，MaxBonusAS=0.6
-- 连轰：2人 AD=0.1；4人 AD=0.18；6人 AD=0.25
-- 双形：2人 DA=0.15，DR=0，FrontSlow=0.3，FrontSlowDuration=2；4人 DA=0.25，DR=0，FrontSlow=0.45，FrontSlowDuration=2
-- 领军：1人 AmbessaDefPct=0.08，AmbessaResFlat=8；4人 AmbessaDefPct=0.08，AmbessaResFlat=8
+- 掌控：2人 APPercent=0.25，APCapPercent=15，SpOnFirstContact=4；4人 APPercent=0.35，APCapPercent=25，SpOnFirstContact=6；6人 APPercent=0.45，APCapPercent=35，SpOnFirstContact=8
+- 决斗：2人 OmnivampPercent=0，HealPercent=0，TrueDamagePercent=0.05，LowHealthAspd=15；4人 OmnivampPercent=0，HealPercent=0，TrueDamagePercent=0.1，LowHealthAspd=25；6人 OmnivampPercent=0，HealPercent=0，TrueDamagePercent=0.15，LowHealthAspd=35；8人 OmnivampPercent=0，HealPercent=0，TrueDamagePercent=0.25，LowHealthAspd=45
+- 迅击：2人 MinBonusAS=0.1，MaxBonusAS=0.3；3人 MinBonusAS=0.15，MaxBonusAS=0.4；4人 MinBonusAS=0.2，MaxBonusAS=0.45，ShieldAmount=0，ShieldMaxHpPct=0.15
+- 连轰：2人 AD=0.08，PercentDamage=1.2；4人 AD=0.14，PercentDamage=1.5；6人 AD=0.2，PercentDamage=2
+- 双形：2人 DA=0.12，DR=0，FrontSlow=0.3，FrontSlowDuration=2；4人 DA=0.2，DR=0，FrontSlow=0.45，FrontSlowDuration=2
+- 领军：1人 AmbessaDefPct=0.08，AmbessaResFlat=8，NamiMana=0，NamiSpRegen=0.15，GarenHpPct=0.15，BonusHealth=0，BonusHpPct=0.15，SelfishDamageAmp=0.15；4人 AmbessaDefPct=0.08，AmbessaResFlat=8，NamiMana=0，NamiSpRegen=0.15，GarenHpPct=0.15，BonusHealth=0，BonusHpPct=0.15，SelfishDamageAmp=0.15
+- 同袍：3人 AttackSpeed=0.1，DamageReduction=0，ManaReduction=0.1；4人 AttackSpeed=0.15，DamageReduction=0，ManaReduction=0.15；5人 AttackSpeed=0.2，DamageReduction=0，ManaReduction=0.2
+- 圣枪：1人 Bonus1RocketDamage=0，Bonus1RocketAtk=0.35，Bonus2ShieldAmount=0，Bonus2StunDuration=1，Durability=0
 
 ## 一星战斗数值
 
@@ -293,69 +295,69 @@
 
 敌人首次进入【掌控】干员的攻击范围时，该干员回复技力；开启技能消耗的技力会提升其法术伤害。
 
-- 2人：敌人首次进入攻击范围时回复5点技力；每消耗1点技力，法术伤害+0.25%，至多+25%。
-- 4人：敌人首次进入攻击范围时回复8点技力；每消耗1点技力，法术伤害+0.45%，至多+35%。
-- 6人：敌人首次进入攻击范围时回复12点技力；每消耗1点技力，法术伤害+0.65%，至多+45%。
+- 2人：敌人首次进入攻击范围时回复4点技力；每消耗1点技力，法术伤害+0.25%，至多+15%。
+- 4人：敌人首次进入攻击范围时回复6点技力；每消耗1点技力，法术伤害+0.35%，至多+25%。
+- 6人：敌人首次进入攻击范围时回复8点技力；每消耗1点技力，法术伤害+0.45%，至多+35%。
 
 
 ### 决斗
 
 【决斗】干员造成伤害时追加真实伤害；生命低于一半时攻击速度提升。
 
-- 2人：造成伤害时，追加相当于该伤害6%的真实伤害；生命低于50%时攻击速度+20。
-- 4人：造成伤害时，追加相当于该伤害12%的真实伤害；生命低于50%时攻击速度+30。
-- 6人：造成伤害时，追加相当于该伤害20%的真实伤害；生命低于50%时攻击速度+40。
-- 8人：造成伤害时，追加相当于该伤害35%的真实伤害；生命低于50%时攻击速度+60。
+- 2人：造成伤害时，追加相当于该伤害5%的真实伤害；生命低于50%时攻击速度+15。
+- 4人：造成伤害时，追加相当于该伤害10%的真实伤害；生命低于50%时攻击速度+25。
+- 6人：造成伤害时，追加相当于该伤害15%的真实伤害；生命低于50%时攻击速度+35。
+- 8人：造成伤害时，追加相当于该伤害25%的真实伤害；生命低于50%时攻击速度+45。
 
 
 ### 迅击
 
 【迅击】干员的目标已损失的生命越多，攻击速度越高。
 
-- 2人：攻击速度+15至+40。
-- 3人：攻击速度+20至+50。
-- 4人：攻击速度+25至+60。击倒目标后转移到下一名敌人身边，获得800点屏障，持续3秒。
+- 2人：攻击速度+10至+30。
+- 3人：攻击速度+15至+40。
+- 4人：攻击速度+20至+45。击倒目标后转移到下一名敌人身边，获得生命上限15%的屏障，持续3秒。
 
 
 ### 连轰
 
 【连轰】干员攻击力提升，每数次攻击发射炮弹轰击目标周围。
 
-- 2人：攻击力+10%；每5次攻击对目标周围造成攻击力125%的物理伤害。
-- 4人：攻击力+18%；每5次攻击对目标周围造成攻击力125%的物理伤害。
-- 6人：攻击力+25%；每4次攻击对目标周围造成攻击力250%的物理伤害。
+- 2人：攻击力+8%；每5次攻击对目标周围造成攻击力120%的物理伤害。
+- 4人：攻击力+14%；每5次攻击对目标周围造成攻击力150%的物理伤害。
+- 6人：攻击力+20%；每4次攻击对目标周围造成攻击力200%的物理伤害。
 
 
 ### 双形
 
 【双形】干员按部署的排数切换形态：靠前两排的攻击使敌人减速，靠后两排伤害更高。
 
-- 2人：靠前时攻击使目标减速30%，持续2秒；靠后时伤害+15%。
-- 4人：靠前时攻击使目标减速45%，持续2秒；靠后时伤害+25%。
+- 2人：靠前时攻击使目标减速30%，持续2秒；靠后时伤害+12%。
+- 4人：靠前时攻击使目标减速45%，持续2秒；靠后时伤害+20%。
 
 
 ### 领军
 
 仅在恰好上阵1名或4名【领军】干员时生效；每名成员提供自己的效果。
 
-- 1人：雷蛇：全体友军每星攻击速度+6；瑕光：全体友军每次攻击额外回复2点技力；号角：全体友军防御力+8%，法术抗性+8；塞雷娅：自身与左右相邻友军获得其最大生命20%的生命。
-- 4人：雷蛇：全体友军每星攻击速度+6；瑕光：全体友军每次攻击额外回复2点技力；号角：全体友军防御力+8%，法术抗性+8；塞雷娅：自身与左右相邻友军获得其最大生命20%的生命。4名【领军】干员各额外获得800点生命，伤害+20%。
+- 1人：雷蛇：全体友军每星攻击速度+6；瑕光：全体友军技力自然回复速度+0.15/秒；号角：全体友军防御力+8%，法术抗性+8；塞雷娅：自身与左右相邻友军生命上限+15%。
+- 4人：雷蛇：全体友军每星攻击速度+6；瑕光：全体友军技力自然回复速度+0.15/秒；号角：全体友军防御力+8%，法术抗性+8；塞雷娅：自身与左右相邻友军生命上限+15%。4名【领军】干员生命上限+15%，伤害+15%。
 
 
 ### 同袍
 
-【同袍】干员攻击速度提升、受到的伤害降低，技能所需技力减少。
+【同袍】干员攻击速度提升，技能所需技力减少。
 
-- 3人：攻击速度+20，受到的伤害-15%，技能所需技力-25%。
-- 4人：攻击速度+20，受到的伤害-15%，技能所需技力-30%。
-- 5人：攻击速度+20，受到的伤害-15%，技能所需技力-40%。战斗结束后，每名存活的【同袍】干员积累1点行动进度，达到10、17、20、30点时各领取一次奖励。
+- 3人：攻击速度+10，技能所需技力-10%。
+- 4人：攻击速度+15，技能所需技力-15%。
+- 5人：攻击速度+20，技能所需技力-20%。战斗结束后，每名存活的【同袍】干员积累1点行动进度，达到10、17、20、30点时各领取一次奖励。
 
 
 ### 圣枪
 
 蕾缪安开启技能时随机获得一种强化。
 
-- 1人：发射8枚炮弹，每枚造成400点物理伤害；或获得2000点屏障，持续4秒；或战斗结束时获得3金币；也可能使上次的强化变为三倍。开启技能后1.5秒内受到的伤害-80%。
+- 1人：发射8枚炮弹，每枚造成攻击力35%的物理伤害；或使攻击范围内的敌人晕眩1秒；或战斗结束时获得3金币；也可能使上次的强化变为三倍。
 
 
 ### 铸军

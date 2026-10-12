@@ -186,7 +186,7 @@ test('paid Junker purchases persist as live combat stats and periodic effects',(
   const enemy={id:'e',alive:true,deployed:true,s:{def:100,res:100}};let heals=0,damage=[];
   const battle={time:0,allyUnits:units,enemies:[enemy],on(name,fn){(listeners[name]??=[]).push(fn);},addBuff(unit,buff){applied.push({unit,buff});},heal(_src,_dst,amount){heals+=amount;return amount;},dealDamage(_src,target,dmg){damage.push({target,dmg});},foesInRadius(){return [enemy];}};
   const purchase=[{id:'TFT13_JunkerKing_SuperPass'},{id:'TFT13_JunkerKing_RepairingMicrobots'},{id:'TFT13_JunkerKing_Tankbuster'},{id:'TFT13_JunkerKing_SelfDestructButton'}];
-  installPrototypeEconomy(battle,{pieces:[{uid:'r1',charId:rumble,star:1}],prototypeMeta:{activeTraits:[tier('armory',1,{},[rumble])],economy:{junkerKing:{upgrades:purchase.map((row)=>({...row,targetUid:'r1'}))}}}},{operators:{rumble:{charId:rumble,stars:{1:{stats:{atk:100,maxHp:1000}}}}}});
+  installPrototypeEconomy(battle,{pieces:[{uid:'r1',charId:rumble,star:1}],prototypeMeta:{activeTraits:[tier('armory',1,{},[rumble])],economy:{junkerKing:{upgrades:purchase.map((row)=>({...row,targetUid:'r1'}))}}}},{config:{seasonId:prototypeSeason.id},operators:{rumble:{charId:rumble,stars:{1:{stats:{atk:100,maxHp:1000}}}}}});
   for(const fn of listeners.battleStart)fn();
   const mods=applied.find(row=>row.buff.mods?.hpFlat===300)?.buff.mods;assert.equal(mods.hpFlat,300);assert.equal(mods.artsDealtMul,1.25);
   const power=prototypeSeason.heroes.find(row=>row.charId===rumble).powerReference;
