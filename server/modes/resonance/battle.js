@@ -46,27 +46,70 @@ function mergeBalanceProfile(base,override,label){
   return out;
 }
 
-/** Resolve authored campaign.enemyBalance for one node; missing fields preserve native multiplier 1. */
-export function resolveEnemyBalance(enemyBalance,difficulty,nodeKind){
+const NODE_CURVE_FIELDS=Object.freeze(['hpMultiplier','atkMultiplier']);
+const round4=value=>Math.round(value*1e4)/1e4;
+
+function validateNodeCurve(nodeCurve){
+  if(typeof nodeCurve!=='object'||nodeCurve===null||Array.isArray(nodeCurve))throw new TypeError('invalid resonance campaign.enemyBalance.nodeCurve');
+  for(const [difficulty,points] of Object.entries(nodeCurve)){
+    if(!DIFFICULTIES.has(difficulty))throw new TypeError(`invalid resonance enemy node curve difficulty: ${difficulty}`);
+    if(!Array.isArray(points)||!points.length)throw new TypeError(`resonance enemy node curve needs points: ${difficulty}`);
+    let previous=0;
+    for(const point of points){
+      if(typeof point!=='object'||point===null)throw new TypeError(`invalid resonance enemy node curve point: ${difficulty}`);
+      for(const key of Object.keys(point))if(key!=='node'&&!NODE_CURVE_FIELDS.includes(key))throw new TypeError(`unknown resonance enemy node curve field: ${difficulty}.${key}`);
+      if(!Number.isInteger(point.node)||point.node<=previous)throw new TypeError(`resonance enemy node curve nodes must be increasing integers >= 1: ${difficulty}`);
+      for(const key of NODE_CURVE_FIELDS)if(!Number.isFinite(point[key])||point[key]<=0)throw new TypeError(`resonance enemy node curve must be finite and > 0: ${difficulty}.${point.node}.${key}`);
+      previous=point.node;
+    }
+  }
+}
+
+/** HP and ATK factors one difficulty's curve gives at a campaign node: linear between points, flat beyond the ends. */
+export function enemyNodeCurveFactor(points,node){
+  const out={hpMultiplier:1,atkMultiplier:1};
+  if(!Array.isArray(points)||!points.length||!Number.isFinite(node))return out;
+  const upper=points.findIndex(point=>point.node>=node);
+  for(const key of NODE_CURVE_FIELDS){
+    if(upper===0)out[key]=points[0][key];
+    else if(upper<0)out[key]=points.at(-1)[key];
+    else{const a=points[upper-1],b=points[upper];out[key]=round4(a[key]+(b[key]-a[key])*(node-a.node)/(b.node-a.node));}
+  }
+  return out;
+}
+
+/**
+ * Resolve authored campaign.enemyBalance for one node; missing fields preserve native multiplier 1. With a campaign
+ * node, a regular or elite node also takes its difficulty's nodeCurve factor on HP and ATK; leader nodes do not.
+ */
+export function resolveEnemyBalance(enemyBalance,difficulty,nodeKind,node=null){
   if(enemyBalance==null)return {...ENEMY_BALANCE_ONE};
   if(typeof enemyBalance!=='object'||Array.isArray(enemyBalance))throw new TypeError('invalid resonance campaign.enemyBalance');
-  for(const key of Object.keys(enemyBalance))if(!['regular','terminal','byDifficulty','source','difficultyMultiplier','nodeScaling'].includes(key))throw new TypeError(`unknown resonance enemy balance section: ${key}`);
+  for(const key of Object.keys(enemyBalance))if(!['regular','terminal','byDifficulty','nodeCurve','source','difficultyMultiplier','nodeScaling'].includes(key))throw new TypeError(`unknown resonance enemy balance section: ${key}`);
+  if(enemyBalance.nodeCurve!=null)validateNodeCurve(enemyBalance.nodeCurve);
   if(enemyBalance.source!=null&&enemyBalance.source!=='native-wave')throw new TypeError('unsupported legacy resonance enemy balance source');
   if(enemyBalance.difficultyMultiplier!=null&&enemyBalance.difficultyMultiplier!==1)throw new TypeError('unsupported legacy resonance enemy difficulty multiplier');
   if(enemyBalance.nodeScaling!=null&&enemyBalance.nodeScaling!=='native-stage')throw new TypeError('unsupported legacy resonance enemy node scaling');
   const regular=mergeBalanceProfile(ENEMY_BALANCE_ONE,enemyBalance.regular,'regular');
   const terminal=mergeBalanceProfile(ENEMY_BALANCE_ONE,enemyBalance.terminal,'terminal');
   const scope=nodeKind==='boss'||nodeKind==='hidden'?'terminal':'regular',base=scope==='terminal'?terminal:regular;
-  if(enemyBalance.byDifficulty==null)return base;
-  if(typeof enemyBalance.byDifficulty!=='object'||Array.isArray(enemyBalance.byDifficulty))throw new TypeError('invalid resonance campaign.enemyBalance.byDifficulty');
-  for(const [key,override] of Object.entries(enemyBalance.byDifficulty)){
-    if(!DIFFICULTIES.has(key))throw new TypeError(`invalid resonance enemy balance difficulty: ${key}`);
-    if(typeof override!=='object'||override===null||Array.isArray(override))throw new TypeError(`invalid resonance enemy balance byDifficulty.${key}`);
-    for(const name of Object.keys(override))if(!['regular','terminal'].includes(name))throw new TypeError(`unknown resonance enemy balance scope: byDifficulty.${key}.${name}`);
-    mergeBalanceProfile(regular,override.regular,`byDifficulty.${key}.regular`);
-    mergeBalanceProfile(terminal,override.terminal,`byDifficulty.${key}.terminal`);
+  let profile=base;
+  if(enemyBalance.byDifficulty!=null){
+    if(typeof enemyBalance.byDifficulty!=='object'||Array.isArray(enemyBalance.byDifficulty))throw new TypeError('invalid resonance campaign.enemyBalance.byDifficulty');
+    for(const [key,override] of Object.entries(enemyBalance.byDifficulty)){
+      if(!DIFFICULTIES.has(key))throw new TypeError(`invalid resonance enemy balance difficulty: ${key}`);
+      if(typeof override!=='object'||override===null||Array.isArray(override))throw new TypeError(`invalid resonance enemy balance byDifficulty.${key}`);
+      for(const name of Object.keys(override))if(!['regular','terminal'].includes(name))throw new TypeError(`unknown resonance enemy balance scope: byDifficulty.${key}.${name}`);
+      mergeBalanceProfile(regular,override.regular,`byDifficulty.${key}.regular`);
+      mergeBalanceProfile(terminal,override.terminal,`byDifficulty.${key}.terminal`);
+    }
+    profile=mergeBalanceProfile(base,enemyBalance.byDifficulty[difficulty]?.[scope],`byDifficulty.${difficulty}.${scope}`);
   }
-  return mergeBalanceProfile(base,enemyBalance.byDifficulty[difficulty]?.[scope],`byDifficulty.${difficulty}.${scope}`);
+  const points=enemyBalance.nodeCurve?.[difficulty];
+  if(scope!=='regular'||!points||node==null)return profile;
+  const factor=enemyNodeCurveFactor(points,Number(node));
+  for(const key of NODE_CURVE_FIELDS)profile[key]=round4(profile[key]*factor[key]);
+  return profile;
 }
 
 function scaleWaveSpawnMods(wave,multipliers){
@@ -179,7 +222,7 @@ function prepare(state, data, catalog) {
   const nativeWave = isBossRound
     ? buildBossWave(gd, rng, setup, node.waveRound, { bossId, solo: true })
     : buildNormalWave(gd, rng, setup, node.waveRound);
-  const enemyBalance=resolveEnemyBalance(catalog?.campaign?.enemyBalance,node.difficulty,node.nodeKind);
+  const enemyBalance=resolveEnemyBalance(catalog?.campaign?.enemyBalance,node.difficulty,node.nodeKind,Number(state.round));
   const wave=scaleWaveSpawnMods(nativeWave,enemyBalance);
   const tuning=Object.values(enemyBalance).every(value=>value===1)?'native-wave':'resonance';
   const stageId = setup.stageId ?? wave.templateId ?? null;
