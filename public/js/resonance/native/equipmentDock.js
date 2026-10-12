@@ -76,7 +76,7 @@ export function InventoryDock({ state, catalog, onDetail, onOpen, onCombine, fie
       return html`<div class=${`rs-equipment-dock__slot${preview && recipe && !uniqueConflict ? ' is-recipe' : ''}${preview && recipe && uniqueConflict ? ' is-blocked' : ''}`} data-item-uid=${item.uid} key=${item.uid}
         onDragOver=${event => { if (editable && source && String(source.uid) !== String(item.uid)) { event.preventDefault(); setHoverUid(item.uid); } }}
         onDragLeave=${()=>setHoverUid(value => value === item.uid ? null : value)}
-        onDrop=${event => { event.preventDefault(); void combine(item); setDraggedUid(null); setHoverUid(null); }}>
+        onDrop=${event => { event.preventDefault(); event.stopPropagation(); void combine(item); setDraggedUid(null); setHoverUid(null); }}>
       <button type="button" class="rs-equipment-dock__item" data-item-uid=${item.uid} data-item-id=${item.itemId} data-tier=${record.tier||0} draggable=${editable}
           aria-label=${`${record.name || '装备'}${recipe && preview ? ` · ${uniqueConflict ? '无法合成，唯一装备已存在' : `合成为${recipe.resultName}`}` : ''}`}
           title=${`${record.name || '装备'} · 拖到干员身上装备${recipe ? ` · 与${source?.itemId === item.itemId ? record.name : source ? catalog.equipment?.[source.itemId]?.name : '组件'}合成${uniqueConflict ? '受唯一装备限制' : `得到${recipe.resultName}`}` : ''}`}

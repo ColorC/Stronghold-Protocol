@@ -1796,6 +1796,8 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
     }
     if (!event.dataTransfer?.types?.includes('application/x-stronghold-equipment')) return;
     event.preventDefault();
+    // a drop on the inventory rail itself is a merge (or nothing): never the "drag it onto an operator" hint
+    if (event.target?.closest?.('.rs-equipment-dock')) { setEquipmentDropTarget(null); return; }
     const itemUid = Number(event.dataTransfer.getData('application/x-stronghold-equipment'));
     const target = equipmentPieceAt(event);
     const item = resonanceState?.inventory?.find((candidate) => Number(candidate.nativeUid) === itemUid);
