@@ -10,7 +10,7 @@
 | 服务器 CPU | 战斗在各玩家浏览器里模拟（DESIGN §14），服务器只负责回合、经济和校验：**每个房间每个作战回合约 1 ms CPU**。AI 队友 / 掉线玩家的战场由服务器模拟：作战开始时 3 个 AI 战场在开发机上约 0.2–0.5 s CPU，小主机上可能要几秒（分成 8 ms 小片执行，不会卡住其他房间）。`SP_VERIFY=all` 会复算每个真人战场，CPU 明显增加，小主机建议保持 `off` 或 `sample`。 |
 | 服务器内存 | 空闲约 100 MB，每个进行中的对局再增加几 MB。 |
 | 网络 | 4 人对局中服务器每回合下行约 0.25 MB（DESIGN §14 实测）。首次进入游戏时浏览器要从主机下载所需的图片 / Spine 模型 / 音频（按需加载，之后走浏览器缓存），公网隧道带宽小时第一次会慢一些。 |
-| 磁盘 | 素材约 270 MB（`public/assets`）+ 依赖约 125 MB（`node_modules`）；可选的本地提取约 40 MB（`.venv-extract`）+ 70 MB 贴图（见第 6 节）。 |
+| 磁盘 | 素材（`public/assets`，首次下载前 setup 会按清单显示总大小）+ 依赖（`node_modules`）；可选的本地提取另需 `.venv-extract` 和提取出的贴图（见第 6 节）。 |
 | 玩家设备 | 支持 WebGL 的现代浏览器（Chrome / Edge / Firefox / Safari 最新版），电脑或手机平板（横屏）。老旧设备可在设置里调低画质或访问 `/?board=2d`。 |
 
 服务器**无状态**：房间和对局只存在内存里，没有数据库和存档，**不需要备份**。重启服务器会结束正在进行的对局（包括断线后本可在 24 小时内回来继续的独立模拟）。
@@ -19,19 +19,19 @@
 
 ### 1.1 安装与首次启动
 
-1. 安装 Node.js 22 LTS 和 Git（在 PowerShell 或「终端」里；用下面的完整包时不需要 Git）：
+1. 安装 Node.js 22 LTS 和 Git（在 PowerShell 或「终端」里；用下面的安装包或轻量包时两者都不需要）：
    ```powershell
    winget install OpenJS.NodeJS.LTS
    winget install Git.Git
    ```
    装完**关闭并重新打开**终端，`node -v` 应显示 v22 或更高（winget 的 LTS 目前是 v24.x，同样可用）。没有 winget 时从 <https://nodejs.org/zh-cn/download> 和 <https://git-scm.com/download/win> 下载安装。
 2. 下载，二选一。建议放在一个固定、短、**不在 OneDrive 同步范围内**的目录，例如 `C:\Stronghold-Protocol`：
-   - **安装包 / 完整包 / 轻量包**：在仓库的 [Releases](https://github.com/ColorC/Stronghold-Protocol/releases) 页面下载工坊预备版 0.3.0-workshop.1 的安装程序 exe、MSI 或对应 zip。安装程序和 MSI 装的是轻量包内容，只为当前用户安装，不需要管理员（见 [WINDOWS.md](WINDOWS.md)）。完整包包含可公开下载资源；轻量包包含便携 Node 和生产依赖，首次启动下载公开资源并显示进度（中断后可续传）。两者均不要求目标电脑另装 Node 或 Git。官方 3D 棋盘等本地客户端素材只有在打包者从客户端提取后才会随完整包附带；缺少时使用 2D 棋盘和替代样式。素材版权归上海鹰角网络 / Yostar，仅限非商业使用，见 [NOTICE.md](../NOTICE.md)。
+   - **安装包 / 轻量包**：在仓库的 [Releases](https://github.com/ColorC/Stronghold-Protocol/releases) 页面下载工坊版的安装程序 exe、MSI 或轻量包 zip。安装程序和 MSI 装的是轻量包内容，只为当前用户安装，不需要管理员（见 [WINDOWS.md](WINDOWS.md)）。轻量包包含便携 Node 和生产依赖，首次启动下载公开资源并显示进度（中断后可续传），不要求目标电脑另装 Node 或 Git。官方 3D 棋盘等本地客户端素材不在公开下载里；缺少时使用 2D 棋盘和替代样式。素材版权归上海鹰角网络 / Yostar，仅限非商业使用，见 [NOTICE.md](../NOTICE.md)。
    - **源码**：
      ```powershell
      git clone --branch workshop https://github.com/ColorC/Stronghold-Protocol.git C:\Stronghold-Protocol
      ```
-3. 安装后从开始菜单或桌面启动「卫戍协议：工坊」；完整包 / 轻量包解压后双击根目录的 `启动游戏.exe`。轻量包首次运行会准备前端库并下载公开资源（约 580 MB，以启动窗口显示的为准），显示进度且支持续传；完整包直接启动。若检测到本机客户端资源，会询问是否提取，可跳过。源码安装则运行 `node scripts/launch.mjs --workshop`。
+3. 安装后从开始菜单或桌面启动「卫戍协议：工坊」；轻量包解压后双击根目录的 `启动游戏.exe`。首次运行会准备前端库并下载公开资源，启动窗口显示总大小和进度，支持续传。若检测到本机客户端资源，会询问是否提取，可跳过。源码安装则运行 `node scripts/launch.mjs --workshop`。
 4. 窗口里会打印朋友可用的地址，例如 `http://192.168.1.23:3000`。用另一台设备打开它确认能进入。关闭窗口即停止服务器。
 
 等价的手动命令：`npm ci`、`node tools/setup.mjs`、`npm start`。
@@ -79,9 +79,9 @@ $env:SP_ASSET_SOURCE = 'mirror'             # 也可用环境变量显式启用
 
 ### 1.4 开机自动在后台运行
 
-开机自启只用于源码部署：安装包、完整包和轻量包里没有 `install-service-windows.ps1` / `run-server.cmd`（发给玩家的文件里不放 `.bat` / `.cmd`），需要时按上面的「源码」方式检出仓库。
+开机自启只用于源码部署：安装包和 zip 包里都没有 `install-service-windows.ps1` / `run-server.cmd`（发给玩家的文件里不放 `.bat` / `.cmd`），需要时按上面的「源码」方式检出仓库。
 
-先关闭 `start-windows.bat` 的窗口（否则端口冲突），然后在项目目录运行（会自动请求管理员权限）：
+先关闭正在运行的服务器窗口（否则端口冲突），然后在项目目录运行（会自动请求管理员权限）：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\install-service-windows.ps1
@@ -128,7 +128,7 @@ node tools/setup.mjs                # 补下载新增的素材（已有文件会
 powershell -ExecutionPolicy Bypass -File scripts\install-service-windows.ps1 -Restart
 ```
 
-没装开机自启的话，最后一步改成重新双击 `start-windows.bat`。用 Releases 完整包的：停止服务器，把新版本的完整包解压到新目录后从那里启动即可（素材已包含）。用安装包的：关闭游戏窗口后直接运行新版本的安装包，已下载的资源会保留。用 GitHub「Download ZIP」源码包的：解压新版本后，把旧目录里的 `public\assets`、`public\fonts`、`.cache` 和 `data\local-assets.json`（若有）复制过去，可避免重新下载。
+没装开机自启的话，最后一步改成重新运行 `node scripts/launch.mjs --workshop`。用轻量包的：关闭启动窗口，把新版本解压到新目录后从那里启动（首次会重新下载资源）。用安装包的：关闭游戏窗口后直接运行新版本的安装包，已下载的资源会保留。用 GitHub「Download ZIP」源码包的：解压新版本后，把旧目录里的 `public\assets`、`public\fonts`、`.cache` 和 `data\local-assets.json`（若有）复制过去，可避免重新下载。
 
 ## 2. 让不在同一网络的朋友加入
 
@@ -259,7 +259,7 @@ services:
 | 现象 | 处理 |
 |---|---|
 | 任何问题 | `node tools/doctor.mjs`：Node 版本、依赖、素材完整性、端口、局域网地址、防火墙、网络类型 |
-| `端口已被占用 / EADDRINUSE` | 已经有一个服务器在运行（自启任务？）或其他程序占用 3000：换端口 `scripts\start-windows.bat --port 3001` |
+| `端口已被占用 / EADDRINUSE` | 已经有一个服务器在运行（自启任务？）或其他程序占用 3000：换端口：`启动游戏.exe --port 3001`，从源码运行用 `node scripts/launch.mjs --workshop --port 3001` |
 | 朋友打不开页面 | 防火墙规则 / 网络类型（1.2）；确认用的是 `LAN` 地址而不是 `localhost`；访客 Wi-Fi 常开启「AP 隔离」；不在同一网络请看第 2 节 |
 | 画面是占位图、没有声音 | 素材没下完：重新运行 `node tools/setup.mjs`（会续传）；缺失明细在 `.cache/assets-report.json`。默认仅原始源和 jsDelivr；可用 `--asset-source=mirror` 手动开启前缀镜像（见上文） |
 | 素材下载很慢 / 失败 | 网络问题可随时中断，重新运行会跳过已完成的文件；`node tools/fetch-assets.mjs --concurrency=4` 降低并发。有文件没下载成功时，素材清单 `data/assets.json` 保持不变（脚本列出缺少的条目并以非零状态结束；游戏里缺的图片用占位图，缺的声音不播放），重新运行即可补齐 |
@@ -282,6 +282,6 @@ services:
 
 表情（6 套 × 6 个）和「玩法说明」的 19 页教程图公开镜像也有：`node tools/setup.mjs` 会和其他素材一起下载（约 21 MB），不需要客户端；有本地素材时优先显示本地的。
 
-**没有客户端的服务器**想要上表中的官方素材：从**同一版本**的完整包（[Releases](https://github.com/ColorC/Stronghold-Protocol/releases)）里，把 `public/assets/local/` 文件夹和 `data/local-assets.json` 复制到服务器项目目录下的相同位置。服务器每次请求都会重新读取这两处，不必重启，玩家刷新页面即可。一定要用与服务器代码相同版本的完整包：各版本提取的内容和清单可能不同（例如灼热 / 炽焰源石虫的模型是 0.1.0 之后才加入的），混用其他版本的文件会缺图或用错图。复制后 `node tools/doctor.mjs` 会显示本地素材的条目数和「3D 棋盘可用」。
+**没有客户端的服务器**想要上表中的官方素材：从**同一版本**、在有客户端的电脑上打出的完整包（`make-windows-bundle.mjs` 不加 `--lite`，见 [WINDOWS.md](WINDOWS.md)；公开 Releases 不含这些素材）里，把 `public/assets/local/` 文件夹和 `data/local-assets.json` 复制到服务器项目目录下的相同位置。服务器每次请求都会重新读取这两处，不必重启，玩家刷新页面即可。一定要用与服务器代码相同版本的完整包：各版本提取的内容和清单可能不同（例如灼热 / 炽焰源石虫的模型是 0.1.0 之后才加入的），混用其他版本的文件会缺图或用错图。复制后 `node tools/doctor.mjs` 会显示本地素材的条目数和「3D 棋盘可用」。
 
 **3D 棋盘贴图的下载量**：每位玩家进入对局时都要从开服的电脑下载 3D 棋盘的 12 张贴图。提取时会给这 12 张各写一份 WebP（颜色贴图有损、质量 95，法线和数据贴图无损），清单里列的是 WebP，同名 PNG 留在旁边给裁切工具和 setup 用。这部分下载量从约 6.7 MB 降到约 2 MB，网速慢的远程联机最明显。只有 PNG 的本地素材（例如在这一改动之前提取的）可以用提取时的 Python 环境运行 `tools/local-extract/extract.py --webp` 就地补上，只需要 Pillow，不需要客户端。

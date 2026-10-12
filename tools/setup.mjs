@@ -8,7 +8,7 @@
 //   2. Dependencies: `npm ci` (falls back to `npm install`) when node_modules is missing or incomplete.
 //   3. Client libraries in public/vendor (tools/vendor.mjs) when any is missing.
 //   4. Game data (data/*.json, committed) present and parseable.
-//   5. Art/audio (tools/fetch-assets.mjs, ~270 MB into public/assets, resumable, mirror fallback) when public/assets
+//   5. Art/audio (tools/fetch-assets.mjs, into public/assets, size from the manifest, resumable, mirror fallback) when public/assets
 //      is missing or data/assets.json lists files that are not on disk. A failure is a warning: the game still runs
 //      with fallback visuals and the next run resumes.
 //   6. Optional: official board/UI art from a locally installed Arknights client (Windows native install, CrossOver
@@ -417,7 +417,7 @@ async function main() {
   let assets = checkAssets();
   if (!opts.assets) add(assets.ok ? 'ok' : 'skip', '美术/音频 public/assets', assets.ok ? `${assets.total} 个文件` : '已跳过（--no-assets）');
   else if (!assets.ok && deps.ok && !opts.check) {
-    const what = !assets.present ? `首次下载约 ${assets.bytes ? mb(assets.bytes) : '270 MB'}，可随时中断，重新运行会续传`
+    const what = !assets.present ? `首次下载${assets.bytes ? `约 ${mb(assets.bytes)}` : ''}，可随时中断，重新运行会续传`
       : `补全缺失的 ${assets.missing} 个文件`;
     log(`\n${c.cyan('▶')} 下载美术与音频素材（${what}）…`);
     const r = run(process.execPath, [path.join(ROOT, 'tools', 'fetch-assets.mjs'), `--asset-source=${opts.source}`]);
@@ -491,7 +491,7 @@ async function main() {
     return 1;
   }
   if (!opts.quiet) {
-    log(`\n${c.ok('可以开始了：')} npm start   ${c.dim('（Windows 可直接双击 scripts\\start-windows.bat）')}`);
+    log(`\n${c.ok('可以开始了：')} npm start   ${c.dim('（或 node scripts/launch.mjs）')}`);
     log(c.dim('浏览器打开 http://localhost:3000 ；同一局域网的朋友用终端里打印的 LAN 地址。'));
   }
   return 0;
