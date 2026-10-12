@@ -942,7 +942,8 @@ export function applyAction(state, action, options = {}) {
       replay = battle.replay || null;
       const gd = gdFor(work, data); const playerResult = battle.result.perPlayer?.independent || Object.values(battle.result.perPlayer || {})[0] || {};
       const leaked = Array.isArray(playerResult.leaked) ? playerResult.leaked.filter((x) => x && x.counted !== false).reduce((n, x) => n + Math.max(0, Number(x.lpr) || 1), 0) : 0;
-      const lpLost = historicalPrizePreventFatalDamage(work,Math.min(gd.lpCapPerRound, Math.max(0, leaked)));
+      // Record the defence actually lost: a final round that leaks more than the remaining line only takes what is left.
+      const lpLost = Math.min(Math.max(0, work.lp), historicalPrizePreventFatalDamage(work,Math.min(gd.lpCapPerRound, Math.max(0, leaked))));
       work.lastCombatWon = battle.result.reason === 'cleared' && leaked === 0;
       work.battleSummary = { result: battle.result, samples: battle.samples || [], diagnostics: battle.diagnostics || {}, pieceStates: battle.pieceStates || {} };
       work.lp = Math.max(0, work.lp - lpLost);
