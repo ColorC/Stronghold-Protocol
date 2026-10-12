@@ -1,11 +1,11 @@
 import { itemIconUrl } from '../ui/assetUrls.js';
 
-// The eight Resonance components and 28 completed items are native 卫戍协议 items: each id shows that item's own
-// art (tools/resonance/build-content.mjs records the same iconId). Asset URLs are resolved only through the
+// Four components (bow, belt, cloak, tear) are Arknights 养成材料 with their own art, below. The other four components
+// and the 28 completed items are native 卫戍协议 items: each id shows that item's own art
+// (tools/resonance/build-content.mjs records the same iconId). Asset URLs are resolved only through the
 // caller-provided frozen manifest.
 export const RESONANCE_ITEM_ICON_IDS = Object.freeze({
-  blade: 'trap_1041_acarm041', staff: 'trap_1050_acarm050', bow: 'trap_1121_acarm121', plate: 'trap_1047_acarm047',
-  cloak: 'trap_1102_acarm102', belt: 'trap_1049_acarm049', tear: 'trap_1051_acarm051', crest: 'trap_1124_acarm124',
+  blade: 'trap_1041_acarm041', staff: 'trap_1050_acarm050', plate: 'trap_1047_acarm047', crest: 'trap_1124_acarm124',
   giantSlayer: 'trap_1076_acarm076', spellblade: 'trap_1040_acarm040', rapidBlade: 'trap_1044_acarm044', armorAxe: 'trap_1043_acarm043',
   vampBlade: 'trap_1065_acarm065', titanArmor: 'trap_1117_acarm117', duelistCrest: 'trap_1042_acarm042', resonanceStaff: 'trap_1122_acarm122',
   thunderRing: 'trap_1052_acarm052', counterMirror: 'trap_1045_acarm045', arcaneMantle: 'trap_1048_acarm048', lifeSpring: 'trap_1077_acarm077',
@@ -29,14 +29,22 @@ export const SOURCE_GEAR_ICON_IDS = Object.freeze({
 
 export const NATIVE_ICON_BY_EQUIPMENT_ID = Object.freeze({ ...RESONANCE_ITEM_ICON_IDS, ...SOURCE_GEAR_ICON_IDS });
 
-// Emblems carry their own item art: one badge per pact, drawn from that pact's icon (public/css/resonance-emblems,
-// provenance in its manifest.json). It sits under /css/ because the Workshop gateway forwards only the game's fixed
-// static prefixes to the resonance service. A pact without a badge here keeps its pact icon.
+// Resonance items that carry their own art instead of a native item's. One directory per item kind, one <key>.webp
+// per item, provenance in the directory's manifest.json. They sit under /css/ because the Workshop gateway forwards
+// only the game's fixed static prefixes to the resonance service.
+//  - emblems: one badge per pact, drawn from that pact's icon; a pact without a badge here keeps its pact icon
+//  - components: the official Arknights material icon of the four basic components that used to borrow a T3+ item
 export const EMBLEM_ICON_DIR = '/css/resonance-emblems';
 export const EMBLEM_ICON_PACT_IDS = Object.freeze([
   'academy', 'ammo', 'artillery', 'arts', 'breaker', 'bruiser', 'combo', 'conqueror', 'creation', 'dominator', 'enforcer',
   'experiment', 'family', 'flight', 'logistics', 'redeploy', 'resistance', 'rhodes', 'risk', 'sentinel', 'sui', 'watcher',
 ]);
+export const COMPONENT_ICON_DIR = '/css/resonance-components';
+export const COMPONENT_ICON_IDS = Object.freeze(['bow', 'belt', 'cloak', 'tear']);
+const OWN_ITEM_ART = Object.freeze({
+  emblem: Object.freeze({ dir: EMBLEM_ICON_DIR, keys: EMBLEM_ICON_PACT_IDS }),
+  component: Object.freeze({ dir: COMPONENT_ICON_DIR, keys: COMPONENT_ICON_IDS }),
+});
 
 function nativeRecord(nativeId, itemRecords) {
   if (!nativeId) return null;
@@ -56,10 +64,17 @@ export function resonanceItemPactId(catalog, id) {
   return typeof pactId === 'string' && pactId ? pactId : null;
 }
 
+/** The mode's own art for an item (an emblem's badge, a component's material icon), or null when it has none. */
+export function resonanceOwnItemIconUrl(catalog, id) {
+  const kind = catalog?.equipment?.[id]?.kind;
+  const art = Object.hasOwn(OWN_ITEM_ART, kind) ? OWN_ITEM_ART[kind] : null;
+  if (!art) return null;
+  const key = kind === 'emblem' ? resonanceItemPactId(catalog, id) : id;
+  return key && art.keys.includes(key) ? `${art.dir}/${key}.webp` : null;
+}
+
 export function resonanceEmblemIconUrl(catalog, id) {
-  if (catalog?.equipment?.[id]?.kind !== 'emblem') return null;
-  const pactId = resonanceItemPactId(catalog, id);
-  return pactId && EMBLEM_ICON_PACT_IDS.includes(pactId) ? `${EMBLEM_ICON_DIR}/${pactId}.webp` : null;
+  return catalog?.equipment?.[id]?.kind === 'emblem' ? resonanceOwnItemIconUrl(catalog, id) : null;
 }
 
 export function resonanceNativeItem(catalog, id, itemRecords = []) {

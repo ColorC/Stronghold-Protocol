@@ -135,14 +135,14 @@
 | 蒸汽之心 | berserkBow | completed | 是 | 攻击速度+35 |
 | 灼燃维式重锤 | duelistCrest | completed | 是 | 攻击力+30%，初始技力+6；攻击时附带相当于攻击力10%的灼燃损伤 |
 | M3茧甲 | deepSeaBelt | completed | 是 | 生命值+40%；被击倒时立刻复活并恢复30%最大生命值（一场战斗仅1次） |
-| 歌利亚头盔 | belt | component | 否 | 生命值+20% |
+| 固源岩 | cloak | component | 否 | 法术抗性+15 |
+| 技巧概要·卷1 | tear | component | 否 | 初始技力+6 |
 | 坚守盾牌 | plate | component | 否 | 防御力+20% |
 | 萨尔贡浓茶 | staff | component | 否 | 技力自然回复速度+0.15/秒 |
 | 随身身份牌 | crest | component | 否 | 不提供属性；与其他组件合成盟约徽记。 |
+| 糖 | belt | component | 否 | 生命值+20% |
 | 维式重锤 | blade | component | 否 | 攻击力+15% |
-| 叙拉古正装 | bow | component | 否 | 攻击速度+15 |
-| 迅捷作战粮 | tear | component | 否 | 初始技力+6 |
-| 耶拉冈德之泪 | cloak | component | 否 | 法术抗性+15 |
+| 装置 | bow | component | 否 | 攻击速度+15 |
 | Academy Emblem | prototype_emblem_academy | emblem | 是 | 佩戴者获得【研发】盟约身份。 |
 | Ambusher Emblem | prototype_emblem_redeploy | emblem | 是 | 佩戴者获得【突袭】盟约身份。 |
 | Artillerist Emblem | prototype_emblem_artillery | emblem | 是 | 佩戴者获得【炮术】盟约身份。 |

@@ -16,7 +16,7 @@ import {createSession} from '../../server/modes/resonance/session.js';
 import {VirtualScheduler} from '../../server/match/scheduler.js';
 import {layoutPen} from '../../public/js/render/pen.js';
 import {skillIconUrl,itemIconUrl} from '../../public/js/ui/assetUrls.js';
-import {NATIVE_ICON_BY_EQUIPMENT_ID,RESONANCE_ITEM_ICON_IDS,SOURCE_GEAR_ICON_IDS,resonanceItemPactId,resonanceNativeItem,resolveResonanceItemIconUrl} from '../../public/js/resonance/itemIconMap.js';
+import {COMPONENT_ICON_IDS,NATIVE_ICON_BY_EQUIPMENT_ID,RESONANCE_ITEM_ICON_IDS,SOURCE_GEAR_ICON_IDS,resonanceItemPactId,resonanceNativeItem,resolveResonanceItemIconUrl} from '../../public/js/resonance/itemIconMap.js';
 import {resonanceContent} from '../../shared/resonance/catalog.js';
 import {specialBoardTile} from '../../public/js/resonance/specialEntityPlacement.js';
 
@@ -76,18 +76,25 @@ test('faction-season Judgement icon is a scoped passive-support presentation, no
  assert.equal(other.passivePresentation,undefined,'presentation does not leak to other operators');
 });
 
-test('all eight Resonance components and 28 completed recipes use distinct frozen Native item art',()=>{
+test('four Resonance components and 28 completed recipes use distinct frozen Native item art; the other four components use their own 养成材料 art',()=>{
  const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native');
  const entries=Object.entries(resonanceContent.equipment);
  const components=entries.filter(([,record])=>record.kind==='component').map(([id])=>id);
  const finished=entries.filter(([,record])=>record.kind==='completed').map(([id])=>id);
  assert.equal(components.length,8);assert.equal(finished.length,28);
  assert.deepEqual(new Set(components),new Set(['blade','staff','bow','plate','cloak','belt','tear','crest']));
- assert.equal(Object.keys(RESONANCE_ITEM_ICON_IDS).length,36);
- const componentIcons=new Set(components.map(id=>RESONANCE_ITEM_ICON_IDS[id]));
+ assert.deepEqual(new Set(COMPONENT_ICON_IDS),new Set(['bow','belt','cloak','tear']));
+ const nativeComponents=components.filter(id=>!COMPONENT_ICON_IDS.includes(id));
+ assert.deepEqual(new Set(nativeComponents),new Set(['blade','staff','plate','crest']));
+ assert.equal(Object.keys(RESONANCE_ITEM_ICON_IDS).length,32);
+ for(const id of COMPONENT_ICON_IDS){
+  assert.equal(RESONANCE_ITEM_ICON_IDS[id],undefined,`${id} borrows no native item art`);assert.equal(NATIVE_ICON_BY_EQUIPMENT_ID[id],undefined);
+  assert.equal(resonanceNativeItem({equipment:{[id]:resonanceContent.equipment[id]}},id,[]),null,`${id} is no native item`);
+ }
+ const componentIcons=new Set(nativeComponents.map(id=>RESONANCE_ITEM_ICON_IDS[id]));
  const finishedIcons=finished.map(id=>RESONANCE_ITEM_ICON_IDS[id]);
  assert.equal(new Set(finishedIcons).size,28,'every completed recipe has its own artwork');
- for(const id of [...components,...finished]){
+ for(const id of [...nativeComponents,...finished]){
   const iconId=RESONANCE_ITEM_ICON_IDS[id];assert.ok(iconId,`explicit Native artwork mapping for ${id}`);
   assert.equal(NATIVE_ICON_BY_EQUIPMENT_ID[id],iconId,`${id} is present in the exported mode map`);
   const url=data.assets.items[iconId];assert.ok(url,`manifest icon ${iconId}`);

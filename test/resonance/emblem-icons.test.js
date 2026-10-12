@@ -2,32 +2,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { registerHooks } from 'node:module';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
+import '../helpers/sparseVendorHook.js';
 import { loadData } from '../../server/data.js';
 import { getResonanceCatalog } from '../../server/modes/resonance/catalog.js';
 import { resonanceDisplayCatalog } from '../../server/modes/resonance/display.js';
 import { resonanceCatalogPacket } from '../../server/modes/resonance/native-match.js';
-import { EMBLEM_ICON_DIR, EMBLEM_ICON_PACT_IDS, resonanceEmblemIconUrl, resonanceItemPactId } from '../../public/js/resonance/itemIconMap.js';
+import { COMPONENT_ICON_IDS, EMBLEM_ICON_DIR, EMBLEM_ICON_PACT_IDS, resonanceEmblemIconUrl, resonanceItemPactId } from '../../public/js/resonance/itemIconMap.js';
 
 const PUBLIC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../public');
 const EMBLEM_DIR = path.join(PUBLIC, EMBLEM_ICON_DIR);
 const CANONICAL = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol';
 const data = loadData(`${CANONICAL}/data/resonance-native`);
-
-// A sparse resonance checkout has no public/vendor: the browser components below load it from the canonical install.
-const vendor = pathToFileURL(path.join(PUBLIC, 'vendor')).href + '/';
-registerHooks({
-  resolve(specifier, context, nextResolve) {
-    if (context.parentURL && specifier.startsWith('.')) {
-      const requested = new URL(specifier, context.parentURL);
-      if (requested.href.startsWith(vendor) && !fs.existsSync(fileURLToPath(requested))) {
-        return nextResolve(pathToFileURL(path.join(CANONICAL, 'public/vendor', requested.href.slice(vendor.length))).href, context);
-      }
-    }
-    return nextResolve(specifier, context);
-  },
-});
 
 /** Every vnode of a preact tree (htm output), depth first. */
 function* walk(v) {
@@ -88,7 +74,7 @@ test('only emblems take badge art; an emblem whose pact has no badge falls back 
   assert.equal(resonanceItemPactId(catalog, 'prototype_emblem_arts'), null, 'the id convention applies to emblems only');
 });
 
-test('the native catalog packet gives every season emblem its badge as iconUrl, and native items none', () => {
+test('the native catalog packet gives every season emblem its badge as iconUrl, and native items none (the four own-art components are in component-icons.test.js)', () => {
   const catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 13 });
   const packet = resonanceCatalogPacket({ data, catalog, displayCatalog: catalog, nativeChessId: (id, star) => star === 1 ? id : `resonance_${id}_star${star}` });
   const emblems = Object.keys(catalog.equipment).filter((id) => catalog.equipment[id].kind === 'emblem');
@@ -98,7 +84,7 @@ test('the native catalog packet gives every season emblem its badge as iconUrl, 
     assert.equal(url, resonanceEmblemIconUrl(catalog, id), id);
     assert.ok(fs.existsSync(path.join(PUBLIC, url)), `${id} badge file exists`);
   }
-  const others = Object.entries(packet.data.items).filter(([id]) => !emblems.includes(id));
+  const others = Object.entries(packet.data.items).filter(([id]) => !emblems.includes(id) && !COMPONENT_ICON_IDS.includes(id));
   assert.ok(others.length > 0);
   for (const [id, item] of others) assert.equal(item.iconUrl, undefined, `${id} keeps resolving its native art by iconId`);
 });

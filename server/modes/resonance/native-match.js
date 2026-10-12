@@ -9,7 +9,7 @@ import { BOSS_HIT_STEPS, SharedBossPool } from '../../match/finalAssault.js';
 import { previewOf } from '../../match/waves.js';
 import { compactResonanceResult, resonanceResultExtras } from '../../sim/spec.js';
 import { summarizeResonanceResult } from '../../../shared/resonance/result-summary.js';
-import { resonanceEmblemIconUrl } from '../../../public/js/resonance/itemIconMap.js';
+import { resonanceOwnItemIconUrl } from '../../../public/js/resonance/itemIconMap.js';
 
 const PLAYER = 'resonance';
 const OK = Object.freeze({ ok: true });
@@ -983,8 +983,8 @@ export function resonanceCatalogPacket(match) {
     thresholds: pact.thresholds ?? pact.levels?.map((level) => level.minUnits ?? level.threshold) ?? [], levels: pact.levels ?? [],
   }]));
   const equipment = Object.fromEntries(Object.entries(match.catalog.equipment ?? {}).map(([id, item]) => {
-    // emblems have no native art: their generated badge, the same file the mode's own item icons show
-    const iconUrl = resonanceEmblemIconUrl(match.catalog, id);
+    // emblems and four components have no native art: their own art, the same file the mode's own item icons show
+    const iconUrl = resonanceOwnItemIconUrl(match.catalog, id);
     return [id, {
       ...(data.items?.[id] ?? {}), id, name: item.name, desc: item.description, kind: item.kind,
       // the native item art (build-content.mjs iconId): the native detail card's item rows resolve icons by iconId

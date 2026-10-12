@@ -107,7 +107,7 @@ export function UnitThumb({ kind = 'chess', id, golden, size = 'md', tier, showT
     golden = golden ?? !!c?.isGolden;
   } else if (kind === 'item') {
     const it = data.lookup('items', id);
-    // a mode item without native art names its own icon (resonance emblems); native items never carry iconUrl
+    // a mode item without native art names its own icon (resonance emblems and components); native items never carry iconUrl
     src = typeof it?.iconUrl === 'string' && it.iconUrl ? it.iconUrl : itemIconUrl(m, it);
     name = it?.name || '';
     t = t ?? it?.tier;

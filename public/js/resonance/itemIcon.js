@@ -2,18 +2,18 @@ import { html } from '../ui/components.js';
 import { GIcon } from '../ui/gameComponents.js';
 import { data } from '../data.js';
 import { assets } from '../assets.js';
-import { resonanceEmblemIconUrl, resonanceItemPactId, resonanceNativeItem, resolveResonanceItemIconUrl } from './itemIconMap.js';
+import { resonanceOwnItemIconUrl, resonanceItemPactId, resonanceNativeItem, resolveResonanceItemIconUrl } from './itemIconMap.js';
 import { pactIconUrl } from './pactIcon.js';
-export { resonanceEmblemIconUrl, resonanceItemPactId, resonanceNativeItem, resolveResonanceItemIconUrl } from './itemIconMap.js';
+export { resonanceEmblemIconUrl, resonanceOwnItemIconUrl, resonanceItemPactId, resonanceNativeItem, resolveResonanceItemIconUrl } from './itemIconMap.js';
 
-// Resonance equipment IDs are mode data, not native chess_item IDs. Resolve them through a small
-// semantic bridge to assets already shipped by the game; never ask the native ItemIcon to render
-// an unknown mode ID (its intentional unknown-item fallback is a question mark).
+// Resonance equipment IDs are mode data, not native chess_item IDs. Resolve them through the mode's own art
+// (emblem badges, component material icons) or a small semantic bridge to assets already shipped by the game;
+// never ask the native ItemIcon to render an unknown mode ID (its intentional unknown-item fallback is a question mark).
 const GLYPH = Object.freeze({ blade: 'sell', staff: 'bolt', bow: 'target', plate: 'shield', cloak: 'eye', belt: 'dp', tear: 'bolt', crest: 'flag' });
 
 export function resonanceItemIconUrl(catalog, id) {
-  const emblem = resonanceEmblemIconUrl(catalog, id);
-  if (emblem) return emblem;
+  const own = resonanceOwnItemIconUrl(catalog, id);
+  if (own) return own;
   const pactId = resonanceItemPactId(catalog, id);
   if (pactId) return pactIconUrl(catalog, pactId);
   return resolveResonanceItemIconUrl(catalog, id, data.list('items'), assets.manifest);

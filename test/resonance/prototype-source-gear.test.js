@@ -107,7 +107,7 @@ test('null source MR stays unknown while rating bonuses use a finite Native base
 test('an old source-item id in a save acts as its native item and adds no Set 13 effect',()=>{
   const rage=makeBattle('prototype_source_gear_guinsoos_rageblade');
   const target=rage.enemy(0),initial=rage.holder.s.aspd;
-  assert.ok(Math.abs(initial-(rage.holder.base.aspd+15))<1e-9,'有限加速器 carries the stats of its 叙拉古正装 component');
+  assert.ok(Math.abs(initial-(rage.holder.base.aspd+15))<1e-9,'有限加速器 carries the stats of its 装置 component');
   performAttack(rage.battle,rage.holder,rage.battle.effectiveProfile(rage.holder),[target]);
   assert.ok(Math.abs(rage.holder.s.aspd-(initial+2))<1e-9,'an attack adds the native +2 attack speed');
   assert.equal(rage.holder.mem.prototypeSourceRageStacks,undefined,'no Set 13 stacking is installed');
