@@ -1,5 +1,6 @@
 import { prototypeSourceGearDefinitions } from './prototype-source-gear.js';
 import { nativeFlatAmount } from './native-effect-scale.js';
+import { PROTOTYPE_CRIT_BASE_MULTIPLIER } from './prototype-critical.js';
 
 /** Source pointers and source-backed progression constants for Set 13 (14.23).
  * Random reward contents are supplied by the session adapter from its seeded
@@ -43,15 +44,15 @@ export const prototypeEconomyRules = Object.freeze({
 export const chemBaronItems = Object.freeze([
   Object.freeze({
     id:'prototype_chem_salvaged_contraption',name:'回收式减伤装置',sourceName:'Salvaged Contraption',sourceApiName:'TFT13_Crime_Bronze_ChemGrips',
-    description:'生命值+200、护甲与法术抗性+10，受到的所有伤害降低10%。',sourceDescription:'Reduce all incoming damage by 10.',sourceEffects:Object.freeze({Health:200,Armor:10,MagicResist:10,ReducedDamage:10}),stats:Object.freeze({health:200,armor:10,magicResist:10}),effect:Object.freeze({kind:'flat_damage_reduction',amount:10}),
+    description:'生命值+200，受到的物理与法术伤害降低9%。受到的伤害降低10%。',sourceDescription:'Reduce all incoming damage by 10.',sourceEffects:Object.freeze({Health:200,Armor:10,MagicResist:10,ReducedDamage:10}),stats:Object.freeze({health:200,armor:10,magicResist:10}),effect:Object.freeze({kind:'flat_damage_reduction',amount:10}),
   }),
   Object.freeze({
     id:'prototype_chem_salvaged_revolver',name:'回收式法术增幅器',sourceName:'Salvaged Revolver',sourceApiName:'TFT13_Crime_Bronze_MageGuard',
-    description:'法术强度+20、初始法力+15；每5秒额外获得10点法术强度。',sourceDescription:'Gain 20 Ability Power and 10 Ability Power every 5 seconds.',sourceEffects:Object.freeze({AP:20,Mana:15,APPerTick:10,TickRate:5}),stats:Object.freeze({ap:20,mana:15}),effect:Object.freeze({kind:'periodic_arts_power',basePct:20,perTickPct:10,interval:5}),
+    description:'法术伤害提高20%，开战技力为固定技能消耗的15%。每5秒法术伤害额外提高10%，可叠加。',sourceDescription:'Gain 20 Ability Power and 10 Ability Power every 5 seconds.',sourceEffects:Object.freeze({AP:20,Mana:15,APPerTick:10,TickRate:5}),stats:Object.freeze({ap:20,mana:15}),effect:Object.freeze({kind:'periodic_arts_power',basePct:20,perTickPct:10,interval:5}),
   }),
   Object.freeze({
     id:'prototype_chem_salvaged_gauntlet',name:'回收式真伤护手',sourceName:'Salvaged Gauntlet',sourceApiName:'TFT13_Crime_Bronze_MiningGauntlet',
-    description:'攻击力+25%、攻击速度+10%；普攻额外造成15点真实伤害。',sourceDescription:'Gain 25% Attack Damage and 10% Attack Speed. Attacks deal 15 additional true damage.',sourceEffects:Object.freeze({AD:0.25,AS:10,BonusDamageOnAttack:15}),stats:Object.freeze({atkPct:0.25,aspd:10}),effect:Object.freeze({kind:'attack_true_damage',amount:15}),
+    description:'攻击力提高25%，攻击速度+10。普通攻击额外造成15点真实伤害。',sourceDescription:'Gain 25% Attack Damage and 10% Attack Speed. Attacks deal 15 additional true damage.',sourceEffects:Object.freeze({AD:0.25,AS:10,BonusDamageOnAttack:15}),stats:Object.freeze({atkPct:0.25,aspd:10}),effect:Object.freeze({kind:'attack_true_damage',amount:15}),
   }),
 ]);
 
@@ -61,12 +62,12 @@ export const chemBaronItems = Object.freeze([
 const CHEM_ITEM_FAMILIES=Object.freeze({
   ChemGrips:{kind:'flat_damage_reduction',name:'回收式减伤装置',copy:'减少受到的伤害。'},
   MageGuard:{kind:'periodic_arts_power',name:'回收式法术增幅器',copy:'周期性提升法术伤害。'},
-  MiningGauntlet:{kind:'attack_true_damage',name:'回收式真伤护手',copy:'普攻额外造成真实伤害。'},
-  DestabilizedChemtank:{kind:'threshold_shield',name:'化学储罐',copy:'生命降至一半时获得护盾，之后周期性获得护盾。'},
+  MiningGauntlet:{kind:'attack_true_damage',name:'回收式真伤护手',copy:'普通攻击额外造成真实伤害。'},
+  DestabilizedChemtank:{kind:'threshold_shield',name:'化学储罐',copy:'生命降至一半时获得屏障，之后周期性获得屏障。'},
   ExecutionersVorpalblade:{kind:'execute_kill',name:'处决链刃',copy:'攻击与技能可处决低生命敌人；击倒后短暂提高伤害与防护。'},
   FleshRipper:{kind:'low_health_ripper',name:'血肉撕裂者',copy:'生命降至阈值时恢复生命并短暂强化攻击；强化版首次阵亡后复起。'},
-  PiltovenHexplating:{kind:'stacking_hexarmor',name:'皮尔特沃夫六边装甲',copy:'受击叠加双抗；叠满后反击附近敌人。'},
-  ShimmerBloom:{kind:'team_shimmer_bloom',name:'微光绽放',copy:'周期性为持有者及低生命队友提供护盾；强化版同时提升其战力。'},
+  PiltovenHexplating:{kind:'stacking_hexarmor',name:'皮尔特沃夫六边装甲',copy:'受击叠加防御力与法术抗性；叠满后反击附近敌人。'},
+  ShimmerBloom:{kind:'team_shimmer_bloom',name:'微光绽放',copy:'周期性为持有者及低生命队友提供屏障；强化版同时提升其战力。'},
   UnleashedToxins:{kind:'skill_toxins',name:'释放毒素',copy:'攻击回复技力，施放技能后向目标发射法术毒弹；强化版另有范围毒浪。'},
   VirulentVirus:{kind:'skill_virus',name:'毒性病毒',copy:'技能命中使敌人持续承受真实伤害；强化版还会削弱感染者。'},
   VoltaicSaber:{kind:'voltaic_saber',name:'电涌军刀',copy:'累计受击与攻击后向低生命敌人释放电击；强化版触发时提高攻速。'},
@@ -92,20 +93,31 @@ function chemStats(effects={}){
     ap:Number(effects.AP??0),mana:Number(effects.Mana??0),atkPct:Number(effects.AD??0),aspd:Number(effects.AS??0),critChance:Number(effects.CritChance??0),
     omnivamp:Number(effects.StatOmnivamp??0),reducedDamage:Number(effects.ReducedDamage??0)};
 }
-function chemStatCopy(stats){return [stats.health?`生命值+${stats.health}`:'',stats.armor?`护甲评分+${stats.armor}`:'',stats.magicResist?`法抗评分+${stats.magicResist}`:'',stats.ap?`法术伤害提高${stats.ap}%`:'',stats.mana?`开战技力为固定技能消耗的${stats.mana}%`:'',stats.atkPct?`攻击力提高${Math.round(stats.atkPct*100)}%`:'',stats.aspd?`攻击速度+${stats.aspd}`:'',stats.critChance?`暴击率+${stats.critChance}%`:'',stats.omnivamp?`伤害转化为${Math.round(stats.omnivamp*100)}%生命恢复`:''].filter(Boolean).join('，');}
+// Player text uses the game's own terms. How the Set 13 stat words are carried over:
+//  - armor / magic resist rating r reduces damage by r/(100+r) (the ratio prototype-resistance.js maps to native
+//    defense and resistance), written as the native "受到的物理与法术伤害降低X%"
+//  - ability power is the stat row's 法术伤害提高N% (artsDealtMul); shields are HP shields, native 屏障, sized by 生命上限
+//  - critical chance adds points to the mode's base attack crit chance, a hit deals PROTOTYPE_CRIT_BASE_MULTIPLIER of its damage
+//  - omnivamp is 伤害转化为N%生命恢复
+const ratingReductionPct=(rating)=>Math.round(100*rating/(100+rating));
+function chemDefenseCopy(armor,magicResist){
+  if(armor&&armor===magicResist)return `受到的物理与法术伤害降低${ratingReductionPct(armor)}%`;
+  return [armor?`受到的物理伤害降低${ratingReductionPct(armor)}%`:'',magicResist?`受到的法术伤害降低${ratingReductionPct(magicResist)}%`:''].filter(Boolean).join('，');
+}
+function chemStatCopy(stats){return [stats.health?`生命值+${stats.health}`:'',chemDefenseCopy(stats.armor,stats.magicResist),stats.ap?`法术伤害提高${stats.ap}%`:'',stats.mana?`开战技力为固定技能消耗的${stats.mana}%`:'',stats.atkPct?`攻击力提高${Math.round(stats.atkPct*100)}%`:'',stats.aspd?`攻击速度+${stats.aspd}`:'',stats.critChance?`攻击造成${Math.round(PROTOTYPE_CRIT_BASE_MULTIPLIER*100)}%伤害的概率+${stats.critChance}%`:'',stats.omnivamp?`伤害转化为${Math.round(stats.omnivamp*100)}%生命恢复`:''].filter(Boolean).join('，');}
 const pct=(value)=>`${Math.round(Number(value??0)*100)}%`;
 const chemMechanicCopy=(family,effects,tier)=>{
   const v=(key,fallback=0)=>Number(effects[key]??fallback),perfect=tier==='Prismatic'||tier==='OmegaPrismatic';
   switch(family){
     case 'ChemGrips':return `受到的伤害降低${v('ReducedDamage')}%。`;
-    case 'MageGuard':return `每${v('TickRate',5)}秒额外获得${v('APPerTick',10)}点法术强度。`;
+    case 'MageGuard':return `每${v('TickRate',5)}秒法术伤害额外提高${v('APPerTick',10)}%，可叠加。`;
     case 'MiningGauntlet':return `普通攻击额外造成${v('BonusDamageOnAttack',15)}点真实伤害。`;
-    case 'DestabilizedChemtank':return `生命降至${pct(v('HealthThreshold',.5))}时，获得相当于最大生命${pct(v('InitialPercentShield',.2))}的护盾；之后每${v('TickRate',8)}秒获得${pct(v('PercentShield',.1))}护盾。${perfect?`每次获得护盾后，对附近${v('PrismaticNumChampions')}名敌人造成其最大生命${pct(v('PrismaticDamagePercent'))}的法术伤害。`:''}`;
+    case 'DestabilizedChemtank':return `生命降至${pct(v('HealthThreshold',.5))}时，获得相当于生命上限${pct(v('InitialPercentShield',.2))}的屏障；之后每${v('TickRate',8)}秒获得相当于生命上限${pct(v('PercentShield',.1))}的屏障。${perfect?`每次获得屏障后，对附近${v('PrismaticNumChampions')}名敌人造成其最大生命${pct(v('PrismaticDamagePercent'))}的法术伤害。`:''}`;
     case 'ExecutionersVorpalblade':return `攻击或技能可处决生命低于${pct(v('ExecuteThreshold',.1))}的敌人；击倒后${v('Duration',5)}秒内伤害提高${pct(v('OnKillDA',.1))}、受到伤害降低${pct(v('OnKillDR',.1))}。${perfect?`处决另获${v('PrismaticGold')}枚金币并恢复${v('PrismaticHeal')}生命。`:''}`;
-    case 'FleshRipper':return `生命降至${pct(v('HealthThreshold',.4))}时短暂无法被敌人选中，恢复最大生命${pct(v('PercentHeal',.25))}，并获得攻击力${pct(v('EnhancedAD',.1))}与全能吸血${pct(v('EnhancedOmnivamp',.1))}，持续5秒。${perfect?`首次阵亡后以最大生命${pct(v('PrismaticReviveHeal',1))}复起。`:''}`;
-    case 'PiltovenHexplating':return `每次受击获得${v('ArmorPerStack',3)}护甲评分与法抗评分，最多${v('MaxStacks',15)}层；叠满后每${v('Cooldown',2)}秒对${v('HexRange',1)}格内敌人造成相当于自身双抗评分总和${pct(v('ResistancePercentageDamage',.5))}的${perfect?'真实':'法术'}伤害。`;
-    case 'ShimmerBloom':return `治疗与护盾效果提高${pct(v('IncreasedHealShieldPercent',.2))}；每${v('Cadence',8)}秒为自己及生命最低的${v('NumAllies',2)}名队友提供${v('ShieldAmount',300)}点护盾，持续${v('ShieldDuration',10)}秒。${perfect?`受治疗或护盾的队友另获${v('PrismaticAllyAP',30)}点法术强度与${pct(v('PrismaticAllyAS',.3))}攻击速度。`:''}`;
-    case 'UnleashedToxins':return `每次普攻额外获得固定技能消耗的${v('ExtraManaOnAttack',5)}%技力；技能结束后向当前目标发射${v('NumMissiles',3)}枚毒弹，每枚造成${v('FlatDamage',100)}点法术伤害。${perfect?`另造成${v('PrismaticWaveDamage',450)}点范围法术伤害并使敌人停顿${v('PrismaticWaveStunDuration',1.5)}秒。`:''}`;
+    case 'FleshRipper':return `生命降至${pct(v('HealthThreshold',.4))}时短暂无法被敌人选中，恢复最大生命${pct(v('PercentHeal',.25))}，并使攻击力提高${pct(v('EnhancedAD',.1))}、伤害的${pct(v('EnhancedOmnivamp',.1))}转化为生命恢复，持续5秒。${perfect?`首次被击倒时立刻复活并恢复${pct(v('PrismaticReviveHeal',1))}最大生命值。`:''}`;
+    case 'PiltovenHexplating':return `每次受击使受到的物理与法术伤害降幅提高，最多${v('MaxStacks',15)}层，叠满后共降低${ratingReductionPct(v('Armor')+v('ArmorPerStack',3)*v('MaxStacks',15))}%；叠满后每${v('Cooldown',2)}秒对${v('HexRange',1)}格内敌人造成相当于自身防御力与法术抗性之和${pct(v('ResistancePercentageDamage',.5))}的${perfect?'真实':'法术'}伤害。`;
+    case 'ShimmerBloom':return `治疗与屏障效果提高${pct(v('IncreasedHealShieldPercent',.2))}；每${v('Cadence',8)}秒为自己及生命最低的${v('NumAllies',2)}名队友提供${v('ShieldAmount',300)}点屏障，持续${v('ShieldDuration',10)}秒。${perfect?`受屏障的队友另获法术伤害提高${v('PrismaticAllyAP',30)}%、攻击速度+${Math.round(v('PrismaticAllyAS',.3)*100)}。`:''}`;
+    case 'UnleashedToxins':return `每次普通攻击额外获得固定技能消耗的${v('ExtraManaOnAttack',5)}%技力；技能结束后向当前目标发射${v('NumMissiles',3)}枚毒弹，每枚造成${v('FlatDamage',100)}点法术伤害。${perfect?`另造成${v('PrismaticWaveDamage',450)}点范围法术伤害并使敌人停顿${v('PrismaticWaveStunDuration',1.5)}秒。`:''}`;
     case 'VirulentVirus':return `技能伤害使敌人额外承受${pct(v('DoTPercentDamage',.15))}伤害，持续${v('Duration',3)}秒。${perfect?`感染敌人造成的伤害降低${pct(v('PrismaticReducedDamage',.25))}；其阵亡后成为我方援军，生命${v('PrismaticZombieHealth',1600)}并逐渐衰减（${v('PrismaticZombieDecayDuration',8)}秒）。`:''}`;
     case 'VoltaicSaber':return `每累计${v('NumDamageInstances',6)}次伤害，对生命最低的${v('NumEnemies',2)}名敌人各造成${v('JoltDamage',150)}点物理伤害。${perfect?`每次电击另提高${pct(v('PrismaticASPerTrigger',.2))}攻击速度。`:''}`;
     case 'DimensionalHeirloom':return `战斗中每${v('Cadence',4)}秒召唤一名纸偶幻影，继承持有者35%生命与攻击，持续6秒。`;
@@ -127,7 +139,7 @@ function adaptChemItem(row,season=null){
     :family==='FleshRipper'
       ?'来源描述短暂强化但未提供强化时长；本模式将强化时长映射为5秒。'
       :family==='VirulentVirus'&&bronze.perfected
-        ?'来源记录感染者阵亡后以1600生命加入持有者阵营并在8秒内衰减；本模式保留原敌人的攻击与双抗，并使用既有纸偶外观且不装载其原技能。'
+        ?'来源记录感染者阵亡后以1600生命加入持有者阵营并在8秒内衰减；本模式保留原敌人的攻击、防御力与法术抗性，并使用既有纸偶外观且不装载其原技能。'
         :null;
   return {id:apiName.startsWith('TFT13_Crime_Bronze_')?({ChemGrips:'prototype_chem_salvaged_contraption',MageGuard:'prototype_chem_salvaged_revolver',MiningGauntlet:'prototype_chem_salvaged_gauntlet'}[family]):`prototype_chem13_${apiName.replace(/^TFT13_Crime_/,'').replace(/[^A-Za-z0-9]+/g,'_').toLowerCase()}`,
     sourceApiName:apiName,sourceName,tier,name,description:`${chemStatCopy(stats)?`${chemStatCopy(stats)}。`:''}${chemMechanicCopy(family,effects,tier)}`,sourceDescription:row.description??row.desc??'',modeAdaptation,
@@ -282,7 +294,7 @@ export function applyPrototypeEconomy(catalog={}) {
     const stats={...row.stats,health:nativeFlatAmount(catalog.prototypeSeason,row.stats?.health??0)};
     const effect=structuredClone(row.effect);
     if(effect.kind==='attack_true_damage')effect.amount=nativeFlatAmount(catalog.prototypeSeason,effect.amount);
-    const description=`${chemStatCopy(stats)?`${chemStatCopy(stats)}。`:''}${row.sourceApiName.endsWith('ChemGrips')?`受到的伤害降低${effect.amount}%。`:row.sourceApiName.endsWith('MageGuard')?`每${effect.interval}秒额外获得${effect.perTickPct}点法术强度。`:`普攻额外造成${effect.amount}点真实伤害。`}`;
+    const description=`${chemStatCopy(stats)?`${chemStatCopy(stats)}。`:''}${row.sourceApiName.endsWith('ChemGrips')?`受到的伤害降低${effect.amount}%。`:row.sourceApiName.endsWith('MageGuard')?`每${effect.interval}秒法术伤害额外提高${effect.perTickPct}%，可叠加。`:`普通攻击额外造成${effect.amount}点真实伤害。`}`;
     return {...row,sourceEffects,effectiveEffects,stats,effect,description};
   });
   const chemById=new Map(projectedChem.map((row)=>[row.id,row]));

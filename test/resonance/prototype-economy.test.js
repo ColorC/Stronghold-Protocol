@@ -154,8 +154,9 @@ test('all 28 Chem-Baron tier descriptions expand source values into readable Chi
   for(const row of rows){
     assert.ok(row.description.length>12,`${row.id} has a usable effect description`);
     assert.doesNotMatch(row.description,/@[A-Za-z{}]|<[^>]+>|source unknown|未实现/i,`${row.id} has no unresolved source template or process copy`);
+    assert.doesNotMatch(row.description,/评分|护盾|法术强度|暴击率|全能吸血|普攻|双抗/,`${row.id} is written in the game's own terms`);
   }
-  assert.match(rows.find(row=>row.source.apiName==='TFT13_Crime_Prismatic_ShimmerBloom').description,/每6秒.*600点护盾.*30点法术强度.*30%攻击速度/);
+  assert.match(rows.find(row=>row.source.apiName==='TFT13_Crime_Prismatic_ShimmerBloom').description,/每6秒.*600点屏障.*法术伤害提高30%.*攻击速度\+30/);
   assert.match(rows.find(row=>row.source.apiName==='TFT13_Crime_Prismatic_VirulentVirus').description,/25%.*1600.*8秒/);
   assert.match(rows.find(row=>row.source.apiName==='TFT13_Crime_Gold_FleshRipper').description,/持续5秒/);
   assert.match(rows.find(row=>row.source.apiName==='TFT13_Crime_OmegaPrismatic_DimensionalHeirloom').prototypeModeAdaptation,/35%生命与攻击、持续6秒/);

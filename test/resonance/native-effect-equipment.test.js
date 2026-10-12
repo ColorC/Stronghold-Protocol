@@ -27,7 +27,7 @@ test('Chem equipment uses native flat amounts while source items route to native
   assert.equal(chem.prototypeSourceEffects.ShieldAmount,chemSource.effects.ShieldAmount);
   assert.equal(chem.prototypeEffectiveEffects.ShieldAmount,chemSource.effects.ShieldAmount*4);
   assert.equal(chem.prototypeEffectiveEffects.Cadence,chem.prototypeSourceEffects.Cadence,'time remains unchanged');
-  assert.ok(chem.description.includes(`${chemSource.effects.ShieldAmount*4}点护盾`));
+  assert.ok(chem.description.includes(`${chemSource.effects.ShieldAmount*4}点屏障`));
   const bronze=nativeEconomy.equipment.prototype_chem_salvaged_contraption;
   assert.equal(bronze.prototypeEffectiveEffects.Health,bronze.prototypeSourceEffects.Health*4);
   assert.equal(bronze.prototypeEffectiveEffects.Armor,bronze.prototypeSourceEffects.Armor,'armor rating remains unchanged');
