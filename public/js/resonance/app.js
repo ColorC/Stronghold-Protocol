@@ -37,7 +37,15 @@ function difficultyCampaignSummary(campaign, id) {
   const profile = campaign?.enemyBalance?.byDifficulty?.[id]?.regular || campaign?.enemyBalance?.regular;
   const terminal = campaign?.enemyBalance?.byDifficulty?.[id]?.terminal || campaign?.enemyBalance?.terminal;
   const percent = (value) => Number.isFinite(Number(value)) ? `${Math.round(Number(value) * 100)}%` : null;
-  const regularText = profile ? `常规敌人：生命${percent(profile.hpMultiplier)} · 攻击${percent(profile.atkMultiplier)} · 防御${percent(profile.defMultiplier)}` : '';
+  // regular enemies rise along the difficulty's node curve: show the first and last node's value
+  const curve = campaign?.enemyBalance?.nodeCurve?.[id];
+  const ends = Array.isArray(curve) && curve.length ? [curve[0], curve[curve.length - 1]] : null;
+  const span = (key) => {
+    if (!ends || ends[0][key] === ends[1][key]) return percent(profile[key] * (ends?.[0][key] ?? 1));
+    return `${percent(profile[key] * ends[0][key])}～${percent(profile[key] * ends[1][key])}`;
+  };
+  const rising = ends && (ends[0].hpMultiplier !== ends[1].hpMultiplier || ends[0].atkMultiplier !== ends[1].atkMultiplier);
+  const regularText = profile ? `常规敌人：生命${span('hpMultiplier')} · 攻击${span('atkMultiplier')} · 防御${percent(profile.defMultiplier)}${rising ? '，随节点逐步提升' : ''}` : '';
   const terminalText = terminal && (terminal.hpMultiplier !== profile?.hpMultiplier || terminal.atkMultiplier !== profile?.atkMultiplier || terminal.defMultiplier !== profile?.defMultiplier)
     ? `领袖：生命${percent(terminal.hpMultiplier)} · 攻击${percent(terminal.atkMultiplier)} · 防御${percent(terminal.defMultiplier)}` : '';
   const nodes = Number(schedule.nodes) || 0;

@@ -110,6 +110,13 @@ for (const difficulty of ['NORMAL', 'FUNNY', 'HARD', 'ABYSS']) {
   const terminal = row.terminal ?? {};
   push(`| ${difficulty} | ${regular.hpMultiplier ?? '—'} / ${regular.atkMultiplier ?? '—'} / ${regular.defMultiplier ?? '—'} | ${terminal.hpMultiplier ?? '—'} / ${terminal.atkMultiplier ?? '—'} / ${terminal.defMultiplier ?? '—'} / ${terminal.bossPoolMultiplier ?? '—'} |`);
 }
+const nodeCurve = enemy.nodeCurve ?? {};
+if (Object.keys(nodeCurve).length) {
+  push('', '普通与精英节点的敌人生命、攻击再乘本难度的节点曲线（节点之间线性过渡，两端之外取端点值）；领袖节点与防御不乘曲线。', '', '| 难度 | 节点：生命× / 攻击× |', '|---|---|');
+  for (const difficulty of ['NORMAL', 'FUNNY', 'HARD', 'ABYSS']) {
+    if (nodeCurve[difficulty]) push(`| ${difficulty} | ${nodeCurve[difficulty].map((point) => `${point.node}：${point.hpMultiplier} / ${point.atkMultiplier}`).join('；')} |`);
+  }
+}
 const supply = catalog.campaign.supply ?? {};
 push('', `补给：组件节点 ${supply.components?.nodes?.join('、') ?? '—'}（每节点 ${supply.components?.countPerNode ?? '—'} 件）；转职节点 ${(supply.transfers ?? []).map((row) => `${row.node}（${row.count}）`).join('、') || '—'}；经验节点 ${(supply.xp ?? []).map((row) => `${row.node}（${row.amount}）`).join('、') || '—'}。策略节点：${(catalog.campaign.strategyNodes ?? []).join(' / ')}。`, '');
 

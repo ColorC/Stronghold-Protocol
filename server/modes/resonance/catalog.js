@@ -14,6 +14,7 @@ import { applyPrototypeStrategies } from '../../../shared/resonance/prototype-st
 import { applyPrototypeEconomy, prototypeEconomyRules } from '../../../shared/resonance/prototype-economy.js';
 import { applyPrototypeSourceGear } from '../../../shared/resonance/prototype-source-gear.js';
 import { applyOperatorAdaptations } from '../../../shared/resonance/operator-adaptations.js';
+import { enemyNodeCurve } from '../../../shared/resonance/enemy-curve.js';
 
 const clone = (value) => structuredClone(value);
 const operatorCache = new WeakMap();
@@ -160,6 +161,8 @@ export function getResonanceCatalog(data = getData(), options = {}) {
     // a season may name its own pact-transfer supply nodes (season 2: one, so a run gains one to three transfers)
     campaign.supply.transfers=(season.supplyTransfers??campaign.supply.transfers??[]).map((entry)=>({...entry,selection:'viable-pact'}));
     campaign.poolByCost=Object.fromEntries([1,2,3,4,5].map((cost)=>[cost,activeOperatorIds.filter((id)=>seasonOperators[id].cost===cost).length]));
+    // regular-wave HP and ATK rise along each difficulty's node curve (shared/resonance/enemy-curve.js)
+    campaign.enemyBalance={...campaign.enemyBalance,nodeCurve:clone(enemyNodeCurve)};
     currentCatalog.campaign=campaign;
     currentCatalog.season={id:seasonForConsumers.id,displayName:seasonForConsumers.displayName};
     currentCatalog.prototypeMeta={seasonId:seasonForConsumers.id,rulesVersion:3,exactCounts:Object.values(currentCatalog.pacts).flatMap((pact)=>pact.exactCounts.map((count)=>({traitId:pact.id,count}))),traits:seasonForConsumers.traits,currentFeeAdjustments:seasonForConsumers.heroes.filter((hero)=>hero.currentFeeAdjustment).map((hero)=>({apiName:hero.apiName,operatorId:hero.sourceChessId,operatorName:hero.operatorName,cost:hero.cost,...clone(hero.currentFeeAdjustment)})),hooks:['onPrototypePrep','onPrototypeBattleResult']};
