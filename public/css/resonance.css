@@ -216,8 +216,11 @@ body { background: #101512; color: var(--rs-text); }
 .rs-native-match .rs-native-resonance-panel__head button { width: 36px; min-width: 36px; height: 36px; color: #d7e5dc; background: #18251f; border: 1px solid var(--line-2); font-size: max(.14rem,14px); cursor: pointer; }
 .rs-native-match .rs-native-resonance-panel__body { flex: 1; min-height: 0; overflow: auto; padding: .1rem; }
 .rs-native-match .rs-native-resonance-panel__body > .rs-panel { max-height: none; }
-.rs-native-match .rs-native-equipment-rail { position: absolute; z-index: 12; left: max(10px,env(safe-area-inset-left,0px)); top: max(82px,calc(.86rem + env(safe-area-inset-top,0px))); bottom: calc(2.82rem + env(safe-area-inset-bottom,0px)); width: 48px; display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
-.rs-native-match .rs-native-equipment-rail .rs-equipment-dock__items { min-height: 0; display: flex; flex-direction: column; align-items: center; gap: .045rem; overflow: auto; scrollbar-width: none; pointer-events: auto; }
+/* The rail is NOT a stacking context (no z-index): its drag previews (.rs-equipment-dock__preview / __field-preview, fixed, z 80)
+   then sit in the match screen's own stacking order, above the HUD (3, or 70 while a card / panel is open: bond strip,
+   detail panel) and below the codex overlay (90+). Only the item list and the open button take z 12 themselves. */
+.rs-native-match .rs-native-equipment-rail { position: absolute; left: max(10px,env(safe-area-inset-left,0px)); top: max(82px,calc(.86rem + env(safe-area-inset-top,0px))); bottom: calc(2.82rem + env(safe-area-inset-bottom,0px)); width: 48px; display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
+.rs-native-match .rs-native-equipment-rail .rs-equipment-dock__items { position: relative; z-index: 12; min-height: 0; display: flex; flex-direction: column; align-items: center; gap: .045rem; overflow: auto; scrollbar-width: none; pointer-events: auto; }
 .rs-native-match .rs-native-equipment-rail .rs-equipment-dock__items::-webkit-scrollbar { display: none; }
 .rs-native-match .rs-native-equipment-rail .rs-equipment-dock__slot { position: relative; width: .48rem; height: .48rem; flex: none; }
 .rs-native-match .rs-native-equipment-rail .rs-equipment-dock__item { display: grid; place-items: center; width: 46px; height: 46px; padding: 3px; color: var(--text-hi); background: rgba(8,13,11,.92); border: 1px solid var(--line-2); box-shadow: inset 0 0 0 1px rgba(147,176,162,.72); box-shadow: inset 0 0 0 1px color-mix(in srgb,var(--equipment-tier,#93b0a2) 72%,transparent); cursor: grab; pointer-events: auto; }
@@ -228,7 +231,7 @@ body { background: #101512; color: var(--rs-text); }
 .rs-native-match .rs-native-equipment-rail .rs-equipment-dock__item[data-tier="5"] { --equipment-tier: #ffc600; }
 .rs-native-match .rs-native-equipment-rail .rs-equipment-dock__item[data-tier="6"] { --equipment-tier: #ff6b3d; }
 .rs-native-match .rs-native-equipment-rail .rs-equipment-dock__item .rs-item-icon { width: 100%; height: 100%; }
-.rs-native-match .rs-native-equipment-rail .rs-equipment-dock__open { position: relative; flex: none; display: grid; place-items: center; width: 46px; height: 44px; padding: 3px; color: var(--text-hi); background: rgba(8,13,11,.92); border: 1px solid var(--line-2); pointer-events: auto; }
+.rs-native-match .rs-native-equipment-rail .rs-equipment-dock__open { position: relative; z-index: 12; flex: none; display: grid; place-items: center; width: 46px; height: 44px; padding: 3px; color: var(--text-hi); background: rgba(8,13,11,.92); border: 1px solid var(--line-2); pointer-events: auto; }
 .rs-native-match .rs-native-equipment-rail .rs-equipment-dock__open .icon { width: .2rem; height: .2rem; }
 .rs-native-match .rs-native-equipment-rail .rs-equipment-dock__open small { position: absolute; right: -.04rem; bottom: -.03rem; min-width: .13rem; color: var(--text-hi); background: var(--mint-700); font-size: max(.09rem, 14px); text-align: center; }
 .rs-native-match .rs-native-pact-matrix { display: flex; flex-direction: column; gap: .08rem; padding: .08rem; color: #d7e5dc; background: transparent; border: 0; }
@@ -532,6 +535,7 @@ body { background: #101512; color: var(--rs-text); }
 .rs-equipment-dock__preview { width: min(320px, calc(100vw - 16px)); align-items: flex-start; }
 .rs-equipment-dock__field-preview.is-anchored { position: fixed; z-index: 80; left: 0; top: 0; width: min(320px, calc(100vw - 16px)); min-width: 0; box-sizing: border-box; padding: 7px 10px; }
 .rs-equipment-dock__field-preview .rs-merge-preview small, .rs-equipment-dock__field-preview .rs-merge-preview span { max-width: none; }
+.rs-equipment-dock__field-preview.is-anchored > small { max-width: none; }
 .rs-equipment-dock__field-preview:not(.is-anchored) .rs-merge-preview { width: min(300px, calc(100vw - 80px)); }
 .rs-merge-table { display: grid; gap: .06rem; }
 .rs-merge-row { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: center; column-gap: .06rem; row-gap: .03rem; padding: .06rem .08rem; background: rgba(255,255,255,.03); border: 1px solid var(--line); }

@@ -23,7 +23,7 @@ export function MergePreview({ catalog, resultId, lead }) {
 export function InventoryDock({ state, catalog, onDetail, onOpen, onCombine, fieldTargetUid = null, fieldAnchor = null, busy = false, className = '' }) {
   const [draggedUid, setDraggedUid] = useState(null);
   const [hoverUid, setHoverUid] = useState(null);
-  const previewRef = useRef(null), fieldPreviewRef = useRef(null);
+  const rootRef = useRef(null), previewRef = useRef(null), fieldPreviewRef = useRef(null);
   const [previewPoint, setPreviewPoint] = useState(null), [fieldPoint, setFieldPoint] = useState(null);
   const inventory = state.inventory || [];
   const source = inventory.find(item => String(item.uid) === String(draggedUid)) || null;
@@ -38,7 +38,9 @@ export function InventoryDock({ state, catalog, onDetail, onOpen, onCombine, fie
   useEffect(() => {
     if (!hoveredRecipe) { setPreviewPoint(null); return; }
     const update = () => {
-      const target = document.querySelector(`.rs-equipment-dock__slot[data-item-uid="${CSS.escape(String(hovered.uid))}"]`);
+      // this dock's own slot: the rail and the equipment panel each hold the same items, so a document-wide lookup would
+      // find the rail's slot first and put the panel's preview beside the rail
+      const target = rootRef.current?.querySelector(`.rs-equipment-dock__slot[data-item-uid="${CSS.escape(String(hovered.uid))}"]`);
       const box = previewRef.current;
       if (!target || !box) return;
       setPreviewPoint(besideRect(target.getBoundingClientRect(), box.getBoundingClientRect()));
@@ -62,7 +64,7 @@ export function InventoryDock({ state, catalog, onDetail, onOpen, onCombine, fie
     if (!recipe) return;
     await onCombine({ type: 'combine', itemUids: [source.uid, target.uid] });
   };
-  return html`<aside class=${`rs-equipment-dock ${className}`.trim()} aria-label=${`装备库存 ${inventory.length}`}>
+  return html`<aside ref=${rootRef} class=${`rs-equipment-dock ${className}`.trim()} aria-label=${`装备库存 ${inventory.length}`}>
     <div class="rs-equipment-dock__items">${inventory.map(item => {
       const record = catalog.equipment?.[item.itemId] || {};
       const recipe = source && item.uid !== source.uid ? recipeFor(catalog.recipes, source.itemId, item.itemId) : null;
