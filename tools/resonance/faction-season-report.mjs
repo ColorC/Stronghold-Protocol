@@ -5,6 +5,7 @@ import {loadData} from '../../server/data.js';
 import {getResonanceCatalog} from '../../server/modes/resonance/catalog.js';
 import {factionSeasonV2 as factionSeason} from '../../shared/resonance/faction-season-v2.js';
 import {factionSeason as firstFactionSeason} from '../../shared/resonance/faction-season.js';
+import {OPERATOR_ADAPTATION_RULES,OPERATOR_ADAPTATIONS} from '../../shared/resonance/operator-adaptations.js';
 import {STRONGHOLD_PACT_TUNING,STRONGHOLD_RETIRED_AUGMENTS,STRONGHOLD_RETIRED_ECONOMY_TRAITS} from '../../shared/resonance/stronghold-pacts.js';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 if(!process.env.SP_DATA_DIR)throw new Error('SP_DATA_DIR must name the canonical frozen native data');
@@ -13,6 +14,9 @@ const roles={damage:'输出',frontline:'前排',control:'控制',summoner:'召�
 const report={seasonId:factionSeason.id,source:factionSeason.source,
   poolByCost:factionSeason.costDistribution,
   operators:factionSeason.heroes.map(h=>{const o=catalog.operators[h.sourceChessId];return {id:h.sourceChessId,name:h.operatorName,cost:h.cost,role:roles[h.role],skill:o.fixedSkillId,nativeAffiliation:h.nativeAffiliation,pacts:o.pacts.map(id=>catalog.pacts[id].name),stats:Object.fromEntries([1,2,3].map(star=>[star,o.stars[star].stats]))};}),
+  operatorAdaptations:Object.entries(OPERATOR_ADAPTATIONS).map(([id,row])=>({id,name:row.name,rules:row.rules,pilot:row.pilot??null,
+    texts:[1,2,3].map(star=>{const r=catalog.operators[id].stars[star].record;return {star,trait:r.trait?.desc??null,skill:catalog.playerText.operators[id]?.stars?.[star]?.skillDescription??r.skill?.desc??null,talents:(r.talents??[]).map(t=>`${t.name}：${t.desc}`)};}),
+    star3:catalog.operators[id].stars[3].passive?.description??null})),
   retiredAugments:[...STRONGHOLD_RETIRED_AUGMENTS],retiredEconomyTraits:[...STRONGHOLD_RETIRED_ECONOMY_TRAITS],
   pacts:factionSeason.traits.map(t=>({id:t.id,name:t.name,group:t.group,sourceName:t.sourceName,mechanic:catalog.pacts[t.id].levels[0].effects[0].params.mechanic,redesigned:!!t.strongholdPact,tuning:STRONGHOLD_PACT_TUNING[t.id]??null,fees:t.designReference.sourceMemberFees,members:t.members.map(id=>{const h=factionSeason.heroes.find(x=>x.charId===id);return {name:h.operatorName,cost:h.cost};}),description:catalog.pacts[t.id].summaryDescription,detailNotes:catalog.pacts[t.id].detailNotes??[],levels:catalog.pacts[t.id].levels.map(l=>({min:l.minUnits,max:l.maxUnits,text:l.description}))})),
 };
@@ -37,6 +41,9 @@ const lines=['# 共鸣：阵营赛季','',
 '','## 效果与尺度','',
 '重做的十五个盟约直接使用原生尺度的百分比、秒数与技力；沿用的十一个盟约中固定生命、屏障、治疗和伤害换算到原生尺度，百分比、触发次数、持续时间、技力、金币与人数保持原义。防护评分通过每名干员的原生防御锚点转换。',
 '','废弃的工坊累积盟约层数特质不进入本赛季的战斗记录和原生详情。保留职业特性、天赋、固定技能与实际升星效果。招募价格在费用处显示，免费部署的详情不再混列原版部署点数。',
+'','## 干员改编','','赛季二改写干员自身的效果（`shared/resonance/operator-adaptations.js`），赛季一存档不变。转写规则：','',
+...Object.values(OPERATOR_ADAPTATION_RULES).map(rule=>`- ${rule}`),'',
+...report.operatorAdaptations.flatMap(a=>{const one=a.texts[0],three=a.texts[2],c=text=>String(text??'').replace(/\n/g,'，').replace(/。$/,'');return [`- ${a.name}${a.pilot?`（试点：${{economy:'经济',position:'站位',summon:'召唤',pact:'盟约',star3:'三星质变'}[a.pilot]}）`:''}：特性 ${c(one.trait)}；技能 ${c(one.skill)}；天赋 ${one.talents.map(c).join('；')||'无'}${three.trait!==one.trait?`；三星特性 ${c(three.trait)}`:''}${a.star3?`；三星 ${c(a.star3)}`:''}`];}),
 '',...report.pacts.flatMap(t=>[`### ${t.name}`,'',t.description,'',...t.levels.map(l=>`- ${l.min}人：${l.text}`),'',...t.detailNotes.map(note=>`- ${note.name}实验特效：${note.text}`),'']),
 ];
 for(const [rel,body] of [['docs/resonance/faction-season.json',JSON.stringify(report,null,2)+'\n'],['docs/resonance/faction-season.md',lines.join('\n')+'\n']]){const file=path.join(root,rel);fs.writeFileSync(file,body);console.log(JSON.stringify({path:file,role:'current-season-design',bytes:Buffer.byteLength(body)}));}

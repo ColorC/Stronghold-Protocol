@@ -528,6 +528,9 @@ function mergeOperatorCopies(state, catalog, preferredUid = null) {
       keep.star++;
       state.pieces = state.pieces.filter((piece) => !removed.includes(piece));
       events.push({ type: 'operator-merged', operatorId, uid: keep.uid, star: keep.star, consumedUids: removed.map((piece) => piece.uid), equipmentReturned: overflow.length });
+      // a season-2 adaptation (砾): a cheaper operator pays part of its copies back when it gains a star
+      const mergeGold = Number(opTable(catalog)[operatorId]?.adaptation?.mergeGold?.gold ?? 0);
+      if (mergeGold > 0) { state.gold += mergeGold; events.push({ type: 'operator-merge-gold', operatorId, uid: keep.uid, star: keep.star, gold: mergeGold }); }
       events.push(...equipmentEvents);
       merged = true;
       break;
@@ -598,8 +601,18 @@ function settleBattleRewards(state, catalog, result) {
     piece.growth[growth.key] = Math.min(growth.cap ?? Infinity, Number(piece.growth[growth.key] ?? 0) + growth.amount);
   }
   let battleGold = 0;
+  const bountyLeft = new Map();
   for (const reward of result.coins ?? []) {
     if (!isInt(reward.amount) || reward.amount < 0) throw new Error('BAD_COIN_RESULT');
+    // season-2 kill bounties (格拉尼) are capped per battle by the best star of that operator on the field
+    if (reward.reason === 'operator_bounty') {
+      if (!bountyLeft.has(reward.source)) bountyLeft.set(reward.source, Math.max(0, ...state.pieces.filter((piece) => piece.row !== null && piece.operatorId === reward.source)
+        .map((piece) => Number(opTable(catalog)[piece.operatorId]?.adaptation?.bounty?.capByStar?.[piece.star - 1] ?? 0))));
+      const amount = Math.min(reward.amount, bountyLeft.get(reward.source));
+      bountyLeft.set(reward.source, bountyLeft.get(reward.source) - amount);
+      battleGold += amount;
+      continue;
+    }
     battleGold += reward.amount;
   }
   state.gold += battleGold;
