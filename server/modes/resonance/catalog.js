@@ -16,6 +16,11 @@ import { applyPrototypeSourceGear } from '../../../shared/resonance/prototype-so
 
 const clone = (value) => structuredClone(value);
 const operatorCache = new WeakMap();
+/**
+ * An operator whose native 特性 reads 「不受部署数量限制」 (正义骑士号) is marked `ignoresDeployLimit`: the session counts one such
+ * operator on the field as free of the deploy cap (session.js countedDeployed), and this mode gives it no 盟约.
+ */
+const DEPLOY_FREE_TRAIT = /不受部署数量限制/;
 
 function skillFor(data, sourceChess, skillId, fallback) {
   if (!skillId) return null;
@@ -80,6 +85,7 @@ export function getResonanceCatalog(data = getData(), options = {}) {
     }
     operators[sourceChessId] = {
       ...configured,
+      ...(DEPLOY_FREE_TRAIT.test(normalChess.trait?.desc ?? '') ? { ignoresDeployLimit: true } : {}),
       source: { ...configured.source, normalChess: normalChessView },
       stars,
     };
@@ -88,7 +94,13 @@ export function getResonanceCatalog(data = getData(), options = {}) {
   }
   const catalog = { ...resonanceContent, operators };
   if (rulesVersion === 3) {
-    const season = options.seasonId == null ? getActivePrototypeSeason() : getPrototypeSeason(options.seasonId);
+    const registered = options.seasonId == null ? getActivePrototypeSeason() : getPrototypeSeason(options.seasonId);
+    // an operator free of the deploy cap belongs to no 盟约 here: the season's trait member lists leave it out, so the pacts, their member
+    // lists, the cards' tags and every count that reads them agree
+    const unaffiliated = new Set(Object.values(operators).filter((operator) => operator.ignoresDeployLimit).map((operator) => operator.charId));
+    const season = unaffiliated.size
+      ? { ...registered, traits: registered.traits.map((trait) => ({ ...trait, members: trait.members.filter((charId) => !unaffiliated.has(charId)) })) }
+      : registered;
     const seasonId = season.id;
     const seasonOperators = { ...operators };
     const traitIdsByCharId = new Map();
@@ -129,7 +141,7 @@ export function getResonanceCatalog(data = getData(), options = {}) {
       effectiveHeroes.push(season.powerModel==='native-pve'
         ?{...hero,sourcePowerReference:clone(hero.powerReference??{}),powerReference:clone(powerReference),nativePowerReference:clone(powerReference)}
         :hero);
-      seasonOperators[hero.sourceChessId]={...original,cost:hero.cost,role:hero.role,pacts:[...new Set(traitIdsByCharId.get(hero.charId)??[])],currentFeeAdjustment:hero.currentFeeAdjustment?clone(hero.currentFeeAdjustment):null,stars,nativePowerReference:clone(powerReference),source:{...original.source,normalChess:{...original.source.normalChess,tier:hero.cost}}};
+      seasonOperators[hero.sourceChessId]={...original,cost:hero.cost,role:hero.role,pacts:[...new Set(unaffiliated.has(hero.charId)?[]:traitIdsByCharId.get(hero.charId)??[])],currentFeeAdjustment:hero.currentFeeAdjustment?clone(hero.currentFeeAdjustment):null,stars,nativePowerReference:clone(powerReference),source:{...original.source,normalChess:{...original.source.normalChess,tier:hero.cost}}};
       activeOperatorIds.push(hero.sourceChessId);
     }
     const seasonForConsumers=season.powerModel==='native-pve'?{...season,heroes:effectiveHeroes}:season;

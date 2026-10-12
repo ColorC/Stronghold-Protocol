@@ -1217,6 +1217,21 @@ function unitAllowed(ctx, piece, row, col, owner = null) {
 }
 
 /**
+ * Whether putting `incoming` on the field while `leaving` (the swapped-out chess, or null) comes off breaks the deploy cap.
+ * A mode that marks a chess `ignoresDeployLimit` (共鸣's 正义骑士号: 「不受部署数量限制」) counts one such chess on the field as free
+ * — the server's countedDeployed — so the population is recounted from the pieces; without such a chess it is the plain
+ * rule: only an operator that is not replacing another one needs a free slot (priv.deployCount / deployCap).
+ */
+function breaksDeployCap(ctx, incoming, leaving) {
+  const board = [...ctx.pieces.values()].filter((e) => e.area === 'board' && e.piece.kind === 'chess');
+  const involved = incoming?.ignoresDeployLimit === true || leaving?.ignoresDeployLimit === true || board.some((e) => e.piece.ignoresDeployLimit === true);
+  if (!involved) return !leaving && ctx.count >= ctx.cap;
+  const on = board.map((e) => e.piece).filter((piece) => piece !== leaving);
+  if (incoming) on.push(incoming);
+  return on.length - (on.some((piece) => piece.ignoresDeployLimit === true) ? 1 : 0) > ctx.cap;
+}
+
+/**
  * Placement legality of dropping piece `uid` on `target` (mirror of server/match/PlayerState.js move / equip /
  * useArt and server/match/board.js canPlace):
  *   board ← chess: legal tile for its position; empty tile or a chess occupant (swap; from the board the occupant
@@ -1254,6 +1269,8 @@ export function canPlace(ctx, uid, target) {
       if (piece.kind === 'token') return { ok: true, action: 'move' }; // back onto its stack
       if (occ.piece.kind === 'chess') {
         if (!tileAllows(ctx, occ.piece, src.row, src.col)) return no('BAD_TILE', '交换后的单位无法部署在原位置');
+        // the bench operator comes up while this one goes down: only a free operator changes the counted population
+        if (breaksDeployCap(ctx, occ.piece, piece)) return no('BOARD_FULL', '已达到部署上限');
         return { ok: true, action: 'swap' };
       }
       // the withdrawn operator goes to another free slot
@@ -1300,7 +1317,7 @@ export function canPlace(ctx, uid, target) {
       if (Number.isInteger(piece.ownerUid) && !ownerDeployed) return no('BAD_TARGET', '召唤者尚未部署');
       return { ok: true, action: 'move' };
     }
-    if ((!occ || occ.piece.kind !== 'chess') && ctx.count >= ctx.cap) return no('BOARD_FULL', '已达到部署上限');
+    if (breaksDeployCap(ctx, piece, occ && occ.piece.kind === 'chess' ? occ.piece : null)) return no('BOARD_FULL', '已达到部署上限');
     return { ok: true, action: occ ? 'swap' : 'move' };
   }
   return no('BAD_TILE', '无法放置在该位置');

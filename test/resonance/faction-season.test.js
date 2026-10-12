@@ -77,7 +77,10 @@ test('all granted operators are active, and trait grants belong to the granting 
     const pact=catalog.pacts[row.traitId];
     for(const reward of row.grantedHeroes??[]){
       assert.ok(active.has(reward.operatorId),row.apiName);
-      if(pact)assert.ok(pact.members.includes(reward.operatorId),`${row.apiName}: ${reward.name}`);
+      // an operator free of the deploy cap (正义骑士号) belongs to no 盟约 this season, whatever its source row granted
+      const unaffiliated=catalog.operators[reward.operatorId]?.ignoresDeployLimit===true;
+      if(pact&&!unaffiliated)assert.ok(pact.members.includes(reward.operatorId),`${row.apiName}: ${reward.name}`);
+      if(pact&&unaffiliated)assert.ok(!pact.members.includes(reward.operatorId),`${row.apiName}: ${reward.name} is in no pact`);
     }
   }
 });

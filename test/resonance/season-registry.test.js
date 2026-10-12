@@ -63,14 +63,18 @@ test('new sessions use active faction season 2 while Set 13 and faction season 1
   assert.equal(restoredActive.config.seasonId,factionSeasonV2.id);
   assert.deepEqual(restoredActive.config.activeOperatorIds,factionSeasonV2.heroes.map(hero=>hero.sourceChessId));
   assert.deepEqual(restoredOld.config.activeOperatorIds,prototypeSeason.heroes.map(hero=>hero.sourceChessId));
-  assert.deepEqual(JSON.parse(JSON.stringify(restoredActive.prototypeMeta.traits)),JSON.parse(JSON.stringify(factionSeasonV2.traits)));
+  // an operator free of the deploy cap (正义骑士号) is in no pact this season: the trait member lists leave it out, nothing else differs
+  const unaffiliated=new Set(Object.values(restoredActive.operators).filter(operator=>operator.ignoresDeployLimit).map(operator=>operator.charId));
+  const withoutUnaffiliated=trait=>({...trait,members:trait.members.filter(id=>!unaffiliated.has(id))});
+  assert.equal(unaffiliated.size,1);
+  assert.deepEqual(JSON.parse(JSON.stringify(restoredActive.prototypeMeta.traits)),JSON.parse(JSON.stringify(factionSeasonV2.traits.map(withoutUnaffiliated))));
   assert.deepEqual(JSON.parse(JSON.stringify(restoredOld.prototypeMeta.traits)),JSON.parse(JSON.stringify(prototypeSeason.traits)));
   const activeIds=new Set(restoredActive.config.activeOperatorIds);
   for(const trait of factionSeasonV2.traits){
     const pact=restoredActive.pacts[trait.id];
     assert.equal(pact.group,trait.group??'prototype-natural-trait',trait.id);
     assert.equal(pact.nativeIconPath,trait.nativeIconPath,trait.id);
-    assert.deepEqual(pact.memberCharIds,[...trait.members],trait.id);
+    assert.deepEqual(pact.memberCharIds,[...withoutUnaffiliated(trait).members],trait.id);
     assert.ok(pact.members.every((id)=>activeIds.has(id)),`${trait.id} has no operators from another season`);
   }
 });

@@ -9,12 +9,14 @@ import {STRONGHOLD_PACT_TUNING,STRONGHOLD_RETIRED_AUGMENTS,STRONGHOLD_RETIRED_EC
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 if(!process.env.SP_DATA_DIR)throw new Error('SP_DATA_DIR must name the canonical frozen native data');
 const catalog=getResonanceCatalog(loadData(process.env.SP_DATA_DIR,{log:{warn(){},error(){}}}),{rulesVersion:3,seasonId:factionSeason.id});
+// operators free of the deploy cap (正义骑士号) belong to no 盟约: the catalog already leaves them out of every pact's members
+const unaffiliated=new Set(Object.values(catalog.operators).filter(operator=>operator.ignoresDeployLimit).map(operator=>operator.charId));
 const roles={damage:'输出',frontline:'前排',control:'控制',summoner:'召唤',support:'支援',healer:'治疗'};
 const report={seasonId:factionSeason.id,source:factionSeason.source,
   poolByCost:factionSeason.costDistribution,
   operators:factionSeason.heroes.map(h=>{const o=catalog.operators[h.sourceChessId];return {id:h.sourceChessId,name:h.operatorName,cost:h.cost,role:roles[h.role],skill:o.fixedSkillId,nativeAffiliation:h.nativeAffiliation,pacts:o.pacts.map(id=>catalog.pacts[id].name),stats:Object.fromEntries([1,2,3].map(star=>[star,o.stars[star].stats]))};}),
   retiredAugments:[...STRONGHOLD_RETIRED_AUGMENTS],retiredEconomyTraits:[...STRONGHOLD_RETIRED_ECONOMY_TRAITS],
-  pacts:factionSeason.traits.map(t=>({id:t.id,name:t.name,group:t.group,sourceName:t.sourceName,mechanic:catalog.pacts[t.id].levels[0].effects[0].params.mechanic,redesigned:!!t.strongholdPact,tuning:STRONGHOLD_PACT_TUNING[t.id]??null,fees:t.designReference.sourceMemberFees,members:t.members.map(id=>{const h=factionSeason.heroes.find(x=>x.charId===id);return {name:h.operatorName,cost:h.cost};}),description:catalog.pacts[t.id].summaryDescription,detailNotes:catalog.pacts[t.id].detailNotes??[],levels:catalog.pacts[t.id].levels.map(l=>({min:l.minUnits,max:l.maxUnits,text:l.description}))})),
+  pacts:factionSeason.traits.map(t=>({id:t.id,name:t.name,group:t.group,sourceName:t.sourceName,mechanic:catalog.pacts[t.id].levels[0].effects[0].params.mechanic,redesigned:!!t.strongholdPact,tuning:STRONGHOLD_PACT_TUNING[t.id]??null,fees:t.designReference.sourceMemberFees,members:t.members.filter(id=>!unaffiliated.has(id)).map(id=>{const h=factionSeason.heroes.find(x=>x.charId===id);return {name:h.operatorName,cost:h.cost};}),description:catalog.pacts[t.id].summaryDescription,detailNotes:catalog.pacts[t.id].detailNotes??[],levels:catalog.pacts[t.id].levels.map(l=>({min:l.minUnits,max:l.maxUnits,text:l.description}))})),
 };
 const lines=['# 共鸣：阵营赛季','',
 `当前赛季为 \`${factionSeason.id}\`，共享配置为 \`shared/resonance/faction-season-v2.js\`，盟约效果与玩家文案为 \`shared/resonance/stronghold-pacts.js\`，战斗实现为 \`server/sim/content/resonance/stronghold-pacts.js\`。原生归属、固定技能与天赋来自冻结的卫戍数据。\`resonance-factions-1\` 及更早赛季的存档仍按原 seasonId 与原规则读取。`,
@@ -23,6 +25,7 @@ const lines=['# 共鸣：阵营赛季','',
 '','## 成员、门槛与费用','', '| 盟约 | 类别 | 机制 | 人数档位 | 自然成员（费用） |','|---|---|---|---|---|',
 ...report.pacts.map(t=>`| ${t.name} | ${t.group==='faction'?'阵营':'职业/机制'} | ${t.mechanic}${t.redesigned?'（重做）':''} | ${t.levels.map(l=>l.min).join(' / ')} | ${t.members.map(h=>`${h.name}（${h.cost}）`).join('、')} |`),
 '','## 盟约口径','',
+'- 正义骑士号的原版特性是不受部署数量限制：它不属于任何盟约，也不计入盟约人数，场上同时一名不占上阵人数（见 `docs/resonance/design.md`）。',
 '- 阵营盟约是不叠层的卫戍协议盟约：按上阵人数分档，每档写明数值；战斗内效果有上限或持续时间，任何盟约效果都不跨战斗累计。',
 '- 每个阵营有一条改变战场逻辑的机制（通缉、寒冷与冻结、炎佑、复活、装备、隐匿与恐惧、真实伤害与阻挡、技能联动、屏障、医疗协同），与成员自己的技能、天赋配合；纯数值只作陪衬。强度主要放在干员技能与装备搭配上。',
 '- 狙击、术式、坚阵、突袭、技力协同对应原版精准、奥术、坚守、突袭、迅捷的常规机制；其余十一个职业/机制盟约沿用原实现，数值按同一量级修正（见下）。',

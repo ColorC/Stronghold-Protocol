@@ -2374,10 +2374,7 @@
         "source": "frozen-native-character-table",
         "factionId": "conqueror"
       },
-      "pacts": [
-        "卡西米尔",
-        "决斗"
-      ],
+      "pacts": [],
       "stats": {
         "1": {
           "maxHp": 1558,
@@ -4604,10 +4601,6 @@
       ],
       "members": [
         {
-          "name": "正义骑士号",
-          "cost": 1
-        },
-        {
           "name": "砾",
           "cost": 1
         },
@@ -5427,10 +5420,6 @@
         5
       ],
       "members": [
-        {
-          "name": "正义骑士号",
-          "cost": 1
-        },
         {
           "name": "休谟斯",
           "cost": 1

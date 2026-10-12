@@ -36,6 +36,20 @@ function validEnvironmentId(catalog,environmentId) {
 }
 const fail = (state, error, events = []) => ({ ok: false, state: clone(state), events, error });
 const isInt = (value) => Number.isInteger(value);
+/**
+ * How many of `pieces` (default: the session's) stand on the field for the deploy cap: all of them, except that one operator
+ * whose 特性 reads 「不受部署数量限制」 (catalog operator `ignoresDeployLimit`, 正义骑士号) is free. A second copy counts as usual,
+ * so the cap can never be broken through it.
+ */
+export function countedDeployed(state, catalog, pieces = state?.pieces ?? []) {
+  let counted = 0, free = false;
+  for (const piece of pieces) {
+    if (piece.row === null || piece.row === undefined) continue;
+    if (!free && catalog?.operators?.[piece.operatorId]?.ignoresDeployLimit === true) { free = true; continue; }
+    counted++;
+  }
+  return counted;
+}
 export function effectiveDeployCapacity(state) {
   const extra=state?.rulesVersion===3?Math.max(0,Math.min(2,Number(state.prototypeMeta?.economy?.rosterExtraCapacity)||0)):0;
   return Math.min(12,Math.max(1,Number(state?.level)||1)+extra);
@@ -339,7 +353,7 @@ export function validateSession(state, { catalog } = {}) {
   const restrictedBench=state.strategyState&&typeof state.strategyState==='object'&&activeStrategyEntries(state).some(([id])=>strategyDefs(catalog)[id]?.effects?.some((effect)=>effect.kind==='bench_capacity_and_gold'));
   if (pieces.filter((piece) => piece.row === null && piece.col === null).length > (restrictedBench?7:BENCH_CAPACITY)) add('BENCH_OVER_CAPACITY');
   const deployed = pieces.filter((piece) => piece.row !== null);
-  if (deployed.length > effectiveDeployCapacity(state)) add('POPULATION_OVER_CAPACITY');
+  if (countedDeployed(state, catalog, deployed) > effectiveDeployCapacity(state)) add('POPULATION_OVER_CAPACITY');
   const cells = new Set();
   for (const piece of deployed) {
     const key = `${piece.row},${piece.col}`;
@@ -449,7 +463,7 @@ export function viewSession(state, { catalog, fieldResolver } = {}) {
     }}}}:{}),
     forgeProgress: clone(state.forgeProgress??{}), actionCosts: economyActionCosts(state,catalog),deployCap:effectiveDeployCapacity(state),
     benchCount: state.pieces.filter((piece) => piece.row === null).length,
-    deployedCount: state.pieces.filter((piece) => piece.row !== null).length,
+    deployedCount: countedDeployed(state, catalog),
     legalFieldStatus: fieldStatus, legalCells,
   };
 }
@@ -890,7 +904,7 @@ function updatePactSetRewards(state,catalog) {
     const strategy=strategyDefs(catalog)[id],reward=strategy?.effects?.find((effect)=>effect.kind==='pact_set_reward');
     if(!reward||entry.rewardedPact)continue;
     const counts=new Map();
-    for(const piece of state.pieces){if(piece.row===null)continue;const op=opTable(catalog)[piece.operatorId];if(!op)continue;const pacts=new Set([...(op.pacts??op.tags??[]),...(piece.extraPacts??[])]);
+    for(const piece of state.pieces){if(piece.row===null)continue;const op=opTable(catalog)[piece.operatorId];if(!op||op.ignoresDeployLimit===true)continue;const pacts=new Set([...(op.pacts??op.tags??[]),...(piece.extraPacts??[])]);
       for(const equipment of piece.equipment??[])for(const effect of itemTable(catalog)[equipment.itemId]?.effects??[])if(['pact_transfer','transfer_pact'].includes(effect.kind))pacts.add(effect.params?.pactId);
       for(const pact of pacts){if(!pact)continue;const members=counts.get(pact)??new Set();members.add(op.charId??piece.operatorId);counts.set(pact,members);}
     }
@@ -1317,7 +1331,7 @@ function settleFight(state, catalog, action, { battleRunner, fieldResolver, reco
   if (state.pendingChoices.length) throw new Error('CHOICES_PENDING');
   if (!state.nodeStarted) throw new Error('SUPPLY_NOT_ADVANCED');
   const deployed = state.pieces.filter((piece) => piece.row !== null);
-  if (deployed.length > effectiveDeployCapacity(state)) throw new Error('POPULATION_OVER_CAPACITY');
+  if (countedDeployed(state, catalog, deployed) > effectiveDeployCapacity(state)) throw new Error('POPULATION_OVER_CAPACITY');
   const cells = resolveDeployedField(state,catalog,fieldResolver);
   for (const piece of deployed) if (!canDeployAt(cells,piece.row,piece.col,opTable(catalog)[piece.operatorId])) throw new Error('ILLEGAL_DEPLOYMENT');
   const battleInput = clone(state);
@@ -1360,7 +1374,7 @@ function settleFight(state, catalog, action, { battleRunner, fieldResolver, reco
   for(const [id,entry] of activeStrategyEntries(state)){
     const effect=strategyDefs(catalog)[id]?.effects?.find((candidate)=>candidate.kind==='prototype_win_loss_growth');
     if(!effect||Number(entry.lastBattleNode)===battleRound)continue;
-    const p=effect.params??{},naturalPieces=state.pieces.filter((piece)=>piece.row!==null&&(
+    const p=effect.params??{},naturalPieces=state.pieces.filter((piece)=>piece.row!==null&&opTable(catalog)[piece.operatorId]?.ignoresDeployLimit!==true&&(
       (opTable(catalog)[piece.operatorId]?.pacts??[]).includes(p.traitId)
       ||(piece.extraPacts??[]).includes(p.traitId)
       ||(piece.equipment??[]).some((item)=>itemTable(catalog)[item.itemId]?.effects?.some((row)=>['pact_transfer','transfer_pact'].includes(row.kind)&&row.params?.pactId===p.traitId))
@@ -1529,7 +1543,7 @@ export function applyAction(state, action, { catalog, battleRunner, fieldResolve
         if (piece.row!==null) throw new Error('PIECE_ALREADY_DEPLOYED');
         // dropping on an operator swaps: the occupant goes back to the dragged one's bench slot, so the deployed count does not change
         const occupant=draft.pieces.find((entry)=>entry!==piece&&entry.row===action.row&&entry.col===action.col);
-        if (!occupant&&draft.pieces.filter((entry)=>entry.row!==null).length>=effectiveDeployCapacity(draft)) throw new Error('POPULATION_OVER_CAPACITY');
+        if (countedDeployed(draft,catalog,[...draft.pieces.filter((entry)=>entry!==occupant&&entry!==piece&&entry.row!==null),{...piece,row:action.row}])>effectiveDeployCapacity(draft)) throw new Error('POPULATION_OVER_CAPACITY');
         if(uniqueCoreEnabled(draft,catalog)){const charId=opTable(catalog)[piece.operatorId]?.charId;if(draft.pieces.some((entry)=>entry!==occupant&&entry.row!==null&&opTable(catalog)[entry.operatorId]?.charId===charId))throw new Error('DUPLICATE_CORE_IDENTITY');}
         if (!isInt(action.row)||!isInt(action.col)||!['UP','RIGHT','DOWN','LEFT'].includes(action.dir)) throw new Error('BAD_POSITION');
         const check=cellIsLegal(fieldResolver,draft,catalog,action.row,action.col); if(!check.known)throw new Error('FIELD_RESOLVER_REQUIRED');if(!check.legal||!canDeployAt(check.cells,action.row,action.col,opTable(catalog)[piece.operatorId]))throw new Error('ILLEGAL_DEPLOYMENT');
@@ -1576,6 +1590,8 @@ export function applyAction(state, action, { catalog, battleRunner, fieldResolve
             if(!check.known)throw new Error('FIELD_RESOLVER_REQUIRED');
             if(!check.legal||!canDeployAt(check.cells,piece.row,piece.col,opTable(catalog)[occupant.operatorId]))throw new Error('ILLEGAL_SWAP');
             if(uniqueCoreEnabled(draft,catalog)){const charId=opTable(catalog)[occupant.operatorId]?.charId;if(draft.pieces.some((entry)=>entry!==piece&&entry!==occupant&&entry.row!==null&&opTable(catalog)[entry.operatorId]?.charId===charId))throw new Error('DUPLICATE_CORE_IDENTITY');}
+            // swapping a free operator for a counted one (or the reverse) changes the counted population
+            if(countedDeployed(draft,catalog,[...draft.pieces.filter((entry)=>entry!==piece&&entry.row!==null),{...occupant,row:piece.row}])>effectiveDeployCapacity(draft))throw new Error('POPULATION_OVER_CAPACITY');
             // the bench operator takes the withdrawn one's tile with that tile's facing (as in the original game); the withdrawn one keeps its own
             occupant.row=piece.row;occupant.col=piece.col;occupant.dir=piece.dir;occupant.benchSlot=null;
           } else if(benchCount(draft)>=benchCapacity(draft,catalog))throw new Error('BENCH_FULL');

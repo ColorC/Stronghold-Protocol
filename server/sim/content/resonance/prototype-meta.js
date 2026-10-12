@@ -23,7 +23,7 @@ function rosterOf(state,catalog) {
       const item=catalog?.equipment?.[itemId];
       return (item?.effects??[]).filter((effect)=>['transfer_pact','pact_transfer'].includes(effect.kind)).map((effect)=>effect.params?.pactId).filter(Boolean);
     });
-    return {...unit,charId,extraPacts:[...(unit.extraPacts??[]),...equipmentTraits]};
+    return {...unit,charId,extraPacts:operator?.ignoresDeployLimit===true?[]:[...(unit.extraPacts??[]),...equipmentTraits]};   // 正义骑士号 is in no 盟约
   }).filter(Boolean);
 }
 function extraTraits(unit) {

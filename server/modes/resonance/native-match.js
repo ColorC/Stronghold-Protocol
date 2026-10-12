@@ -2,8 +2,8 @@ import { Match } from '../../match/Match.js';
 import { PHASE, ERR } from '../../../shared/constants.js';
 import { MetaRegistry } from '../../match/effectsMeta.js';
 import { buildResonanceBattle, getResonanceField, nativeResultForSession, placeSpecialEntities, previewUnitStats } from './battle.js';
-import { applyAction, effectiveDeployCapacity, viewSession } from './session.js';
-import { resonanceSessionDisplay, resonanceDisplayCatalog, resonanceOperatorPresentation } from './display.js';
+import { applyAction, countedDeployed, effectiveDeployCapacity, viewSession } from './session.js';
+import { DEPLOY_FREE_TRAIT_TEXT, resonanceSessionDisplay, resonanceDisplayCatalog, resonanceOperatorPresentation } from './display.js';
 import { BOSS_CLOCK_MS, DELAYS } from '../../match/match/common.js';
 import { BOSS_HIT_STEPS, SharedBossPool } from '../../match/finalAssault.js';
 import { previewOf } from '../../match/waves.js';
@@ -242,6 +242,9 @@ export class ResonanceMatch extends Match {
 
   nativeChessId(operatorId, star = 1) { return star === 1 ? operatorId : `resonance_${operatorId}_star${star}`; }
 
+  /** `ignoresDeployLimit` on a piece entry of the client's / base player's view: the operator is free of the deploy cap (one at a time). */
+  deployFreeFlag(piece) { return this.catalog.operators?.[piece.operatorId]?.ignoresDeployLimit === true ? { ignoresDeployLimit: true } : {}; }
+
   resonancePrivateView(ps) {
     const state = this.displayState();
     const pieces = this.state.pieces.map((piece) => ({ uid: this.uidMap.native(piece.uid), piece }));
@@ -266,10 +269,11 @@ export class ResonanceMatch extends Match {
     for(const {uid,piece} of pieces.filter(({piece})=>piece.row==null)){
       let slot=Number.isInteger(piece.benchSlot)&&piece.benchSlot>=0&&piece.benchSlot<9?piece.benchSlot:legacySlot++;
       while(slot<9&&hand[slot])slot++;
-      if(slot<9)hand[slot]={uid,kind:'chess',id:this.nativeChessId(piece.operatorId,piece.star),resonanceStar:piece.star,star:piece.star,items:piece.equipment.map((item)=>({uid:this.uidMap.native(item.uid),id:item.itemId}))};
+      if(slot<9)hand[slot]={uid,kind:'chess',id:this.nativeChessId(piece.operatorId,piece.star),resonanceStar:piece.star,star:piece.star,...this.deployFreeFlag(piece),items:piece.equipment.map((item)=>({uid:this.uidMap.native(item.uid),id:item.itemId}))};
     }
     const board = pieces.filter(({ piece }) => piece.row != null).map(({ uid, piece }) => ({
       uid, kind: 'chess', id: this.nativeChessId(piece.operatorId, piece.star), resonanceStar: piece.star, star: piece.star, row: piece.row, col: piece.col, dir: piece.dir,
+      ...this.deployFreeFlag(piece),
       items: piece.equipment.map((item) => ({ uid: this.uidMap.native(item.uid), id: item.itemId })),
     }));
     // the summons a deployed summoner's player placed: token pieces on the field, owned by the summoner, no deploy slot of their own
@@ -288,7 +292,7 @@ export class ResonanceMatch extends Match {
     return { t: 'm.private', playerId: ps.playerId, seat: ps.seat, alive: true,
       funds: this.state.gold, lp: this.state.hp, phase: this.phase, round: this.state.round, ready: ps.ready,
       canReady: this.phase === PHASE.PREP && !(state.pendingChoices?.length) && this.state.phase === 'prep',
-      hand, handCapacity: 9, temp: [], board, deployCap: effectiveDeployCapacity(this.state), deployCount: pieces.filter(({piece})=>piece.row!=null).length, bonds, effects,
+      hand, handCapacity: 9, temp: [], board, deployCap: effectiveDeployCapacity(this.state), deployCount: countedDeployed(this.state, this.catalog), bonds, effects,
       loadout: {}, ops: {}, standIns: [], diy: {}, diyBanned: [],
       shop: { level: this.state.level, maxLevel: 10, upgradePrice: shopCosts.xpGold ?? 4,
         refreshPrice: shopCosts.refreshGold ?? 2, freeRefreshes: shopCosts.freeRefreshes ?? 0,
@@ -311,7 +315,7 @@ export class ResonanceMatch extends Match {
     ps.alive = true;
     ps.deployCapBonus = 0; ps.deployCapMin = effectiveDeployCapacity(this.state);
     ps.board = new Map(this.state.pieces.filter((piece) => piece.row != null).map((piece) => [`${piece.row},${piece.col}`, {
-      uid: this.uidMap.native(piece.uid), kind: 'chess', id: this.nativeChessId(piece.operatorId,piece.star), dir: piece.dir,
+      uid: this.uidMap.native(piece.uid), kind: 'chess', id: this.nativeChessId(piece.operatorId,piece.star), dir: piece.dir, ...this.deployFreeFlag(piece),
       items: piece.equipment.map((item) => ({ uid: this.uidMap.native(item.uid), id: item.itemId })),
     }]));
     const specialField=getResonanceField(this.state,{data:this.data,catalog:this.catalog});
@@ -999,6 +1003,7 @@ export function resonanceCatalogPacket(match) {
         assets: { ...(base.assets??{}), ...(variant.assets??{}), ...(variant.skill?{skillIcon:variant.skill.iconId??operator.fixedSkillId}: {}),
           ...(presentation?{resonancePresentationIcon:presentation.icon}:{}) },
         skills: variant.skills ?? [], skill: variant.skill ?? null, stats: { ...(variant.stats ?? {}) } };
+      if (operator.ignoresDeployLimit) projected.trait = { ...(projected.trait ?? {}), desc: DEPLOY_FREE_TRAIT_TEXT, descRaw: DEPLOY_FREE_TRAIT_TEXT };
       if (match.catalog.config?.rulesVersion === 3 && Array.isArray(projected.garrisonIds)) {
         projected.garrisonIds = projected.garrisonIds.filter((garrisonId) => data.garrisons?.[garrisonId]?.effectType !== 'SERVER_GAIN_EQUIP');
       }

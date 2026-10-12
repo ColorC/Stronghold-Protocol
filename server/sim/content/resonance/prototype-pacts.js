@@ -216,6 +216,7 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
   const applyRating=(unit,key,armor,magicResist)=>setPrototypeRatingBonus(battle,unit,key,{armor,magicResist},powerReferenceFor(unit));
   const traitIdsFor=(unit)=>{
     const owner=ownedUnit(unit),charId=charIdOf(owner),operator=byChar.get(charId);
+    if(operator?.ignoresDeployLimit===true)return new Set();   // 正义骑士号 is in no 盟约
     return new Set([...(operator?.pacts??[]),...(owner?.extraPacts??[]),...(owner?.def?.raw?.extraPacts??[]),...(owner?.mem?.resonancePacts??[])]);
   };
   const isActiveMember=(unit,traitId)=>active.has(traitId)&&traitIdsFor(unit).has(traitId);

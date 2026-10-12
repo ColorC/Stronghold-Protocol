@@ -67,6 +67,12 @@ function skillView(operator, star, playerText) {
   };
 }
 
+/**
+ * 特性 text of an operator free of the deploy cap (正义骑士号): the native sentence — redeploy time included, the mode does redeploy —
+ * with the mode's own rules added: one such operator is free at a time, and it counts for no 盟约.
+ */
+export const DEPLOY_FREE_TRAIT_TEXT = '优先攻击空中单位，且不受部署数量限制（场上同时仅一名生效），但再部署时间极长。不计入盟约。';
+
 export function resonanceOperatorPresentation(catalog, operator) {
   if (catalog?.config?.seasonId !== 'resonance-factions-1' || operator?.charId !== 'char_4000_jnight'
     || operator?.fixedSkillId !== 'resonance_judgement_support') return null;
@@ -174,7 +180,7 @@ function pactCounts(pieces, catalog) {
   const members = new Map();
   for (const piece of pieces) {
     const operator = catalog.operators[piece.operatorId];
-    if (!operator) continue;
+    if (!operator || operator.ignoresDeployLimit === true) continue;   // 正义骑士号 is in no 盟约, whatever emblem it carries
     const pactIds = new Set([...(operator.pacts ?? []), ...(piece.extraPacts ?? [])]);
     for (const equipped of piece.equipment ?? []) {
       for (const effect of catalog.equipment[equipped.itemId]?.effects ?? []) {

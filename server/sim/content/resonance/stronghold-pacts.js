@@ -65,6 +65,7 @@ export function installStrongholdPacts(battle, state, catalog, activeTraits = []
     if (unit?.kind !== 'op') return null;
     let ids = pactCache.get(unit);
     if (!ids) {
+      if (byChar.get(charIdOf(unit))?.ignoresDeployLimit === true) return new Set();   // 正义骑士号 is in no 盟约
       const mem = unit.mem?.resonancePacts;
       const input = unit.player?.input?.units?.find((entry) => String(entry?.uid) === String(unit.uid) && entry.kind !== 'token');
       ids = new Set([...(byChar.get(charIdOf(unit))?.pacts ?? []), ...(unit.extraPacts ?? []), ...(unit.def?.raw?.extraPacts ?? []),

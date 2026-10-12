@@ -123,7 +123,7 @@ export function collectViolations(m, { limit = 25 } = {}) {
       }
     }
     // board
-    let deployed = 0;
+    let deployed = 0, freeSeen = false;
     // a pure read (Match.deployMapFor: the field the player deploys on now) — PlayerState.deployMap() would update the
     // player's cached field / legality flag, and this checker must not change when a later recompute moves pieces
     const dmap = typeof m.deployMapFor === 'function' ? m.deployMapFor(ps) : ps.deployMap();
@@ -140,7 +140,7 @@ export function collectViolations(m, { limit = 25 } = {}) {
       // an outside-bound summon (战术锚点, PlayerState.summonExcluded) outside it
       const out = p.kind === 'token' && typeof ps.summonExcluded === 'function' ? ps.summonExcluded(p) : null;
       if (out && out.has(k)) fail(`${id}: ${p.id} on ${k}, inside its owner's attack range`);
-      if (p.kind === 'chess') deployed++;
+      if (p.kind === 'chess') { if (p.ignoresDeployLimit && !freeSeen) freeSeen = true; else deployed++; }   // one ignoresDeployLimit chess is free of the cap
     }
     if (deployed > ps.deployCap) fail(`${id}: ${deployed} chess deployed > cap ${ps.deployCap}`);
     // merges are immediate

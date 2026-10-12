@@ -46,6 +46,7 @@ function pieceOperator(unit, ctx) {
   return ctx.bySource.get(raw.charId) ?? ctx.bySource.get(normId(raw.id ?? raw.chessId ?? unit.defId)) ?? null;
 }
 function pactIds(unit, op) {
+  if (op?.ignoresDeployLimit === true) return new Set();   // 正义骑士号 is in no 盟约
   const ids = new Set(op?.pacts ?? []);
   for (const id of unit?.mem?.resonancePacts ?? []) ids.add(id);
   for(const id of inputOf(unit)?.extraPacts??[])ids.add(id);

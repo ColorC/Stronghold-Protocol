@@ -28,7 +28,8 @@ export class PlayerBasics {
   get botControlled() { return this.isBot || this.left || this.autoplay; }
 
   get deployCap() { return Math.max(1, this.gd.deployCap + this.deployCapBonus, this.deployCapMin); }
-  get deployCount() { let n = 0; for (const p of this.board.values()) if (p.kind === 'chess') n++; return n; }
+  // a chess marked ignoresDeployLimit (共鸣's 正义骑士号, 「不受部署数量限制」) is free of the cap — one at a time; no other mode marks any
+  get deployCount() { let n = 0, free = false; for (const p of this.board.values()) { if (p.kind !== 'chess') continue; if (p.ignoresDeployLimit && !free) { free = true; continue; } n++; } return n; }
   get tempEmpty() { return this.temp.every((x) => x == null); }
 
   /**

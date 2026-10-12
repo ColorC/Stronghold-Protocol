@@ -508,7 +508,10 @@ test('卡西米尔 attacks carry true damage and blocking members pulse true dam
   assert.equal(lost(target, () => two.battle.dealDamage(other, target, { amount: 0, type: 'phys', isAttack: true })), 0, 'non-members add nothing');
   assert.equal(two.battle.errorCount, 0);
 
-  const six = arena(ops('砾', '焰尾', '瑕光', '流星', '玛恩纳', '正义骑士号'));
+  // 正义骑士号 is in no 盟约 this season, even carrying the pact: it never makes a sixth member
+  const knightSix = arena(ops('砾', '焰尾', '瑕光', '流星', '玛恩纳', '正义骑士号'), { extraPacts: { 正义骑士号: ['conqueror'] } });
+  assert.equal(knightSix.tier('conqueror').count, 5, 'five members: the knight adds nothing');
+  const six = arena([...ops('砾', '焰尾', '瑕光', '流星', '玛恩纳'), op('格拉尼')], { extraPacts: { 格拉尼: ['conqueror'] } });
   const blocker = six.unit('砾');
   const pinned = six.enemy([blocker.tileR, blocker.tileC]), stuns = [];
   six.battle.on('statusApplied', (event) => { if (event.status === 'stun' && event.target === pinned && event.source === blocker) stuns.push(event); });
@@ -519,7 +522,7 @@ test('卡西米尔 attacks carry true damage and blocking members pulse true dam
   assert.ok(stuns.length >= 1 && stuns.every((event) => Math.abs(event.duration - 0.5) < 1e-9), 'the pulse stuns for 0.5 s at six');
   assert.equal(six.battle.errorCount, 0);
 
-  const nine = arena([...ops('砾', '焰尾', '瑕光', '流星', '玛恩纳', '正义骑士号'), ...ops('格拉尼', '角峰', '斯卡蒂'), op('银灰')], { extraPacts: { 格拉尼: ['conqueror'], 角峰: ['conqueror'], 斯卡蒂: ['conqueror'] } });
+  const nine = arena([...ops('砾', '焰尾', '瑕光', '流星', '玛恩纳'), ...ops('格拉尼', '角峰', '斯卡蒂', '休谟斯'), op('银灰')], { extraPacts: { 格拉尼: ['conqueror'], 角峰: ['conqueror'], 斯卡蒂: ['conqueror'], 休谟斯: ['conqueror'] } });
   const outsider = nine.unit('银灰'), dummy = nine.enemy([10, 9]);
   nine.battle.rng = () => 0.99;
   close(lost(dummy, () => nine.battle.dealDamage(outsider, dummy, { amount: 0, type: 'phys', isAttack: true })), outsider.s.atk * 0.1, 'others add 10% ATK true damage at nine');
