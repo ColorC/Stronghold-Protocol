@@ -87,6 +87,9 @@ test('the icon files, their provenance manifest and the id list agree', () => {
       assert.ok(entry.candidateVariants.length >= 3 && entry.candidateVariants.includes(entry.pickedVariant), `${id} was picked from at least three variants`);
     } else {
       assert.equal(entry.model, null, `${id} was drawn without a generator`);
+      assert.match(entry.pickedVariant, /^[A-Z]$/, `${id} records which draft was picked`);
+      assert.ok(entry.candidateVariants.length >= 3 && entry.candidateVariants.includes(entry.pickedVariant), `${id} was picked from at least three drafts`);
+      assert.ok(String(entry.selection || '').length > 40, `${id} records why that draft won`);
     }
   }
 });
