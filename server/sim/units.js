@@ -18,6 +18,13 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const EMPTY = Object.freeze({});
 /** Aggregates can overflow (huge stacked *Mul mods → Infinity) — fall back to `d` so no stat is ever non-finite. */
 const fin = (v, d) => (Number.isFinite(v) ? v : d);
+/** Flat DEF with the unit's own gains (each buff's positive defFlat) scaled; reductions keep their full value. */
+function scaledDefFlat(buffs, total, scale) {
+  if (scale === 1 || !(scale >= 0)) return total;
+  let gained = 0;
+  for (const b of buffs) { const v = b.mods?.defFlat; if (Number.isFinite(v) && v > 0) gained += v * b.stacks; }
+  return total - gained + gained * scale;
+}
 
 export class Unit {
   /**
@@ -58,6 +65,8 @@ export class Unit {
     };
     /** @type {object[]} */
     this.buffs = [];
+    // a mode's enemy DEF multiplier for the flat DEF this unit gains from its own buffs (auras, states); 1 = native
+    this.defFlatScale = 1;
     this._dirty = true;
     this._s = null;
     this.hp = this.base.maxHp;
@@ -124,7 +133,7 @@ export class Unit {
     // added after the percentages, inside the Πmul (阿戈尔's devoured base ATK, DESIGN §24.7)
     // Resonance HP-derived attack is independent from ordinary atkPct stacking and uses the freshly recalculated max HP.
     const atk = Math.max(0, fin(((b.atk + a('atkFlat')) * Math.max(0, 1 + a('atkPct')) + a('atkFinal') + maxHp * a('atkHpPct')) * m('atkMul'), fin(b.atk, 0)));
-    const def = Math.max(0, fin((b.def + a('defFlat')) * Math.max(0, 1 + a('defPct')) * m('defMul'), fin(b.def, 0)));
+    const def = Math.max(0, fin((b.def + scaledDefFlat(this.buffs, a('defFlat'), this.defFlatScale)) * Math.max(0, 1 + a('defPct')) * m('defMul'), fin(b.def, 0)));
     const res = clamp(fin((b.res + a('resFlat')) * m('resMul'), fin(b.res, 0)), 0, 100);
     const aspd = clamp(fin(b.aspd + a('aspd'), 100), ASPD_MIN, ASPD_MAX);
     const bBat = fin(b.bat, 1) > 0 ? fin(b.bat, 1) : 1;

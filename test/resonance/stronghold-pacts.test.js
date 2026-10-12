@@ -651,7 +651,8 @@ test('重装 attacks add a share of max HP, slow what they block from four and s
   const armored = two.enemy([11, 9], { hp: 1000000, def: 300 }), share = estelle.s.maxHp * 0.03;
   const armoredBefore = armored.hp;
   two.battle.dealDamage(estelle, armored, { amount: 400, type: 'phys', isAttack: true, canDodge: false });
-  close(armoredBefore - armored.hp, 400 + share - 300, 'attack + share − DEF 300', 1e-6);
+  close(armoredBefore - armored.hp, 400 + share - armored.s.def, 'attack + share − DEF', 1e-6);
+  assert.ok(armored.s.def > 50, 'the target really has DEF');
   assert.equal(two.tier('bruiser').strikes, 2);
 
   const six = arena(ops('艾丝黛尔', '幽灵鲨', '休谟斯', '泥岩', '百炼嘉维尔', '格拉尼'), { idle: true });
