@@ -3,16 +3,21 @@
 //   a strategy that hands out an emblem (徽记 / 王冠) → that emblem's own item art, the badge the inventory shows;
 //   any other strategy tied to a pact (迅击爆发, 重装成长, …) → that pact's icon;
 //   金币 / 经验 / 刷新 strategies → the HUD's own gold, level and refresh art;
+//   equipment strategies → the native 维式重锤 item art (the equipment the HUD's dock shows); recruit strategies → the
+//   single-piece buff icon and strategies that buff every operator → the team buff icon (the two the native tactic cards use);
 //   anything else → the strategy group's icon.
-import { uiUrl } from '../ui/assetUrls.js';
+import { uiUrl, itemIconUrl } from '../ui/assetUrls.js';
 import { resolvePactIconUrl } from './pactIconMap.js';
 import { resonanceEmblemIconUrl } from './itemIconMap.js';
 
-/** HUD sprites (data/assets.json `ui`); `mask` sprites are white glyphs tinted by CSS, the others keep their colours. */
+/** HUD sprites (data/assets.json `ui`; an `item` entry is a native item's art, `items`); `mask` sprites are white glyphs tinted by CSS, the others keep their colours. */
 export const STRATEGY_UI_ICONS = Object.freeze({
   gold: Object.freeze({ key: 'garrisonTypeIcon/s_icon_gold', mask: true }),
   xp: Object.freeze({ key: 'shopPanel/level', mask: false }),
   refresh: Object.freeze({ key: 'shopPanel/refresh_icon', mask: false }),
+  gear: Object.freeze({ item: 'trap_1041_acarm041', mask: false }),
+  recruit: Object.freeze({ key: 'buffIcon/icon_player_buff', mask: false }),
+  team: Object.freeze({ key: 'buffIcon/icon_team_buff', mask: false }),
   group: Object.freeze({ key: 'settle/band_icon', mask: true }),
 });
 // Strategy effect kinds by what they mainly hand out (shared/resonance/prototype-strategies.js, current-strategies.js).
@@ -53,5 +58,5 @@ export function resolveStrategyIconUrl(catalog, id, manifest, bonds = []) {
   const icon = strategyIcon(catalog, id);
   if (icon.kind === 'emblem') return resonanceEmblemIconUrl(catalog, icon.itemId);
   if (icon.kind === 'pact') return resolvePactIconUrl(catalog, icon.pactId, manifest, bonds);
-  return uiUrl(manifest, icon.key) || uiUrl(manifest, STRATEGY_UI_ICONS.group.key);
+  return (icon.item ? itemIconUrl(manifest, icon.item) : uiUrl(manifest, icon.key)) || uiUrl(manifest, STRATEGY_UI_ICONS.group.key);
 }

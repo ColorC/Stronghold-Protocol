@@ -57,7 +57,29 @@ test('徽记 / 王冠 strategies show the emblem they hand out; other pact strat
  for(const id of ['prototype_source_epoch','prototype_source_epochplus','prototype_source_clearmind','prototype_source_maxlevel10','prototype_source_learningfromexperience2'])assert.equal(theme(id),'xp',id);
  for(const id of ['prototype_source_tradesector','prototype_source_highendsector'])assert.equal(theme(id),'refresh',id);
  assert.deepEqual(strategyIcon({strategies:{x:{name:'未知',effectKind:'something_new'}}},'x'),{kind:'ui',theme:'group',...STRATEGY_UI_ICONS.group});
- for(const icon of Object.values(STRATEGY_UI_ICONS))assert.ok(fs.existsSync(fileOf(data.assets.ui[icon.key])),icon.key);
+ for(const icon of Object.values(STRATEGY_UI_ICONS))assert.ok(fs.existsSync(fileOf(icon.item?data.assets.items[icon.item]:data.assets.ui[icon.key])),icon.key??icon.item);
+});
+
+test('the 26 generic strategies show the art of what they hand out: HUD art for economy, the native 维式重锤 art, the single-piece and team buff icons',()=>{
+ const byName=(name)=>Object.keys(display.strategies).find(id=>id.startsWith('prototype_generic_')&&display.strategies[id].name===name);
+ const groups={
+  xp:['作战记录'],refresh:['加急许可'],gold:['定期拨款'],
+  gear:['补给箱','外勤补给','装备订购','装备补给','随机武装','特制装备','支援装备','精良装备'],
+  recruit:['协同招募','破格招募'],
+  team:['战术指挥','快速反应','稳固阵线','远程支援','持续压制','技力循环','同心协力','新老搭档','双璧','师承','遗志','明星阵容','孤注一掷'],
+ };
+ let count=0;
+ for(const [theme,names] of Object.entries(groups))for(const name of names){
+  const id=byName(name);
+  assert.ok(id,name);
+  assert.equal(strategyIcon(display,id).theme,theme,`${name} shows the ${theme} icon`);
+  count++;
+ }
+ assert.equal(count,26);
+ assert.equal(STRATEGY_UI_ICONS.gear.item,'trap_1041_acarm041','the 维式重锤 the equipment dock shows');
+ assert.equal(STRATEGY_UI_ICONS.team.key,'buffIcon/icon_team_buff','the icon the native tactic cards give a team buff');
+ assert.equal(STRATEGY_UI_ICONS.recruit.key,'buffIcon/icon_player_buff');
+ assert.equal(new Set(Object.values(groups).flat().map(name=>resolveStrategyIconUrl(display,byName(name),data.assets,bonds))).size,6,'six different pieces of art over the six groups');
 });
 
 test('strategy cards carry no 时点 line and show 条件 only for a real condition',()=>{

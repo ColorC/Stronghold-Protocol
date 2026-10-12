@@ -8,6 +8,7 @@ import { createSession, applyAction, drawStrategies } from '../../server/modes/r
 import { buildResonanceBattle, getResonanceField } from '../../server/modes/resonance/battle.js';
 import { factionSeason } from '../../shared/resonance/faction-season.js';
 import { factionSeasonV2 } from '../../shared/resonance/faction-season-v2.js';
+import { resonanceDisplayCatalog } from '../../server/modes/resonance/display.js';
 import { GENERIC_STRATEGIES } from '../../shared/resonance/generic-strategies.js';
 
 const data = loadData(process.env.SP_DATA_DIR, { log: { warn() {}, error() {} } });
@@ -165,4 +166,19 @@ test('gear consumables take names made of original-text nouns, keep their ids, a
   const run = (() => { let state = createSession({ seed: 7, difficulty: 'NORMAL', catalog, fieldResolver }).state; state.consumables = [{ uid: 'k1', kind: 'prototype_completed_anvil' }]; return state; })();
   assert.equal(catalog.prototypeEconomy.gearConsumables[run.consumables[0].kind].name, '列装券');
   assert.equal(new Set(genericIds.map((id) => catalog.strategies[id].name)).size, 26, 'generic strategy names are unique');
+});
+
+test('the player catalog names every gear consumable the inventory lists, without source notes', () => {
+  const shown = resonanceDisplayCatalog(catalog, data).prototypeEconomy.gearConsumables;
+  const own = catalog.prototypeEconomy.gearConsumables;
+  assert.deepEqual(Object.keys(shown).sort(), Object.keys(own).sort());
+  for (const [id, item] of Object.entries(shown)) {
+    assert.equal(item.name, own[id].name, id);
+    assert.equal(item.description, own[id].description, id);
+    assert.equal(item.kind, own[id].kind, id);
+    assert.ok(item.name && item.description, `${id} has a name and a description to show`);
+    assert.ok(!('source' in item) && !('adaptation' in item), `${id} carries no source notes`);
+  }
+  assert.equal(shown.prototype_reforger.name, '重构模块');
+  assert.equal(shown.prototype_item_remover.kind, 'remover');
 });

@@ -393,7 +393,7 @@ const RESONANCE_ACTION_FIELDS = Object.freeze({
   deploy: ['pieceUid', 'row', 'col', 'dir'], move: ['pieceUid', 'row', 'col', 'dir'], bench: ['pieceUid'], turn: ['pieceUid', 'dir'],
   equip: ['pieceUid', 'itemUid'], unequip: ['itemUid'], combine: ['itemUids'], advanceSupply: [],
   chooseStrategy: ['choiceUid', 'strategyId', 'targets'], claimReward: ['choiceUid', 'optionIds'], useCopy: ['consumableUid', 'pieceUid'],
-  disassemble: ['itemUid'], recycleEquipment: ['itemUid'], clearSummonOrder: ['pieceUid', 'tokenId', 'copy'], setSummonOrder: ['pieceUid', 'tokenId', 'copy', 'row', 'col', 'dir'],
+  useConsumable: ['consumableUid', 'itemUid'], disassemble: ['itemUid'], recycleEquipment: ['itemUid'], clearSummonOrder: ['pieceUid', 'tokenId', 'copy'], setSummonOrder: ['pieceUid', 'tokenId', 'copy', 'row', 'col', 'dir'],
 });
 const resonanceUid = (v) => isId(v) || isUid(v);
 function isResonanceAction(v) {
