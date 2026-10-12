@@ -26,12 +26,12 @@
    ```
    装完**关闭并重新打开**终端，`node -v` 应显示 v22 或更高（winget 的 LTS 目前是 v24.x，同样可用）。没有 winget 时从 <https://nodejs.org/zh-cn/download> 和 <https://git-scm.com/download/win> 下载安装。
 2. 下载，二选一。建议放在一个固定、短、**不在 OneDrive 同步范围内**的目录，例如 `C:\Stronghold-Protocol`：
-   - **完整包 / 轻量包**：在仓库的 [Releases](https://github.com/ColorC/Stronghold-Protocol/releases) 页面下载工坊预备版 0.3.0-workshop.1 对应 zip。完整包包含可公开下载资源；轻量包包含便携 Node 和生产依赖，首次启动下载公开资源并显示进度（中断后可续传）。两者均不要求目标电脑另装 Node 或 Git。官方 3D 棋盘等本地客户端素材只有在打包者从客户端提取后才会随完整包附带；缺少时使用 2D 棋盘和替代样式。素材版权归上海鹰角网络 / Yostar，仅限非商业使用，见 [NOTICE.md](../NOTICE.md)。
+   - **安装包 / 完整包 / 轻量包**：在仓库的 [Releases](https://github.com/ColorC/Stronghold-Protocol/releases) 页面下载工坊预备版 0.3.0-workshop.1 的安装程序 exe、MSI 或对应 zip。安装程序和 MSI 装的是轻量包内容，只为当前用户安装，不需要管理员（见 [WINDOWS.md](WINDOWS.md)）。完整包包含可公开下载资源；轻量包包含便携 Node 和生产依赖，首次启动下载公开资源并显示进度（中断后可续传）。两者均不要求目标电脑另装 Node 或 Git。官方 3D 棋盘等本地客户端素材只有在打包者从客户端提取后才会随完整包附带；缺少时使用 2D 棋盘和替代样式。素材版权归上海鹰角网络 / Yostar，仅限非商业使用，见 [NOTICE.md](../NOTICE.md)。
    - **源码**：
      ```powershell
      git clone --branch workshop https://github.com/ColorC/Stronghold-Protocol.git C:\Stronghold-Protocol
      ```
-3. 完整包 / 轻量包解压后双击根目录的 `启动游戏.bat`。轻量包首次运行会准备前端库并下载公开资源（约 270 MB），显示进度且支持续传；完整包直接启动。若检测到本机客户端资源，会询问是否提取，可跳过。源码安装则用 `scripts\start-windows.bat`。
+3. 安装后从开始菜单或桌面启动「卫戍协议：工坊」；完整包 / 轻量包解压后双击根目录的 `启动游戏.exe`。轻量包首次运行会准备前端库并下载公开资源（约 270 MB），显示进度且支持续传；完整包直接启动。若检测到本机客户端资源，会询问是否提取，可跳过。源码安装则用 `scripts\start-windows.bat`。
 4. 窗口里会打印朋友可用的地址，例如 `http://192.168.1.23:3000`。用另一台设备打开它确认能进入。关闭窗口即停止服务器。
 
 等价的手动命令：`npm ci`、`node tools/setup.mjs`、`npm start`。
@@ -78,6 +78,8 @@ $env:SP_ASSET_SOURCE = 'mirror'             # 也可用环境变量显式启用
 主机 IP 变了，朋友收藏的地址就失效。推荐在**路由器**后台的「DHCP 静态分配 / 地址保留」里把小主机的 MAC 地址绑定到固定 IP（如 `192.168.1.50`）。也可以在 Windows「设置 → 网络和 Internet → 属性 → IP 分配 → 编辑」里手动设置（IP、子网掩码、网关、DNS 与路由器一致，且不要与别的设备冲突）。
 
 ### 1.4 开机自动在后台运行
+
+开机自启只用于源码部署：安装包、完整包和轻量包里没有 `install-service-windows.ps1` / `run-server.cmd`（发给玩家的文件里不放 `.bat` / `.cmd`），需要时按上面的「源码」方式检出仓库。
 
 先关闭 `start-windows.bat` 的窗口（否则端口冲突），然后在项目目录运行（会自动请求管理员权限）：
 
@@ -126,7 +128,7 @@ node tools/setup.mjs                # 补下载新增的素材（已有文件会
 powershell -ExecutionPolicy Bypass -File scripts\install-service-windows.ps1 -Restart
 ```
 
-没装开机自启的话，最后一步改成重新双击 `start-windows.bat`。用 Releases 完整包的：停止服务器，把新版本的完整包解压到新目录后从那里启动即可（素材已包含；装了开机自启的，在新目录重新运行一次 `install-service-windows.ps1`）。用 GitHub「Download ZIP」源码包的：解压新版本后，把旧目录里的 `public\assets`、`public\fonts`、`.cache` 和 `data\local-assets.json`（若有）复制过去，可避免重新下载。
+没装开机自启的话，最后一步改成重新双击 `start-windows.bat`。用 Releases 完整包的：停止服务器，把新版本的完整包解压到新目录后从那里启动即可（素材已包含）。用安装包的：关闭游戏窗口后直接运行新版本的安装包，已下载的资源会保留。用 GitHub「Download ZIP」源码包的：解压新版本后，把旧目录里的 `public\assets`、`public\fonts`、`.cache` 和 `data\local-assets.json`（若有）复制过去，可避免重新下载。
 
 ## 2. 让不在同一网络的朋友加入
 

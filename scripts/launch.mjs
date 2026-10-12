@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// scripts/launch.mjs — cross-platform "prepare + start + open the browser", used by scripts/start-windows.bat,
-// scripts/start-windows.ps1 and scripts/start.sh (docs/DEPLOY.md).
+// scripts/launch.mjs — cross-platform "prepare + start + open the browser", used by the Windows launcher 启动游戏.exe
+// (scripts/windows/launcher.cs), scripts/start-windows.bat, scripts/start-windows.ps1 and scripts/start.sh (docs/DEPLOY.md).
 //
 //   node scripts/launch.mjs [--workshop] [--port 3000] [--host 0.0.0.0] [--no-open] [--no-setup] [setup options…]
 //
@@ -100,7 +100,7 @@ async function main() {
   }
   if (before.state !== 'free') {
     console.error(`${mark.err} 端口 ${o.port} 被其他程序占用或无权限（${before.code || before.state}）。`);
-    console.error(`  换一个端口：${IS_WIN ? 'scripts\\start-windows.bat --port 3001' : 'scripts/start.sh --port 3001'}`);
+    console.error(`  换一个端口：${IS_WIN ? '启动游戏.exe --port 3001（从源码运行：node scripts\\launch.mjs --port 3001）' : 'scripts/start.sh --port 3001'}`);
     return 1;
   }
 

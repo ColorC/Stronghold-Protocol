@@ -72,17 +72,21 @@ English summary: [below](#english).
 
 ### 方式一：整合包（推荐）
 
-本次工坊发布提供 [Windows 轻量便携包](https://github.com/ColorC/Stronghold-Protocol/releases/tag/workshop-v0.3.0-workshop.1)。包内自带 Node 与运行依赖，首次启动需要联网下载游戏资源并显示进度；准备完成后可离线使用。可选本地客户端资源不包含在公开下载中；缺少时使用 2D 棋盘和替代样式。
+本次工坊发布提供 Windows [安装程序、MSI 安装包和轻量便携包](https://github.com/ColorC/Stronghold-Protocol/releases/tag/workshop-v0.3.0-workshop.1)，三者内容相同：自带 Node 与运行依赖，首次启动需要联网下载游戏资源并显示进度；准备完成后可离线使用。可选本地客户端资源不包含在公开下载中；缺少时使用 2D 棋盘和替代样式。
 
-1. **准备运行环境**：Windows 工坊轻量包自带便携版 Node，无需另行安装；从源码运行或在 macOS / Linux 使用启动脚本时，需要 Node.js 22 或 24（LTS）。
+1. **准备运行环境**：Windows 安装包和便携包自带便携版 Node，无需另行安装；从源码运行或在 macOS / Linux 使用启动脚本时，需要 Node.js 22 或 24（LTS）。
    - Windows：在 PowerShell 里运行 `winget install OpenJS.NodeJS.LTS`，或到 <https://nodejs.org/zh-cn/download> 下载安装包。
    - macOS：`brew install node@22`，或到官网下载安装包。
    - Linux：发行版的包管理器、nvm 或 fnm。
-2. **下载**：在 [工坊发布页面](https://github.com/ColorC/Stronghold-Protocol/releases/tag/workshop-v0.3.0-workshop.1) 下载 `Stronghold-Protocol-Windows-Lite-workshop-v0.3.0-workshop.1.zip`，解压到一个路径较短的文件夹（Windows 上建议不要放在 OneDrive 同步的目录里）。首次资源下载中断后，再次启动会续传。
+2. **下载**：在 [工坊发布页面](https://github.com/ColorC/Stronghold-Protocol/releases/tag/workshop-v0.3.0-workshop.1) 任选一种：
+   - 安装程序 `Stronghold-Protocol-Workshop-Setup-0.3.0-workshop.1.exe`（推荐）或 MSI `Stronghold-Protocol-Workshop-0.3.0-workshop.1.msi`：只为当前用户安装，不需要管理员，带开始菜单和桌面快捷方式。
+   - 便携包 `Stronghold-Protocol-Windows-Lite-workshop-v0.3.0-workshop.1.zip`：解压到一个路径较短的文件夹（建议不要放在 OneDrive 同步的目录里）。
+   首次资源下载中断后，再次启动会续传。
 3. **启动**
-   - Windows：包内双击 **`启动游戏.bat`**；从源码运行则双击 **`scripts\start-windows.bat`**。如果弹出「安全警告」，点「运行」；Windows 防火墙弹窗请勾选「专用网络」并允许。
+   - Windows：双击开始菜单或桌面上的「卫戍协议：工坊」；便携包则双击 **`启动游戏.exe`**。安装包和启动器没有代码签名，出现「Windows 已保护你的电脑」时点「更多信息」→「仍要运行」；Windows 防火墙弹窗请勾选「专用网络」并允许。从源码运行见下方方式二。
    - macOS / Linux：在解压出的文件夹里运行 `./scripts/start.sh`（或 `bash scripts/start.sh`）。
-4. 便携包会自动打开工坊 `http://localhost:3000/independent.html`；原版盟约仍可通过 `http://localhost:3000/index.html` 进入。窗口里列出的局域网地址可以直接发给同一网络的朋友。关闭窗口（或按 `Ctrl+C`）即停止服务器。
+4. 启动后会自动打开工坊 `http://localhost:3000/independent.html`；原版盟约仍可通过 `http://localhost:3000/index.html` 进入。窗口里列出的局域网地址可以直接发给同一网络的朋友。关闭窗口（或按 `Ctrl+C`）即停止服务器。
+5. **卸载**：在「设置 → 应用」里卸载（便携包直接删除文件夹）。工坊存档保存在 `%LOCALAPPDATA%\Stronghold-Protocol-Workshop`，卸载后保留；详见 [docs/WINDOWS.md](docs/WINDOWS.md)。
 
 ### 方式二：从源码运行
 
@@ -94,7 +98,7 @@ npm run setup      # 检查环境并下载游戏资源；中断后可续传
 npm start          # 启动服务器；工坊入口：http://localhost:3000/independent.html
 ```
 
-也可以直接运行启动脚本（Windows `scripts\start-windows.bat`，macOS / Linux `scripts/start.sh`）：首次会自动安装依赖、下载素材，然后启动服务器并打开浏览器。
+也可以运行 `node scripts/launch.mjs --workshop`（macOS / Linux 也可以用 `scripts/start.sh`）：首次会自动安装依赖、下载素材，然后启动服务器并打开浏览器。
 
 - **本地客户端素材（可选）**：官方 3D 棋盘、部分官方界面图标（交流按钮与表情面板的边框、模组类型图标等）和灼热 / 炽焰源石虫的官方模型需要从本机的《明日方舟》PC 客户端提取（Windows 原生客户端、macOS 的 CrossOver 或 PlayCover）。`npm run setup` 检测到客户端时会询问是否提取（需要 Python 3.8+，依赖装在项目内的 `.venv-extract`，不影响系统）；之后可以用 `node tools/setup.mjs --local` 重新提取，或用 `--game "<…/StreamingAssets/AB/Windows>"` 指定路径。没有客户端时游戏照常运行，这几样换成替代样式：2D 棋盘、样式相近的图标、染色的普通源石虫。表情和「玩法说明」的教程图随上面的素材一起从公开镜像下载，不需要客户端。没有客户端的服务器（例如 Linux VPS）也可以从**同一版本**的整合包里复制 `public/assets/local/` 和 `data/local-assets.json`，见 [docs/DEPLOY.md](docs/DEPLOY.md) 的「本地客户端素材」。
 - 素材下载优先使用 GitHub，失败时自动改用 jsDelivr 镜像。
@@ -245,7 +249,7 @@ GOLDEN_FULL=1 node --test test/golden.test.js           # 黄金结果：固定�
 
 An **unofficial, non-commercial fan remake** of Arknights' seasonal auto-chess tower-defense mode *Stronghold Protocol: Alliance*, played in the browser: solo, or 1–4 player co-op (AI teammates can fill seats). Combat is simulated in each player's browser, so a low-power PC can host.
 
-- **Run:** download the Windows Lite ZIP from the [Workshop release](https://github.com/ColorC/Stronghold-Protocol/releases/tag/workshop-v0.3.0-workshop.1) and double-click `启动游戏.bat`. Node is included. The first launch downloads game resources; later launches can run offline. It opens Workshop at <http://localhost:3000/independent.html>; Alliance remains available at <http://localhost:3000/index.html>. From source: install Node.js 22 or 24, then run `npm ci && npm run setup && npm start` (setup downloads game resources from public mirrors; optional local-client resources use fallback styles when absent). On macOS / Linux, `./scripts/start.sh` also prepares the resources and starts the server.
+- **Run:** from the [Workshop release](https://github.com/ColorC/Stronghold-Protocol/releases/tag/workshop-v0.3.0-workshop.1), install the Windows setup `.exe` or the `.msi` (per-user, no admin rights) and start 卫戍协议：工坊 from the Start menu or desktop, or unpack the Lite ZIP and double-click `启动游戏.exe`. Node is included. The files are not code-signed, so SmartScreen may ask you to confirm (More info → Run anyway). Uninstall from Settings → Apps; Workshop saves stay in `%LOCALAPPDATA%\Stronghold-Protocol-Workshop`. The first launch downloads game resources; later launches can run offline. It opens Workshop at <http://localhost:3000/independent.html>; Alliance remains available at <http://localhost:3000/index.html>. From source: install Node.js 22 or 24, then run `npm ci && npm run setup && npm start` (setup downloads game resources from public mirrors; optional local-client resources use fallback styles when absent). On macOS / Linux, `./scripts/start.sh` also prepares the resources and starts the server.
 - **Play with friends:** create a co-op room and share the 4-letter key or the `?room=KEY` link. On a LAN, use the address printed at start; otherwise use a virtual-LAN tool, a tunnel or a VPS — see [docs/DEPLOY.md](docs/DEPLOY.md).
 - **Disclaimer:** not affiliated with or endorsed by Hypergryph or Yostar. All Arknights names, art, audio, text and data are © their respective owners and are **not** covered by this project's GPL licence. For study and personal non-commercial use only — no selling, paid distribution, paid servers or monetisation of any kind. Content will be removed on request of the rights holders. Provided "as is", without warranty.
 - **License:** code GPL-3.0-or-later ([LICENSE](LICENSE)); game assets excluded.

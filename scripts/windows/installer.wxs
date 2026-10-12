@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  scripts/windows/installer.wxs — per-user MSI of the Windows Lite bundle (docs/WINDOWS.md).
+
+  Built by scripts/make-windows-installers.mjs with WiX 5:
+    wix build -arch x64 -culture zh-CN -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext
+              -d Version=0.3.0.1 -d PayloadDir=… -d IconFile=… -d LicenseRtf=… installer.wxs
+  The payload is the bundle directory of scripts/make-windows-bundle.mjs in lite mode (启动游戏.exe, node\, app\, notices);
+  game resources are still fetched by the launcher on first start, into app\.
+
+  - Per-user: %LOCALAPPDATA%\Programs\Stronghold-Protocol-Workshop, no elevation; the game writes its downloads there.
+  - Uninstall removes the whole app\ and node\ trees (downloaded resources and caches included) and the folder itself.
+    Saves live in %LOCALAPPDATA%\Stronghold-Protocol-Workshop (the launcher sets SP_INDEPENDENT_DIRECTORY) and stay.
+  - Upgrade: fixed UpgradeCode, MajorUpgrade. MSI compares only the first three version fields, so prerelease builds
+    (0.3.0.1 → 0.3.0.2) need AllowSameVersionUpgrades. The old version's uninstall during an upgrade keeps app\
+    (Condition on RemoveFolderEx), so the new version reuses the resources already downloaded.
+  - The exe setup (installer.nsi) installs the same folder; each refuses to install over the other.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+  <Package Name="卫戍协议：工坊" Manufacturer="Stronghold-Protocol" Version="$(var.Version)"
+           UpgradeCode="{D70D6F34-1CAF-4453-A924-0DED98658F9E}" Scope="perUser" Language="2052" Codepage="936"
+           Compressed="yes">
+    <SummaryInformation Description="卫戍协议：工坊 $(var.DisplayVersion)" Manufacturer="Stronghold-Protocol" Codepage="936" />
+    <MajorUpgrade AllowSameVersionUpgrades="yes" Schedule="afterInstallValidate"
+                  DowngradeErrorMessage="已经安装了更新版本的卫戍协议：工坊。" />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="WorkshopIcon" SourceFile="$(var.IconFile)" />
+    <Property Id="ARPPRODUCTICON" Value="WorkshopIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/ColorC/Stronghold-Protocol/tree/workshop" />
+    <Property Id="ARPCOMMENTS" Value="非官方同人作品，仅供学习交流与个人非商业使用。" />
+
+    <!-- Written by installer.nsi; the two installers own the same folder and must not be stacked. -->
+    <Property Id="EXE_INSTALLED">
+      <RegistrySearch Id="ExeInstalledSearch" Root="HKCU" Key="Software\Stronghold-Protocol-Workshop" Name="InstalledBy" Type="raw" />
+    </Property>
+    <Launch Condition="Installed OR NOT (EXE_INSTALLED = &quot;exe&quot;)"
+            Message="这台电脑已经用安装程序（exe）安装了卫戍协议：工坊。请先在「设置 → 应用」里卸载它，再安装这个 MSI。" />
+
+    <!-- RemoveFolderEx runs before costing, so the folders to delete come from the registry, not from Directory rows. -->
+    <Property Id="APPFOLDER_TO_REMOVE">
+      <RegistrySearch Id="AppFolderSearch" Root="HKCU" Key="Software\Stronghold-Protocol-Workshop" Name="AppFolder" Type="raw" />
+    </Property>
+    <Property Id="NODEFOLDER_TO_REMOVE">
+      <RegistrySearch Id="NodeFolderSearch" Root="HKCU" Key="Software\Stronghold-Protocol-Workshop" Name="NodeFolder" Type="raw" />
+    </Property>
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="UserProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="Stronghold-Protocol-Workshop">
+          <Directory Id="APPFOLDER" Name="app" />
+          <Directory Id="NODEFOLDER" Name="node" />
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <Feature Id="Main" Title="卫戍协议：工坊" Level="1">
+      <Files Include="$(var.PayloadDir)\**" Directory="INSTALLFOLDER" />
+
+      <Component Id="InstallState" Directory="INSTALLFOLDER">
+        <RegistryValue Root="HKCU" Key="Software\Stronghold-Protocol-Workshop" Name="InstalledBy" Type="string" Value="msi" KeyPath="yes" />
+        <RegistryValue Root="HKCU" Key="Software\Stronghold-Protocol-Workshop" Name="InstallFolder" Type="string" Value="[INSTALLFOLDER]" />
+        <RegistryValue Root="HKCU" Key="Software\Stronghold-Protocol-Workshop" Name="AppFolder" Type="string" Value="[APPFOLDER]" />
+        <RegistryValue Root="HKCU" Key="Software\Stronghold-Protocol-Workshop" Name="NodeFolder" Type="string" Value="[NODEFOLDER]" />
+        <RemoveRegistryKey Root="HKCU" Key="Software\Stronghold-Protocol-Workshop" Action="removeOnUninstall" />
+        <util:RemoveFolderEx Id="RemoveAppFolder" Property="APPFOLDER_TO_REMOVE" On="uninstall" Condition="NOT UPGRADINGPRODUCTCODE" />
+        <util:RemoveFolderEx Id="RemoveNodeFolder" Property="NODEFOLDER_TO_REMOVE" On="uninstall" />
+        <RemoveFolder Id="RemoveInstallFolder" Directory="INSTALLFOLDER" On="uninstall" />
+      </Component>
+
+      <Component Id="StartMenuShortcut" Directory="ProgramMenuFolder">
+        <Shortcut Id="StartMenuShortcut" Name="卫戍协议：工坊" Description="启动卫戍协议：工坊（本机开服并打开浏览器）"
+                  Target="[INSTALLFOLDER]启动游戏.exe" WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKCU" Key="Software\Stronghold-Protocol-Workshop" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="DesktopShortcut" Directory="DesktopFolder">
+        <Shortcut Id="DesktopShortcut" Name="卫戍协议：工坊" Description="启动卫戍协议：工坊（本机开服并打开浏览器）"
+                  Target="[INSTALLFOLDER]启动游戏.exe" WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKCU" Key="Software\Stronghold-Protocol-Workshop" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </Feature>
+
+    <!-- Minimal UI: notice (license) page → install → finish, with an optional "start the game" checkbox. -->
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.LicenseRtf)" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="启动卫戍协议：工坊" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+    <SetProperty Id="WixShellExecTarget" Value="[INSTALLFOLDER]启动游戏.exe" After="CostFinalize" Sequence="ui" />
+    <CustomAction Id="LaunchGame" BinaryRef="Wix4UtilCA_X64" DllEntry="WixShellExec" Impersonate="yes" />
+    <UI>
+      <ui:WixUI Id="WixUI_Minimal" />
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchGame"
+               Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed" />
+    </UI>
+  </Package>
+</Wix>

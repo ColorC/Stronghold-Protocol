@@ -7,11 +7,13 @@
 //   node\node.exe            官方 Windows x64 便携版 Node（使用固定官方发布版本）
 //   node\LICENSE-node.txt    Node 自己的许可证（和 node.exe 一起从官方 zip 里取出来）
 //   app\                     游戏本体：**只收 git 跟踪的文件** + 生产依赖 + 素材，离线可玩
-//   启动游戏.bat             app\scripts\launch.mjs --no-setup
+//   启动游戏.exe             启动器（scripts/windows/launcher.cs）：app\scripts\launch.mjs --workshop [--no-setup]
 //   README-开箱即用.md       给玩家看的说明（含非官方 / 严禁盈利 / 素材版权声明）
 //   LICENSE / NOTICE.md / THIRD-PARTY-NOTICES.md
 //
-// 目标机器无需预装 Node：解压 → 双击 启动游戏.bat；轻量包首次联网获取资源。
+// 目标机器无需预装 Node：解压 → 双击 启动游戏.exe；轻量包首次联网获取资源。
+// 发行包里不放 .bat 启动脚本。启动器用 Windows 自带的 .NET Framework 4 csc.exe 编译，所以打包要在 Windows 上运行；
+// 安装包（msi / exe）由 scripts/make-windows-installers.mjs 在这个目录的基础上生成。
 //
 // 三条硬规则（都是踩过的坑）：
 //   1. app\ 的文件清单来自 `git ls-files`，不是手写的跳过表 —— `.env` / `.venv` / `.claude` /
@@ -28,6 +30,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { workshopIco } from './windows/icon.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const IS_WIN = process.platform === 'win32';
@@ -49,8 +52,44 @@ const NODE_PIN = Object.freeze({
 /** 这几份不进版本库（npm / tools/setup.mjs 生成），但必须进包，否则游戏缺素材或缺前端库。 */
 const ASSET_DIRS = ['public/assets', 'public/fonts', 'public/vendor'];
 
-/** 开发页面、测试夹具和 CI 配置留在源码仓库，不放进玩家运行包。 */
-const SKIP_TRACKED = ['test/', 'public/dev/', '.github/'];
+/**
+ * 留在源码仓库、不放进玩家运行包的跟踪文件：开发页面、测试夹具、CI 配置、启动器与安装包的源码、
+ * 从源码目录启动用的 start-windows 脚本，以及开机自启服务（install-service-windows.ps1 → run-server.cmd，
+ * 只用于源码部署，docs/DEPLOY.md §1.4）。
+ */
+const SKIP_TRACKED = ['test/', 'public/dev/', '.github/', 'scripts/windows/', 'scripts/start-windows.bat', 'scripts/start-windows.ps1',
+  'scripts/install-service-windows.ps1', 'scripts/run-server.cmd'];
+
+/** 发给玩家的包（zip / msi / exe）里任何时候都不放批处理：启动只用 启动游戏.exe。 */
+const BATCH_FILE = /\.(bat|cmd)$/i;
+
+/** 这个 git 跟踪的文件（仓库相对路径，posix 分隔符）进不进运行包。 */
+export function isPackagedTrackedFile(rel) {
+  return !SKIP_TRACKED.some((p) => rel === p || rel.startsWith(p)) && !BATCH_FILE.test(rel);
+}
+
+/**
+ * 目录里的批处理文件（相对路径）。打包最后用它把关：运行包里出现任何 .bat / .cmd 就失败，
+ * 不管它是跟踪文件、依赖带来的，还是以后哪一步新加的。
+ * @param {string} dir
+ * @returns {Promise<string[]>}
+ */
+export async function findBatchFiles(dir) {
+  const found = [];
+  const walk = async (d) => {
+    for (const e of await fsp.readdir(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) await walk(p);   // eslint-disable-line no-await-in-loop
+      else if (BATCH_FILE.test(e.name)) found.push(path.relative(dir, p));
+    }
+  };
+  await walk(dir);
+  return found;
+}
+
+/** 启动器源码与发行包里的文件名。 */
+const LAUNCHER_SOURCE = path.join(ROOT, 'scripts', 'windows', 'launcher.cs');
+export const LAUNCHER_NAME = '启动游戏.exe';
 
 /** 包根要带的许可证 / 声明。 */
 const LEGAL_FILES = ['LICENSE', 'NOTICE.md', 'THIRD-PARTY-NOTICES.md'];
@@ -89,11 +128,14 @@ const HELP = `node scripts/make-windows-bundle.mjs — 生成 Windows 开箱即�
   --node-version X   指定官方 Node 发布版本（默认 ${NODE_PIN.version}）
 
   app\\ 里只放 git 跟踪的文件 + 生产依赖（npm ci --omit=dev）+ public/{assets,fonts,vendor}；
-  因此 .env / .venv / .claude / scripts/service.env.cmd 这些本机文件不会被打进去。
+  因此 .env / .venv / .claude / scripts/service.env.cmd 这些本机文件不会被打进去；
+  开机自启服务脚本只留在源码仓库，产物里出现任何 .bat / .cmd 打包即失败。
   完整包会在存在本地棋盘贴图时附上 data/local-assets.json；轻量包不复制本机资源和清单。
 
-  启动游戏.bat 使用 app\\scripts\\launch.mjs --workshop 进入工坊。
+  启动游戏.exe 运行 app\\scripts\\launch.mjs --workshop 进入工坊（启动器源码 scripts/windows/launcher.cs，
+  用 Windows 自带的 .NET Framework csc.exe 编译，因此只能在 Windows 上打包）。
   完整包附加 --no-setup；轻量包保留首次启动的资源准备步骤。
+  安装包（msi / 安装程序 exe）：node scripts/make-windows-installers.mjs（docs/WINDOWS.md）。
 `;
 
 /**
@@ -280,6 +322,8 @@ async function installProductionDeps(appDir) {
   await fsp.rm(path.join(appDir, 'node_modules'), { recursive: true, force: true });
   await fsp.rename(path.join(stage, 'node_modules'), path.join(appDir, 'node_modules'));
   await fsp.rm(stage, { recursive: true, force: true });
+  // npm 的命令行垫片（.bin/*.cmd 等）只给 npm scripts 用，游戏运行用不到；运行包里不放 .cmd / .bat。
+  await fsp.rm(path.join(appDir, 'node_modules', '.bin'), { recursive: true, force: true });
 }
 
 /**
@@ -300,7 +344,7 @@ export function psSingleQuote(s) {
  * 解不了 zip，Linux 上是这一档）、Windows 自带的 `Expand-Archive`。全试过才报错。
  * @returns {string} 实际成功的命令名
  */
-function extractZip(zipPath, dir) {
+export function extractZip(zipPath, dir) {
   const attempts = [
     ['tar', ['-xf', zipPath, '-C', dir]],
     ['unzip', ['-q', zipPath, '-d', dir]],
@@ -382,9 +426,92 @@ async function extractPortableNode(bundleNodeDir, version, zipPath) {
   }
 }
 
-/** 启动 .bat（内容保持纯 ASCII，中文只出现在文件名里）。 */
-function bat(body) {
-  return `@echo off\r\nchcp 65001 >nul\r\nsetlocal\r\nset "HERE=%~dp0"\r\nset "NODE="\r\nif exist "%HERE%node\\node.exe" set "NODE=%HERE%node\\node.exe"\r\nif not defined NODE set "NODE=node"\r\n${body}\r\nset "CODE=%ERRORLEVEL%"\r\nif not "%CODE%"=="0" pause\r\nexit /b %CODE%\r\n`;
+/**
+ * 数字版本号：0.3.0-workshop.1 → 0.3.0.1。启动器 exe 的文件版本和 MSI 的 ProductVersion 都只认四段数字；
+ * 预发布序号放进第四段（MSI 升级比较只看前三段，安装包因此允许同版本升级，见 scripts/windows/installer.wxs）。
+ * @param {string} version package.json 的 version
+ */
+export function numericVersion(version) {
+  const m = /^(\d+)\.(\d+)\.(\d+)(?:-[0-9A-Za-z-]+\.(\d+))?$/.exec(String(version));
+  if (!m) throw new Error(`版本号 ${version} 无法换成四段数字（支持 1.2.3 和 1.2.3-label.4）`);
+  const parts = [m[1], m[2], m[3], m[4] ?? '0'].map(Number);
+  const limits = [255, 255, 65535, 65535];
+  if (parts.some((n, i) => n > limits[i])) throw new Error(`版本号 ${version} 超出 Windows 版本号范围（${limits.join('.')}）`);
+  return parts.join('.');
+}
+
+/** Windows 自带的 .NET Framework 4 C# 编译器（Windows 10/11 都带 4.8，编出来的 exe 在干净系统上直接能跑）。 */
+export function findCsc({ env = process.env, exists = fs.existsSync } = {}) {
+  const windir = env.SystemRoot || env.windir || 'C:\\Windows';
+  for (const fw of ['Framework64', 'Framework']) {
+    const csc = path.win32.join(windir, 'Microsoft.NET', fw, 'v4.0.30319', 'csc.exe');
+    if (exists(csc)) return csc;
+  }
+  return null;
+}
+
+/** C# 字符串字面量。 */
+const csString = (s) => `"${String(s).replace(/[\\"]/g, '\\$&')}"`;
+
+/**
+ * 编译时生成的 BuildInfo.cs：启动参数与版本（launcher.cs 引用 BuildInfo.LaunchArguments）。
+ * @param {{ launchArgs: string[], version: string }} o
+ */
+export function launcherBuildInfo({ launchArgs, version }) {
+  const num = numericVersion(version);
+  return [
+    '// Generated by scripts/make-windows-bundle.mjs for scripts/windows/launcher.cs.',
+    `[assembly: System.Reflection.AssemblyVersion(${csString(num)})]`,
+    `[assembly: System.Reflection.AssemblyFileVersion(${csString(num)})]`,
+    `[assembly: System.Reflection.AssemblyInformationalVersion(${csString(version)})]`,
+    `static class BuildInfo { public static readonly string[] LaunchArguments = { ${launchArgs.map(csString).join(', ')} }; }`,
+    '',
+  ].join('\r\n');
+}
+
+/**
+ * 编译 启动游戏.exe 到 outExe。
+ *
+ * 先编到临时目录里的 ASCII 文件名再复制：老版 csc 在非中文区域设置的系统上未必能处理中文的 /out 路径。
+ * @param {string} outExe
+ * @param {{ launchArgs: string[], version: string }} o
+ */
+export async function compileLauncher(outExe, { launchArgs, version }) {
+  const csc = IS_WIN ? findCsc() : null;
+  if (!csc) {
+    throw new Error(`编译 ${LAUNCHER_NAME} 需要 Windows 自带的 .NET Framework 4 编译器 csc.exe`
+      + '（%WINDIR%\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe）：请在 Windows 10/11 上打包');
+  }
+  const tmp = await fsp.mkdtemp(path.join(os.tmpdir(), 'sp-launcher-'));
+  try {
+    const buildInfo = path.join(tmp, 'BuildInfo.cs');
+    const icon = path.join(tmp, 'workshop.ico');
+    const exe = path.join(tmp, 'launcher.exe');
+    await fsp.writeFile(buildInfo, launcherBuildInfo({ launchArgs, version }), 'utf8');
+    await fsp.writeFile(icon, workshopIco());
+    const r = spawnSync(csc, ['/nologo', '/target:exe', '/optimize+', '/codepage:65001', `/win32icon:${icon}`, `/out:${exe}`,
+      LAUNCHER_SOURCE, buildInfo], { stdio: ['ignore', 'inherit', 'inherit'], windowsHide: true });
+    if (r.error || r.status !== 0) throw new Error(`csc.exe 编译启动器失败（${r.error ? r.error.message : `退出码 ${r.status}`}）：${LAUNCHER_SOURCE}`);
+    await fsp.copyFile(exe, outExe);
+    return { csc, bytes: (await fsp.stat(outExe)).size };
+  } finally {
+    await fsp.rm(tmp, { recursive: true, force: true });
+  }
+}
+
+/**
+ * 声明要点（Markdown）。包内说明和安装包的「使用前须知」页用同一份，免得两处措辞走样。
+ * @param {{ lite?: boolean }} o
+ */
+export function noticePoints({ lite = false } = {}) {
+  return [
+    '本项目是玩家自制的**非官方同人作品**，与上海鹰角网络科技有限公司（Hypergryph）、Yostar 及其关联方**没有任何关系**，未获其授权或认可。',
+    '《明日方舟》及「卫戍协议」相关的名称、角色、美术、音乐、音效、文本与数据等素材，版权归原权利人所有。这些素材**不适用**本项目的 GPL-3.0 许可证；GPL 只覆盖本项目自己编写的代码。',
+    '仅供学习交流与个人非商业使用。**严禁任何形式的盈利**，包括但不限于：售卖本项目或整合包、付费下载或付费分发、收费服务器或收费代开、广告 / 打赏 / 会员等变现方式，以及其他任何商业用途。',
+    `${lite ? '首次启动时获取的游戏美术与音频素材仅供本项目使用。' : '本包附带游戏的美术与音频素材。'}请勿将素材用于本项目以外的用途或**单独再分发**。完整条款见 [NOTICE.md](NOTICE.md)。`,
+    '权利人如认为本项目侵犯其权益，请通过 Issue 联系，我们会**立即删除**相关内容。',
+    '本项目按「现状」提供，**不提供任何担保**，使用风险自负。',
+  ];
 }
 
 /**
@@ -400,11 +527,11 @@ export function bundleReadme({ version, withNode, lite = false }) {
     ? `node\\node.exe            便携版 Node ${version}（官方 x64）
 node\\LICENSE-node.txt    Node 自己的许可证（MIT）
 app\\                    游戏本体：server / shared / public${lite ? '（首次启动获取资源）' : '（完整资源）'} / data / scripts / tools
-启动游戏.bat             app\\scripts\\launch.mjs --workshop${lite ? '' : ' --no-setup'}
+启动游戏.exe             启动器：app\\scripts\\launch.mjs --workshop${lite ? '' : ' --no-setup'}
 README-开箱即用.md       本文件
 LICENSE / NOTICE.md / THIRD-PARTY-NOTICES.md`
     : `app\\                    游戏本体：server / shared / public${lite ? '（首次启动获取资源）' : '（完整资源）'} / data / scripts / tools
-启动游戏.bat             app\\scripts\\launch.mjs --workshop${lite ? '' : ' --no-setup'}
+启动游戏.exe             启动器：app\\scripts\\launch.mjs --workshop${lite ? '' : ' --no-setup'}
 README-开箱即用.md       本文件
 LICENSE / NOTICE.md / THIRD-PARTY-NOTICES.md
 
@@ -416,8 +543,9 @@ LICENSE / NOTICE.md / THIRD-PARTY-NOTICES.md
     : `公开资源和依赖已包含在包内，不需要首次下载。没有本地《明日方舟》客户端资源时，棋盘使用 2D，部分图标和模型使用替代样式。`;
   return `# ${title}
 
-解压后**双击 \`启动游戏.bat\`** 即可。
+解压后**双击 \`启动游戏.exe\`** 即可。
 ${nodeNeed}
+启动器没有代码签名：如果 Windows 显示「Windows 已保护你的电脑」，点「更多信息」→「仍要运行」。
 ${firstRun}
 
 ${lite ? '**下载完成后可以离线游玩**：轻量包自带游戏依赖，美术、音频和字体在首次启动时下载。断网时使用已下载的字体和系统黑体。' : '**不联网也能玩**：美术 / 音频 / 依赖 / 字体全部在包内，断网时使用自带字体和系统黑体。'}
@@ -428,12 +556,7 @@ Noto Sans SC 这类网页字体（\`index.html\` 的字体外链不阻塞渲染�
 ## 声明
 
 > [!IMPORTANT]
-> - 本项目是玩家自制的**非官方同人作品**，与上海鹰角网络科技有限公司（Hypergryph）、Yostar 及其关联方**没有任何关系**，未获其授权或认可。
-> - 《明日方舟》及「卫戍协议」相关的名称、角色、美术、音乐、音效、文本与数据等素材，版权归原权利人所有。这些素材**不适用**本项目的 GPL-3.0 许可证；GPL 只覆盖本项目自己编写的代码。
-> - 仅供学习交流与个人非商业使用。**严禁任何形式的盈利**，包括但不限于：售卖本项目或整合包、付费下载或付费分发、收费服务器或收费代开、广告 / 打赏 / 会员等变现方式，以及其他任何商业用途。
-> - ${lite ? '首次启动时获取的游戏美术与音频素材仅供本项目使用。' : '本包附带游戏的美术与音频素材。'}请勿将素材用于本项目以外的用途或**单独再分发**。完整条款见 [NOTICE.md](NOTICE.md)。
-> - 权利人如认为本项目侵犯其权益，请通过 Issue 联系，我们会**立即删除**相关内容。
-> - 本项目按「现状」提供，**不提供任何担保**，使用风险自负。
+${noticePoints({ lite }).map((p) => `> - ${p}`).join('\n')}
 
 包内 [LICENSE](LICENSE) 里的 GPL-3.0-or-later 覆盖的是**本项目自己编写的代码**；内置 Node.js（MIT）以及其它
 第三方组件的许可见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)${nodeLicence}。
@@ -441,7 +564,7 @@ Noto Sans SC 这类网页字体（\`index.html\` 的字体外链不阻塞渲染�
 ## 怎么玩
 
 \`\`\`
-本机当服务器   双击 启动游戏.bat：在这台电脑开服，浏览器自动打开；
+本机当服务器   双击 启动游戏.exe：在这台电脑开服，浏览器自动打开；
                控制台会打印「发给朋友」的局域网地址（形如 http://192.168.1.23:3000）
 连别人的服务器 不需要这个包，直接用浏览器打开对方的网址就行
 \`\`\`
@@ -457,7 +580,10 @@ Noto Sans SC 这类网页字体（\`index.html\` 的字体外链不阻塞渲染�
 ${tree}
 \`\`\`
 
-卸载＝直接删掉整个文件夹（不写注册表、不放系统目录）。存档/昵称在该电脑的浏览器 localStorage 里。
+工坊对局的存档保存在 \`%LOCALAPPDATA%\\Stronghold-Protocol-Workshop\`（窗口第一行会显示完整路径），
+解压新版本到别的文件夹也能接着玩；浏览器还会记住当前对局与昵称。
+
+卸载＝直接删掉整个文件夹（不写注册表、不放系统目录）。不再需要存档时，再删掉上面的存档目录。
 `;
 }
 
@@ -503,7 +629,7 @@ async function main() {
 
   // 1) 游戏代码：只收 git 跟踪的文件
   const all = trackedFiles();
-  const wanted = all.filter((rel) => !SKIP_TRACKED.some((p) => rel === p || rel.startsWith(p)));
+  const wanted = all.filter(isPackagedTrackedFile);
   console.log(`  · 复制游戏本体（git 跟踪的 ${wanted.length} 个文件，略过 ${all.length - wanted.length} 个开发与测试文件）…`);
   const copied = await copyFiles(wanted, appDir);
   console.log(`    完成：${copied.files} 个文件 / ${MB(copied.bytes)}`);
@@ -560,12 +686,19 @@ async function main() {
     await fsp.copyFile(src, path.join(out, f));
   }
 
-  await fsp.writeFile(path.join(out, '启动游戏.bat'), bat(`"%NODE%" "%HERE%app\\scripts\\launch.mjs" --workshop${o.lite ? '' : ' --no-setup'} %*`), 'latin1');
+  // 6) 启动器：用 Windows 自带的 csc.exe 编译，启动参数编进 exe（轻量包保留资源准备步骤）
+  const launchArgs = ['--workshop', ...(o.lite ? [] : ['--no-setup'])];
+  const version = JSON.parse(await fsp.readFile(path.join(ROOT, 'package.json'), 'utf8')).version;
+  const launcher = await compileLauncher(path.join(out, LAUNCHER_NAME), { launchArgs, version });
+  console.log(`  · 启动器 ${LAUNCHER_NAME}（${launchArgs.join(' ')}，版本 ${version}）：${MB(launcher.bytes)}，编译器 ${launcher.csc}`);
   await fsp.writeFile(path.join(out, 'README-开箱即用.md'), bundleReadme({ version: nodeVersion, withNode: !!o.node, lite: o.lite }), 'utf8');
+
+  const batch = await findBatchFiles(out);
+  if (batch.length) throw new Error(`运行包里不能有 .bat / .cmd：${batch.join('、')}`);
 
   const total = await dirSize(out);
   console.log(`\n✔ 便携包已生成：${out}\n  ${total.files} 个文件 / ${MB(total.bytes)}`);
-  console.log(`  双击「启动游戏.bat」即可（本机开服，浏览器自动打开）${o.lite ? '；首次启动会运行 setup 下载资源' : ''}。`);
+  console.log(`  双击「${LAUNCHER_NAME}」即可（本机开服，浏览器自动打开）${o.lite ? '；首次启动会运行 setup 下载资源' : ''}。`);
   return 0;
 }
 
