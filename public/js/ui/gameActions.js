@@ -58,7 +58,8 @@ export const actions = {
   sell: (uid) => act('g.sell', { uid }),
   // `dir` (UP|RIGHT|DOWN|LEFT): the direction chosen with the deploy wheel (research 09 §6.1 — g.move / g.art carry it;
   // the server defaults to RIGHT when absent)
-  move: (uid, to, dir) => act('g.move', dir ? { uid, to, dir } : { uid, to }),
+  // `opts.sfx`: the success sound in place of 'drop' (共鸣 plays 'retreat' for a piece sent back to the bench)
+  move: (uid, to, dir, opts) => act('g.move', dir ? { uid, to, dir } : { uid, to }, opts),
   // `replaceUid`: the equipped item the replace dialog picked (ui/equipReplace.js) — it is destroyed; absent ⇒ none needed
   equip: (itemUid, targetUid, replaceUid) => act('g.equip', Number.isInteger(replaceUid) ? { itemUid, targetUid, replaceUid } : { itemUid, targetUid }),
   art: (itemUid, row, col, dir) => act('g.art', dir ? { itemUid, row, col, dir } : { itemUid, row, col }),

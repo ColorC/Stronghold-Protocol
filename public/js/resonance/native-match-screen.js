@@ -138,6 +138,7 @@ import { pactCurrentTier, pactTierStatus, pactTierStatusLabel, levelExactCounts,
 import { fieldTileAt, specialBoardTile } from './specialEntityPlacement.js';
 import { NativeSummonBar, SUMMON_DRAG_TYPE, summonCardRows, summonDropRefusal } from './summonBar.js';
 import { prototypeLabCells } from './nativeLabCells.js';
+import { useTideCues } from './tideCues.js';
 import { choiceDescription, choiceLabel, needsAdjacentStrategyPair, adjacentDeployedPairs, parseDetailHash } from './model.js';
 import { resonanceChoiceAction } from './choiceAction.js';
 // MatchEnded, PausedOverlay, the highlight styles and keepEarly live in ./game/*.js.
@@ -698,6 +699,7 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
   }, [view]);
 
   const phase = pub?.phase;
+  useTideCues({ phase, state: resonanceState, view });   // 潮汐: the round / fight surge, the merge · star-up · claim ripples
   const mode = phaseMode(phase);
   const combat = isCombatPhase(phase);
   const solo = roomSolo || String(pub?.modeId || '').includes('single');
@@ -1406,7 +1408,10 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
         }
       }
       const f = intent.fields;
-      if (intent.t === 'g.move') await actions.move(f.uid, f.to);
+      if (intent.t === 'g.move') {
+        const retreat = f.to?.area === 'hand' && L.placeCtx.pieces.get(f.uid)?.area === 'board';   // dragged back to the bench
+        await actions.move(f.uid, f.to, undefined, retreat ? { sfx: 'retreat' } : undefined);
+      }
       else if (intent.t === 'g.equip') {
         // 共鸣: three slots — a 4th item (or a second copy of a unique item) is refused with its reason and stays in the inventory
         const target = L.resonanceState?.pieces?.find(piece => Number(piece.nativeUid) === Number(f.targetUid));
@@ -1681,7 +1686,7 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
     const to = uid != null ? retreatSlot(L.placeCtx, uid) : null;
     if (!to) { toast(t('整备区已满'), 'warn'); audio.sfx('error', { volume: 0.5 }); return; }
     setSelBusy(true);
-    if (await actions.move(uid, to)) {
+    if (await actions.move(uid, to, undefined, { sfx: 'retreat' })) {
       setSel(null);
       setDetail((d) => (d?.kind === 'piece' && d.uid === uid ? null : d)); // its card would cover the bench
     }
@@ -1963,7 +1968,7 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
         const available = underframeActions(L.placeCtx, uid);
         if (act === 'retreat' && available?.retreat) {
           const to = retreatSlot(L.placeCtx, uid); if (!to) return;
-          setSelBusy(true); await actions.move(uid, to); setSelBusy(false);
+          setSelBusy(true); await actions.move(uid, to, undefined, { sfx: 'retreat' }); setSelBusy(false);
         } else if (act === 'retreat' && selected.area === 'hand') {
           const source = L.resonanceState?.pieces?.find((piece) => Number(piece.nativeUid ?? piece.uid) === Number(uid));
           const occupied = new Set([...L.placeCtx.pieces.values()].filter((entry) => entry.area === 'board').map((entry) => `${entry.row},${entry.col}`));

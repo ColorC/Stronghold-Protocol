@@ -460,6 +460,7 @@ export class AudioManager {
     this.voiceToken = 0;
     this.startVoiceDone = false; // 行动出发 of this field (the first operator deployed says it)
     this.uiVoices = 0;
+    this.uiVoicing = null;    // a mode's own synthesized UI cues (setUiVoicing)
     this.wantBgm = null;      // desired key (kept while locked)
     this.bgm = null;          // { key, loopUrl, nodes: [{src, gain}], gain }
     this.bgmToken = 0;
@@ -791,12 +792,23 @@ export class AudioManager {
   }
 
   /**
+   * A mode's own voicing of the UI sounds (共鸣's synthesized water cues, js/resonance/tide.js): `voicing(name, o, out)`
+   * plays its cue for `name` into `out.destination` (the sfx channel: settings 音效 volume and mute apply) and returns
+   * true, or returns false to leave `name` to the manifest's sample. It is only asked while the context runs (after the
+   * first gesture) and the sfx channel is audible. null ⇒ samples only.
+   * @param {((name: string, o: { volume?: number }, out: { ctx: AudioContext, destination: AudioNode }) => boolean)|null} fn
+   */
+  setUiVoicing(fn) { this.uiVoicing = typeof fn === 'function' ? fn : null; }
+
+  /**
    * UI sound by name (sfx.ui keys). Unknown names are ignored.
    * @param {string} name
    * @param {{ volume?: number }} [o]
    */
   sfx(name, o = {}) {
     try {
+      if (this.uiVoicing && this.ctx?.state === 'running' && !this.volumes.muted && this.volumes.sfx > 0
+        && this.uiVoicing(name, o, { ctx: this.ctx, destination: this.sfxGain })) return;
       const url = this.getManifest()?.audio?.sfx?.ui?.[name];
       if (typeof url === 'string') this._play(url, { volume: o.volume ?? 0.9 });
     } catch { /* ignore */ }

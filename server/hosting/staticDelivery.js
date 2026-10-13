@@ -14,6 +14,8 @@ const LOCAL_RESONANCE = new Set([
   '/css/resonance-detail.css',
   '/css/resonance-codex.css',
   '/css/resonance-panels.css',
+  '/css/resonance-tide-remap.css',
+  '/css/resonance-tide.css',
   '/js/ui/fieldHost.js',
   '/js/ui/fallbackField.js',
   '/js/ui/hud.js',
