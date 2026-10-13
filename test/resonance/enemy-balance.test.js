@@ -61,8 +61,8 @@ const statsOf=enemy=>({maxHp:enemy.base.maxHp,atk:enemy.base.atk,def:enemy.base.
 const natives=key=>({maxHp:data.enemies[key].stats.maxHp,atk:data.enemies[key].stats.atk,def:data.enemies[key].stats.def});
 
 test('an enemy spawned in the fight takes the same HP, ATK and DEF multipliers as a wave enemy of its kind',()=>{
-  // node 10 sits on each difficulty's node curve: NORMAL ×1.0667 and HARD ×1.15 on HP and ATK, FUNNY still flat
-  for(const [difficulty,hp,atk,def] of [['NORMAL',0.6934,0.9067,0.35],['HARD',1.035,1.15,0.65],['FUNNY',0.55,0.75,0.3]]){
+  // node 10 sits on each difficulty's node curve: NORMAL HP ×1.5625 / ATK ×1.3125 and HARD ×1.35 / ×1.24, FUNNY still flat
+  for(const [difficulty,hp,atk,def] of [['NORMAL',1.0156,1.1156,0.35],['HARD',1.215,1.24,0.65],['FUNNY',0.55,0.75,0.3]]){
     const {battle,prepared}=battleAt(difficulty);
     assert.deepEqual([prepared.enemyBalance.hpMultiplier,prepared.enemyBalance.atkMultiplier,prepared.enemyBalance.defMultiplier],[hp,atk,def],difficulty);
     const wave=prepared.wave.spawns.find(spawn=>data.enemies[spawn.enemyKey]&&spawn.mods);
@@ -94,9 +94,9 @@ test('a summon chain is scaled once however long it is, and a summon with its ow
     parent=child;
   }
   // an unrelated summon with no wave mods is the plain node factor, not the wave enemy's per-kind rolls
-  // (NORMAL node 10: HP 0.6934, ATK 0.9067 on the node curve, DEF 0.35)
+  // (NORMAL node 10: HP 1.0156, ATK 1.1156 on the node curve, DEF 0.35)
   const {hpMultiplier:hp,atkMultiplier:atk}=prepared.enemyBalance;
-  assert.deepEqual([hp,atk],[0.6934,0.9067]);
+  assert.deepEqual([hp,atk],[1.0156,1.1156]);
   assert.deepEqual(statsOf(fresh),{maxHp:natives(PHANTOM).maxHp*hp,atk:natives(PHANTOM).atk*atk,def:natives(PHANTOM).def*0.35});
   const own=battle.spawnEnemy(PHANTOM,{pos:[10,9],mods:{hpMul:0.5}});
   close(own.base.maxHp,natives(PHANTOM).maxHp*0.5*hp,'its own ×0.5 stays, the node factor goes on top');
@@ -111,14 +111,14 @@ test('ABYSS before its node curve rises keeps native HP and ATK for summons, and
   assert.equal(native.mods,null);
   const {battle,prepared}=battleAt('NORMAL',23,28);
   assert.equal(prepared.nodeKind,'boss');
-  assert.equal(prepared.enemyBalance.hpMultiplier,0.75);
+  assert.equal(prepared.enemyBalance.hpMultiplier,0.85);
   while(!battle.enemies.some(enemy=>enemy.bossPool)&&battle.time<10)battle.step();
   const boss=battle.enemies.find(enemy=>enemy.bossPool);
   assert.ok(boss,'the leader is on the shared pool');
   assert.equal(boss.base.maxHp,boss.bossPool.maxHp);
   assert.equal(boss.hp,boss.s.maxHp);
   const summon=battle.spawnEnemy(PHANTOM,{pos:[10,9]});
-  close(summon.base.maxHp,natives(PHANTOM).maxHp*0.75,'a leader-node summon takes the leader profile HP');
-  close(summon.base.atk,natives(PHANTOM).atk*0.85,'and ATK');
+  close(summon.base.maxHp,natives(PHANTOM).maxHp*0.85,'a leader-node summon takes the leader profile HP');
+  close(summon.base.atk,natives(PHANTOM).atk*0.9,'and ATK');
   assert.equal(battle.errorCount,0);
 });

@@ -105,14 +105,15 @@ for (const [kind, row] of Object.entries(schedule)) {
 push('', '### 敌方数值修正', '', '| 难度 | 普通敌人生命/攻击/防御 | Boss生命/攻击/防御/共享生命池 |', '|---|---|---|');
 const enemy = catalog.campaign.enemyBalance ?? {};
 for (const difficulty of ['NORMAL', 'FUNNY', 'HARD', 'ABYSS']) {
-  const row = enemy.byDifficulty?.[difficulty] ?? enemy;
-  const regular = row.regular ?? {};
-  const terminal = row.terminal ?? {};
+  // a difficulty's override may set only some fields of a scope: the rest come from the shared profile
+  const row = enemy.byDifficulty?.[difficulty] ?? {};
+  const regular = { ...enemy.regular, ...row.regular };
+  const terminal = { ...enemy.terminal, ...row.terminal };
   push(`| ${difficulty} | ${regular.hpMultiplier ?? '—'} / ${regular.atkMultiplier ?? '—'} / ${regular.defMultiplier ?? '—'} | ${terminal.hpMultiplier ?? '—'} / ${terminal.atkMultiplier ?? '—'} / ${terminal.defMultiplier ?? '—'} / ${terminal.bossPoolMultiplier ?? '—'} |`);
 }
 const nodeCurve = enemy.nodeCurve ?? {};
 if (Object.keys(nodeCurve).length) {
-  push('', '普通与精英节点的敌人生命、攻击再乘本难度的节点曲线（节点之间线性过渡，两端之外取端点值）；领袖节点与防御不乘曲线。', '', '| 难度 | 节点：生命× / 攻击× |', '|---|---|');
+  push('', '普通与精英节点的敌人生命、攻击再乘本难度的节点曲线（节点之间线性过渡，两端之外取端点值）；领袖节点使用上表 Boss 列，与防御一样不乘曲线。', '', '| 难度 | 节点：生命× / 攻击× |', '|---|---|');
   for (const difficulty of ['NORMAL', 'FUNNY', 'HARD', 'ABYSS']) {
     if (nodeCurve[difficulty]) push(`| ${difficulty} | ${nodeCurve[difficulty].map((point) => `${point.node}：${point.hpMultiplier} / ${point.atkMultiplier}`).join('；')} |`);
   }

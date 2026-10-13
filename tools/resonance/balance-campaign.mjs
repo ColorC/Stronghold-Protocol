@@ -40,6 +40,8 @@ export const CAMPAIGN_POLICIES=Object.freeze(['tempo','reroll','rush']);
 export const ECON_PACT_POLICY='econ-pact';
 export const ADAPTIVE_STANDARD_POLICY='adaptive-standard';
 export const CARRY_ADAPTIVE_POLICY='carry-adaptive';
+// 'messy' keeps the policy's buys, gear and picks but re-places the board before every fight like a careless player
+export const CAMPAIGN_PLACEMENTS=Object.freeze(['planned','messy']);
 const isEconomyCampaignPolicy=policy=>policy===ECON_PACT_POLICY||policy===ADAPTIVE_STANDARD_POLICY||policy===CARRY_ADAPTIVE_POLICY;
 export function policyLevelTarget(policy,round){
   if(policy==='tempo')return round>=24?9:round>=18?8:round>=13?7:round>=9?6:round>=5?5:round>=3?4:3;
@@ -887,6 +889,34 @@ export function deployCampaignTeamForVerification(state,catalog,{coreOperatorId=
   const priorPolicy=activePolicy,priorMetrics=activeMetrics;activePolicy={id:CARRY_ADAPTIVE_POLICY,coreOperatorId};activeMetrics=null;
   try{return deployTeam(state,catalog);}finally{activePolicy=priorPolicy;activeMetrics=priorMetrics;}
 }
+const FACINGS=['UP','RIGHT','DOWN','LEFT'];
+/**
+ * The careless-player board used as a control (placement 'messy'): the same operators stay deployed, but every ranged
+ * operator moves to the legal tile nearest where the enemies enter (the start of a route, then the tiles along it) and
+ * every operator faces a seeded random way. Melee operators keep their tiles, so the routes stay blocked.
+ */
+export function messyCampaignPlacement(state,catalog,seed=1){
+  const field=activeBattleFields(state,catalog),routes=routeProfiles(field);
+  if(!routes.length)return state;
+  const legal=new Set(viewSession(state,{catalog,fieldResolver:(s)=>getResonanceField(s,{data,catalog})}).legalCells??[]);
+  const front=(row,col)=>Math.min(...routes.map(route=>Math.min(...route.points.map(([r,c],index)=>index+4*(Math.abs(row-r)+Math.abs(col-c))))));
+  let bits=(Math.imul((Number(seed)>>>0)^0x6d657373,0x9e3779b1)^Math.imul(Number(state.round)||0,0x85ebca6b))>>>0||1;
+  const facing=()=>{bits^=bits<<13;bits>>>=0;bits^=bits>>>17;bits^=bits<<5;bits>>>=0;return FACINGS[bits%4];};
+  const deployed=state.pieces.filter(piece=>piece.row!==null).sort((a,b)=>a.uid.localeCompare(b.uid));
+  const ranged=deployed.filter(piece=>opById(catalog,piece.operatorId)?.position!=='MELEE');
+  const held=new Set(deployed.filter(piece=>!ranged.includes(piece)).map(piece=>`${piece.row},${piece.col}`));
+  for(const piece of ranged){
+    const op=opById(catalog,piece.operatorId);
+    const tiles=[...field.deployMap.keys()].filter(key=>{if(!legal.has(key)||held.has(key))return false;const [r,c]=key.split(',').map(Number);return canOperatorUseTile(op,field.deployMap,r,c);})
+      .map(key=>{const [row,col]=key.split(',').map(Number);return {key,row,col,front:front(row,col)};}).sort((a,b)=>a.front-b.front||a.key.localeCompare(b.key));
+    // a tile held by a ranged operator not yet moved is swapped with it; an illegal swap tries the next tile
+    let moved=false;
+    for(const tile of tiles){try{state=runAction(state,{type:'move',pieceUid:piece.uid,row:tile.row,col:tile.col,dir:facing()},catalog).state;held.add(tile.key);moved=true;break;}catch{}}
+    if(!moved){const live=state.pieces.find(p=>p.uid===piece.uid);held.add(`${live.row},${live.col}`);}
+  }
+  for(const piece of state.pieces.filter(p=>p.row!==null).sort((a,b)=>a.uid.localeCompare(b.uid)))state=runAction(state,{type:'turn',pieceUid:piece.uid,dir:facing()},catalog).state;
+  return state;
+}
 function deployTeam(state,catalog){
   const deployCap=campaignDeployCapacity(state);
   const field=activeBattleFields(state,catalog);const legal=new Set(viewSession(state,{catalog,fieldResolver:(s)=>getResonanceField(s,{data,catalog})}).legalCells??[]);
@@ -1028,9 +1058,10 @@ function equipAndCombine(state,catalog){
     const owners=state.pieces.filter(p=>p.row!==null&&p.equipment.length<3&&!p.equipment.some(owned=>owned.itemId===item.itemId)&&policyEquipmentOwnerUtility(catalog.equipment[item.itemId],p,state,catalog)>0).sort((a,b)=>policyEquipmentOwnerUtility(catalog.equipment[item.itemId],b,state,catalog)*(1+b.star*.35)-policyEquipmentOwnerUtility(catalog.equipment[item.itemId],a,state,catalog)*(1+a.star*.35)||a.uid.localeCompare(b.uid));
     const owner=owners[0];if(!owner)continue;
     // equipping may combine with a held component into a 成装 the piece already carries (one of each per operator):
-    // the session refuses it unchanged, and the item stays in the inventory
+    // the session refuses it unchanged, and the item stays in the inventory; so it does for a 徽记 (or a component
+    // completing one) on an operator in no 盟约 (正义骑士号)
     try{state=runAction(state,{type:'equip',pieceUid:owner.uid,itemUid:item.uid},catalog).state;}
-    catch(error){if(!String(error?.message).endsWith(':UNIQUE_EQUIPMENT_CONFLICT'))throw error;}
+    catch(error){if(!/:(UNIQUE_EQUIPMENT_CONFLICT|PACT_NOT_COUNTED)$/.test(String(error?.message)))throw error;}
   }
   return state;
 }
@@ -1336,11 +1367,12 @@ export function selectEconPactCopyTarget(item,targets,state,coreOperatorId,catal
   throw new Error(`unsupported-econ-pact-copy:${item?.kind}`);
 }
 
-export function runCampaign({environmentId='origin_laterano',difficulty='NORMAL',seed=1,maxBattles=Infinity,maxMs=DEFAULT_TIMEOUT,policy='legacy',balanceProfile='formal',rulesVersion=1,onProgress=null,onBeforeFight=null}={}){
+export function runCampaign({environmentId='origin_laterano',difficulty='NORMAL',seed=1,maxBattles=Infinity,maxMs=DEFAULT_TIMEOUT,policy='legacy',placement='planned',balanceProfile='formal',rulesVersion=1,onProgress=null,onBeforeFight=null}={}){
   if(![1,2,3].includes(rulesVersion))throw new Error('unknown-campaign-rules-version');
   if(rulesVersion>=2&&balanceProfile!=='formal')throw new Error('season-campaign-requires-formal-balance');
   if(!['legacy',...CAMPAIGN_POLICIES,ECON_PACT_POLICY,ADAPTIVE_STANDARD_POLICY,CARRY_ADAPTIVE_POLICY].includes(policy))throw new Error(`unknown-campaign-policy:${policy}`);
   if(!['formal','looser','refined-standard','accessible-standard'].includes(balanceProfile))throw new Error(`unknown-enemy-balance-profile:${balanceProfile}`);
+  if(!CAMPAIGN_PLACEMENTS.includes(placement))throw new Error(`unknown-campaign-placement:${placement}`);
   const metrics={actions:{},refreshes:{},nodeEconomy:{},operatorBuys:{},corePurchases:0,coreOffersSeen:0,coreOfferDecisions:[],coreOfferPurchases:[],copyTargets:[],roleDecisions:[],sellDecisions:[],placementDecisions:[],adaptivePlans:[],carryPlans:{},carryTransfers:[],carryRepositionPlans:{}};activeMetrics=metrics;
   const started=Date.now(),catalog=catalogForBalanceProfile(rulesVersion===3?getPrototypeCampaignCatalog(seed):rulesVersion===2?getSeasonCampaignCatalog(seed):getCatalog(environmentId,seed),balanceProfile,difficulty),created=createSession({seed,difficulty,catalog,...(rulesVersion===1?{environmentId}:{})});
   if(!created.ok)throw new Error(`session-create:${created.error}`);
@@ -1382,6 +1414,7 @@ export function runCampaign({environmentId='origin_laterano',difficulty='NORMAL'
     if(state.pendingChoices.length){state=resolveChoices(state,catalog);continue;}
     if(policy===CARRY_ADAPTIVE_POLICY){state=repositionCarryAdaptiveTeam(state,catalog,{coreOperatorId:activePolicy.coreOperatorId}).state;state=transferCarryEquipment(state,catalog,{coreOperatorId:activePolicy.coreOperatorId}).state;}
     if(state.pendingChoices.length){state=resolveChoices(state,catalog);continue;}
+    if(placement==='messy')state=messyCampaignPlacement(state,catalog,seed);
     const assignedRoutes=routeAssignmentsByState.get(state)??new Map();
     const field=activeBattleFields(state,catalog);
     const deployed=state.pieces.filter(p=>p.row!==null);const pactPeople=new Map();for(const p of deployed){const op=opById(catalog,p.operatorId),ids=new Set(op?.pacts??[]);for(const item of p.equipment??[])for(const effect of catalog.equipment[item.itemId]?.effects??[])if(['transfer_pact','pact_transfer'].includes(effect.kind)&&effect.params?.pactId)ids.add(effect.params.pactId);for(const id of p.extraPacts??[])ids.add(id);if(op)for(const id of ids){const members=pactPeople.get(id)??new Set();members.add(op.charId);pactPeople.set(id,members);}}
@@ -1424,7 +1457,7 @@ export function runCampaign({environmentId='origin_laterano',difficulty='NORMAL'
   const coreOperator=activePolicy.coreOperatorId?catalog.operators[activePolicy.coreOperatorId]:null;
   const coreSelectionRule=rulesVersion===2?'existing adaptive policy uses held roles, stars, equipment and native route coverage without a faction leader':rulesVersion===3?'highest-cost active-season damage/control/frontline/summoner candidate, then estimated star-3 power and stable operator ID':policy==='reroll'?'highest score among offered 2/3-cost native anti-air operators after real-DPS qualification':isEconomyCampaignPolicy(policy)?'highest-cost identity-pact damage/control/frontline/summoner, available after level 9':'highest-cost identity-pact damage/control/frontline/summoner, then estimated star-3 power, then stable operator ID';
   const nodeEconomy=Object.values(metrics.nodeEconomy).sort((a,b)=>a.round-b.round);
-  const result={environmentId:rulesVersion>=2?null:environmentId,rulesVersion,seasonId:state.seasonId??null,openingId:state.openingId??null,activeOperatorIds:[...catalog.config.activeOperatorIds],listConsistent:rulesVersion===1||state.activeOperatorIds.length===catalog.config.activeOperatorIds.length&&state.activeOperatorIds.every((id,i)=>id===catalog.config.activeOperatorIds[i]),poolConservation:{ok:true,checks:metrics.invariantChecks??0},starMilestones:metrics.starMilestones??[],difficulty,seed,policy,balanceProfile,enemyBalance:structuredClone(catalog.campaign.enemyBalance),designatedCoreId:activePolicy.coreOperatorId??null,coreSelection:{operatorId:coreOperator?.id??null,name:coreOperator?.name??null,cost:coreOperator?.cost??null,role:coreOperator?.role??null,rule:coreSelectionRule},designatedCorePurchases:metrics.corePurchases,coreOffersSeen:metrics.coreOffersSeen,coreOffersRejected:coreOfferRejections.length,coreOffersBought:metrics.coreOfferPurchases.length,coreOfferDecisions:metrics.coreOfferDecisions,coreOfferPurchases:metrics.coreOfferPurchases,coreOfferRejectionCounts,coreOfferRejections,copyTargets:metrics.copyTargets,runMode:rulesVersion===3?'v3-set13-headless-natural-session':'legacy-campaign',rushReleasedRound:activePolicy.rushReleasedRound??null,operatorBuys:metrics.operatorBuys,roleAcquisitions,roleDecisions:metrics.roleDecisions,sellDecisions:metrics.sellDecisions,placementDecisions:metrics.placementDecisions,nodeEconomy,actionLedger:metrics.ledger??[],roundLimit:state.roundLimit,battles:battleRows.length,rows:battleRows,policyActions:metrics.actions,
+  const result={environmentId:rulesVersion>=2?null:environmentId,rulesVersion,seasonId:state.seasonId??null,openingId:state.openingId??null,activeOperatorIds:[...catalog.config.activeOperatorIds],listConsistent:rulesVersion===1||state.activeOperatorIds.length===catalog.config.activeOperatorIds.length&&state.activeOperatorIds.every((id,i)=>id===catalog.config.activeOperatorIds[i]),poolConservation:{ok:true,checks:metrics.invariantChecks??0},starMilestones:metrics.starMilestones??[],difficulty,seed,policy,placement,balanceProfile,enemyBalance:structuredClone(catalog.campaign.enemyBalance),designatedCoreId:activePolicy.coreOperatorId??null,coreSelection:{operatorId:coreOperator?.id??null,name:coreOperator?.name??null,cost:coreOperator?.cost??null,role:coreOperator?.role??null,rule:coreSelectionRule},designatedCorePurchases:metrics.corePurchases,coreOffersSeen:metrics.coreOffersSeen,coreOffersRejected:coreOfferRejections.length,coreOffersBought:metrics.coreOfferPurchases.length,coreOfferDecisions:metrics.coreOfferDecisions,coreOfferPurchases:metrics.coreOfferPurchases,coreOfferRejectionCounts,coreOfferRejections,copyTargets:metrics.copyTargets,runMode:rulesVersion===3?'v3-set13-headless-natural-session':'legacy-campaign',rushReleasedRound:activePolicy.rushReleasedRound??null,operatorBuys:metrics.operatorBuys,roleAcquisitions,roleDecisions:metrics.roleDecisions,sellDecisions:metrics.sellDecisions,placementDecisions:metrics.placementDecisions,nodeEconomy,actionLedger:metrics.ledger??[],roundLimit:state.roundLimit,battles:battleRows.length,rows:battleRows,policyActions:metrics.actions,
     terminalReason:state.terminalReason??null,phase:state.phase,round:state.round,hp:state.hp,gold:state.gold,level:state.level,xp:state.xp,
     roster:state.pieces.map(p=>({operatorId:p.operatorId,name:opById(catalog,p.operatorId)?.name,cost:opById(catalog,p.operatorId)?.cost,star:p.star,role:opById(catalog,p.operatorId)?.role,items:p.equipment.map(i=>catalog.equipment[i.itemId]?.name)})),carryPlans:metrics.carryPlans,carryTransfers:metrics.carryTransfers,
     claimedNodes:[...state.claimedNodes],inventory:state.inventory.map(i=>catalog.equipment[i.itemId]?.name),strategies:state.strategies.map(s=>catalog.strategies[typeof s==='string'?s:s.id]?.name),
