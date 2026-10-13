@@ -219,7 +219,7 @@ const CHEST_REWARDS=Object.freeze({
   10:[rewardOption('gold-2','2枚金币','获得2枚金币。',[{kind:'gold',amount:2}],'Conqueror Chest 10: x2 Gold')],
   35:[rewardOption('unit-cost-2','2费干员','获得一名2费干员。',[{kind:'operator',targetCost:2}],'Conqueror Chest 35: 2 Cost Unit')],
   65:[rewardOption('unit-cost-4','4费干员','获得一名4费干员。',[{kind:'operator',targetCost:4}],'Conqueror Chest 65: 4 Cost Unit')],
-  100:[rewardOption('copy-3','低阶复制券与3费干员','获得一张低阶复制券与一名3费干员。',[{kind:'consumable',id:'smallCopy'},{kind:'operator',targetCost:3}],'Conqueror Chest 100: Lesser Champion Duplicator + 3 Cost Unit')],
+  100:[rewardOption('copy-3','低费复制凭证与3费干员','获得一张低费复制凭证与一名3费干员。',[{kind:'consumable',id:'smallCopy'},{kind:'operator',targetCost:3}],'Conqueror Chest 100: Lesser Champion Duplicator + 3 Cost Unit')],
   150:[rewardOption('component-reforger','组件与重构模块','获得一件组件和一个重构模块。',[{kind:'component',pool:'components'},{kind:'consumable',id:'prototype_reforger'}],'Conqueror Chest 150: Random Component + Reforger; the component is drawn from allowed mode components')],
   200:[rewardOption('units-4-5','4费与5费干员','获得一名4费干员与一名5费干员。',[{kind:'operator',targetCost:4},{kind:'operator',targetCost:5}],'Conqueror Chest 200: 4 Cost Unit + 5 Cost Unit')],
   330:[rewardOption('unit-5','5费干员','获得一名5费干员。',[{kind:'operator',targetCost:5}],'Conqueror Chest 330: 5 Cost Unit')],
@@ -235,7 +235,7 @@ const CHEST_REWARDS=Object.freeze({
 const FAMILY_REWARDS=Object.freeze({
   10:[rewardOption('training-dummies','三只训练纸偶','获得三只训练纸偶，可放置在战场并承受敌方攻击。',[{kind:'special_entity',id:'TFT_TrainingDummy',count:3}],'Family Heist 10: x3 Training Dummy; source object uses native sand-obelisk appearance only')],
   17:[
-    rewardOption('family17-copies','低阶复制券','获得三张低阶复制券。',[{kind:'consumable',id:'smallCopy'},{kind:'consumable',id:'smallCopy'},{kind:'consumable',id:'smallCopy'}],'Family Heist 17: x3 Lesser Champion Duplicators'),
+    rewardOption('family17-copies','低费复制凭证','获得三张低费复制凭证。',[{kind:'consumable',id:'smallCopy'},{kind:'consumable',id:'smallCopy'},{kind:'consumable',id:'smallCopy'}],'Family Heist 17: x3 Lesser Champion Duplicators'),
     rewardOption('family17-components','随机组件','获得两件组件。',[{kind:'component',pool:'components'},{kind:'component',pool:'components'}],'Family Heist 17: x2 Random Component'),
   ],
   20:[
@@ -267,7 +267,7 @@ function chemMarketOptions() {
     add('copies','smallCopy');add('removers','prototype_item_remover');
     if(bundle.gold)grant.push({kind:'gold',amount:bundle.gold});
     const choices=(bundle.t0??0)+(bundle.t1??0)+(bundle.t2??0)+(bundle.t3??0)+(bundle.t4??0);
-    const label=[choices?`${choices}件装备选择`:null,bundle.copies?`${bundle.copies}张复制券`:null,bundle.removers?`${bundle.removers}个卸除许可`:null,bundle.gold?`${bundle.gold}枚金币`:null].filter(Boolean).join('、')||'卸除许可';
+    const label=[choices?`${choices}件装备选择`:null,bundle.copies?`${bundle.copies}张低费复制凭证`:null,bundle.removers?`${bundle.removers}个卸除许可`:null,bundle.gold?`${bundle.gold}枚金币`:null].filter(Boolean).join('、')||'卸除许可';
     return rewardOption(`chem-${threshold}-${index+1}`,label,'领取这组奖励；装备选择可在背包中打开并挑选可用装备。',grant,`Chem-Baron Black Market ${threshold}: source reward row ${index+1}; item tiers map to implemented Resonance pools`);
   })]));
 }

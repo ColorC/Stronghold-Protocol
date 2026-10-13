@@ -16,7 +16,7 @@ const set = (id,name,description,kind,ref,params={}) => ({ id,name,group:'rule',
 export function applyCurrentStrategies(catalog) {
   const strategies={...catalog.strategies};
   for(const id of DISABLED_CURRENT_STRATEGY_IDS) delete strategies[id];
-  strategies.strategy_13=set('strategy_13','组队规划','立即获得一枚小型复制器；完成5场战斗后再获得一枚','team_building','teamBuilding',{battleCount:5});
+  strategies.strategy_13=set('strategy_13','组队规划','立即获得一张低费复制凭证；完成5场战斗后再获得一张','team_building','teamBuilding',{battleCount:5});
   strategies.strategy_14={...set('strategy_14','弹匣挑战','立即获得一件随机组件；队伍累计消耗60发弹药后，从4件组件中选择一件，仅奖励一次','woven_magic','wovenMagic',{ammoThreshold:60,optionCount:4}),effects:[{kind:'woven_magic',params:{ammoThreshold:60,optionCount:4},reference:refs.wovenMagic,candidateReference:refs.componentBuffet}]};
   strategies.strategy_20=set('strategy_20','耐心进修','战斗结算后：胜利获得2经验，失败获得3经验；后勤节点不触发','patient_study','patientStudy',{winXp:2,lossXp:3});
   strategies.strategy_21=set('strategy_21','例行招募','立即获得2金币；每个节点有1次免费商店刷新，不累积；保留开局免费刷新余额','trade_sector','tradeSector',{gold:2,freeRefreshesPerNode:1});

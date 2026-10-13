@@ -3,7 +3,7 @@ const SOURCE = 'https://teamfighttactics.leagueoflegends.com/en-sg/news/game-upd
 /** Opening encounters use one shared roster. Weights and node timing are explicit mode adaptations. */
 export const resonanceOpenings = Object.freeze({
   none: Object.freeze({ name: '标准开局', description: '本局没有额外开局效果。', weight: 40, reference: { game: 'TFT', version: '17.2', name: 'No Encounter', url: SOURCE } }),
-  double_duplicators: Object.freeze({ name: '双份援军', description: '开局获得一个低费复制器，第十四节点再获得一个。只能复制一至三费干员。', weight: 20, reference: { game: 'TFT', version: '17.2', name: 'Double Duplicators', url: SOURCE, originalTiming: ['start', '3-3'] } }),
+  double_duplicators: Object.freeze({ name: '双份援军', description: '开局获得一张低费复制凭证，第十四节点再获得一张。只能复制一至三费干员。', weight: 20, reference: { game: 'TFT', version: '17.2', name: 'Double Duplicators', url: SOURCE, originalTiming: ['start', '3-3'] } }),
   reroll_start: Object.freeze({ name: '招募先机', description: '第五节点获得八次免费刷新。未使用的次数可以保留。', weight: 20, reference: { game: 'TFT', version: '17.2', name: 'Reroll Start', url: SOURCE, originalTiming: ['2-1'] } }),
   cheaper_levels: Object.freeze({ name: '快速成长', description: '本局每次升级需要的经验减少两点。购买经验仍为四金币获得四经验。', weight: 20, reference: { game: 'TFT', version: '17.2', name: 'Cheaper Levels', url: SOURCE } }),
 });

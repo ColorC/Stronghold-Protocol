@@ -318,6 +318,12 @@ function NativeMatchInfo({ state, catalog, onDetail, onSettlement, showHelp = fa
   </section>`;
 }
 
+/** Operator copies (the session's useCopy kinds) and the costs each may copy. */
+export const COPY_CONSUMABLES = Object.freeze({
+  smallCopy: Object.freeze({ name: '低费复制凭证', description: '选择一名3费及以下的己方干员，获得一名该干员（1星）。', maxCost: 3 }),
+  universalCopy: Object.freeze({ name: '复制凭证', description: '选择一名己方干员，获得一名该干员（1星）。', maxCost: Infinity }),
+});
+
 function NativeResonanceInventoryActions({ state, catalog, editable, busy, onAction }) {
   const inventory = state?.inventory || [], pieces = state?.pieces || [], consumables = state?.consumables || [];
   const itemTargets = [
@@ -329,6 +335,21 @@ function NativeResonanceInventoryActions({ state, catalog, editable, busy, onAct
   return html`<section class="dsec rs-native-consumables" aria-label="消耗品">
     <h3 class="dsec__title">消耗品 <small>${consumables.length}</small></h3>
     ${consumables.length ? consumables.map(row => {
+      // 复制凭证 copy an operator the player owns (the session's useCopy: a new 1-star copy, merged like a purchase)
+      const copy = COPY_CONSUMABLES[row.kind];
+      if (copy) {
+        const seen = new Set();
+        const operators = pieces.filter(piece => {
+          const operator = catalog?.operators?.[piece.operatorId];
+          if (!operator || seen.has(piece.operatorId) || Number(operator.cost) > copy.maxCost) return false;
+          seen.add(piece.operatorId); return true;
+        });
+        return html`<article class="rs-detail__item" key=${row.uid}>
+          <span class="rs-detail__text"><b>${copy.name}</b><span>${copy.description}</span></span>
+          ${operators.length ? html`<label class="rs-detail__select"><span>选择要复制的干员</span><select disabled=${busy || !editable} value="" onChange=${event => { const pieceUid = event.currentTarget.value; event.currentTarget.value = ''; if (pieceUid) void onAction({ type: 'useCopy', consumableUid: row.uid, pieceUid }); }}><option value="">选择干员</option>${operators.map(piece => html`<option value=${piece.uid} key=${piece.uid}>${catalog.operators[piece.operatorId].name}</option>`)}</select></label>`
+            : html`<small class="rs-detail__select">暂无可复制的干员</small>`}
+        </article>`;
+      }
       const record = catalog?.prototypeEconomy?.gearConsumables?.[row.kind] || {};
       const kind = record.kind || '';
       // the targets the session accepts: 卸除许可 an item an operator wears, 重构模块 a gear that is neither a component nor an emblem,
