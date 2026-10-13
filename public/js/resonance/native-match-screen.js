@@ -138,7 +138,7 @@ import { pactCurrentTier, pactTierStatus, pactTierStatusLabel, levelExactCounts,
 import { fieldTileAt, specialBoardTile } from './specialEntityPlacement.js';
 import { NativeSummonBar, SUMMON_DRAG_TYPE, summonCardRows, summonDropRefusal } from './summonBar.js';
 import { prototypeLabCells } from './nativeLabCells.js';
-import { useTideCues } from './tideCues.js';
+import { useResonanceWaveCues, RollingNumber } from './resonanceWaveCues.js';
 import { choiceDescription, choiceLabel, needsAdjacentStrategyPair, adjacentDeployedPairs, parseDetailHash } from './model.js';
 import { resonanceChoiceAction } from './choiceAction.js';
 // MatchEnded, PausedOverlay, the highlight styles and keepEarly live in ./game/*.js.
@@ -241,7 +241,7 @@ function NativeFunds({ state, catalog, onOpen, onCollapse }) {
   const cap = Number(state?.actionCosts?.interestCap ?? rule.cap) || 0;
   const interest = interestFor(Number(state?.gold) || 0, 0, Number(rule.perGold), cap) ?? 0;
   return html`<div class="funds rs-funds">
-    <button type="button" class="funds__hex" aria-label="金币与收入" title="查看收入与利息" onClick=${onOpen}><${CoinGlyph} class="funds__coin" /><b class="funds__num num">${state.gold}</b></button>
+    <button type="button" class="funds__hex" aria-label="金币与收入" title="查看收入与利息" onClick=${onOpen}><${CoinGlyph} class="funds__coin" /><b class="funds__num num"><${RollingNumber} value=${state.gold} /></b></button>
     <span class="funds__label">金币</span>
     <button type="button" class="rs-interest" aria-label=${`当前利息 ${interest}`} onClick=${onOpen}>${Array.from({ length: cap }, (_, i) => html`<i class=${i < interest ? 'is-on' : ''} key=${i}></i>`)}<small>+${interest}</small></button>
     <button type="button" class="funds__collapse" onClick=${onCollapse}><${Icon} name="close" />收起</button>
@@ -699,7 +699,7 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
   }, [view]);
 
   const phase = pub?.phase;
-  useTideCues({ phase, state: resonanceState, view });   // 潮汐: the round / fight surge, the merge · star-up · claim ripples
+  useResonanceWaveCues({ phase, state: resonanceState, view, catalog: resonanceCatalog });   // 共鸣·音浪: wavefronts and the update effects
   const mode = phaseMode(phase);
   const combat = isCombatPhase(phase);
   const solo = roomSolo || String(pub?.modeId || '').includes('single');

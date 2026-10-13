@@ -1,0 +1,249 @@
+/* ==========================================================================================
+   resonance-wave.css — 卫戍协议：共鸣「音浪」的界面风格（resonance.html only, loaded last, everything under
+   html.rs-resonance-wave).
+   Direction: resonance made visible. Deep-sea navy instead of the original's green-black glass, sea blue and pale aqua
+   instead of mint, white highlights; sound as the figure — sine waves, standing waves, interference fringes, resonance
+   rings, spectrum bars. Borders and dividers stay straight lines: waves and fringes only live inside panels and cards
+   and in the backgrounds, as faint textures. The motion (js/resonance/resonanceWave.js) and the synthesized sounds
+   (js/resonance/resonanceWaveSound.js) follow the same figure. The original page (index.html) and the workshop
+   (independent.html) never load this file.
+   The colour literals of the original and resonance stylesheets are recoloured by resonance-wave-remap.css (generated
+   by tools/resonance/build-resonance-wave-theme.mjs, loaded just before this file); the tokens they point at are
+   defined here. The battlefield (render/) keeps its own look.
+   ========================================================================================== */
+
+html.rs-resonance-wave {
+  /* surfaces: deep sea navy */
+  --bg-0: #06111b;
+  --bg-1: #0b1825;
+  --bg-2: #112334;
+  --bg-3: #172c40;
+  --bg-4: #1e364d;
+  --bg-glass: rgba(8, 20, 32, .86);
+  --line: #1e374c;
+  --line-2: #2c4b66;
+  --line-3: #476a8a;
+
+  /* the accent: sea blue and pale aqua in the original's mint slots (every original frame on the page follows) */
+  --mint-400: #80dcfb;
+  --mint-500: #3db5f2;
+  --mint-600: #23a2e6;
+  --mint-glow: #55dcff;
+  --mint-700: #1c7bb6;
+  --mint-800: #12476e;
+  --mint-900: #0a2740;
+  --mint-a10: rgba(61, 181, 242, .10);
+  --mint-a20: rgba(61, 181, 242, .20);
+  --mint-a35: rgba(61, 181, 242, .35);
+  --text-on-mint: #03131f;
+
+  /* text: cool, slightly blue whites */
+  --text-hi: #eef7fd;
+  --text-md: #c4d6e3;
+  --text-lo: #8fa7ba;
+  --text-dim: #627b90;
+
+  /* the resonance panels' own surfaces and ink (resonance-wave-remap.css maps their old green literals here) */
+  --rw-abyss: #0b1520;
+  --rw-deep: #0b1722;
+  --rw-deep-2: #112536;
+  --rw-ink-hi: #edf5fa;
+  --rw-ink: #d3e2ec;
+  --rw-ink-soft: #c0d3e0;
+  --rw-ink-lo: #b0c3d1;
+
+  /* the figure */
+  --rw-sea: #3db5f2;
+  --rw-aqua: #80dcfb;
+  --rw-white: #effbff;
+  --rw-white-a: rgba(225, 247, 255, .85);
+  --rw-glow: rgba(85, 220, 255, .45);
+  /* interference fringes, faint: rings from the four corners of a 160 px tile (each corner's rings meet the next tile's) */
+  --rw-fringes: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'><g fill='none' stroke='%237fd6ff' stroke-opacity='.09' stroke-width='.8'><circle cx='0' cy='0' r='18'/><circle cx='0' cy='0' r='36'/><circle cx='0' cy='0' r='54'/><circle cx='0' cy='0' r='72'/><circle cx='0' cy='0' r='90'/><circle cx='0' cy='0' r='108'/><circle cx='0' cy='0' r='126'/><circle cx='0' cy='0' r='144'/><circle cx='0' cy='0' r='162'/><circle cx='160' cy='0' r='18'/><circle cx='160' cy='0' r='36'/><circle cx='160' cy='0' r='54'/><circle cx='160' cy='0' r='72'/><circle cx='160' cy='0' r='90'/><circle cx='160' cy='0' r='108'/><circle cx='160' cy='0' r='126'/><circle cx='160' cy='0' r='144'/><circle cx='160' cy='0' r='162'/><circle cx='0' cy='160' r='18'/><circle cx='0' cy='160' r='36'/><circle cx='0' cy='160' r='54'/><circle cx='0' cy='160' r='72'/><circle cx='0' cy='160' r='90'/><circle cx='0' cy='160' r='108'/><circle cx='0' cy='160' r='126'/><circle cx='0' cy='160' r='144'/><circle cx='0' cy='160' r='162'/><circle cx='160' cy='160' r='18'/><circle cx='160' cy='160' r='36'/><circle cx='160' cy='160' r='54'/><circle cx='160' cy='160' r='72'/><circle cx='160' cy='160' r='90'/><circle cx='160' cy='160' r='108'/><circle cx='160' cy='160' r='126'/><circle cx='160' cy='160' r='144'/><circle cx='160' cy='160' r='162'/></g></svg>");
+  /* a standing wave: two periods over 480 px, nodes every 120 px on the centre line (flipping it keeps the nodes still) */
+  --rw-standing: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='480' height='60' viewBox='0 0 480 60'><path d='M0 30 C40 6 80 6 120 30 S200 54 240 30 S320 6 360 30 S440 54 480 30' fill='none' stroke='%237fd6ff' stroke-width='1.2'/></svg>");
+  /* one period of a sine (48 × 16): the motion's waveform glyph; half its width is the octave */
+  --rw-sine: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='16' viewBox='0 0 48 16'><path d='M0 8 C8 0.5 16 0.5 24 8 S40 15.5 48 8' fill='none' stroke='%23d8f6ff' stroke-width='1.6'/></svg>");
+  /* the same sine standing up (16 × 48): the wavefronts' texture */
+  --rw-sine-v: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='48' viewBox='0 0 16 48'><path d='M8 0 C0.5 8 0.5 16 8 24 S15.5 40 8 48' fill='none' stroke='%23d8f6ff' stroke-width='1.4'/></svg>");
+  --bk-c: var(--mint-500);
+  background: var(--bg-0);
+}
+html.rs-resonance-wave body { background: var(--bg-0); color: var(--text-hi); }
+html.rs-resonance-wave ::selection { background: var(--mint-500); color: var(--text-on-mint); }
+
+/* ---- the three item kinds stay apart at a glance (788ba106): grey thin square · gold thick square · pale-blue circle -- */
+html.rs-resonance-wave .rs-item-icon[data-item-kind] { --item-kind-line: #8b97a1; background: linear-gradient(180deg, #1b2229, #0f1418); }
+html.rs-resonance-wave .rs-item-icon[data-item-kind="completed"], html.rs-resonance-wave .rs-item-icon[data-item-kind="passive"] { --item-kind-line: #e0b851; }
+html.rs-resonance-wave .rs-item-icon[data-item-kind="emblem"] { --item-kind-line: #b3e8ff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .45), 0 0 6px rgba(120, 214, 255, .35); }
+html.rs-resonance-wave .rs-equipment-dock .rs-equipment-dock__item:has(> .rs-item-icon[data-item-kind="emblem"]) { border-color: #b3e8ff; }
+html.rs-resonance-wave .ditem[data-item-kind="emblem"] .uthumb--item .uthumb__art { border-color: #b3e8ff; }
+/* (rs-unit-items.css is injected after this file: these carry html.rs-resonance-wave to outrank it) */
+html.rs-resonance-wave .rs-unit-items__item[data-item-kind="component"] { border-color: #8b97a1; background: #121920; }
+html.rs-resonance-wave .rs-unit-items__item[data-item-kind="emblem"] { border-color: #b3e8ff; }
+
+/* ---- the original's mint sprites turned to sea blue: the check button, the 休整 icon, the LP tower, the buff / level art
+   of the strategy icons and the effects list, the result's 评语 icon (the red LP tower keeps its own filter) --------- */
+html.rs-resonance-wave .gtop__iconbtn.has-sprite:not(.enemybtn), html.rs-resonance-wave .lp:not(.lp--danger) .lp__icon, html.rs-resonance-wave .capsule__icon[src*="icon_rest"],
+html.rs-resonance-wave img[src*="buffIcon/"], html.rs-resonance-wave img[src*="shopPanel/level."], html.rs-resonance-wave img[src*="titleIcon/comment_icon"] { filter: hue-rotate(38deg) saturate(1.15); }
+html.rs-resonance-wave .gtop__iconbtn.has-sprite:not(.enemybtn):hover { filter: hue-rotate(38deg) saturate(1.15) brightness(1.2); }
+/* the player's own seat colour (seat 0 is the original's mint hue) */
+html.rs-resonance-wave .pavatar[style*="--seat-hue:162"] { --seat-hue: 202 !important; }
+
+/* ---- textures: interference fringes inside the detail cards, the panels and the choice sheet (under their content) -- */
+html.rs-resonance-wave :is(.dpanel, .rs-native-resonance-panel, .rs-native-match .rs-native-choice .spov__inner) { isolation: isolate; }
+html.rs-resonance-wave :is(.dpanel, .rs-native-resonance-panel, .rs-native-match .rs-native-choice .spov__inner)::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: var(--rw-fringes) 0 0 / 160px 160px;
+  -webkit-mask-image: radial-gradient(120% 90% at 100% 0%, #000 0%, transparent 75%); mask-image: radial-gradient(120% 90% at 100% 0%, #000 0%, transparent 75%);
+}
+/* a standing wave vibrating slowly behind the title, the difficulty / briefing steps, the codex and the result: its nodes
+   stay still, the string between them swings (transform only, one layer each) */
+html.rs-resonance-wave :is(.brief__bg, .lo__bg, .result__grid) { overflow: hidden; }
+html.rs-resonance-wave :is(.title-bg, .brief__bg, .lo__bg, .result__grid)::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 14%; height: 60px; pointer-events: none;
+  background: var(--rw-standing) 0 50% / 480px 60px repeat-x;
+  opacity: .22;
+  animation: rw-standing 3.6s ease-in-out infinite;
+  will-change: transform;
+}
+html.rs-resonance-wave .title-bg::before {   /* the title has a second harmonic over the first: three nodes per period */
+  content: ''; position: absolute; left: 0; right: 0; bottom: 22%; height: 40px; pointer-events: none; z-index: 1;
+  background: var(--rw-standing) 0 50% / 240px 40px repeat-x;
+  opacity: .14;
+  animation: rw-standing 1.8s ease-in-out infinite;
+  will-change: transform;
+}
+html.rs-resonance-wave :is(.lo__bg, .result__grid)::after { opacity: .16; }
+/* the codex and the result trade their square grid for the fringes */
+html.rs-resonance-wave .lo__bg { background: var(--rw-fringes) 0 0 / 160px 160px, radial-gradient(70% 90% at 18% 10%, rgba(61, 181, 242, .08), transparent 60%), linear-gradient(180deg, #0b131b, #060b10); }
+html.rs-resonance-wave .result__grid { background: var(--rw-fringes) 0 0 / 160px 160px; }
+@keyframes rw-standing { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(-1); } }
+/* the title's glow is a soft blue */
+html.rs-resonance-wave .title-bg__glow { background: radial-gradient(48% 42% at 50% 78%, rgba(61, 181, 242, .34), rgba(61, 181, 242, .07) 62%, transparent 76%), radial-gradient(26% 26% at 50% 80%, rgba(200, 244, 255, .22), transparent 70%); }
+
+/* ---- HUD motion that needs no script ---------------------------------------------------------------------------------- */
+/* the XP bar fills instead of jumping */
+html.rs-resonance-wave .rs-native-level-card .lvcard__xp em { transition: width 420ms cubic-bezier(.2, .8, .2, 1); }
+/* a shop card under the pointer: a thin spectrum rises along the inside of its top edge */
+html.rs-resonance-wave .shopbar .scard::after {
+  content: ''; position: absolute; left: 4px; right: 4px; top: 3px; height: 12px; pointer-events: none; z-index: 2;
+  background: repeating-linear-gradient(90deg, rgba(128, 220, 251, .5) 0 2px, transparent 2px 6px);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent); mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
+  transform: scaleY(0); transform-origin: top; opacity: 0;
+  transition: transform 220ms cubic-bezier(.2, .8, .2, 1), opacity 220ms;
+}
+html.rs-resonance-wave .shopbar .scard:not(.is-disabled):not(.scard--sold):hover::after { transform: scaleY(1); opacity: 1; animation: rw-eq 900ms steps(6) infinite; }
+@keyframes rw-eq { 0% { background-position-x: 0; } 100% { background-position-x: 36px; } }
+/* panels and detail cards open as a waveform opening out of its centre line (their close is drawn by the script) */
+html.rs-resonance-wave :is(.rs-native-match .dpanel, .rs-native-resonance-panel) { animation: rw-panel-open 240ms cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes rw-panel-open { 0% { clip-path: inset(47% 0 47% 0); opacity: .35; } 55% { opacity: 1; } 100% { clip-path: inset(0); } }
+/* strategy / supply options arrive one after another; once one is chosen, the others step back */
+html.rs-resonance-wave .rs-native-match .rs-native-choice .spov__grid > * { animation: rw-pop 300ms cubic-bezier(.2, .8, .2, 1) both; }
+html.rs-resonance-wave .rs-native-match .rs-native-choice .spov__grid > :nth-child(2) { animation-delay: 70ms; }
+html.rs-resonance-wave .rs-native-match .rs-native-choice .spov__grid > :nth-child(3) { animation-delay: 140ms; }
+html.rs-resonance-wave .rs-native-match .rs-native-choice .spov__grid > :nth-child(4) { animation-delay: 210ms; }
+html.rs-resonance-wave .rs-native-match .rs-native-choice .spov__grid > :nth-child(n+5) { animation-delay: 280ms; }
+html.rs-resonance-wave .rs-native-match .rs-native-choice .spcard { transition: opacity 200ms ease, transform 200ms ease; }
+html.rs-resonance-wave .rs-native-match .rs-native-choice .spov__grid:has(.spcard.is-armed) .spcard:not(.is-armed) { opacity: .42; transform: scale(.98); }
+@keyframes rw-pop { 0% { opacity: 0; transform: translateY(12px) scale(.96); } 100% { opacity: 1; transform: none; } }
+
+/* ---- js/resonance/resonanceWave.js: the effect layer (above every panel, never takes a pointer) ------------------------ */
+.rw-fx { position: fixed; inset: 0; z-index: 1000; overflow: hidden; pointer-events: none; contain: strict; }
+.rw-fx * { pointer-events: none; }
+
+/* a press / a drop: a resonance ring with its inner ring (360 ms); a lift: the ring drawing in (260 ms) */
+.rw-ring { --d: 64px; position: absolute; left: var(--x); top: var(--y); width: var(--d); height: var(--d); margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2);
+  border-radius: 50%; border: 1.5px solid var(--rw-white-a, rgba(225, 247, 255, .85)); box-shadow: 0 0 10px rgba(85, 220, 255, .4);
+  opacity: 0; animation: rw-ring 360ms cubic-bezier(.2, .7, .3, 1) forwards; }
+.rw-ring::after { content: ''; position: absolute; inset: 24%; border-radius: 50%; border: 1px solid rgba(128, 220, 251, .8); opacity: 0; animation: rw-ring 300ms 60ms cubic-bezier(.2, .7, .3, 1) forwards; }
+.rw-ring--in { --d: 72px; animation: rw-ring-in 260ms cubic-bezier(.4, 0, .6, 1) forwards; }
+.rw-ring--in::after { animation: rw-ring-in 220ms 30ms cubic-bezier(.4, 0, .6, 1) forwards; }
+.rw-ring--lock { --d: 96px; border-width: 2px; animation-duration: 340ms; animation-delay: 260ms; }
+.rw-ring--lock::after { animation-delay: 320ms; }
+.rw-ring--pulse { --d: 78px; border-color: rgba(128, 220, 251, .95); box-shadow: 0 0 14px rgba(85, 220, 255, .55); animation-duration: 600ms; }
+.rw-ring--pulse::after { animation-duration: 480ms; animation-delay: 120ms; }
+@keyframes rw-ring { 0% { opacity: 0; transform: scale(.18); } 14% { opacity: .95; } 65% { opacity: .55; } 100% { opacity: 0; transform: scale(1); } }
+@keyframes rw-ring-in { 0% { opacity: 0; transform: scale(1); } 30% { opacity: .8; } 100% { opacity: 0; transform: scale(.25); } }
+
+/* a pact reaching a new tier: under each member's feet a flattened resonance ring (600 ms) */
+.rw-foot { --w: 70px; position: absolute; left: var(--x); top: var(--y); width: var(--w); height: calc(var(--w) * .36); margin: calc(var(--w) * -.18) 0 0 calc(var(--w) / -2);
+  border-radius: 50%; border: 3px solid rgba(190, 240, 255, 1); background: radial-gradient(closest-side, rgba(85, 220, 255, .38), rgba(85, 220, 255, .1) 70%, transparent);
+  box-shadow: 0 0 18px 2px rgba(85, 220, 255, .85), inset 0 0 12px rgba(85, 220, 255, .55);
+  opacity: 0; animation: rw-foot 600ms cubic-bezier(.2, .7, .3, 1) forwards; }
+.rw-foot::after { content: ''; position: absolute; inset: -30% -18%; border-radius: 50%; border: 2px solid rgba(225, 247, 255, .85); opacity: 0; animation: rw-foot 480ms 120ms cubic-bezier(.2, .7, .3, 1) forwards; }
+@keyframes rw-foot { 0% { opacity: 0; transform: scale(.3); } 18% { opacity: 1; } 60% { opacity: .85; } 100% { opacity: 0; transform: scale(1.45); } }
+/* … and the pact's row in the strip: a sine passes through it while its disc rings (600 ms) */
+.rw-row { position: absolute; left: var(--x); top: var(--y); width: var(--w); height: var(--h); overflow: hidden; border-radius: 4px; }
+.rw-row::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(61, 181, 242, .1), rgba(128, 220, 251, .4) 40%, rgba(61, 181, 242, .1)); opacity: 0; animation: rw-row-glow 600ms ease-out forwards; }
+.rw-row::after { content: ''; position: absolute; top: 50%; left: 0; width: 45%; height: 16px; margin-top: -8px; background: var(--rw-sine) 0 0 / 24px 16px repeat-x;
+  transform: translateX(-100%); animation: rw-row-sine 560ms cubic-bezier(.4, .1, .4, 1) forwards; }
+@keyframes rw-row-glow { 25% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes rw-row-sine { 0% { transform: translateX(-100%); opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateX(230%); opacity: 0; } }
+
+/* a purchase / a refresh: spectrum bars sweep across the card / the row (420 ms; the bars are the script's spans) */
+.rw-spectrum { position: absolute; left: var(--x); top: var(--y); width: var(--w); height: var(--h); display: flex; align-items: flex-end; gap: 2px; padding: 0 3px; box-sizing: border-box; }
+.rw-spectrum > i { flex: 1; height: 100%; transform-origin: bottom; transform: scaleY(0);
+  background: linear-gradient(0deg, rgba(61, 181, 242, 0), rgba(128, 220, 251, .5) 55%, rgba(239, 251, 255, .85));
+  animation: rw-bar 420ms cubic-bezier(.3, .6, .3, 1) forwards; animation-delay: calc(var(--i) * var(--step, 18ms)); }
+@keyframes rw-bar { 0% { transform: scaleY(0); opacity: .9; } 40% { transform: scaleY(var(--hgt, .8)); opacity: 1; } 100% { transform: scaleY(0); opacity: 0; } }
+
+/* a level gained: rings and radial spectrum spikes burst from the level card (600 ms) */
+.rw-burst { position: absolute; left: var(--x); top: var(--y); width: 0; height: 0; }
+.rw-burst > b { position: absolute; left: -2px; top: 0; width: 4px; height: 26px; border-radius: 2px; transform-origin: 50% 0;
+  background: linear-gradient(0deg, rgba(128, 220, 251, 0), rgba(239, 251, 255, .9));
+  transform: rotate(var(--a)) translateY(18px) scaleY(0); animation: rw-spike 520ms cubic-bezier(.2, .7, .3, 1) forwards; }
+@keyframes rw-spike { 0% { transform: rotate(var(--a)) translateY(18px) scaleY(0); opacity: 1; } 45% { transform: rotate(var(--a)) translateY(30px) scaleY(1); opacity: 1; } 100% { transform: rotate(var(--a)) translateY(56px) scaleY(.2); opacity: 0; } }
+
+/* a combine: the two parts' voices (sines of different frequency) converge on the product and settle into one tone,
+   which then rings (600 ms in all) */
+.rw-voice { position: absolute; left: var(--x); top: var(--y); width: 64px; height: 16px; margin: -8px 0 0 -32px;
+  background: var(--rw-sine) 0 0 / var(--period, 24px) 16px repeat-x; filter: drop-shadow(0 0 4px rgba(85, 220, 255, .8));
+  opacity: 0; animation: rw-voice 380ms cubic-bezier(.4, .1, .3, 1) forwards; }
+.rw-voice--one { width: 76px; margin-left: -38px; background-size: 24px 16px; animation: rw-unison 340ms 260ms ease-out forwards; }
+@keyframes rw-voice { 0% { opacity: 0; transform: translate(var(--fx), var(--fy)) scaleX(var(--k, 1)); } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(0, 0) scaleX(1); } }
+@keyframes rw-unison { 0% { opacity: 0; transform: scale(.6, .4); } 35% { opacity: 1; transform: scale(1.05, 1.2); } 100% { opacity: 0; transform: scale(1.4, .2); } }
+
+/* a star-up: the piece's tone swells in amplitude, then sounds an octave higher and rises (600 ms) */
+.rw-octave { position: absolute; left: var(--x); top: var(--y); width: 84px; height: 22px; margin: -11px 0 0 -42px; filter: drop-shadow(0 0 5px rgba(85, 220, 255, .95)) drop-shadow(0 0 2px rgba(255, 255, 255, .6)); }
+.rw-octave::before, .rw-octave::after { content: ''; position: absolute; inset: 0; background: var(--rw-sine) 0 0 / 42px 22px repeat-x; opacity: 0; }
+.rw-octave::before { animation: rw-swell 320ms cubic-bezier(.3, .6, .3, 1) forwards; }
+.rw-octave::after { background-size: 21px 22px; animation: rw-rise 360ms 240ms cubic-bezier(.2, .7, .3, 1) forwards; }
+@keyframes rw-swell { 0% { opacity: 0; transform: scaleY(.25); } 30% { opacity: 1; } 85% { opacity: 1; transform: scaleY(1.5); } 100% { opacity: 0; transform: scaleY(1.6); } }
+@keyframes rw-rise { 0% { opacity: 0; transform: translateY(0) scaleY(1.2); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(-34px) scaleY(.8); } }
+
+/* a panel closing: its waveform folds back into the centre line (220 ms) */
+.rw-collapse { position: absolute; left: var(--x); top: var(--y); width: var(--w); height: 18px; margin-top: -9px;
+  background: var(--rw-sine) 0 0 / 32px 18px repeat-x; filter: drop-shadow(0 0 4px rgba(85, 220, 255, .7));
+  opacity: .9; animation: rw-collapse 220ms cubic-bezier(.4, 0, .6, 1) forwards; }
+@keyframes rw-collapse { 0% { opacity: .9; transform: scale(1, 1.4); } 100% { opacity: 0; transform: scale(.08, .2); } }
+
+/* a round / a fight starts: a sound wave pushes out from the middle to both sides (500 / 600 ms) */
+.rw-wavefront { position: absolute; inset: 0; overflow: hidden; }
+.rw-wavefront::before, .rw-wavefront::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: 40%; width: 20%;
+  background: var(--rw-sine-v) 50% 0 / 16px 48px repeat-y, linear-gradient(90deg, transparent, rgba(61, 181, 242, .16) 30%, rgba(200, 244, 255, .42) 50%, rgba(61, 181, 242, .16) 70%, transparent);
+  opacity: 0; animation: rw-front-left 500ms cubic-bezier(.3, .2, .3, 1) forwards; will-change: transform;
+}
+.rw-wavefront::after { animation-name: rw-front-right; }
+.rw-wavefront > i { position: absolute; left: 50%; top: 50%; width: 46vmin; height: 46vmin; margin: -23vmin 0 0 -23vmin; border-radius: 50%;
+  border: 2px solid rgba(200, 244, 255, .6); box-shadow: 0 0 24px rgba(85, 220, 255, .4); opacity: 0; animation: rw-ring 500ms cubic-bezier(.2, .7, .3, 1) forwards; }
+.rw-wavefront--battle::before, .rw-wavefront--battle::after { width: 24%; left: 38%; animation-duration: 600ms;
+  background: var(--rw-sine-v) 50% 0 / 20px 48px repeat-y, linear-gradient(90deg, transparent, rgba(61, 181, 242, .22) 28%, rgba(220, 248, 255, .6) 50%, rgba(61, 181, 242, .22) 72%, transparent); }
+.rw-wavefront--battle > i { animation-duration: 600ms; width: 60vmin; height: 60vmin; margin: -30vmin 0 0 -30vmin; }
+@keyframes rw-front-left { 0% { opacity: 0; transform: translateX(0) scaleX(.3); } 18% { opacity: 1; } 75% { opacity: .85; } 100% { opacity: 0; transform: translateX(-260%) scaleX(1); } }
+@keyframes rw-front-right { 0% { opacity: 0; transform: translateX(0) scaleX(.3); } 18% { opacity: 1; } 75% { opacity: .85; } 100% { opacity: 0; transform: translateX(260%) scaleX(1); } }
+
+/* ---- reduced motion: no vibrating backgrounds, no travel, no wavefront; effects keep only a short still fade ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html.rs-resonance-wave :is(.title-bg, .brief__bg, .lo__bg, .result__grid)::after, html.rs-resonance-wave .title-bg::before { animation: none; }
+  html.rs-resonance-wave :is(.rs-native-match .dpanel, .rs-native-resonance-panel), html.rs-resonance-wave .rs-native-match .rs-native-choice .spov__grid > * { animation: none; }
+  html.rs-resonance-wave .shopbar .scard:hover::after { animation: none; }
+  .rw-wavefront, .rw-voice, .rw-octave, .rw-row::after, .rw-burst > b, .rw-collapse { display: none; }
+  .rw-ring, .rw-ring--in, .rw-ring--lock, .rw-ring--pulse, .rw-foot, .rw-spectrum > i { transform: none; animation: rw-still 150ms ease-out forwards; }
+  .rw-ring::after, .rw-foot::after { display: none; }
+}
+html.rs-resonance-wave.sp-reduced-motion :is(.title-bg, .brief__bg, .lo__bg, .result__grid)::after, html.rs-resonance-wave.sp-reduced-motion .title-bg::before { animation: none; }
+html.rs-resonance-wave.sp-reduced-motion :is(.rs-native-match .dpanel, .rs-native-resonance-panel) { animation: none; }
+html.rs-resonance-wave.sp-reduced-motion .rw-wavefront { display: none; }
+@keyframes rw-still { 0% { opacity: .8; } 100% { opacity: 0; } }

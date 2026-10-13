@@ -22,7 +22,7 @@ test('worker bootstraps same-origin, API and entry stay local', () => {
   for (const path of ['/independent.html', '/independent/api/sessions', '/healthz', '/js/hostingBootstrap.js', '/js/hostingWait.js', '/resonance-references.zip']) assert.equal(handler(req, res(), path), false);
   for (const path of ['/resonance/api/catalog', '/js/resonance/main.js', '/css/resonance.css',
     '/css/resonance-entry.css', '/css/resonance-detail.css', '/css/resonance-codex.css', '/css/resonance-panels.css',
-    '/css/resonance-tide-remap.css', '/css/resonance-tide.css',
+    '/css/resonance-wave-remap.css', '/css/resonance-wave.css',
     '/js/ui/fieldHost.js', '/js/ui/fallbackField.js', '/js/render/app.js', '/js/render/interp.js',
     '/js/ui/hud.js', '/js/ui/shopBar.js', '/js/ui/bondStrip.js', '/js/screens/title.js',
     '/css/screens/draft.css', '/css/screens/title.css', '/css/screens/briefing.css', '/css/screens/lobby.css', '/js/net.js',
@@ -126,7 +126,7 @@ test('resonance entry resources stay relative at root and under the stronghold n
   const stylesheetHrefs = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((match) => match[1]);
   const importMap = JSON.parse(html.match(/<script type="importmap">(.*?)<\/script>/s)[1]);
   const bootstrap = html.match(/<script type="module" src="([^"]+)"/)[1];
-  assert.equal(stylesheetHrefs.length, 7, 'fonts, the three native sheets, resonance.css and the two 潮汐 layers');
+  assert.equal(stylesheetHrefs.length, 7, 'fonts, the three native sheets, resonance.css and the two 共鸣·音浪 layers');
   for (const href of [...stylesheetHrefs, ...Object.values(importMap.imports), bootstrap]) assert.ok(href.startsWith('./'), href);
   for (const entry of ['https://host.example/resonance.html', 'https://host.example/stronghold/resonance.html']) {
     const root = new URL(entry);

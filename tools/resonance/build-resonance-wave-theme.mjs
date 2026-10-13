@@ -1,25 +1,25 @@
-// 共鸣「潮汐」主题的色值层：public/css/resonance-tide-remap.css 由本工具从共鸣页实际加载的样式表生成，不手改。
+// 共鸣「音浪」主题的色值层：public/css/resonance-wave-remap.css 由本工具从共鸣页实际加载的样式表生成，不手改。
 //
 // resonance.html 加载原生样式的副本（resonance-native/，上游字节）和共鸣自己的样式（resonance*.css）。原生的薄荷绿、墨绿
 // 写死在约五百条声明里，不只在设计变量里。这里按加载顺序读出这些样式表，把绿色系的色值换成海蓝系：
-//   - 原生强调色（#4ed8af / #17f9b7 / #59f4ca … 及其透明度）换成同名设计变量 var(--mint-*)，由 resonance-tide.css 定为海蓝；
-//   - 共鸣面板反复使用的墨绿底色和灰绿文字换成 --tide-* 变量；
+//   - 原生强调色（#4ed8af / #17f9b7 / #59f4ca … 及其透明度）换成同名设计变量 var(--mint-*)，由 resonance-wave.css 定为海蓝；
+//   - 共鸣面板反复使用的墨绿底色和灰绿文字换成 --rw-* 变量；
 //   - 其余绿黑底、灰绿线条按色相映射到深海蓝，亮度和透明度不变；
 //   - 语义绿（2 费卡、治疗、生命条、属性提升）保留。
-// 输出的每条规则都限定在 :where(html.rs-tide) 之下：只有共鸣页面的根节点带这个类，原版对局和工坊不受影响。
+// 输出的每条规则都限定在 :where(html.rs-resonance-wave) 之下：只有共鸣页面的根节点带这个类，原版对局和工坊不受影响。
 // :where() 不加特异度，色值层排在所有原样式之后，所以被换色的声明照原顺序覆盖原声明。为保持原来的层叠胜负，同一组件
 // （去掉修饰符的 BEM 类）上同一类颜色属性的其余声明也按原文一并重写；用到绿色的自定义属性，所有声明都重写。
 //
-// usage: node tools/resonance/build-tide-theme.mjs [--check]
+// usage: node tools/resonance/build-resonance-wave-theme.mjs [--check]
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-export const TIDE_REMAP_PATH = 'public/css/resonance-tide-remap.css';
+export const WAVE_REMAP_PATH = 'public/css/resonance-wave-remap.css';
 
 /** The stylesheets resonance.html applies, in cascade order (an @import applied twice counts at its last place). */
-export const TIDE_SOURCES = [
+export const WAVE_SOURCES = [
   'public/css/resonance-native/theme.css', 'public/css/resonance-native/components.css', 'public/css/resonance-native/devices.css',
   ...['game', 'game-shop', 'title', 'lobby', 'briefing', 'draft', 'result'].map((name) => `public/css/resonance-native/screens/${name}.css`),
   'public/css/resonance-entry.css', 'public/css/resonance-native/screens/game-panels.css', 'public/css/resonance-detail.css',
@@ -33,10 +33,10 @@ const ACCENTS = new Map([
   ['78,216,175', '--mint-500'], ['23,249,183', '--mint-glow'], ['89,244,202', '--mint-400'], ['53,216,180', '--mint-600'],
   ['42,158,127', '--mint-700'], ['20,84,67', '--mint-800'], ['13,44,36', '--mint-900'],
 ]);
-/** The resonance panels' own green-black surfaces and grey-green text, as tide tokens (values in resonance-tide.css). */
+/** The resonance panels' own green-black surfaces and grey-green text, as --rw-* tokens (values in resonance-wave.css). */
 const NAMED = new Map([
-  ['#d7e5dc', '--tide-ink'], ['#edf3ef', '--tide-ink-hi'], ['#b9c9c0', '--tide-ink-lo'], ['#c5d8ce', '--tide-ink-soft'],
-  ['#101814', '--tide-deep'], ['#18251f', '--tide-deep-2'], ['#101512', '--tide-abyss'],
+  ['#d7e5dc', '--rw-ink'], ['#edf3ef', '--rw-ink-hi'], ['#b9c9c0', '--rw-ink-lo'], ['#c5d8ce', '--rw-ink-soft'],
+  ['#101814', '--rw-deep'], ['#18251f', '--rw-deep-2'], ['#101512', '--rw-abyss'],
 ]);
 /** Greens that mean something (heal, HP, a 2-cost card, a raised stat, the time-skill tag's ink): never recoloured. */
 const SEMANTIC = new Set(['#0b1a0a']);
@@ -58,7 +58,7 @@ const toRgb = ([h, s, l]) => {
 const hex2 = (n) => n.toString(16).padStart(2, '0');
 
 /** Whether a colour is part of the original's mint / green-black look (and not a semantic green). */
-export function isTideGreen(rgb) {
+export function isMintGreen(rgb) {
   const [h, s, l] = toHsl(rgb);
   if (h < 95 || h > 185 || s < .05 || l <= .015) return false;
   if (h < 150 && s >= .4 && l >= .25 && l <= .82) return false;   // heal / HP / 2-cost / raised-stat greens
@@ -67,7 +67,7 @@ export function isTideGreen(rgb) {
 
 /** The sea-blue counterpart of a green: navy for the dark surfaces, slate for mid greys, pale blue-grey for light text,
  *  sea blue for the accents, aqua for the palest accents. Lightness and alpha are kept. */
-export function tideRgb(rgb) {
+export function seaBlueRgb(rgb) {
   const [, s, l] = toHsl(rgb);
   let next;
   if (s >= .4 && l >= .25) next = [l > .8 ? 193 : 199, clamp(s * 1.12 + .06), clamp(l + .02, 0, .97)];
@@ -89,13 +89,13 @@ export function remapValue(value) {
     let rgb, alpha = 1, alphaHex = null;
     if (m[0] === '#') ({ rgb, a: alpha, alphaHex } = parseHex(m));
     else { rgb = [r, g, b].map(Number); if (a != null) alpha = a.endsWith('%') ? Number(a.slice(0, -1)) / 100 : Number(a); }
-    if (!isTideGreen(rgb)) return m;
+    if (!isMintGreen(rgb)) return m;
     changed = true;
     const named = m[0] === '#' && NAMED.get(lower);
     if (named) return `var(${named})`;
     const accent = ACCENTS.get(rgb.join(','));
     if (accent) return alpha >= 1 ? `var(${accent})` : `color-mix(in srgb, var(${accent}) ${+(alpha * 100).toFixed(1)}%, transparent)`;
-    const next = tideRgb(rgb);
+    const next = seaBlueRgb(rgb);
     if (m[0] === '#') return `#${next.map(hex2).join('')}${alphaHex ?? ''}`;
     return alpha >= 1 && !m.startsWith('rgba') ? `rgb(${next.join(', ')})` : `rgba(${next.join(', ')}, ${+alpha.toFixed(3)})`;
   });
@@ -176,16 +176,16 @@ function subjectKeys(selector) {
 
 /** Scope a selector to the resonance root without changing its specificity. */
 function scope(selector) {
-  if (/^:root\b/.test(selector)) return selector.replace(/^:root/, ':root:where(.rs-tide)');
-  if (/^html\b/.test(selector)) return selector.replace(/^html/, 'html:where(.rs-tide)');
-  if (/^\.sp-[a-z-]+/.test(selector)) return `:where(html.rs-tide)${selector}`;
-  return `:where(html.rs-tide) ${selector}`;
+  if (/^:root\b/.test(selector)) return selector.replace(/^:root/, ':root:where(.rs-resonance-wave)');
+  if (/^html\b/.test(selector)) return selector.replace(/^html/, 'html:where(.rs-resonance-wave)');
+  if (/^\.sp-[a-z-]+/.test(selector)) return `:where(html.rs-resonance-wave)${selector}`;
+  return `:where(html.rs-resonance-wave) ${selector}`;
 }
 
 // ---- the build -----------------------------------------------------------------------------------------------------
 
-export function buildTideRemap(read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8')) {
-  const sheets = TIDE_SOURCES.map((file) => ({ file, items: parseBlocks(read(file)) }));
+export function buildWaveRemap(read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8')) {
+  const sheets = WAVE_SOURCES.map((file) => ({ file, items: parseBlocks(read(file)) }));
   // pass 1: which (component, family) pairs and custom properties carry a green somewhere
   const touched = new Set(), customs = new Set();
   const walk = (items, fn, media = []) => { for (const it of items) { if (it.type === 'group') walk(it.items, fn, [...media, it.prelude]); else fn(it, media); } };
@@ -232,20 +232,20 @@ export function buildTideRemap(read = (file) => fs.readFileSync(path.join(ROOT, 
     if (chunk.length) lines.push(`/* ${file} */`, ...chunk);
   }
   const head = [
-    '/* GENERATED by tools/resonance/build-tide-theme.mjs from the stylesheets resonance.html loads — do not edit by hand.',
-    '   卫戍协议：共鸣「潮汐」色值层：原生与共鸣样式中的薄荷绿、墨绿换成海蓝系（resonance-tide.css 定义变量）；',
-    `   只在 html.rs-tide 下生效，:where() 不增加特异度。${remapped} declarations recoloured, ${kept} re-stated to keep their cascade order. */`,
+    '/* GENERATED by tools/resonance/build-resonance-wave-theme.mjs from the stylesheets resonance.html loads — do not edit by hand.',
+    '   卫戍协议：共鸣「音浪」色值层：原生与共鸣样式中的薄荷绿、墨绿换成海蓝系（resonance-wave.css 定义变量）；',
+    `   只在 html.rs-resonance-wave 下生效，:where() 不增加特异度。${remapped} declarations recoloured, ${kept} re-stated to keep their cascade order. */`,
   ];
   return `${[...head, ...lines].join('\n')}\n`;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const css = buildTideRemap();
-  const target = path.join(ROOT, TIDE_REMAP_PATH);
+  const css = buildWaveRemap();
+  const target = path.join(ROOT, WAVE_REMAP_PATH);
   if (process.argv.includes('--check')) {
     const current = fs.existsSync(target) ? fs.readFileSync(target, 'utf8') : '';
-    if (current !== css) { process.stderr.write(`${TIDE_REMAP_PATH} is out of date: run node tools/resonance/build-tide-theme.mjs\n`); process.exit(1); }
-    process.stdout.write(`${TIDE_REMAP_PATH} is up to date\n`);
+    if (current !== css) { process.stderr.write(`${WAVE_REMAP_PATH} is out of date: run node tools/resonance/build-resonance-wave-theme.mjs\n`); process.exit(1); }
+    process.stdout.write(`${WAVE_REMAP_PATH} is up to date\n`);
   } else {
     fs.writeFileSync(target, css);
     process.stdout.write(`${JSON.stringify({ written: target, bytes: Buffer.byteLength(css) })}\n`);

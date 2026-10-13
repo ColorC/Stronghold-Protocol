@@ -792,7 +792,7 @@ export class AudioManager {
   }
 
   /**
-   * A mode's own voicing of the UI sounds (共鸣's synthesized water cues, js/resonance/tide.js): `voicing(name, o, out)`
+   * A mode's own voicing of the UI sounds (共鸣's synthesized resonance voices, js/resonance/resonanceWaveSound.js): `voicing(name, o, out)`
    * plays its cue for `name` into `out.destination` (the sfx channel: settings 音效 volume and mute apply) and returns
    * true, or returns false to leave `name` to the manifest's sample. It is only asked while the context runs (after the
    * first gesture) and the sfx channel is audible. null ⇒ samples only.
