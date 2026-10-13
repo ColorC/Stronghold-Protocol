@@ -62091,11 +62091,11 @@
         "effectKind": "automatic opening event",
         "mechanism": {
           "condition": "seed deterministically selects one opening event",
-          "target": "开局获得一个低费复制器，第十四节点再获得一个。只能复制一至三费干员。",
+          "target": "开局获得一张低费复制凭证，第十四节点再获得一张。只能复制一至三费干员。",
           "trigger": {
             "automaticAtRunStart": true
           },
-          "reward": "开局获得一个低费复制器，第十四节点再获得一个。只能复制一至三费干员。",
+          "reward": "开局获得一张低费复制凭证，第十四节点再获得一张。只能复制一至三费干员。",
           "scope": "one event for the whole run; same recruit roster",
           "resetCap": "one automatic selection per run"
         },
