@@ -6,8 +6,9 @@ import { loadData } from '../../server/data.js';
 import { getResonanceCatalog } from '../../server/modes/resonance/catalog.js';
 import { getResonanceField, runResonanceBattle } from '../../server/modes/resonance/battle.js';
 import { applyAction, createSession, validateSession, viewSession } from '../../server/modes/resonance/session.js';
-import { canPlace, fieldTile, ownerRangeKeys, positionClass } from '../../server/match/board.js';
+import { boardTileOf, canPlace, fieldTile, ownerRangeKeys, positionClass } from '../../server/match/board.js';
 import { Grid } from '../../server/sim/grid.js';
+import { dirFromDelta } from '../../server/sim/dir.js';
 import { GEO } from '../../shared/constants.js';
 import { normalizeChess, toDataSource } from '../../server/sim/simdata.js';
 import { setupUnitKit } from '../../server/sim/content/index.js';
@@ -742,11 +743,8 @@ export function selectSeasonCampaignCore(state,catalog,previousId=null){
     ||estimateOperatorPower(opById(catalog,b.operatorId),b.star)-estimateOperatorPower(opById(catalog,a.operatorId),a.star)||a.uid.localeCompare(b.uid))[0]?.operatorId??null;
 }
 
-export function directionToward(row,col,target){
-  const dr=target[0]-row,dc=target[1]-col;
-  if(Math.abs(dc)>=Math.abs(dr))return dc<0?'LEFT':'RIGHT';
-  return dr<0?'UP':'DOWN';
-}
+/** The way a unit at (row, col) faces to look at `target` [row, col]. Row 0 is the bottom row, so a larger row is UP (server/sim/dir.js). */
+export function directionToward(row,col,target){return dirFromDelta(target[0]-row,target[1]-col);}
 export function canOperatorUseTile(operator,deployMap,row,col){
   const placementClass=operator?.canDeployHighGround?'ranged':operator?.position==='MELEE'?'melee':'ranged';
   return canPlace(deployMap,placementClass,row,col);
@@ -779,7 +777,8 @@ export function routeProfiles(field){
       else if(grid){const legs=[];for(let i=1;i<anchors.length;i++){const leg=grid.findPath(anchors[i-1][0],anchors[i-1][1],anchors[i][0],anchors[i][1])??grid.findPath(anchors[i-1][0],anchors[i-1][1],anchors[i][0],anchors[i][1],{ignoreObstacles:true});if(!leg?.length){legs.length=0;break;}legs.push(...(i===1?leg:leg.slice(1)));}if(legs.length){points=legs;source='native-grid-route';}else points=[...new Map(anchors.map(p=>[p.join(','),p])).values()];}
       else points=[...new Map(anchors.map(p=>[p.join(','),p])).values()];
     } else points=[...new Map(anchors.map(p=>[p.join(','),p])).values()];
-    if(field.field==='bossL'||field.field==='bossR')points=points.map(([r,c])=>[r+7,field.field==='bossR'?19-c:c]);
+    // a leader field's stage tiles onto the board (bossR mirrors col c ↔ 20 − c, server/match/board.js)
+    if(field.field==='bossL'||field.field==='bossR')points=points.map(([r,c])=>boardTileOf(field.field,r,c));
     const signature=JSON.stringify([route.motion??'WALK',points]);
     if(points.length>1){const profile=unique.get(signature)??{motion:route.motion??'WALK',points,source,originalIndices:[]};profile.originalIndices.push(originalIndex);unique.set(signature,profile);}
   }

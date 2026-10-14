@@ -96,7 +96,7 @@ export function GameChrome(p) {
       <${TopBar} pub=${nativePub} priv=${nativePriv} conn=${{status:'online'}} hud=${null} total=${null} drawer=${panel==='formation'?'info':null} onExit=${onLeave}
         onDrawer=${tab=>setPanel(tab==='info'?(panel==='formation'?null:'formation'):null)} onReady=${readyAction} readyBusy=${busy} readyCount=${0} playerCount=${1}
         pen=${!replay&&panel==='enemy'} penAvail=${!replay&&!!state.nextEnemies?.length&&state.node?.kind!=='logistics'} onPen=${enabled=>setPanel(enabled?'enemy':null)}
-        leftMeta=${html`<div class="rs-gmeta"><${MicroLabel} tone="mint">卫戍协议 · 共鸣</${MicroLabel}>${openingEvent?.id?html`<button type="button" class="rs-gmeta__opening" onClick=${()=>openDetail({kind:'opening',id:openingEvent.id})}>${openingEvent.id==='none'?'共鸣':openingEvent.name}</button>`:html`<b>共鸣</b>`}<${DifficultyTag} difficulty=${state.difficulty} size="sm" code=${({FUNNY:'轻松',NORMAL:'标准',HARD:'困难',ABYSS:'深渊'})[state.difficulty]||'标准'}/></div>`}
+        leftMeta=${html`<div class="rs-gmeta"><${MicroLabel} tone="mint">卫戍协议 · 共鸣</${MicroLabel}>${openingEvent?.id?html`<button type="button" class="rs-gmeta__opening" onClick=${()=>openDetail({kind:'opening',id:openingEvent.id})}>${openingEvent.id==='none'?'共鸣':openingEvent.name}</button>`:html`<b>共鸣</b>`}<${DifficultyTag} difficulty=${state.difficulty} size="sm"/></div>`}
         phaseContent=${html`<span class="rs-phase">${replay?'战斗回放':phase}</span>`}/>
       <div class="gm__bonds">
         <button type="button" class="bonds-toggle" aria-expanded="${!bondsCollapsed}" aria-controls="resonance-bond-strip" onClick=${()=>setBondsCollapsed(!bondsCollapsed)}><${Icon} name=${bondsCollapsed?'chevronRight':'chevronLeft'}/><span>${bondsCollapsed?'盟约':'收起'}</span></button>

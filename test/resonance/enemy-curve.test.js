@@ -58,7 +58,7 @@ test('leader nodes take their own profile over the terminal one, not the curve',
   const pick=(difficulty)=>{const x=at(difficulty,28,'boss');return [x.hpMultiplier,x.atkMultiplier,x.bossPoolMultiplier];};
   assert.deepEqual(pick('FUNNY'),[0.65,0.8,0.4]);
   assert.deepEqual(pick('NORMAL'),[0.85,0.9,2]);
-  assert.deepEqual(pick('HARD'),[0.95,1,1.3]);
+  assert.deepEqual(pick('HARD'),[0.95,1,1.35]);
   assert.deepEqual(pick('ABYSS'),[1,1,1]);
   const hp=DIFFICULTIES.map(difficulty=>pick(difficulty)[0]),atk=DIFFICULTIES.map(difficulty=>pick(difficulty)[1]);
   assert.ok(hp[0]<hp[1]&&hp[1]<hp[2]&&hp[2]<=hp[3]&&atk[0]<atk[1]&&atk[1]<atk[2]&&atk[2]<=atk[3],`escort order: ${hp} / ${atk}`);

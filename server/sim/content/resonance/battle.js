@@ -2,6 +2,7 @@
 // when recording is disabled; visual floor data is static metadata plus at most twelve active dynamic areas.
 import { installResonancePacts } from './pacts.js';
 import { installResonanceEquipment } from './equipment.js';
+import { dirVec } from '../../dir.js';
 
 const normId = (v) => String(v ?? '').replace(/_[ab]$/, '');
 const numeric = (v, d = 0) => Number.isFinite(Number(v)) ? Number(v) : d;
@@ -215,7 +216,8 @@ function applySignatureSkill(b,ctx,u,op){
   }
   if(passive?.kind==='star3_surtur'&&!u.mem.resonanceSurtr){u.mem.resonanceSurtr=true;u.mem.resonanceSurtrAt=b.time;metric(b,'triggers.signature_surtr_ember');}
   if(passive?.kind==='star3_zhuhuang'){
-    const [dr,dc]=({UP:[-1,0],DOWN:[1,0],LEFT:[0,-1],RIGHT:[0,1]})[u.dir]??[0,1],tiles=[],rect=b.rect;
+    // the wall runs forward along the facing (row 0 is the bottom row: UP is +row)
+    const [dr,dc]=dirVec(u.dir),tiles=[],rect=b.rect;
     for(let r=u.tileR+dr,c=u.tileC+dc;r>=rect.r0&&r<=rect.r1&&c>=rect.c0&&c<=rect.c1;r+=dr,c+=dc)tiles.push([r,c]);
     const id=`huangWall:${u.id}`,until=Number.MAX_SAFE_INTEGER,burnPercent=numeric(profile.burnPercent,0);
     setDynamicFloor(b,id,'firewall',u,tiles,until);

@@ -801,12 +801,18 @@ export function DifficultyIcon({ difficulty, class: cls }) {
   return html`<${Icon} name="rook" class=${cls} />`;
 }
 
+// The page's difficulty names. The original game's (标准/险境/绝境/终极模拟, shared/constants.js); a mode with names of its
+// own sets them once at start-up (卫戍协议：共鸣 轻松/标准/困难/深渊, js/resonance/main.js).
+let difficultyNames = DIFFICULTY_NAMES;
+/** @param {Record<string, string>|null} names */
+export function setDifficultyNames(names) { difficultyNames = names && typeof names === 'object' ? { ...DIFFICULTY_NAMES, ...names } : DIFFICULTY_NAMES; }
+
 /**
- * Difficulty tag: coloured glyph + name (标准/险境/绝境/终极模拟).
+ * Difficulty tag: coloured glyph + the page's difficulty name (setDifficultyNames).
  * @param {{ difficulty: string, size?: 'sm'|'md'|'lg', class?: string, code?: string }} props
  */
 export function DifficultyTag({ difficulty, size = 'md', class: cls, code }) {
-  const name = DIFFICULTY_NAMES[difficulty] || difficulty || '—';
+  const name = difficultyNames[difficulty] || difficulty || '—';
   const color = DIFFICULTY_COLORS[difficulty] || 'var(--text-lo)';
   return html`<span class=${cx('dtag', `dtag--${size}`, cls)} style=${`--d-color:${color}`}>
     <${DifficultyIcon} difficulty=${difficulty} class="dtag__icon" />

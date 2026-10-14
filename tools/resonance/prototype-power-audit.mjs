@@ -14,6 +14,7 @@ const {activePrototypeTraits}=await import('../../server/sim/content/resonance/p
 const {COLS,ROWS}=await import('../../server/sim/constants.js');
 const {GEO}=await import('../../shared/constants.js');
 const {absoluteRangeKeys}=await import('../../server/sim/targeting.js');
+const {dirFromDelta}=await import('../../server/sim/dir.js');
 const controlledNoTrait=process.argv.includes('--traits-off')||process.env.SP_POWER_TRAITS_OFF==='1';
 if((process.argv.includes('--batch')||process.argv.includes('--control-batch'))&&!process.env.SP_POWER_SAMPLE_CHILD){
   const startedAt=new Date().toISOString(),deadline=Date.now()+8*60*1000;
@@ -148,11 +149,8 @@ const routes=(field.wave?.routes??[]).filter((route)=>Array.isArray(route.start)
 if(!routes.length)throw new Error('NATIVE_WAVE_HAS_NO_ROUTES');
 const routePoints=routes.flatMap((route)=>[route.start,...(route.checkpoints??[]),route.end]);
 const distance=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
-const directionToward=(from,to)=>{
-  const dr=to[0]-from[0],dc=to[1]-from[1];
-  if(Math.abs(dc)>=Math.abs(dr))return dc>=0?'RIGHT':'LEFT';
-  return dr>=0?'DOWN':'UP';
-};
+// row 0 is the bottom row: a larger row is UP (server/sim/dir.js)
+const directionToward=(from,to)=>dirFromDelta(to[0]-from[0],to[1]-from[1]);
 const occupied=new Set();
 const placements=[];
 const placementPreview=previewUnitStats(state,{data,catalog});

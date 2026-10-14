@@ -5,7 +5,7 @@ import { loadData } from '../../server/data.js';
 import { getResonanceCatalog } from '../../server/modes/resonance/catalog.js';
 import { getResonanceField, resolveEnemyBalance, runResonanceBattle } from '../../server/modes/resonance/battle.js';
 import { createSession } from '../../server/modes/resonance/session.js';
-import { canPlace, ownerRangeKeys, positionClass } from '../../server/match/board.js';
+import { boardTileOf, canPlace, ownerRangeKeys, positionClass } from '../../server/match/board.js';
 import { GEO } from '../../shared/constants.js';
 import { Grid } from '../../server/sim/grid.js';
 import { canBlockGround, canOperatorUseTile, directionToward } from './balance-campaign.mjs';
@@ -87,7 +87,7 @@ export function routeSet(field){
     else points=[...new Map(anchors.map(p=>[p.join(','),p])).values()];
    } else points=[...new Map(anchors.map(p=>[p.join(','),p])).values()];
   } else points=[...new Map(anchors.map(p=>[p.join(','),p])).values()];
-  if(field.field==='bossL'||field.field==='bossR')points=points.map(([r,c])=>[r+7,field.field==='bossR'?19-c:c]);
+  if(field.field==='bossL'||field.field==='bossR')points=points.map(([r,c])=>boardTileOf(field.field,r,c));
   const signature=JSON.stringify([route.motion,points]);if(!unique.has(signature))unique.set(signature,{motion:route.motion,points,source,originalIndices:[]});unique.get(signature).originalIndices.push(originalIndex);
  }
  return [...unique.values()];

@@ -12,6 +12,7 @@ const [{ getData }, { getResonanceCatalog }, { getResonanceField, buildResonance
   import('../helpers/battleHarness.js'),
 ]);
 const { unitInfo } = await import('../../server/sim/snapshot.js');
+const { dirVec } = await import('../../server/sim/dir.js');
 
 test('resonance enemy balance validates profiles and applies legal difficulty overrides',()=>{
   assert.deepEqual(resolveEnemyBalance(null,'NORMAL','normal'),{hpMultiplier:1,atkMultiplier:1,defMultiplier:1,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
@@ -366,8 +367,7 @@ test('all twenty five-cost star-three signatures trigger through canonical bridg
       spawnStillTargetable([owner.tileR, owner.tileC + 1], 100);
     }
     if (name === '烛煌') {
-      const dr = owner.dir === 'UP' ? -1 : owner.dir === 'DOWN' ? 1 : 0;
-      const dc = owner.dir === 'LEFT' ? -1 : owner.dir === 'RIGHT' ? 1 : 0;
+      const [dr, dc] = dirVec(owner.dir);
       spawnStillTargetable([owner.tileR + dr * 2, owner.tileC + dc * 2]);
       const rect=battle.rect,edge=[];for(let c=rect.c0;c<=rect.c1;c++)if((dc===1?c>owner.tileC:dc===-1?c<owner.tileC:false)&&battle.grid.walkable(owner.tileR,c))edge.push([owner.tileR,c]);
       const edgeTile=edge.sort((a,z)=>dc===1?z[1]-a[1]:a[1]-z[1])[0];assert.ok(edgeTile,'native battle row has a legal tile along Zhuhuang’s full forward wall');
@@ -396,4 +396,33 @@ test('all twenty five-cost star-three signatures trigger through canonical bridg
     if(name==='烛煌'){assert.ok(huangEdge.hp<huangEdge.s.maxHp,'the skill-period wall damages an enemy at the forward battle boundary');assert.ok(huangWallHits.length>0,'wall damage comes from its explicit live effect hook');assert.ok(Number.isFinite(huangEndTime)&&!owner.skill.active,'the native ammo skill ends');assert.ok(huangWallHits.every(time=>time<=huangEndTime),'wall ticks stop by the native ammo skill end');}
   }
   assert.deepEqual(missing, [], `natural signature trigger evidence missing: ${missing.join(', ')}`);
+});
+
+test('烛煌’s star-three wall runs forward along her facing, up and down too (row 0 is the bottom row)', () => {
+  const data = getData();
+  const catalog = getResonanceCatalog(data, { environmentId: 'origin_laterano', seed: 2701 });
+  const operator = Object.values(catalog.operators).find((row) => row.name === '烛煌');
+  for (const dir of ['UP', 'DOWN']) {
+    const state = {
+      schemaVersion: 1, seed: 416, revision: 0, round: 26, roundLimit: 28, difficulty: 'NORMAL',
+      environmentId: 'origin_laterano', phase: 'prep', level: 3, xp: 0, gold: 5, hp: 100,
+      winStreak: 0, lossStreak: 0, shop: { offers: [], locked: false }, inventory: [], strategies: [],
+      poolRemaining: {}, nextUid: 2, history: [], pacts: [],
+      pieces: [{ uid: 'zhuhuang', operatorId: operator.id, star: 3, equipment: [], growth: {}, row: null, col: null, dir }],
+    };
+    const field = getResonanceField(state, { data, catalog });
+    const tile = [...field.deployMap].filter(([, type]) => operator.position !== 'MELEE' || type === 'melee').map(([key]) => key.split(',').map(Number))
+      .find(([r]) => (dir === 'UP' ? r <= 10 : r >= 11));
+    assert.ok(tile, `a legal tile with rows ${dir === 'UP' ? 'above' : 'below'} it`);
+    [state.pieces[0].row, state.pieces[0].col] = tile;
+    const { battle } = buildResonanceBattle(state, { data, catalog, recording: true });
+    battle.start(); battle.step();
+    const owner = battle.allyUnits.find((unit) => unit.uid === 'zhuhuang');
+    assert.ok(owner.skill.activate('test', { free: true }), 'the source skill starts');
+    const wall = battle.resonanceDynamicFloors.find((floor) => floor.id === `huangWall:${owner.id}`);
+    assert.ok(wall?.tiles.length, `facing ${dir} lays a wall`);
+    const [dr] = dirVec(dir);
+    for (const [r, c] of wall.tiles) assert.ok(c === owner.tileC && Math.sign(r - owner.tileR) === dr, `facing ${dir} from (${owner.tileR}, ${owner.tileC}): wall tile (${r}, ${c}) lies in front`);
+    assert.equal(battle.errorCount, 0);
+  }
 });

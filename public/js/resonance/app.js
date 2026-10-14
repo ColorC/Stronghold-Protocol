@@ -12,16 +12,17 @@ import { GameScreen } from './game.js';
 import { NativeMatchConnection } from './native-connection.js';
 import { resonanceApi } from './api.js';
 import { parseDetailHash, actionErrorText } from './model.js';
+import { RESONANCE_DIFFICULTY_NAMES } from '../../../shared/resonance/difficulty-names.js';
 import { DetailPanel } from './detail.js';
 import { CodexScreen } from './codex.js';
 
 const LAST = 'rs:lastSession';
 const DIFFICULTIES = [
-  ['FUNNY', '轻松', '间歇战斗，后勤节点补充金币与经验'],
-  ['NORMAL', '标准', '标准经营节奏与最终领袖战'],
-  ['HARD', '困难', '更强敌人与更紧的经营压力'],
-  ['ABYSS', '深渊', '标准终战后继续挑战'],
-];
+  ['FUNNY', '间歇战斗，后勤节点补充金币与经验'],
+  ['NORMAL', '标准经营节奏与最终领袖战'],
+  ['HARD', '更强敌人与更紧的经营压力'],
+  ['ABYSS', '标准终战后继续挑战'],
+].map(([id, description]) => [id, RESONANCE_DIFFICULTY_NAMES[id], description]);
 const readLast = () => { try { return localStorage.getItem(LAST); } catch { return null; } };
 const difficultyName = (id) => DIFFICULTIES.find(([key]) => key === id)?.[1] || '标准';
 const difficultyArtKey = Object.freeze({ FUNNY: 'funny', NORMAL: 'normal', HARD: 'hard', ABYSS: 'abyss' });

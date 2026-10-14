@@ -6,6 +6,7 @@ import { loadData } from '../../server/data.js';
 import { getResonanceCatalog } from '../../server/modes/resonance/catalog.js';
 import { getResonanceField } from '../../server/modes/resonance/battle.js';
 import { applyAction, createSession, validateSession } from '../../server/modes/resonance/session.js';
+import { dirVec } from '../../server/sim/dir.js';
 
 test('campaign coverage declares every environment and difficulty', () => {
   assert.equal(ENVIRONMENTS.length, 19);
@@ -527,6 +528,13 @@ test('campaign route profiles ignore unspawned templates and keep only spawned c
   assert.deepEqual(routes[0].points,[[8,1],[8,4],[8,8]],'checkpoints are retained in travel order');
 });
 
+test('campaign route profiles put leader-field paths on the board the way the server reads the tiles',()=>{
+  const wave={routes:[{motion:'FLY',start:[2,15],end:[5,18]}]};
+  // board row = leader-field row + 7; the right half mirrors col c ↔ 20 − c (server/match/board.js boardTileOf)
+  assert.deepEqual(campaignRouteProfiles({field:'bossL',wave})[0].points,[[9,15],[12,18]]);
+  assert.deepEqual(campaignRouteProfiles({field:'bossR',wave})[0].points,[[9,5],[12,2]]);
+});
+
 test('campaign resolves recipe and identity-transfer choices from live lineup value',()=>{
   const catalog={operators:{a:{charId:'char-a',pacts:['aegir'],role:'damage'}},environments:{origin_aegir:{identityPactId:'aegir'}},pacts:{aegir:{thresholds:[2,4]},laterano:{thresholds:[2,4]}},equipment:{weak:{effects:[{kind:'component_stat',params:{atk:1}}]},strong:{effects:[{kind:'component_stat',params:{atk:100}}]}}};
   const state={environmentId:'origin_aegir',pieces:[{uid:'p1',operatorId:'a',row:1,col:1,star:2}],inventory:[],strategies:[]};
@@ -541,7 +549,25 @@ test('ranged units can use a melee tile and face toward the incoming route', () 
   assert.equal(canOperatorUseTile({ position: 'MELEE' }, new Map([['10,6','ranged']]), 10, 6), false);
   assert.equal(canOperatorUseTile({ position: 'MELEE', canDeployHighGround: true }, new Map([['10,6','ranged']]), 10, 6), true);
   assert.equal(directionToward(10, 6, [10, 8]), 'RIGHT');
-  assert.equal(directionToward(10, 6, [8, 6]), 'UP');
+  // row 0 is the bottom row (server/sim/dir.js): a smaller row is below
+  assert.equal(directionToward(10, 6, [8, 6]), 'DOWN');
+  assert.equal(directionToward(10, 6, [12, 6]), 'UP');
+  assert.equal(directionToward(12, 5, [10, 5]), 'DOWN', 'the video board: a blocker on (12, 5) with enemies coming from (10, 5) faces down, not into the wall');
+});
+
+test('campaign blockers on a real map face the way the enemies come from', () => {
+  // seed 1 标准, first nodes: 角峰 blocks (9, 4) of a path that comes down from (10, 4)
+  const run = runCampaign({ rulesVersion: 3, seed: 1, difficulty: 'NORMAL', policy: 'tempo', maxBattles: 2 });
+  let checked = 0, vertical = 0;
+  for (const row of run.rows) for (const piece of row.roster.filter(p => p.role === 'frontline')) for (const route of row.routeCoverage.routes) {
+    const i = route.points.findIndex(([r, c]) => r === piece.row && c === piece.col);
+    if (i < 1) continue;
+    const from = route.points[i - 1], [dr, dc] = dirVec(piece.dir), front = [piece.row + dr, piece.col + dc];
+    const gap = ([r, c]) => Math.abs(r - from[0]) + Math.abs(c - from[1]);
+    assert.ok(gap(front) < gap([piece.row, piece.col]), `node ${row.round}: ${piece.name} on (${piece.row}, ${piece.col}) faces ${piece.dir}, away from the enemies coming from (${from})`);
+    checked++; if (from[1] === piece.col) vertical++;
+  }
+  assert.ok(checked > 0 && vertical > 0, 'a blocker stands on a vertical step of a real path');
 });
 
 test('frontline scoring rejects passable fence tiles that cannot block ground enemies', () => {

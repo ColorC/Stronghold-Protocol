@@ -21,7 +21,7 @@ export function ResultView({ state, catalog, onLeave, onReport, onDetail }) {
   return html`<div class=${`screen result ${won?'is-win':'is-lose'} rs-native-result`} style=${bg?`--result-bg:url("${bg}")`:undefined}>
     <div class="result__bg" aria-hidden="true"></div><div class="result__grid" aria-hidden="true"></div>
     <main class="result__main"><section class="result__hero">
-      <${DifficultyTag} difficulty=${state.difficulty} size="lg" code=${({FUNNY:'轻松',NORMAL:'标准',HARD:'困难',ABYSS:'深渊'})[state.difficulty]||'标准'}/><h1 class="result__headline">${won?'防线守住了':state.terminalReason==='hp-depleted'?'目标已失守':'本局未通关'}</h1>
+      <${DifficultyTag} difficulty=${state.difficulty} size="lg"/><h1 class="result__headline">${won?'防线守住了':state.terminalReason==='hp-depleted'?'目标已失守':'本局未通关'}</h1>
       <p class="result__sub">${won?'最终领袖已被击败。':state.terminalReason==='hp-depleted'?'保护目标生命已耗尽。':'最终领袖未被击败。'}</p>
       <div class="result__rounds"><span class="result__rlabel">推进节点</span><b class="result__rnum num">${state.round}</b><span class="result__rof num">/ ${state.roundLimit}</span></div>
       <footer class="result__foot"><${Button} variant="primary" size="xl" icon="chevronLeft" onClick=${onLeave}>返回开始界面<//><${Button} size="xl" onClick=${onReport}>查看战报<//></footer>
