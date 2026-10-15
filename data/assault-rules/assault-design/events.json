@@ -1,0 +1,4074 @@
+{
+  "schema": "assault-events-design/v1",
+  "events": [
+    {
+      "id": "evt_rogue1_treasure1",
+      "name": "历史馈赠",
+      "topicId": "rogue_1",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_1/choiceScenes/scene_treasure1_enter",
+        "sceneId": "scene_treasure1_enter"
+      },
+      "backgroundId": "pic_rogue_1_26",
+      "story": "进击改编：一座曾在悲剧中覆灭的古城，城中悲剧人物的故事被写成剧目流传至今，而城池的宝物却存放在此。你在故事主角腐朽的尸骸旁寻得了一些宝物，由主演本人亲手撰写，最珍贵的剧本手稿已半老化消失在尘埃中。源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 2,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 2,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过历史馈赠"
+        ]
+      },
+      "choices": [
+        {
+          "id": "treasure1_pry",
+          "label": "撬开腐朽的宝箱",
+          "description": "用撬棍强行打开锈死的箱盖。宝物与陷阱同样未知，收益有波动。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 0.6,
+              "effects": [
+                {
+                  "kind": "gold",
+                  "amount": 8,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "xp",
+                  "amount": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            },
+            {
+              "probability": 0.4,
+              "effects": [
+                {
+                  "kind": "gold",
+                  "amount": 2,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "treasure1_manuscript",
+          "label": "研读半老的剧本手稿",
+          "description": "在阴冷废墟中彻夜解读残稿，以身心损耗换取前人的经验。",
+          "conditions": {
+            "minCurrency": {
+              "hp": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "hp",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "xp",
+                  "amount": 6,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "treasure1_exchange",
+          "label": "以古城遗物交换一件收藏品",
+          "description": "把无法解读的器物交给路过的收藏家，换取一件进击收藏品。收藏品由轨道与稀有度选择器决定，不指定具体 ID。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 3
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 3
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "relicChoice",
+                  "track": "economyGrowth",
+                  "rarity": "rare",
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "treasure1_leave",
+          "label": "离开",
+          "description": "不取分毫，直接离开废墟。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "进入事件即写入唯一存档身份 assault:event:evt_rogue1_treasure1:<day>，重复提交同身份直接返回既有结算，不再次扣除成本或重抽概率。treasure1_exchange 在选择时先校验金币余额与收藏品候选池，余额不足或候选为空则该项禁用并显示原因，绝不扣费后随机替换。treasure1_pry 的概率在首次确认时用本局固定种子一次抽定并存档，取消操作不消耗那次抽取。免费离开项 costs 与 effects 均为空数组。",
+      "causalChecks": [
+        "重复提交同一事件身份：金币、生命、经验与收藏品候选都不发生第二次变化。",
+        "treasure1_exchange 在金币少于 3 时保持禁用，点击不会扣除金币，也不会静默改为其它奖励。",
+        "treasure1_pry 的概率和值恒为 1，且结算所用随机数来自本局固定种子而非每次点击重抽。"
+      ]
+    },
+    {
+      "id": "evt_rogue1_treasure2",
+      "name": "命运馈赠",
+      "topicId": "rogue_1",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_1/choiceScenes/scene_treasure2_enter",
+        "sceneId": "scene_treasure2_enter"
+      },
+      "backgroundId": "pic_rogue_1_25",
+      "story": "进击改编：你分不清这是现实还是梦境，眼前是随处可见的高脚石台，上面放着一个看起来贵重却陈旧的盒子。或许这是谁特地放在这里，或许它就是在等待你，不论如何，这都是一份礼物。源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 3,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 3,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过命运馈赠"
+        ]
+      },
+      "choices": [
+        {
+          "id": "treasure2_open",
+          "label": "直接开启盒子",
+          "description": "命运不会提前揭示内容。开盒结果可能是一件收藏品、一笔金币，或一次反噬。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 0.5,
+              "effects": [
+                {
+                  "kind": "relicChoice",
+                  "track": "pierceCrit",
+                  "rarity": "rare",
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            },
+            {
+              "probability": 0.3,
+              "effects": [
+                {
+                  "kind": "gold",
+                  "amount": 7,
+                  "lifecycle": "run"
+                }
+              ]
+            },
+            {
+              "probability": 0.2,
+              "effects": [
+                {
+                  "kind": "hp",
+                  "amount": -2,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "xp",
+                  "amount": 2,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "treasure2_guided",
+          "label": "以金币占卜，定向招募",
+          "description": "按占卜结果指定一个职业，从该职业中定向招募一名干员。无法提供合格干员时该选项禁用。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 4
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 4
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "recruit",
+                  "selection": "profession",
+                  "tag": "<player-chosen>",
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "recruit",
+            "selection": "profession",
+            "count": 1,
+            "onNoTarget": "disable",
+            "onCancel": "refund"
+          }
+        },
+        {
+          "id": "treasure2_leave",
+          "label": "离开",
+          "description": "合上盒盖，把它留给下一个旅人。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue1_treasure2:<day> 只结算一次。treasure2_open 的三个结果在确认时一次性抽取并存档，重复提交不重抽。treasure2_guided 先让玩家选定职业，再校验该职业是否存在可招募且未满池的干员；无候选、备用区已满或玩家取消时，不扣除金币也不随机改选其它职业。收藏品结果只写 track/rarity 选择器，不引用尚未确定的收藏品具体 ID。",
+      "causalChecks": [
+        "treasure2_open 的概率之和为 1，且负向结果的扣生命在确认时只结算一次。",
+        "treasure2_guided 在指定职业无可招募干员或备用区已满时禁用，取消后金币余额不变。",
+        "treasure2_open 与 treasure2_guided 互斥，选定一个后另一个不再出现，重复提交不重复发奖。"
+      ]
+    },
+    {
+      "id": "evt_rogue1_rest",
+      "name": "安全的角落",
+      "topicId": "rogue_1",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_1/choiceScenes/scene_rest_enter",
+        "sceneId": "scene_rest_enter"
+      },
+      "backgroundId": "avg_ac13_2",
+      "story": "进击改编：古堡之中危机四伏，诡异的环境、阴影中的敌人以及光怪陆离的事件数不胜数，让你的小队总是疲于奔命。万幸的是，偶尔还是能找到个角落喘息一下。抓紧时间整理物资、放松身心、规划路线，新的挑战很快就到。源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 1,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 1,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过安全的角落"
+        ]
+      },
+      "choices": [
+        {
+          "id": "rest_recover",
+          "label": "抓紧时间休整",
+          "description": "为下一场战斗做好防护：全队首次入场时各获得最大生命40%的护盾，持续至本场结束。同时恢复所示行动生命。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "hp",
+                  "amount": 2,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "repair",
+                  "target": "all",
+                  "mode": "percent",
+                  "amount": 40,
+                  "lifecycle": "nextBattle",
+                  "application": "openingShield",
+                  "durationSec": 120,
+                  "stacking": "separateAdditiveSources"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "rest_organize",
+          "label": "清点物资并整备装备",
+          "description": "花费金币修补护具与阵型，使全队下一场战斗获得防御强化。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "enhance",
+                  "stat": "def",
+                  "amount": 0.15,
+                  "mode": "percent",
+                  "scope": "team",
+                  "duration": "nextBattle",
+                  "lifecycle": "nextBattle"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "rest_swap",
+          "label": "把待命干员调到安全位置",
+          "description": "选择一名出战干员，免除其下一场战斗第一次自然入场的部署点数费用；之后正常入场照常支付。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 1
+            },
+            "requires": [
+              "队伍中至少有一名可换防的干员"
+            ]
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 1
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "redeploy",
+                  "target": "selected",
+                  "free": true,
+                  "lifecycle": "nextBattle",
+                  "application": "firstNaturalEntryCostWaiver",
+                  "countsAsSkillRedeploy": false
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "selectTeam",
+            "count": 1,
+            "onNoTarget": "disable",
+            "onCancel": "refund"
+          }
+        },
+        {
+          "id": "rest_leave",
+          "label": "离开",
+          "description": "不做停留，继续赶路。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue1_rest:<day> 只结算一次。rest_organize 的强化只作用于下一场战斗，战斗结束后由生命周期清理。免费离开项 costs 与 effects 均为空数组。 rest_recover：按目标新最大生命百分比生成下一战护盾，不乘五，不作非战虚假治疗。 rest_swap：下一战选定身体首次自然入场免费；不在事件界面假发再部署/技能事件。",
+      "causalChecks": [
+        "rest_recover 的生命恢复与干员修复各自只结算一次，使用当前生命上限而非固定数值。",
+        "rest_organize 的防御强化在下一场战斗结束时清理，不会跨战斗保留或重复叠加。",
+        "rest_swap 在无可换防干员或金币不足时禁用，取消操作后金币与干员位置均不变。"
+      ]
+    },
+    {
+      "id": "evt_rogue1_stage",
+      "name": "微型舞台",
+      "topicId": "rogue_1",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_1/choiceScenes/scene_ent1_enter",
+        "sceneId": "scene_ent1_enter"
+      },
+      "backgroundId": "pic_rogue_1_16",
+      "story": "进击改编：大厅角落里的小舞台吸引了你的目光，凑近一看，你发现舞台上已经有了骑士，只要再出现一名角色，剧目就能开演。角色都在哪里呢？你望向了一旁的投币口。源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 2,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 2,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过微型舞台"
+        ]
+      },
+      "choices": [
+        {
+          "id": "stage_coin",
+          "label": "投币开演，指定职业招募",
+          "description": "投入金币让剧目开演，并按玩家指定职业定向招募一名干员补足角色。无法提供合格干员时该选项禁用。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 3
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 3
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "recruit",
+                  "selection": "profession",
+                  "tag": "<player-chosen>",
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "recruit",
+            "selection": "profession",
+            "count": 1,
+            "onNoTarget": "disable",
+            "onCancel": "refund"
+          }
+        },
+        {
+          "id": "stage_perform",
+          "label": "亲自登台演出",
+          "description": "以身心消耗为代价亲自登台，换取舞台经验并留下演出者的身份标签。",
+          "conditions": {
+            "minCurrency": {
+              "hp": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "hp",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "xp",
+                  "amount": 5,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "tag",
+                  "tag": "舞台之星",
+                  "duration": "run",
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "stage_sign",
+          "label": "在剧团名录上留下身份",
+          "description": "无偿为剧团留名，获得一份持续整局的职业身份标签。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "tag",
+                  "tag": "剧团员",
+                  "duration": "run",
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "stage_leave",
+          "label": "离开",
+          "description": "不投币也不登台，转身离开大厅。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue1_stage:<day> 只结算一次。stage_coin 先让玩家选定职业，再校验该职业是否存在可招募且未满池的干员；无候选、备用区已满或取消时不扣金币，也不随机改为其它职业。stage_perform 的生命代价在确认时结算且不低于行动生命的合法下限，经验与整局标签只发一次。stage_sign 是零成本身份选择，重复提交不重复附加同名标签。免费离开项 costs 与 effects 均为空数组。",
+      "causalChecks": [
+        "stage_coin 在指定职业无可招募干员或备用区已满时禁用，取消后金币余额不变且不静默随机替代。",
+        "stage_perform 的生命扣除与经验、标签发放各自只结算一次，重复提交不重复扣血或重复加标签。",
+        "stage_sign 与 stage_coin、stage_perform 互斥，同一事件身份在本局只产生一次奖励。"
+      ]
+    },
+    {
+      "id": "evt_rogue2_wish",
+      "name": "消失的习俗",
+      "topicId": "rogue_2",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_2/choiceScenes/scene_ro2_wish_enter",
+        "sceneId": "scene_ro2_wish_enter"
+      },
+      "backgroundId": "pic_rogue_2_20",
+      "story": "进击改编：在捕鳞船还能航行的日子，伊比利亚沿海村庄的儿童们会向出海的父母许愿得到一件礼物，待到大人们渔获归来，他们会将最大的一条鳞鱼亲手交给儿女，而之前孩童们许愿的礼品就藏在鱼腹里。如今你面前只有几条贴着许愿条的风干鳞鱼。源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 3,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 2,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过消失的习俗"
+        ]
+      },
+      "choices": [
+        {
+          "id": "wish_fish",
+          "label": "剖开贴着许愿条的风干鳞鱼",
+          "description": "按旧俗剖开鱼腹，礼物与坏掉的许愿条同样可能，收益有波动。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 0.55,
+              "effects": [
+                {
+                  "kind": "gold",
+                  "amount": 7,
+                  "lifecycle": "run"
+                }
+              ]
+            },
+            {
+              "probability": 0.35,
+              "effects": [
+                {
+                  "kind": "gold",
+                  "amount": 3,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "xp",
+                  "amount": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            },
+            {
+              "probability": 0.1,
+              "effects": [
+                {
+                  "kind": "hp",
+                  "amount": -1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "wish_offer",
+          "label": "向大海许下一个愿望",
+          "description": "以金币置办祭品向海许愿，换取一件治疗与护盾路线的收藏品；结果用 track/rarity 选择器指定。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 3
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 3
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "relicChoice",
+                  "track": "healShield",
+                  "rarity": "common",
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "wish_listen",
+          "label": "听老人讲旧日习俗",
+          "description": "在潮气与回忆里坐上一整夜，以身心损耗换取对海边生存的经验，并留下海边遗民的身份标签。",
+          "conditions": {
+            "minCurrency": {
+              "hp": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "hp",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "xp",
+                  "amount": 5,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "tag",
+                  "tag": "海边遗民",
+                  "duration": "run",
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "wish_leave",
+          "label": "离开",
+          "description": "不惊扰这些许愿条，继续赶路。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue2_wish:<day> 只结算一次。wish_fish 的三个结果在确认时用本局固定种子一次性抽取并存档，重复提交不重抽。wish_offer 先校验金币余额与治疗/护盾路线收藏品候选池；余额不足或候选为空时禁用，绝不扣费后随机替换。wish_listen 的生命代价不低于行动生命合法下限，经验与整局标签只发一次。收藏品结果只写 track/rarity 选择器，候选取自最终 active 池。免费离开项 costs 与 effects 均为空数组。",
+      "causalChecks": [
+        "wish_fish 的概率之和为 1，负向结果扣生命只结算一次且不叠加。",
+        "wish_offer 在金币少于 3 或该路线收藏品候选为空时禁用，点击不扣金币也不静默改奖。",
+        "wish_listen 的经验与身份标签各只发放一次，重复提交不重复附加同名标签。"
+      ]
+    },
+    {
+      "id": "evt_rogue2_home",
+      "name": "重返家园",
+      "topicId": "rogue_2",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_2/choiceScenes/scene_ro2_recruit1_enter",
+        "sceneId": "scene_ro2_recruit1_enter"
+      },
+      "backgroundId": "pic_rogue_2_33",
+      "story": "进击改编：你在寻找信使驿站时遇到一位教士。他自称离开伊比利亚许久，在大地各处追寻真理，如今正要返乡为祖国尽一份绵薄之力。他愿意帮你联络当地干员，但也强调路途崎岖，自己能做的也只是联络。源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 3,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 2,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过重返家园"
+        ]
+      },
+      "choices": [
+        {
+          "id": "home_contact",
+          "label": "请教士联络当地干员",
+          "description": "托他联络一位仍在活动的当地干员，按玩家指定的阵营定向招募一名干员。无候选时禁用。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 4
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 4
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "recruit",
+                  "selection": "faction",
+                  "tag": "<player-chosen>",
+                  "priceTier": [
+                    2,
+                    3
+                  ],
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "recruit",
+            "selection": "faction",
+            "count": 1,
+            "priceTier": [
+              2,
+              3
+            ],
+            "onNoTarget": "disable",
+            "onCancel": "refund"
+          }
+        },
+        {
+          "id": "home_sermon",
+          "label": "聆听布道，整理信念",
+          "description": "在荒海边听他讲道，以身心损耗换取经验，并留下布道者的身份标签。",
+          "conditions": {
+            "minCurrency": {
+              "hp": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "hp",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "xp",
+                  "amount": 5,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "tag",
+                  "tag": "布道者",
+                  "duration": "run",
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "home_donate",
+          "label": "资助他的盘缠，收纳一路见闻",
+          "description": "以金币换取他游历各国整理的见闻与手记，直接转为经验。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "xp",
+                  "amount": 3,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "home_leave",
+          "label": "离开",
+          "description": "只为他指路，不作交易。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue2_home:<day> 只结算一次。home_contact 先让玩家选定阵营，再校验最终 active 池中该阵营、指定 priceTier 内是否还有可招募且未满池的干员；无候选、备用区已满或取消时不扣金币，也不随机改选其它阵营。home_sermon 与 home_donate 的成本和奖励各只结算一次。角色只按 faction/priceTier 过滤，不写具体未完成干员 ID。免费离开项 costs 与 effects 均为空数组。",
+      "causalChecks": [
+        "home_contact 在指定阵营的 active 候选为空或备用区已满时禁用，取消后金币余额不变。",
+        "home_contact 招募到的干员必须来自最终 active 池且位于 priceTier 过滤范围内，不生成未完成 ID。",
+        "home_sermon 与 home_donate 互斥于同一事件身份，重复提交不重复扣成本或重复发经验。"
+      ]
+    },
+    {
+      "id": "evt_rogue2_lighthouse",
+      "name": "灯塔看守人",
+      "topicId": "rogue_2",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_2/choiceScenes/scene_ro2_up2_enter",
+        "sceneId": "scene_ro2_up2_enter"
+      },
+      "backgroundId": "pic_rogue_2_35",
+      "story": "进击改编：老人在沙滩上画了一座灯塔，涌上来的潮水迅速抹去所有痕迹。“大海这次真正吞噬了它们。”他自言自语。原来他是伊比利亚曾经众多灯塔看守人中的一位，来参加一场老朋友的聚会。临别时老人送了你一些特产作为礼物。源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 4,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 3,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过灯塔看守人"
+        ]
+      },
+      "choices": [
+        {
+          "id": "lh_gift",
+          "label": "收下老人的特产礼物",
+          "description": "接受看守人们的临别馈赠，从格挡与反击路线中取得一件收藏品。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "relicChoice",
+                  "track": "blockCounter",
+                  "rarity": "common",
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "lh_guide",
+          "label": "请看守人们为你指路",
+          "description": "选择一名出战干员，免除其下一场战斗第一次自然入场的部署点数费用；之后正常入场照常支付。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 1
+            },
+            "requires": [
+              "队伍中至少有一名可换防的干员"
+            ]
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 1
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "redeploy",
+                  "target": "selected",
+                  "free": true,
+                  "lifecycle": "nextBattle",
+                  "application": "firstNaturalEntryCostWaiver",
+                  "countsAsSkillRedeploy": false
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "selectTeam",
+            "count": 1,
+            "onNoTarget": "disable",
+            "onCancel": "refund"
+          }
+        },
+        {
+          "id": "lh_stories",
+          "label": "听他们讲海上的故事",
+          "description": "在篝火旁守到天亮，以身心损耗换取关于海嗣行为的经验。",
+          "conditions": {
+            "minCurrency": {
+              "hp": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "hp",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "xp",
+                  "amount": 4,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "lh_leave",
+          "label": "离开",
+          "description": "向看守人们道别，继续赶路。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue2_lighthouse:<day> 只结算一次。lh_gift 的收藏品候选来自格挡/反击路线的最终 active 池，候选为空时明确给替代说明而不是空发。lh_stories 的经验只发一次。免费离开项 costs 与 effects 均为空数组。 lh_guide：下一战选定身体首次自然入场免费；不在事件界面假发再部署/技能事件。",
+      "causalChecks": [
+        "lh_gift 的收藏品结果只通过 blockCounter 轨道选择器给出，不引用具体未完成收藏品 ID。",
+        "lh_guide 在无可换防干员或金币不足时禁用，取消操作后金币与干员位置均不变。",
+        "lh_stories 的生命代价与经验各只结算一次，重复提交不重复扣血。"
+      ]
+    },
+    {
+      "id": "evt_rogue2_printer",
+      "name": "现买现印",
+      "topicId": "rogue_2",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_2/choiceScenes/scene_ro2_ent1_enter",
+        "sceneId": "scene_ro2_ent1_enter"
+      },
+      "backgroundId": "pic_rogue_2_19",
+      "story": "进击改编：你在海岸边发现一个茶几大小的高科技盒子，摁遍所有按钮后它吐出一份传单，上面写着各种商品的简介。看来这是一台从阿戈尔漂来的自动抽奖机，它支持六七种支付方式，但环境所限你只能用最原始的一种——投币。源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 4,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 3,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过现买现印"
+        ]
+      },
+      "choices": [
+        {
+          "id": "printer_coupon",
+          "label": "投币打印折扣券",
+          "description": "投币让机器打印一张商店折扣券，使本时段之后的商店采购更便宜。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "shopDiscount",
+                  "amount": 1,
+                  "scope": "next",
+                  "lifecycle": "nextBattle"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "printer_lottery",
+          "label": "投币抽奖",
+          "description": "投入金币拉动抽奖，可能是随机干员、路线收藏品，或是一笔返还款。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 3
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 3
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 0.5,
+              "effects": [
+                {
+                  "kind": "recruit",
+                  "selection": "random",
+                  "priceTier": [
+                    2,
+                    3,
+                    4
+                  ],
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            },
+            {
+              "probability": 0.3,
+              "effects": [
+                {
+                  "kind": "relicChoice",
+                  "track": "skillCycle",
+                  "rarity": "common",
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            },
+            {
+              "probability": 0.2,
+              "effects": [
+                {
+                  "kind": "gold",
+                  "amount": 4,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "printer_dismantle",
+          "label": "拆解抽奖机",
+          "description": "冒险拆开机器取走核心部件，可能得到经济路线收藏品，也可能被残余防护所伤。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 0.6,
+              "effects": [
+                {
+                  "kind": "relicChoice",
+                  "track": "economyGrowth",
+                  "rarity": "rare",
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            },
+            {
+              "probability": 0.4,
+              "effects": [
+                {
+                  "kind": "hp",
+                  "amount": -2,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "xp",
+                  "amount": 2,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "printer_leave",
+          "label": "离开",
+          "description": "不投币，也不拆机。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue2_printer:<day> 只结算一次。printer_lottery 的三个结果在确认时用本局固定种子一次性抽取并存档，重复提交不重抽；随机干员只按 priceTier 从最终 active 池过滤，不生成未完成 ID。printer_coupon 的折扣生命周期在下一次结算后清理，不跨时段保留。printer_dismantle 的负向结果扣生命只结算一次。所有付费项先校验余额，余额不足则禁用。免费离开项 costs 与 effects 均为空数组。",
+      "causalChecks": [
+        "printer_lottery 的概率之和为 1，且随机干员来自最终 active 池的 priceTier 范围内。",
+        "printer_coupon 的商店折扣仅作用一次并在结算后清理，不跨时段累积。",
+        "printer_dismantle 在取消或重复提交时不重复扣生命，也不重抽结果。"
+      ]
+    },
+    {
+      "id": "evt_rogue3_market",
+      "name": "低地市集",
+      "topicId": "rogue_3",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_3/choiceScenes/scene_ro3_sacrifice1_enter",
+        "sceneId": "scene_ro3_sacrifice1_enter"
+      },
+      "backgroundId": "pic_rogue_3_21",
+      "story": "进击改编：一棵巨大的族树沉在泥沼中，树干、根系、沼泽边到处都是萨米商贩。树枝来回搬动摊位，动物大声呼喊叫卖商品或传递信息，木械傀儡行走于地面与沼泽间存储货物。一切都是那么地新奇！源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 4,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 3,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过低地市集"
+        ]
+      },
+      "choices": [
+        {
+          "id": "market_buy",
+          "label": "在集市采购干员",
+          "description": "请商贩按玩家指定的职业联络一名可雇佣干员，并按价格档过滤最终 active 池。无候选时禁用。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 4
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 4
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "recruit",
+                  "selection": "profession",
+                  "tag": "<player-chosen>",
+                  "priceTier": [
+                    2,
+                    3,
+                    4
+                  ],
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "recruit",
+            "selection": "profession",
+            "count": 1,
+            "priceTier": [
+              2,
+              3,
+              4
+            ],
+            "onNoTarget": "disable",
+            "onCancel": "refund"
+          }
+        },
+        {
+          "id": "market_sell",
+          "label": "出售多余补给",
+          "description": "把队伍用不上的补给折价卖给商贩，换取金币。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "gold",
+                  "amount": 5,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "market_trade",
+          "label": "以收藏品换取收藏品",
+          "description": "用一件旧收藏品与商贩对换，从召唤路线取得一件收藏品；结果用 track/rarity 选择器指定。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "relicChoice",
+                  "track": "summon",
+                  "rarity": "rare",
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "market_leave",
+          "label": "离开",
+          "description": "只逛不买，离开市集。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue3_market:<day> 只结算一次。market_buy 先让玩家选定职业，再校验最终 active 池中该职业、指定 priceTier 内是否还有可招募且未满池的干员；无候选、备用区已满或取消时不扣金币，也不随机改选其它职业。market_sell 与 market_trade 各只结算一次。角色与收藏品只用 profession/priceTier 与 track/rarity 过滤，不写具体未完成 ID。免费离开项 costs 与 effects 均为空数组。",
+      "causalChecks": [
+        "market_buy 在指定职业的 active 候选为空或备用区已满时禁用，取消后金币余额不变且不静默随机替代。",
+        "market_buy 招募到的干员来自最终 active 池且在 priceTier 过滤范围内。",
+        "market_trade 的收藏品结果只通过 summon 轨道与 rare 稀有度选择器给出，不引用具体未完成收藏品 ID。"
+      ]
+    },
+    {
+      "id": "evt_rogue3_convoy",
+      "name": "特里蒙旅行社特派团",
+      "topicId": "rogue_3",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_3/choiceScenes/scene_ro3_relic1_enter",
+        "sceneId": "scene_ro3_relic1_enter"
+      },
+      "backgroundId": "pic_rogue_3_13",
+      "story": "进击改编：一架微型移动作业平台在你们面前停下。车身用绳索绑着几个科考常用的大型耐低温贮藏盒，巨大的低温护盾上焊了一个带盖子的小铁筐，里面是一些旅游宣传单，印着特里蒙、堡垒山城、麦克斯特区的风景照片和很尴尬的广告语，说这个旅行社现在“有讲萨米语的导游！”源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 5,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 4,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过特里蒙旅行社特派团"
+        ]
+      },
+      "choices": [
+        {
+          "id": "convoy_container",
+          "label": "撬开耐低温贮藏盒",
+          "description": "冒寒撬开科考贮藏盒，可能得到寒冷路线收藏品，也可能被低温与机关所伤。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 0.5,
+              "effects": [
+                {
+                  "kind": "relicChoice",
+                  "track": "cold",
+                  "rarity": "rare",
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            },
+            {
+              "probability": 0.3,
+              "effects": [
+                {
+                  "kind": "relicChoice",
+                  "track": "cold",
+                  "rarity": "common",
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            },
+            {
+              "probability": 0.2,
+              "effects": [
+                {
+                  "kind": "hp",
+                  "amount": -2,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "xp",
+                  "amount": 2,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "convoy_guide",
+          "label": "雇请讲萨米语的向导",
+          "description": "花钱雇一位熟悉冰原的导游，使全队下一场战斗获得防御强化。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 3
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 3
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "enhance",
+                  "stat": "def",
+                  "amount": 0.15,
+                  "mode": "percent",
+                  "scope": "team",
+                  "duration": "nextBattle",
+                  "lifecycle": "nextBattle"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "convoy_flyer",
+          "label": "收下旅行社宣传单",
+          "description": "拿走宣传单上的优惠信息，换取本时段之后的一次商店折扣。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "shopDiscount",
+                  "amount": 1,
+                  "scope": "next",
+                  "lifecycle": "nextBattle"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "convoy_leave",
+          "label": "离开",
+          "description": "谢绝推销，继续赶路。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue3_convoy:<day> 只结算一次。convoy_container 的三个结果在确认时用本局固定种子一次性抽取并存档，重复提交不重抽；负向结果扣生命只结算一次。convoy_guide 的强化只作用于下一场战斗，结束后由生命周期清理。convoy_flyer 的商店折扣仅作用一次并在结算后清理。收藏品只用 cold 轨道与稀有度选择器，不写具体 ID。免费离开项 costs 与 effects 均为空数组。",
+      "causalChecks": [
+        "convoy_container 的概率之和为 1，负向结果扣生命不叠加，取消不重抽。",
+        "convoy_guide 的防御强化在下一场战斗结束时清理，不跨战斗保留或重复叠加。",
+        "convoy_flyer 的商店折扣只作用一次，不跨时段累积，也不与其它折扣悄然合并成新数值。"
+      ]
+    },
+    {
+      "id": "evt_rogue3_blackrain",
+      "name": "雨！",
+      "topicId": "rogue_3",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_3/choiceScenes/scene_ro3_res2_enter",
+        "sceneId": "scene_ro3_res2_enter"
+      },
+      "backgroundId": "pic_rogue_3_5",
+      "story": "进击改编：“是黑色的雨……”男人用麻木的声音说：“我们当时刚采伐完几份样本，现在我的样本和设备都毁了，我的人也跑了……我欠公司的钱怎么办？”源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 5,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 4,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过雨！"
+        ]
+      },
+      "choices": [
+        {
+          "id": "rain_help",
+          "label": "帮他清点残存样本",
+          "description": "在腐蚀性的黑雨中抢救样本，以身心损耗换取经验与一点报酬。",
+          "conditions": {
+            "minCurrency": {
+              "hp": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "hp",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "xp",
+                  "amount": 5,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "gold",
+                  "amount": 2,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "rain_extract",
+          "label": "从黑雨中提取有效成分",
+          "description": "花钱置办防护与器皿，从黑雨残留中提取原料，换取元素路线收藏品。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "relicChoice",
+                  "track": "element",
+                  "rarity": "rare",
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "rain_shelter",
+          "label": "搭建遮蔽物并休整",
+          "description": "为下一场战斗做好防护：全队首次入场时各获得最大生命35%的护盾，持续至本场结束。同时恢复所示行动生命。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "repair",
+                  "target": "all",
+                  "mode": "percent",
+                  "amount": 35,
+                  "lifecycle": "nextBattle",
+                  "application": "openingShield",
+                  "durationSec": 120,
+                  "stacking": "separateAdditiveSources"
+                },
+                {
+                  "kind": "hp",
+                  "amount": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "rain_leave",
+          "label": "离开",
+          "description": "不涉险也不施援，离开这片被污染的海岸。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue3_blackrain:<day> 只结算一次。rain_help 的生命代价不低于行动生命合法下限，经验与金币各只结算一次。rain_extract 先校验金币余额与元素路线收藏品候选池，余额不足或候选为空则禁用。免费离开项 costs 与 effects 均为空数组。 rain_shelter：按目标新最大生命百分比生成下一战护盾，不乘五，不作非战虚假治疗。",
+      "causalChecks": [
+        "rain_help 的生命扣除、经验与金币各只结算一次，重复提交不重复扣血。",
+        "rain_extract 在金币不足或元素路线候选为空时禁用，不扣费也不静默改奖。",
+        "rain_shelter 的干员修复使用当前生命上限的百分比，行动生命恢复不与修复互相重复计数。"
+      ]
+    },
+    {
+      "id": "evt_rogue3_cards",
+      "name": "不见群山",
+      "topicId": "rogue_3",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_3/choiceScenes/scene_ro3_pick1_enter",
+        "sceneId": "scene_ro3_pick1_enter"
+      },
+      "backgroundId": "pic_rogue_3_16",
+      "story": "进击改编：在你将要踏错之际，有人拉住了你。群山的阴影交叠，扭曲的黑暗从你们眼前爬过。面对你的惶惑，占卜者模样的女性请你抽一张牌。奇怪的是，据你所知，萨米人与萨卡兹独眼巨人都不以塔罗作为预知未来的途径。源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 5,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 4,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过不见群山"
+        ]
+      },
+      "choices": [
+        {
+          "id": "cards_draw",
+          "label": "抽一张牌",
+          "description": "按占卜者的指引抽牌，结果可能是暴击路线收藏品、一张命运标签，或一次代价。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 0.5,
+              "effects": [
+                {
+                  "kind": "relicChoice",
+                  "track": "pierceCrit",
+                  "rarity": "rare",
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            },
+            {
+              "probability": 0.3,
+              "effects": [
+                {
+                  "kind": "tag",
+                  "tag": "命运眷顾",
+                  "duration": "run",
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "xp",
+                  "amount": 2,
+                  "lifecycle": "run"
+                }
+              ]
+            },
+            {
+              "probability": 0.2,
+              "effects": [
+                {
+                  "kind": "hp",
+                  "amount": -2,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "xp",
+                  "amount": 3,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "cards_ask",
+          "label": "请她指明前路",
+          "description": "选择一名出战干员，免除其下一场战斗第一次自然入场的部署点数费用；之后正常入场照常支付。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 2
+            },
+            "requires": [
+              "队伍中至少有一名可换防的干员"
+            ]
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "redeploy",
+                  "target": "selected",
+                  "free": true,
+                  "lifecycle": "nextBattle",
+                  "application": "firstNaturalEntryCostWaiver",
+                  "countsAsSkillRedeploy": false
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "selectTeam",
+            "count": 1,
+            "onNoTarget": "disable",
+            "onCancel": "refund"
+          }
+        },
+        {
+          "id": "cards_learn",
+          "label": "学习她的占卜手法",
+          "description": "以身心损耗为代价学习牌阵，换取经验并留下占卜者的身份标签。",
+          "conditions": {
+            "minCurrency": {
+              "hp": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "hp",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "tag",
+                  "tag": "占卜者",
+                  "duration": "run",
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "xp",
+                  "amount": 3,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "cards_leave",
+          "label": "离开",
+          "description": "谢过她，不抽牌也不学艺。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue3_cards:<day> 只结算一次。cards_draw 的三个结果在确认时用本局固定种子一次性抽取并存档，重复提交不重抽；负向结果扣生命只结算一次，标签与经验不重复发放。cards_learn 的标签与经验各只发放一次。免费离开项 costs 与 effects 均为空数组。 cards_ask：下一战选定身体首次自然入场免费；不在事件界面假发再部署/技能事件。",
+      "causalChecks": [
+        "cards_draw 的概率之和为 1，负向结果扣生命只结算一次，取消不重抽。",
+        "cards_ask 在无可换防干员或金币不足时禁用，取消操作后金币与干员位置均不变。",
+        "cards_learn 与 cards_draw 互斥于同一事件身份，重复提交不重复附加同名标签或经验。"
+      ]
+    },
+    {
+      "id": "evt_rogue4_scarmarket",
+      "name": "刀口舔血",
+      "topicId": "rogue_4",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_4/choiceScenes/scene_ro4_rec1_enter",
+        "sceneId": "scene_ro4_rec1_enter"
+      },
+      "backgroundId": "pic_rogue_4_10",
+      "story": "进击改编：这里是疤痕商场，雇佣兵的地盘。只要有足够的资源，你能在这里雇佣任何你想要的打手。源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 5,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 4,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过刀口舔血"
+        ]
+      },
+      "choices": [
+        {
+          "id": "scar_hire",
+          "label": "花重金雇佣一名打手",
+          "description": "按玩家指定职业从雇佣兵中定向招募一名干员，并按价格档过滤最终 active 池。无候选时禁用。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 5
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 5
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "recruit",
+                  "selection": "profession",
+                  "tag": "<player-chosen>",
+                  "priceTier": [
+                    3,
+                    4
+                  ],
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "recruit",
+            "selection": "profession",
+            "count": 1,
+            "priceTier": [
+              3,
+              4
+            ],
+            "onNoTarget": "disable",
+            "onCancel": "refund"
+          }
+        },
+        {
+          "id": "scar_brawl",
+          "label": "亲自下场打一场表演赛",
+          "description": "以身心损耗为代价登上擂台，赢取赏金与实战经验。",
+          "conditions": {
+            "minCurrency": {
+              "hp": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "hp",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "gold",
+                  "amount": 4,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "xp",
+                  "amount": 2,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "scar_refresh",
+          "label": "贿赂管事刷新雇佣名单",
+          "description": "花钱让管事重新放出雇佣名单，换取本时段之后的一次商店折扣。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "shopDiscount",
+                  "amount": 1,
+                  "scope": "next",
+                  "lifecycle": "nextBattle"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "scar_leave",
+          "label": "离开",
+          "description": "不雇人也不打擂，离开商场。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue4_scarmarket:<day> 只结算一次。scar_hire 先让玩家选定职业，再校验最终 active 池中该职业、指定 priceTier 内是否还有可招募且未满池的干员；无候选、备用区已满或取消时不扣金币，也不随机改选其它职业。scar_brawl 的生命代价不低于行动生命合法下限，金币与经验各只结算一次。scar_refresh 的商店折扣仅作用一次并在结算后清理。角色只按 profession/priceTier 过滤，不写具体未完成干员 ID。免费离开项 costs 与 effects 均为空数组。",
+      "causalChecks": [
+        "scar_hire 在指定职业的 active 候选为空或备用区已满时禁用，取消后金币余额不变且不静默随机替代。",
+        "scar_hire 招募到的干员来自最终 active 池且在 priceTier 过滤范围内。",
+        "scar_refresh 的商店折扣只作用一次，不跨时段累积，也不与其它折扣悄然合并成新数值。"
+      ]
+    },
+    {
+      "id": "evt_rogue4_artsalon",
+      "name": "失落财宝",
+      "topicId": "rogue_4",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_4/choiceScenes/scene_ro4_relic1_enter",
+        "sceneId": "scene_ro4_relic1_enter"
+      },
+      "backgroundId": "pic_rogue_4_12",
+      "story": "进击改编：艺术沙龙里人头攒动，画家正向路过的观赏者介绍自己以古老传说为题材创作的油画。你想听听哪一件作品背后的故事？源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 5,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 4,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过失落财宝"
+        ]
+      },
+      "choices": [
+        {
+          "id": "salon_buy",
+          "label": "买下古老传说的油画",
+          "description": "收藏一幅以传说为题材的油画，从跨路线收藏品中取得一件；结果用 track/rarity 选择器指定。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 3
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 3
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "relicChoice",
+                  "track": "cross",
+                  "rarity": "rare",
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "salon_listen",
+          "label": "听画家讲画中传说",
+          "description": "在沙龙里听画家纵论古老传说，以身心损耗换取经验，并留下鉴赏家的身份标签。",
+          "conditions": {
+            "minCurrency": {
+              "hp": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "hp",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "xp",
+                  "amount": 4,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "tag",
+                  "tag": "鉴赏家",
+                  "duration": "run",
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "salon_sketch",
+          "label": "请画家为全队作画像",
+          "description": "花钱请画家为队伍作画像，画中英姿使全队下一场战斗获得攻击强化。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "enhance",
+                  "stat": "atk",
+                  "amount": 0.1,
+                  "mode": "percent",
+                  "scope": "team",
+                  "duration": "nextBattle",
+                  "lifecycle": "nextBattle"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "salon_leave",
+          "label": "离开",
+          "description": "只观赏，不购买。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue4_artsalon:<day> 只结算一次。salon_buy 先校验金币余额与跨路线收藏品候选池，余额不足或候选为空则禁用。salon_listen 的生命代价不低于行动生命合法下限，经验与标签各只发放一次。salon_sketch 的攻击强化只作用于下一场战斗，结束后由生命周期清理。收藏品只用 cross 轨道与稀有度选择器，不写具体 ID。免费离开项 costs 与 effects 均为空数组。",
+      "causalChecks": [
+        "salon_buy 在金币少于 3 或跨路线候选为空时禁用，点击不扣金币也不静默改奖。",
+        "salon_listen 的经验与身份标签各只发放一次，重复提交不重复附加同名标签。",
+        "salon_sketch 的攻击强化在下一场战斗结束时清理，不跨战斗保留或重复叠加。"
+      ]
+    },
+    {
+      "id": "evt_rogue4_riddle",
+      "name": "解惑",
+      "topicId": "rogue_4",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_4/choiceScenes/scene_ro4_res1_enter",
+        "sceneId": "scene_ro4_res1_enter"
+      },
+      "backgroundId": "pic_rogue_4_3",
+      "story": "进击改编：年轻的巫妖听见你走近，显得非常激动。“终于找到一个活人了！”他急切地询问，“你认识字吗？帮我看看这本书的结局到底是什么。”你接过书翻到最后一页：一名萨卡兹猎人终于追上了他的猎物，一名萨科塔。他们的结局是——源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 6,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 5,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过解惑"
+        ]
+      },
+      "choices": [
+        {
+          "id": "riddle_read",
+          "label": "替他读出结局",
+          "description": "在昏暗灯下为巫妖逐字解读结局，以身心损耗换取知识，并留下解读者的身份标签。",
+          "conditions": {
+            "minCurrency": {
+              "hp": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "hp",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "xp",
+                  "amount": 6,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "tag",
+                  "tag": "解读者",
+                  "duration": "run",
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "riddle_hide",
+          "label": "隐瞒结局，换取报酬",
+          "description": "不告诉他真正的结局，改以他急欲知晓的心情换取金币。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "gold",
+                  "amount": 6,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "riddle_study",
+          "label": "与他一起推演书中的可能",
+          "description": "花钱陪他做一场推演实验，从格挡与反击路线取得一件收藏品。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "relicChoice",
+                  "track": "blockCounter",
+                  "rarity": "common",
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "riddle_leave",
+          "label": "离开",
+          "description": "合上书，不作回答。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue4_riddle:<day> 只结算一次。riddle_read 的生命代价不低于行动生命合法下限，经验与标签各只发放一次。riddle_hide 的金币只发一次且不与 riddle_read 同时成立（选择互斥）。riddle_study 先校验金币余额与格挡/反击路线候选池，余额不足或候选为空则禁用。收藏品只用 track/rarity 选择器，不写具体 ID。免费离开项 costs 与 effects 均为空数组。",
+      "causalChecks": [
+        "riddle_read 与 riddle_hide 互斥于同一事件身份，重复提交不重复发经验或金币。",
+        "riddle_read 的生命扣除、经验与身份标签各只结算一次，取消不扣血。",
+        "riddle_study 在金币不足或候选为空时禁用，不扣费也不静默改奖。"
+      ]
+    },
+    {
+      "id": "evt_rogue4_caravan",
+      "name": "驮兽旅行家",
+      "topicId": "rogue_4",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_4/choiceScenes/scene_ro4_normal3_enter",
+        "sceneId": "scene_ro4_normal3_enter"
+      },
+      "backgroundId": "pic_rogue_4_17",
+      "story": "进击改编：一只背满行李的驮兽站在城墙废墟的顶端，悠哉地抖落身上的积雪。它打了个响鼻，从背上甩下一本小册子，册子上写着“徒步游遍泰拉！下一站：卡兹戴尔遗址。诚聘向导，报酬面议！”，内页盖满了印戳，最靠后的一枚来自谢拉格的某个雪山邮局。源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 6,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 5,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过驮兽旅行家"
+        ]
+      },
+      "choices": [
+        {
+          "id": "caravan_guide",
+          "label": "应征做它的向导",
+          "description": "陪驮兽走一段废墟路，以身心损耗换取报酬与沿途见闻。",
+          "conditions": {
+            "minCurrency": {
+              "hp": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "hp",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "gold",
+                  "amount": 3,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "xp",
+                  "amount": 3,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "caravan_goods",
+          "label": "换取它行李中的补给",
+          "description": "用金币换下驮兽行李里的一件装置，从再部署路线取得一件收藏品。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 3
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 3
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "relicChoice",
+                  "track": "redeploy",
+                  "rarity": "common",
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "caravan_stamp",
+          "label": "收集它册子上的邮戳",
+          "description": "在它的小册子上补一枚新印戳，换取经验并留下泰拉旅人的身份标签。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "tag",
+                  "tag": "泰拉旅人",
+                  "duration": "run",
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "xp",
+                  "amount": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "caravan_leave",
+          "label": "离开",
+          "description": "不和驮兽打交道，继续赶路。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue4_caravan:<day> 只结算一次。caravan_guide 的生命代价与金币、经验各只结算一次。caravan_goods 先校验金币余额与再部署路线候选池，余额不足或候选为空则禁用。caravan_stamp 的标签与经验各只发放一次。收藏品只用 redeploy 轨道与稀有度选择器，不写具体 ID。免费离开项 costs 与 effects 均为空数组。",
+      "causalChecks": [
+        "caravan_guide 的生命扣除、金币与经验各只结算一次，重复提交不重复扣血。",
+        "caravan_goods 在金币不足或候选为空时禁用，不扣费也不静默改奖。",
+        "caravan_stamp 的标签与经验只发一次，不与其它选项在同一事件身份下重复结算。"
+      ]
+    },
+    {
+      "id": "evt_rogue5_brush",
+      "name": "点睛",
+      "topicId": "rogue_5",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_5/choiceScenes/scene_ro5_market_enter",
+        "sceneId": "scene_ro5_market_enter"
+      },
+      "backgroundId": "pic_rogue_5_28",
+      "story": "进击改编：纸笔齐备，乌墨点砚，你或许可以将一些东西固定在现实中。源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 6,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 5,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过点睛"
+        ]
+      },
+      "choices": [
+        {
+          "id": "brush_fix",
+          "label": "将一件收藏品固定在现实中",
+          "description": "落笔定型，从弹药与装填路线取得一件收藏品；结果用 track/rarity 选择器指定。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 3
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 3
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "relicChoice",
+                  "track": "ammo",
+                  "rarity": "rare",
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "brush_enhance",
+          "label": "为干员补上缺笔，强化其能力",
+          "description": "以笔墨补全干员的画相，使全队下一场战斗获得攻击强化。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "enhance",
+                  "stat": "atk",
+                  "amount": 0.12,
+                  "mode": "percent",
+                  "scope": "team",
+                  "duration": "nextBattle",
+                  "lifecycle": "nextBattle"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "brush_repair",
+          "label": "用墨修复受损的干员",
+          "description": "为下一场战斗做好防护：全队首次入场时各获得最大生命40%的护盾，持续至本场结束。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "repair",
+                  "target": "all",
+                  "mode": "percent",
+                  "amount": 40,
+                  "lifecycle": "nextBattle",
+                  "application": "openingShield",
+                  "durationSec": 120,
+                  "stacking": "separateAdditiveSources"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "brush_leave",
+          "label": "离开",
+          "description": "不落笔，收砚离开。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue5_brush:<day> 只结算一次。brush_fix 先校验金币余额与弹药/装填路线候选池，余额不足或候选为空则禁用。brush_enhance 的攻击强化只作用于下一场战斗，结束后由生命周期清理。收藏品只用 ammo 轨道与稀有度选择器，不写具体 ID。免费离开项 costs 与 effects 均为空数组。 brush_repair：按目标新最大生命百分比生成下一战护盾，不乘五，不作非战虚假治疗。",
+      "causalChecks": [
+        "brush_fix 在金币少于 3 或弹药路线候选为空时禁用，点击不扣金币也不静默改奖。",
+        "brush_enhance 的攻击强化在下一场战斗结束时清理，不跨战斗保留或重复叠加。",
+        "brush_repair 的干员修复使用当前生命上限的百分比，只结算一次，不与其它治疗重复计数。"
+      ]
+    },
+    {
+      "id": "evt_rogue5_beasts",
+      "name": "偏安",
+      "topicId": "rogue_5",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_5/choiceScenes/scene_ro5_res1_enter",
+        "sceneId": "scene_ro5_res1_enter"
+      },
+      "backgroundId": "pic_rogue_5_11",
+      "story": "进击改编：一些野兽——或者说形如野兽的东西在界园边隅嬉戏玩闹。石羽被云兽追得四散飞逃，木驮一边嚼着饲料一边看着池里的铜鳞发呆。这里的生灵都不惧人，有些见着熟人甚至会上前来碰蹭、出声讨食，随员们大多被这些友好的生灵吸引了去。源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 6,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 5,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过偏安"
+        ]
+      },
+      "choices": [
+        {
+          "id": "beasts_feed",
+          "label": "用补给喂食这些生灵",
+          "description": "拿补给与这些生灵结好，从召唤路线取得一件收藏品；结果用 track/rarity 选择器指定。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "relicChoice",
+                  "track": "summon",
+                  "rarity": "common",
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "beasts_rest",
+          "label": "在此放松休整",
+          "description": "为下一场战斗做好防护：全队首次入场时各获得最大生命25%的护盾，持续至本场结束。同时恢复所示行动生命。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "hp",
+                  "amount": 2,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "repair",
+                  "target": "all",
+                  "mode": "percent",
+                  "amount": 25,
+                  "lifecycle": "nextBattle",
+                  "application": "openingShield",
+                  "durationSec": 120,
+                  "stacking": "separateAdditiveSources"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "beasts_bond",
+          "label": "与生灵结下缘分",
+          "description": "花些时间与它们相处，换取经验并留下兽缘的身份标签。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "tag",
+                  "tag": "兽缘",
+                  "duration": "run",
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "xp",
+                  "amount": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "beasts_leave",
+          "label": "离开",
+          "description": "不惊扰这些生灵，继续赶路。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue5_beasts:<day> 只结算一次。beasts_feed 先校验金币余额与召唤路线候选池，余额不足或候选为空则禁用。beasts_bond 的标签与经验各只发放一次。收藏品只用 summon 轨道与稀有度选择器，不写具体 ID。免费离开项 costs 与 effects 均为空数组。 beasts_rest：按目标新最大生命百分比生成下一战护盾，不乘五，不作非战虚假治疗。",
+      "causalChecks": [
+        "beasts_feed 在金币不足或召唤路线候选为空时禁用，不扣费也不静默改奖。",
+        "beasts_rest 的生命恢复与干员修复不互相重复计数，且各只结算一次。",
+        "beasts_bond 的标签与经验只发一次，重复提交不重复附加同名标签。"
+      ]
+    },
+    {
+      "id": "evt_rogue5_mahjong",
+      "name": "三缺一",
+      "topicId": "rogue_5",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_5/choiceScenes/scene_ro5_ent1_enter",
+        "sceneId": "scene_ro5_ent1_enter"
+      },
+      "backgroundId": "pic_rogue_5_37",
+      "story": "进击改编：赤角皓身的巨兽百无聊赖地喷吐着火焰，眼前一张齐天的大桌上整齐码着她最爱的麻将。见到有人来了，两个铜巨人瞬间出现在牌桌旁，她兴奋地直起身来邀请你加入牌局。“三缺一，赶紧的！先说好啊，我们要来几个子儿的……你要是能赢，还怕我给不出好东西吗？”源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 7,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 6,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过三缺一"
+        ]
+      },
+      "choices": [
+        {
+          "id": "mj_play",
+          "label": "坐下来打一局",
+          "description": "投入注码与巨兽对局，输赢都有变数，但赢面能带回金币与见闻。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 3
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 3
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 0.45,
+              "effects": [
+                {
+                  "kind": "gold",
+                  "amount": 9,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "xp",
+                  "amount": 2,
+                  "lifecycle": "run"
+                }
+              ]
+            },
+            {
+              "probability": 0.3,
+              "effects": [
+                {
+                  "kind": "gold",
+                  "amount": 2,
+                  "lifecycle": "run"
+                }
+              ]
+            },
+            {
+              "probability": 0.25,
+              "effects": [
+                {
+                  "kind": "hp",
+                  "amount": -2,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "xp",
+                  "amount": 3,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "mj_watch",
+          "label": "只在旁观看，研究牌路",
+          "description": "不入局，以身心损耗换取对局势的洞察，并留下观牌人的身份标签。",
+          "conditions": {
+            "minCurrency": {
+              "hp": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "hp",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "xp",
+                  "amount": 5,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "tag",
+                  "tag": "观牌人",
+                  "duration": "run",
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "mj_bet",
+          "label": "押上额外金币赌大的",
+          "description": "加大注码孤注一掷，赢了收益更高，输了只剩零头。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 5
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 5
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 0.35,
+              "effects": [
+                {
+                  "kind": "gold",
+                  "amount": 15,
+                  "lifecycle": "run"
+                }
+              ]
+            },
+            {
+              "probability": 0.65,
+              "effects": [
+                {
+                  "kind": "gold",
+                  "amount": 2,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "mj_leave",
+          "label": "离开",
+          "description": "谢绝牌局，继续赶路。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue5_mahjong:<day> 只结算一次。mj_play 与 mj_bet 的结果在确认时用本局固定种子一次性抽取并存档，重复提交不重抽；负向结果扣生命只结算一次。mj_watch 的生命代价不低于行动生命合法下限，经验与标签各只发放一次。所有付费项先校验余额，余额不足则禁用。免费离开项 costs 与 effects 均为空数组。",
+      "causalChecks": [
+        "mj_play 的概率之和为 1，负向结果扣生命只结算一次，取消不重抽。",
+        "mj_bet 的概率之和为 1，注码扣除与派彩各自只结算一次。",
+        "mj_watch 与 mj_play、mj_bet 互斥于同一事件身份，重复提交不重复发经验或标签。"
+      ]
+    },
+    {
+      "id": "evt_rogue5_yi",
+      "name": "会友",
+      "topicId": "rogue_5",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_5/choiceScenes/scene_ro5_sacrifice1_enter",
+        "sceneId": "scene_ro5_sacrifice1_enter"
+      },
+      "backgroundId": "pic_rogue_5_19",
+      "story": "进击改编：他是岁兽代理人，擅长工造的易，但他也是个对好物什没有什么抵抗力的“易先生”，只要你拿出的东西合乎心意，他从不吝啬。源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 7,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 6,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过会友"
+        ]
+      },
+      "choices": [
+        {
+          "id": "yi_exchange",
+          "label": "以收藏品与易先生交换",
+          "description": "用一件旧物换他手中珍惜的造物，从弹药与装填路线取得一件珍贵收藏品。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 3
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 3
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "relicChoice",
+                  "track": "ammo",
+                  "rarity": "epic",
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "yi_commission",
+          "label": "请他工造一件器材",
+          "description": "花重金请易先生打造一件器材，使全队下一场战斗获得技力回复强化。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 4
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 4
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "enhance",
+                  "stat": "spGain",
+                  "amount": 0.2,
+                  "mode": "percent",
+                  "scope": "team",
+                  "duration": "nextBattle",
+                  "lifecycle": "nextBattle"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "yi_gift",
+          "label": "拿出合乎心意的物件，托他引荐",
+          "description": "以金币置办礼物讨易先生欢心，按玩家指定职业定向招募一名干员。无候选时禁用。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 4
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 4
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "recruit",
+                  "selection": "profession",
+                  "tag": "<player-chosen>",
+                  "priceTier": [
+                    3,
+                    4
+                  ],
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "recruit",
+            "selection": "profession",
+            "count": 1,
+            "priceTier": [
+              3,
+              4
+            ],
+            "onNoTarget": "disable",
+            "onCancel": "refund"
+          }
+        },
+        {
+          "id": "yi_leave",
+          "label": "离开",
+          "description": "空手而来，不为交易停留。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue5_yi:<day> 只结算一次。yi_exchange 先校验金币余额与弹药路线候选池，余额不足或候选为空则禁用；结果只写 track/rarity 选择器，不引用具体未完成收藏品 ID。yi_commission 的技力回复强化只作用于下一场战斗，结束后由生命周期清理，加速/充能按口述规则净入账。yi_gift 先让玩家选定职业，再校验最终 active 池中该职业、指定 priceTier 内是否有可招募且未满池的干员；无候选或取消时不扣金币。免费离开项 costs 与 effects 均为空数组。",
+      "causalChecks": [
+        "yi_exchange 在金币不足或弹药路线候选为空时禁用，不扣费也不静默改奖。",
+        "yi_commission 的技力回复强化在下一场战斗结束时清理，不跨战斗保留或重复叠加。",
+        "yi_gift 在指定职业的 active 候选为空或备用区已满时禁用，取消后金币余额不变。"
+      ]
+    },
+    {
+      "id": "evt_rogue6_agency",
+      "name": "临时中介所",
+      "topicId": "rogue_6",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_6/choiceScenes/scene_ro6_hire1_enter",
+        "sceneId": "scene_ro6_hire1_enter"
+      },
+      "backgroundId": "pic_rogue_6_19",
+      "story": "进击改编：“朋友，你一定需要帮手。”一只穿着得体的鹰攫住了你的手腕。它身后一群动物正在翻滚打闹，浑然不觉它们已经被圈在栅栏里成了被兜售的对象。“它们都很有活力吧？不眠不休地工作一个月也不会出问题。请放心，这绝不是什么夸大其词的广告，我们亲手测试过……是的，每一个。”源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 7,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 6,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过临时中介所"
+        ]
+      },
+      "choices": [
+        {
+          "id": "agency_hire",
+          "label": "雇下中介所推荐的帮手",
+          "description": "按玩家指定职业从被兜售的帮手中定向招募一名干员，并按价格档过滤最终 active 池。无候选时禁用。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 4
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 4
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "recruit",
+                  "selection": "profession",
+                  "tag": "<player-chosen>",
+                  "priceTier": [
+                    2,
+                    3
+                  ],
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "recruit",
+            "selection": "profession",
+            "count": 1,
+            "priceTier": [
+              2,
+              3
+            ],
+            "onNoTarget": "disable",
+            "onCancel": "refund"
+          }
+        },
+        {
+          "id": "agency_bargain",
+          "label": "讨价还价压低佣金",
+          "description": "与中介所磨价，换取本时段之后的一次商店折扣。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "shopDiscount",
+                  "amount": 1,
+                  "scope": "next",
+                  "lifecycle": "nextBattle"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "agency_inspect",
+          "label": "亲自测试这些“商品”",
+          "description": "和这些动物一起翻滚打闹，以身心损耗换取对它们习性的经验与一点报酬。",
+          "conditions": {
+            "minCurrency": {
+              "hp": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "hp",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "xp",
+                  "amount": 4,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "gold",
+                  "amount": 2,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "agency_leave",
+          "label": "离开",
+          "description": "不接受这只鹰的推销，继续赶路。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue6_agency:<day> 只结算一次。agency_hire 先让玩家选定职业，再校验最终 active 池中该职业、指定 priceTier 内是否还有可招募且未满池的干员；无候选、备用区已满或取消时不扣金币，也不随机改选其它职业。agency_bargain 的商店折扣仅作用一次并在结算后清理。agency_inspect 的生命代价不低于行动生命合法下限，经验与金币各只结算一次。角色只按 profession/priceTier 过滤，不写具体未完成干员 ID。免费离开项 costs 与 effects 均为空数组。",
+      "causalChecks": [
+        "agency_hire 在指定职业的 active 候选为空或备用区已满时禁用，取消后金币余额不变且不静默随机替代。",
+        "agency_hire 招募到的干员来自最终 active 池且在 priceTier 过滤范围内。",
+        "agency_bargain 的商店折扣只作用一次，不跨时段累积，也不与其它折扣悄然合并成新数值。"
+      ]
+    },
+    {
+      "id": "evt_rogue6_unmanned",
+      "name": "无人商店",
+      "topicId": "rogue_6",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_6/choiceScenes/scene_ro6_wish_enter",
+        "sceneId": "scene_ro6_wish_enter"
+      },
+      "backgroundId": "pic_rogue_6_25",
+      "story": "进击改编：你曾在哥伦比亚见过这家商店，也喝过他家的源石虫啤酒。可一整套防爆盔甲孤零零地立在店中央，好像里面还有人。你捡到一张字条——“朋友，请你帮忙把仓库里的木桶运到店里来，事成之后我会给你报酬。注意：一，木桶里装的是液体；二，即使搬运途中木桶受损，内容物也不会泄漏；三，如果听到犬吠，快跑。”源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 8,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 6,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过无人商店"
+        ]
+      },
+      "choices": [
+        {
+          "id": "store_haul",
+          "label": "按字条搬运木桶",
+          "description": "照字条搬桶，可能顺利拿到报酬，也可能在犬吠中受伤。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 0.65,
+              "effects": [
+                {
+                  "kind": "gold",
+                  "amount": 8,
+                  "lifecycle": "run"
+                }
+              ]
+            },
+            {
+              "probability": 0.2,
+              "effects": [
+                {
+                  "kind": "gold",
+                  "amount": 3,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "xp",
+                  "amount": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            },
+            {
+              "probability": 0.15,
+              "effects": [
+                {
+                  "kind": "hp",
+                  "amount": -2,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "store_loot",
+          "label": "拿走店里的罐装物资",
+          "description": "不搬桶，直接把货架上的物资装进背包。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "gold",
+                  "amount": 4,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "xp",
+                  "amount": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "store_armor",
+          "label": "研究那套防爆盔甲",
+          "description": "花钱拆解研究这套盔甲，把结构经验用到队伍上，使下一场战斗获得防御强化。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "enhance",
+                  "stat": "def",
+                  "amount": 0.12,
+                  "mode": "percent",
+                  "scope": "team",
+                  "duration": "nextBattle",
+                  "lifecycle": "nextBattle"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "store_leave",
+          "label": "离开",
+          "description": "不接这单活，也不拿货，直接离开。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue6_unmanned:<day> 只结算一次。store_haul 的三个结果在确认时用本局固定种子一次性抽取并存档，重复提交不重抽；负向结果扣生命只结算一次。store_loot 的金币与经验只发一次。store_armor 的防御强化只作用于下一场战斗，结束后由生命周期清理。免费离开项 costs 与 effects 均为空数组。",
+      "causalChecks": [
+        "store_haul 的概率之和为 1，负向结果扣生命只结算一次，取消不重抽。",
+        "store_loot 的金币与经验只发一次，不与 store_haul 在同一事件身份下重复结算。",
+        "store_armor 的防御强化在下一场战斗结束时清理，不跨战斗保留或重复叠加。"
+      ]
+    },
+    {
+      "id": "evt_rogue6_bloodclothes",
+      "name": "血衣之下",
+      "topicId": "rogue_6",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_6/choiceScenes/scene_ro6_relic1_enter",
+        "sceneId": "scene_ro6_relic1_enter"
+      },
+      "backgroundId": "pic_rogue_6_12",
+      "story": "进击改编：怪异的花、抽动的藤蔓、被血染红的衣服纠缠绞拧在一起。倒下的树木拦住了你的去路，这些东西似乎想要牵绊你的脚步。花、藤蔓和衣服在互相吸收对方的水分，这也许是黑流树海独特生态的一环。源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 8,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 6,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过血衣之下"
+        ]
+      },
+      "choices": [
+        {
+          "id": "blood_exchange",
+          "label": "以收藏品交换黑流结晶",
+          "description": "用一件旧物与树海生态交换结晶，从格挡与反击路线取得一件收藏品；结果用 track/rarity 选择器指定。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 3
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 3
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "relicChoice",
+                  "track": "blockCounter",
+                  "rarity": "rare",
+                  "count": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "blood_harvest",
+          "label": "采集黑流样本",
+          "description": "冒险贴近互相吸收的藤蔓与血衣，以身心损耗换取对黑流生态的经验与一点报酬。",
+          "conditions": {
+            "minCurrency": {
+              "hp": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "hp",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "xp",
+                  "amount": 5,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "gold",
+                  "amount": 2,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "blood_ward",
+          "label": "用血液与藤蔓设置路障",
+          "description": "花钱与材料把血衣藤蔓编成路障，使全队下一场战斗获得防御强化。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 2
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 2
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "enhance",
+                  "stat": "def",
+                  "amount": 0.15,
+                  "mode": "percent",
+                  "scope": "team",
+                  "duration": "nextBattle",
+                  "lifecycle": "nextBattle"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "blood_leave",
+          "label": "离开",
+          "description": "绕开纠缠的血衣藤蔓，继续赶路。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue6_bloodclothes:<day> 只结算一次。blood_exchange 先校验金币余额与格挡/反击路线候选池，余额不足或候选为空则禁用；结果只写 track/rarity 选择器，不引用具体未完成收藏品 ID。blood_harvest 的生命代价不低于行动生命合法下限，经验与金币各只结算一次。blood_ward 的防御强化只作用于下一场战斗，结束后由生命周期清理。免费离开项 costs 与 effects 均为空数组。",
+      "causalChecks": [
+        "blood_exchange 在金币不足或格挡路线候选为空时禁用，不扣费也不静默改奖。",
+        "blood_harvest 的生命扣除、经验与金币各只结算一次，取消不扣血。",
+        "blood_ward 的防御强化在下一场战斗结束时清理，不跨战斗保留或重复叠加。"
+      ]
+    },
+    {
+      "id": "evt_rogue6_pixelcat",
+      "name": "安眠一隅",
+      "topicId": "rogue_6",
+      "sourceRef": {
+        "file": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/excel/roguelike_topic_table.json",
+        "pointer": "/details/rogue_6/choiceScenes/scene_ro6_surprise_enter",
+        "sceneId": "scene_ro6_surprise_enter"
+      },
+      "backgroundId": "pic_rogue_6_34",
+      "story": "进击改编：不知道第几次迷失在树海中之后，你看见一只泛着橙黄色光芒的小狗从灌木中钻出来。它晃着尾巴在你面前一蹦一跳，你跟上它的脚步，直到它消失于一棵树后。你绕着树走了一圈，依然不见它的身影，抬头发现树干上有一只像素风格的小猫，手指触碰到猫的瞬间，你感受到来自另一空间的剧烈拉扯——源场景只提供标题、背景与故事主题，以下进击选项均为本模式独立设计。",
+      "unlockDay": 8,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 6,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过安眠一隅"
+        ]
+      },
+      "choices": [
+        {
+          "id": "cat_rest",
+          "label": "触摸像素猫，原地休整",
+          "description": "为下一场战斗做好防护：全队首次入场时各获得最大生命30%的护盾，持续至本场结束。同时恢复所示行动生命。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "hp",
+                  "amount": 2,
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "repair",
+                  "target": "all",
+                  "mode": "percent",
+                  "amount": 30,
+                  "lifecycle": "nextBattle",
+                  "application": "openingShield",
+                  "durationSec": 120,
+                  "stacking": "separateAdditiveSources"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "cat_pull",
+          "label": "顺着拉扯跨越空间",
+          "description": "选择一名出战干员，免除其下一场战斗第一次自然入场的部署点数费用；之后正常入场照常支付。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 1
+            },
+            "requires": [
+              "队伍中至少有一名可换防的干员"
+            ]
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 1
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "redeploy",
+                  "target": "selected",
+                  "free": true,
+                  "lifecycle": "nextBattle",
+                  "application": "firstNaturalEntryCostWaiver",
+                  "countsAsSkillRedeploy": false
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "selectTeam",
+            "count": 1,
+            "onNoTarget": "disable",
+            "onCancel": "refund"
+          }
+        },
+        {
+          "id": "cat_mark",
+          "label": "记住这条小径",
+          "description": "把这条由小狗引出的路径记在心里，换取经验并留下树海归途的身份标签。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "tag",
+                  "tag": "树海归途",
+                  "duration": "run",
+                  "lifecycle": "run"
+                },
+                {
+                  "kind": "xp",
+                  "amount": 1,
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "cat_leave",
+          "label": "离开",
+          "description": "不触碰小猫，径直离开。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "implementationPlan": "事件身份 assault:event:evt_rogue6_pixelcat:<day> 只结算一次。cat_mark 的标签与经验各只发放一次。免费离开项 costs 与 effects 均为空数组。 cat_rest：按目标新最大生命百分比生成下一战护盾，不乘五，不作非战虚假治疗。 cat_pull：下一战选定身体首次自然入场免费；不在事件界面假发再部署/技能事件。",
+      "causalChecks": [
+        "cat_rest 的行动生命恢复与干员修复不互相重复计数，且各只结算一次。",
+        "cat_pull 在无可换防干员或金币不足时禁用，取消操作后金币与干员位置均不变。",
+        "cat_mark 的标签与经验只发一次，重复提交不重复附加同名标签。"
+      ]
+    },
+    {
+      "id": "evt_bazaar_hat",
+      "name": "奇妙礼帽",
+      "topicId": "bazaar",
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "c88b633c-cc5e-46af-b1ef-5da974223ee5",
+        "pointer": "/Abilities/0/Action/SpawnContext/Groups/0/Filters/0/Ids/0"
+      },
+      "sourceChain": [
+        {
+          "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+          "table": "cards",
+          "rowId": "c22b85e7-3860-48b4-b639-8d55ac423b74",
+          "pointer": "/SelectionContext/SpawnContext/Groups/0/Filters/0/Ids/0"
+        },
+        {
+          "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+          "table": "cards",
+          "rowId": "77c2a88f-7347-4b44-b204-6b94bb1d3dcc",
+          "pointer": "/Abilities/0/Action/SpawnContext/Groups/2"
+        }
+      ],
+      "backgroundId": "pic_rogue_3_21",
+      "story": "一顶宽檐礼帽安静地放在路边，帽檐下露出一张写着祝词的小卡。队伍中的一名干员抬手轻触，帽中便落下一道温和的光。",
+      "unlockDay": 6,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 6,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过奇妙礼帽"
+        ]
+      },
+      "implementationPlan": "奇妙礼帽一次/局。确认后按数字UID顺序选择最早持有且尚未强化的干员，免费从合法随机强化池中获得一项并消耗本事件时段；可免费离开。原作Haddy链的强化触发条件改编为进击事件确认，不复刻未知轮盘费用或概率。",
+      "causalChecks": [
+        "无未强化干员时选项禁用，金币与RNG不变。",
+        "确认只强化最早符合条件的干员一次，记下UID、旧/新强化与池ID；重复操作不二次执行。"
+      ],
+      "choices": [
+        {
+          "id": "hat_enchant",
+          "label": "接受礼帽祝福",
+          "description": "为队伍中最早加入且尚未强化的干员随机赋予一项合法强化。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "randomEnchant",
+                  "poolId": "pool_bazaar_random",
+                  "targetRule": "oldestUnenchanted",
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "hat_leave",
+          "label": "礼貌离开",
+          "description": "不接受这项安排，继续前行。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "conversion": "原作Haddy礼帽奖励链改编为一次免费事件确认并消耗本时段；原作出售触发转为用户确认，不推断轮盘费用或概率。"
+    },
+    {
+      "id": "evt_bazaar_botul",
+      "name": "炼金实验",
+      "topicId": "bazaar",
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "0e7ff8fa-5464-4f45-a281-18b7f3e02f41",
+        "pointer": "/Abilities/0/Action"
+      },
+      "sourceChain": [
+        {
+          "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+          "table": "cards",
+          "rowId": "4751d02e-876e-47e3-bb23-d7675e4ee5c6",
+          "pointer": "/SelectionContext/SpawnContext/Groups/3/Filters/0/Ids/0"
+        }
+      ],
+      "backgroundId": "pic_rogue_3_21",
+      "story": "一位炼金术士摆开烧瓶与铜管，邀请队伍把手边的剧毒强化交给他重新调配。炉火颜色明灭，玻璃器皿中传来细碎的回响。",
+      "unlockDay": 6,
+      "repeatable": false,
+      "conditions": {
+        "minDay": 6,
+        "maxDay": 9,
+        "oncePerRun": true,
+        "requires": [
+          "本时段未安排战斗",
+          "本局尚未进入过炼金实验"
+        ]
+      },
+      "implementationPlan": "炼金实验一次/局。目标为数字UID顺序最早持有剧毒强化的干员；支付20金币后，从同一随机强化池的合法子集中抽取并替换原强化，不会抽回相同强化；可免费离开。源行记载20金币与剧毒标签目标，本事件不推断额外概率。",
+      "causalChecks": [
+        "无剧毒目标或金币不足时禁用，确认失败不扣费、不推进RNG。",
+        "成功仅替换最早符合条件者一次并记录UID、旧/新强化与池ID；失败回滚且相同opId不重复触发。"
+      ],
+      "choices": [
+        {
+          "id": "botul_recast",
+          "label": "支付20金币重新调配",
+          "description": "将队伍中最早加入的剧毒强化替换为另一项合法随机强化。",
+          "conditions": {
+            "minCurrency": {
+              "gold": 20
+            },
+            "requires": []
+          },
+          "costs": [
+            {
+              "currency": "gold",
+              "amount": 20
+            }
+          ],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": [
+                {
+                  "kind": "randomEnchant",
+                  "poolId": "pool_bazaar_random",
+                  "targetRule": "oldestToxic",
+                  "lifecycle": "run"
+                }
+              ]
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        },
+        {
+          "id": "botul_leave",
+          "label": "结束实验离开",
+          "description": "不接受这项安排，继续前行。",
+          "conditions": {
+            "minCurrency": {},
+            "requires": []
+          },
+          "costs": [],
+          "outcomes": [
+            {
+              "probability": 1,
+              "effects": []
+            }
+          ],
+          "targeting": {
+            "mode": "none"
+          }
+        }
+      ],
+      "conversion": "保留原作Botul剧毒目标与20金币重调配主题，转换为一次付费事件；候选仅在目标与强化均合法后抽取，不推断轮盘概率。"
+    }
+  ]
+}

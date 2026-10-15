@@ -1,0 +1,2908 @@
+{
+  "schema": "assault-system-design/v1",
+  "note": "进击独立模式规则。商店每日品质概率引用正式大巴扎官方库，基础价格、塔防经济、人口与战斗参数为进击设计；不将原作属性或原生数据版本号冒充公开补丁号。属性校准基池固定为 nativeGit 4fcdf 定稿的167个purchase identities与2个Amiya可选形态；17759cc新增char_393_toledo/char_4232_hbound/char_4231_clemnt只用于原生来源字段，既有subprofession分支沿用既有基池median，新分支由新增原生样本建立median。",
+  "sourceRefs": {
+    "design": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.worktrees/assault/stronghold-protocol/docs/assault-mode/design.md",
+    "roster": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.worktrees/assault/stronghold-protocol/data/assault-roster-selection.json",
+    "collectibles": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.worktrees/assault/stronghold-protocol/data/assault-design/collectibles.json",
+    "events": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.worktrees/assault/stronghold-protocol/data/assault-design/events.json",
+    "operatorIndex": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.worktrees/assault/stronghold-protocol/data/assault-operator-index.json"
+  },
+  "directors": [
+    {
+      "id": "director_svash2",
+      "name": "凛御银灰",
+      "leaderCharId": "char_1045_svash2",
+      "themeFaction": "kjerag",
+      "themeFactionName": "谢拉格",
+      "nationId": "kjerag",
+      "startTeam": [
+        "char_1045_svash2",
+        "char_174_slbell",
+        "char_196_sunbr"
+      ],
+      "starterRelicId": "leader-svash2-frostsigil",
+      "note": "灵知、初雪、耶拉等构成不同方向的支点；不把其它国家干员改成该阵营。"
+    },
+    {
+      "id": "director_ironmn",
+      "name": "白铁",
+      "leaderCharId": "char_4072_ironmn",
+      "themeFaction": "victoria",
+      "themeFactionName": "维多利亚",
+      "nationId": "victoria",
+      "startTeam": [
+        "char_4072_ironmn",
+        "char_235_jesica",
+        "char_181_flower"
+      ],
+      "starterRelicId": "leader-ironmn-workshopkey",
+      "note": "原生 character_table nationId=victoria；主题商店使用同一真实 nationId，不以哥伦比亚筛选替代。"
+    },
+    {
+      "id": "director_angel2",
+      "name": "新约能天使",
+      "leaderCharId": "char_1041_angel2",
+      "themeFaction": "laterano",
+      "themeFactionName": "拉特兰",
+      "nationId": "lungmen",
+      "startTeam": [
+        "char_1041_angel2",
+        "char_498_inside",
+        "char_196_sunbr"
+      ],
+      "starterRelicId": "leader-angel2-oldmagazine",
+      "note": "原生 character_table nationId=lungmen保持不变；拉特兰仅作为新约能天使的弹药主题商店筛选。"
+    }
+  ],
+  "run": {
+    "days": 10,
+    "hoursPerDay": 6,
+    "mandatoryHours": [
+      3,
+      6
+    ],
+    "finalHour": 6,
+    "finalCandidates": 3,
+    "previewChoicesPerHour": 3,
+    "startGold": 12,
+    "startGoldIncludesDay1": true,
+    "dailyIncome": 8,
+    "noInterest": true,
+    "xpLevels": 8,
+    "xpThresholds": [
+      0,
+      6,
+      14,
+      24,
+      36,
+      50,
+      68,
+      90
+    ],
+    "xpPerHour": 1,
+    "normalBonusXp": 3,
+    "riskBonusXp": 6,
+    "techOnlyAffectsPopulation": true,
+    "life": 20,
+    "battleSeconds": 120,
+    "leakUsesNativeLpr": true,
+    "benchSize": 12,
+    "mergeCopies": 2,
+    "maxStar": 4,
+    "sourceCapPerBody": 8,
+    "sellRefund": "halfFloorMin1",
+    "starAttackMultipliers": [
+      1,
+      1.55,
+      2.2,
+      3
+    ],
+    "starHealthMultipliers": [
+      1,
+      1.65,
+      2.6,
+      4
+    ],
+    "baseHealthScale": 5,
+    "defenseResNoStarRescale": true,
+    "dp": {
+      "init": 80,
+      "perSec": 2,
+      "max": 160
+    },
+    "sp": {
+      "regen": "natural",
+      "minCost": 0.5,
+      "fractional": true,
+      "initFrom": "perCardDesign"
+    },
+    "relicChoiceOn": {
+      "hour6Victory": true,
+      "anyRiskVictory": true,
+      "final": false
+    },
+    "normalReward": {
+      "gold": 3,
+      "xp": 3
+    },
+    "riskReward": {
+      "gold": 6,
+      "xp": 6
+    },
+    "perHourXp": 1,
+    "defeatAdvancesHour": true,
+    "defeatGivesNoReward": true,
+    "finalMustWinWithLife": true,
+    "finalNoInRunPurchaseReward": true,
+    "noCovenantGlobalBonuses": true,
+    "modulePolicy": {
+      "nativeModuleWhiteStats": false,
+      "applyPerCardAssaultTranslationOnly": true,
+      "lifeScaleFactor": 5,
+      "lifeScaleApplyOnce": true
+    },
+    "mandatoryChoiceKinds": [
+      "normal",
+      "risk"
+    ]
+  },
+  "priceTierWeights": {
+    "tiers": [
+      2,
+      3,
+      4,
+      6,
+      8,
+      12
+    ],
+    "bands": [
+      {
+        "days": [
+          1,
+          2
+        ],
+        "weights": {
+          "2": 50,
+          "3": 35,
+          "4": 15,
+          "6": 0,
+          "8": 0,
+          "12": 0
+        }
+      },
+      {
+        "days": [
+          3,
+          4
+        ],
+        "weights": {
+          "2": 20,
+          "3": 40,
+          "4": 25,
+          "6": 15,
+          "8": 0,
+          "12": 0
+        }
+      },
+      {
+        "days": [
+          5,
+          6
+        ],
+        "weights": {
+          "2": 10,
+          "3": 20,
+          "4": 30,
+          "6": 25,
+          "8": 15,
+          "12": 0
+        }
+      },
+      {
+        "days": [
+          7,
+          8
+        ],
+        "weights": {
+          "2": 0,
+          "3": 10,
+          "4": 20,
+          "6": 30,
+          "8": 25,
+          "12": 15
+        }
+      },
+      {
+        "days": [
+          9,
+          10
+        ],
+        "weights": {
+          "2": 0,
+          "3": 0,
+          "4": 10,
+          "6": 25,
+          "8": 35,
+          "12": 30
+        }
+      }
+    ],
+    "renormalizeAfterFilter": true,
+    "techDoesNotAffectRarity": true,
+    "weightKey": "price",
+    "legacyOnly": true,
+    "note": "旧版本价格档概率仅保留兼容与历史解释；新供货不使用价格档作为日程品质概率。tiers仍是合法基础价格集合。"
+  },
+  "shopDefinitions": [
+    {
+      "id": "shop_base",
+      "name": "基础商店",
+      "group": "base",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "none"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    },
+    {
+      "id": "shop_discount",
+      "name": "折扣商店",
+      "group": "discount",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 3,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "none"
+      },
+      "priceRule": {
+        "type": "discount",
+        "amount": 1,
+        "minPrice": 1
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    },
+    {
+      "id": "shop_elite",
+      "name": "精英商店",
+      "group": "elite",
+      "unlockDay": 5,
+      "slots": 3,
+      "refreshCost": 3,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "none"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    },
+    {
+      "id": "shop_profession_pioneer",
+      "name": "先锋职业商店",
+      "group": "profession",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "profession",
+        "value": "PIONEER"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities",
+      "buybackBonus": {
+        "filter": {
+          "type": "profession",
+          "value": "PIONEER"
+        },
+        "amount": 1
+      }
+    },
+    {
+      "id": "shop_profession_warrior",
+      "name": "近卫职业商店",
+      "group": "profession",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "profession",
+        "value": "WARRIOR"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities",
+      "buybackBonus": {
+        "filter": {
+          "type": "profession",
+          "value": "WARRIOR"
+        },
+        "amount": 1
+      }
+    },
+    {
+      "id": "shop_profession_tank",
+      "name": "重装职业商店",
+      "group": "profession",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "profession",
+        "value": "TANK"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities",
+      "buybackBonus": {
+        "filter": {
+          "type": "profession",
+          "value": "TANK"
+        },
+        "amount": 1
+      }
+    },
+    {
+      "id": "shop_profession_sniper",
+      "name": "狙击职业商店",
+      "group": "profession",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "profession",
+        "value": "SNIPER"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities",
+      "buybackBonus": {
+        "filter": {
+          "type": "profession",
+          "value": "SNIPER"
+        },
+        "amount": 1
+      }
+    },
+    {
+      "id": "shop_profession_caster",
+      "name": "术师职业商店",
+      "group": "profession",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "profession",
+        "value": "CASTER"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities",
+      "buybackBonus": {
+        "filter": {
+          "type": "profession",
+          "value": "CASTER"
+        },
+        "amount": 1
+      }
+    },
+    {
+      "id": "shop_profession_medic",
+      "name": "医疗职业商店",
+      "group": "profession",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "profession",
+        "value": "MEDIC"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities",
+      "buybackBonus": {
+        "filter": {
+          "type": "profession",
+          "value": "MEDIC"
+        },
+        "amount": 1
+      }
+    },
+    {
+      "id": "shop_profession_support",
+      "name": "辅助职业商店",
+      "group": "profession",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "profession",
+        "value": "SUPPORT"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities",
+      "buybackBonus": {
+        "filter": {
+          "type": "profession",
+          "value": "SUPPORT"
+        },
+        "amount": 1
+      }
+    },
+    {
+      "id": "shop_profession_special",
+      "name": "特种职业商店",
+      "group": "profession",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "profession",
+        "value": "SPECIAL"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities",
+      "buybackBonus": {
+        "filter": {
+          "type": "profession",
+          "value": "SPECIAL"
+        },
+        "amount": 1
+      }
+    },
+    {
+      "id": "shop_faction_kjerag",
+      "name": "谢拉格主题商店",
+      "group": "faction",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "faction",
+        "value": "kjerag"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    },
+    {
+      "id": "shop_faction_victoria",
+      "name": "维多利亚主题商店",
+      "group": "faction",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "faction",
+        "value": "victoria"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    },
+    {
+      "id": "shop_faction_laterano",
+      "name": "拉特兰主题商店",
+      "group": "faction",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "faction",
+        "value": "laterano"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    },
+    {
+      "id": "shop_archetype_cold",
+      "name": "寒冷机制商店",
+      "group": "archetype",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "archetype",
+        "value": "cold"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    },
+    {
+      "id": "shop_archetype_redeploy",
+      "name": "再部署机制商店",
+      "group": "archetype",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "archetype",
+        "value": "redeploy"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    },
+    {
+      "id": "shop_archetype_ammo",
+      "name": "弹药机制商店",
+      "group": "archetype",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "archetype",
+        "value": "ammo"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    },
+    {
+      "id": "shop_archetype_element",
+      "name": "元素机制商店",
+      "group": "archetype",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "archetype",
+        "value": "element"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    },
+    {
+      "id": "shop_archetype_summon",
+      "name": "召唤机制商店",
+      "group": "archetype",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "archetype",
+        "value": "summon"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    },
+    {
+      "id": "shop_archetype_healshield",
+      "name": "治疗护盾机制商店",
+      "group": "archetype",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "archetype",
+        "value": "healShield"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    },
+    {
+      "id": "shop_archetype_blockcounter",
+      "name": "格挡反击机制商店",
+      "group": "archetype",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "archetype",
+        "value": "blockCounter"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    },
+    {
+      "id": "shop_archetype_piercecrit",
+      "name": "穿透暴击机制商店",
+      "group": "archetype",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "archetype",
+        "value": "pierceCrit"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    },
+    {
+      "id": "shop_archetype_skillcycle",
+      "name": "技能循环机制商店",
+      "group": "archetype",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "archetype",
+        "value": "skillCycle"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    },
+    {
+      "id": "shop_archetype_economygrowth",
+      "name": "经济成长机制商店",
+      "group": "archetype",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "archetype",
+        "value": "economyGrowth"
+      },
+      "priceRule": {
+        "type": "priceTierWeights",
+        "tiers": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ]
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    },
+    {
+      "id": "shop_star2",
+      "name": "二星商店",
+      "group": "star",
+      "unlockDay": 3,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": 2,
+      "filter": {
+        "type": "none"
+      },
+      "priceRule": {
+        "type": "starPrice",
+        "star": 2,
+        "multiplier": "sourceCopies"
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    },
+    {
+      "id": "shop_star3",
+      "name": "三星商店",
+      "group": "star",
+      "unlockDay": 6,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": 3,
+      "filter": {
+        "type": "none"
+      },
+      "priceRule": {
+        "type": "starPrice",
+        "star": 3,
+        "multiplier": "sourceCopies"
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    },
+    {
+      "id": "shop_strategy",
+      "name": "战术商人",
+      "kind": "skill",
+      "group": "skill",
+      "unlockDay": 1,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "none"
+      },
+      "priceRule": {
+        "type": "definitionPrices"
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    },
+    {
+      "id": "shop_enchant",
+      "name": "强化工匠",
+      "kind": "enchantment",
+      "group": "enchantment",
+      "unlockDay": 2,
+      "slots": 3,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "none"
+      },
+      "priceRule": {
+        "type": "definitionPrices"
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    },
+    {
+      "id": "shop_supply",
+      "name": "补给器材商",
+      "kind": "supply",
+      "group": "supply",
+      "unlockDay": 1,
+      "slots": 4,
+      "refreshCost": 2,
+      "offeredStar": "dayWeights",
+      "filter": {
+        "type": "none"
+      },
+      "priceRule": {
+        "type": "definitionPrices"
+      },
+      "maxRefreshes": 1,
+      "supplyPolicy": "distinctPurchaseIdentities"
+    }
+  ],
+  "shopRules": {
+    "professionCount": 8,
+    "themeFactionCount": 3,
+    "archetypeCount": 10,
+    "starShopCount": 2,
+    "totalDefinitions": 29,
+    "emptyCandidate": "show fewer goods with an explicit notice, never fill unrelated random items",
+    "noFullTeamBondBonus": true,
+    "filterRenormalizesWithinRealCandidates": true
+  },
+  "collectibleRewards": {
+    "poolSize": 72,
+    "unique": true,
+    "noDuplicateReward": true,
+    "unsellable": true,
+    "emptyCandidateGold": 4,
+    "rarityWeightsByBand": [
+      {
+        "days": [
+          1,
+          2
+        ],
+        "common": 60,
+        "rare": 30,
+        "epic": 0,
+        "epicDisabled": true
+      },
+      {
+        "days": [
+          3,
+          4
+        ],
+        "common": 60,
+        "rare": 35,
+        "epic": 5
+      },
+      {
+        "days": [
+          5,
+          10
+        ],
+        "common": 60,
+        "rare": 30,
+        "epic": 10
+      }
+    ],
+    "renormalizeAfterFilter": true
+  },
+  "stateMachine": {
+    "order": [
+      "preview",
+      "selectNode",
+      "nodeActionOrDeploy",
+      "confirmAction",
+      "battleOrOptionResolve",
+      "rewardSelect",
+      "advanceHour"
+    ],
+    "identityFields": [
+      "runId",
+      "day",
+      "hour",
+      "step",
+      "nodeId",
+      "submissionId"
+    ],
+    "idempotentStep": true,
+    "seededRandomStored": true,
+    "noRerollOnReopen": true,
+    "battleControls": [
+      "pause",
+      "speed"
+    ],
+    "manualSkill": false,
+    "midBattleReposition": false,
+    "amiyaPrepSameIdentity": true,
+    "endNoNewRunReward": true
+  },
+  "machineCheck": [
+    {
+      "id": "directors_count",
+      "expect": 3,
+      "description": "三位领袖存在且各带真实 leaderCharId。"
+    },
+    {
+      "id": "starters_real_selected",
+      "expect": true,
+      "description": "3 套起步队伍各 3 人，全部在 active 池且已选。"
+    },
+    {
+      "id": "starter_relics",
+      "expect": 3,
+      "description": "3 件 starter 收藏品各自归属唯一领袖。"
+    },
+    {
+      "id": "active_roster_count",
+      "expect": 167,
+      "description": "active 池 167 人全部 selected=true。"
+    },
+    {
+      "id": "base_price_weight_coverage",
+      "expect": [
+        2,
+        3,
+        4,
+        6,
+        8,
+        12
+      ],
+      "description": "五个天区基础价格档权重并集覆盖全部六个价格档。"
+    },
+    {
+      "id": "shop_definitions",
+      "expect": 28,
+      "description": "原有26种干员商店及独立战术、强化商店，28个定义，id唯一。"
+    },
+    {
+      "id": "profession_shop_candidates",
+      "expect": 8,
+      "description": "八个职业商店各自的真实候选数 > 0（无候选保留并报告）。"
+    },
+    {
+      "id": "faction_shop_candidates",
+      "expect": 3,
+      "description": "三个主题筛选均映射到真实 nationId：kjerag/victoria/laterano；弹药主题不改写新约能天使的 lungmen 身份。"
+    },
+    {
+      "id": "archetype_shops",
+      "expect": 10,
+      "description": "十条机制商店均有至少一名首发逐卡设计候选。"
+    },
+    {
+      "id": "star_shops",
+      "expect": {
+        "star2Day": 3,
+        "star3Day": 6
+      },
+      "description": "二星商店第三天开放、三星商店第六天开放。"
+    },
+    {
+      "id": "collectibles_pool",
+      "expect": {
+        "poolSize": 72,
+        "starter": 3
+      },
+      "description": "收藏品池 72，starter 归属领袖；珍贵在天区禁售如实。"
+    },
+    {
+      "id": "events_coverage",
+      "expect": {
+        "total": 24,
+        "topics": 6
+      },
+      "description": "事件 24 条、六个肉鸽主题各 4 条。"
+    },
+    {
+      "id": "module_default_valid",
+      "expect": true,
+      "description": "active 池干员默认模组有效（逐人核验或报告）。"
+    },
+    {
+      "id": "active_skill_cost_init",
+      "expect": true,
+      "description": "固定技能费用/初始技力从逐卡设计读取，原生技能仅作来源，不同时安装原生 INIT。"
+    },
+    {
+      "id": "economy_rules",
+      "expect": {
+        "startGold": 12,
+        "dailyIncome": 8,
+        "noInterest": true
+      },
+      "description": "经济规则：起始 12 含第一天、之后每日 8、无利息。"
+    }
+  ],
+  "unknowns": [],
+  "shopQualityWeights": {
+    "source": {
+      "path": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+      "pointer": "/game_modes/818c1c4b-4ddf-4d06-b369-e2a56c1cfb2d/ItemSkillSpawnTierPercantagesByDay",
+      "publicPatchEvidence": "Patch 19 content markers verified in the current acquired official database"
+    },
+    "days": {
+      "1": {
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0
+      },
+      "2": {
+        "1": 0.9,
+        "2": 0.1,
+        "3": 0,
+        "4": 0
+      },
+      "3": {
+        "1": 0.7,
+        "2": 0.3,
+        "3": 0,
+        "4": 0
+      },
+      "4": {
+        "1": 0.5,
+        "2": 0.5,
+        "3": 0,
+        "4": 0
+      },
+      "5": {
+        "1": 0.25,
+        "2": 0.75,
+        "3": 0,
+        "4": 0
+      },
+      "6": {
+        "1": 0,
+        "2": 0.95,
+        "3": 0.05,
+        "4": 0
+      },
+      "7": {
+        "1": 0,
+        "2": 0.8,
+        "3": 0.2,
+        "4": 0
+      },
+      "8": {
+        "1": 0,
+        "2": 0.6,
+        "3": 0.4,
+        "4": 0
+      },
+      "9": {
+        "1": 0,
+        "2": 0.35,
+        "3": 0.6,
+        "4": 0.05
+      },
+      "10": {
+        "1": 0,
+        "2": 0.2,
+        "3": 0.7,
+        "4": 0.1
+      }
+    },
+    "ownedPolicy": "Match the highest existing upgradeable star within the source cap; this is an explicit Assault adaptation, not a claim about hidden Bazaar server selection."
+  },
+  "strategySkills": [
+    {
+      "id": "strategy_arms",
+      "name": "军备整训",
+      "description": "购买近卫、狙击、术师或特种干员后，该干员永久获得10/20/30/40点生命上限。晋升保留此成长。",
+      "startingStar": 1,
+      "prices": [
+        5,
+        10,
+        20,
+        40
+      ],
+      "icon": {
+        "kind": "stat",
+        "name": "atk"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "560a532c-73f4-4edd-b197-0127e2ca4cc9",
+        "pointer": "/Abilities/0"
+      },
+      "conversion": "Arms Dealer 的 Weapon 买入→领袖最大生命，转换为四个进攻职业的买入→该持有干员生命；不将原作生命数直接加给仅20生命的领袖。"
+    },
+    {
+      "id": "strategy_catalytic",
+      "name": "战术催化",
+      "description": "每次购买或晋升战术，队伍最左侧干员永久获得2/4/6/8点攻击；没有部署干员时，给予备战区最早加入的干员。",
+      "startingStar": 1,
+      "prices": [
+        5,
+        10,
+        20,
+        40
+      ],
+      "icon": {
+        "kind": "stat",
+        "name": "atk"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "2aca51d6-c6c8-43d5-98d0-88741d996378",
+        "pointer": "/Abilities/0"
+      },
+      "conversion": "Catalytic Converter 的购买/升级Skill生成Catalyst，转换为队伍攻击成长；买入并触发晋升是两个事件，可分别触发。备战次序按持有编号稳定排序。"
+    },
+    {
+      "id": "strategy_backroom",
+      "name": "商路整备",
+      "description": "进入商店时，全部持有干员永久获得10/20/30/40点生命上限。刷新商品不重复触发。",
+      "startingStar": 1,
+      "prices": [
+        5,
+        10,
+        20,
+        40
+      ],
+      "icon": {
+        "kind": "stat",
+        "name": "hp"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "0045d15e-ac74-436f-a200-eeedab7baf90",
+        "pointer": "/Abilities/0"
+      },
+      "conversion": "Backroom Dealings 的选择Merchant→领袖最大生命，转换为本次入店时持有队伍生命；并非商店每次重新发牌。"
+    },
+    {
+      "id": "strategy_merchant",
+      "name": "商会协定",
+      "description": "商店首次供货及刷新后，随机一件商品便宜1/2/4/8金币，最低为1金币。",
+      "startingStar": 1,
+      "prices": [
+        5,
+        10,
+        20,
+        40
+      ],
+      "icon": {
+        "kind": "ui",
+        "name": "refresh"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "359f5a82-92cb-49ae-9dcd-94df99646f34",
+        "pointer": "/Abilities/0"
+      },
+      "conversion": "Merchant Club 的OnEncounterCardsDealt Merchant随机一个商品折价，保留每轮发牌和单商品目标；使用进击存档随机源。"
+    },
+    {
+      "id": "strategy_augmented",
+      "name": "余料再造",
+      "description": "出售一份干员后，全部干员在作战中获得1/2点攻击。效果永久累积，也作用于之后招募的干员。",
+      "startingStar": 3,
+      "prices": [
+        5,
+        10,
+        20,
+        40
+      ],
+      "icon": {
+        "kind": "stat",
+        "name": "atk"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "4bcc9eeb-5fa9-4b1f-85b1-d3dfd198d38f",
+        "pointer": "/Abilities/0"
+      },
+      "conversion": "Augmented Weaponry原始Gold/Diamond：出售Small累积1/2，友方Weapon受益。进击Small转换为单份干员，保留金/钻起始品质；记录全局队伍成长，不能只改当时存活卡。"
+    },
+    {
+      "id": "strategy_supply",
+      "name": "每日补给",
+      "description": "每日开始获得2/3/4/5金币。当天取得战术不会补发已经过去的日开始奖励。",
+      "startingStar": 1,
+      "prices": [
+        5,
+        10,
+        20,
+        40
+      ],
+      "icon": {
+        "kind": "ui",
+        "name": "bag"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "546166b0-03bf-42e9-8370-9ad05d1f00c8",
+        "pointer": "/Abilities/0"
+      },
+      "conversion": "Supply Cache原始生成继承品质的Common Loot。进击将随机一次性Loot收益转换为确定的每日金币，不声称金币或数值为原作规则。"
+    },
+    {
+      "id": "strategy_waters",
+      "name": "远程火力",
+      "description": "作战中，狙击、术师及原生高台部署干员获得10/20/30/40点攻击。",
+      "startingStar": 1,
+      "prices": [
+        5,
+        10,
+        20,
+        40
+      ],
+      "icon": {
+        "kind": "stat",
+        "name": "atk"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "08b801ea-e721-42a9-82e3-56ff3892c49c",
+        "pointer": "/Auras/0"
+      },
+      "conversion": "Deadly Waters原始Aquatic AND Weapon Damage平加10/20/30/40；塔防目标改为远程干员，数值作用于攻击而非所有伤害结果。",
+      "battle": {
+        "kind": "rangedAttackAura",
+        "valuesByStar": [
+          10,
+          20,
+          30,
+          40
+        ]
+      }
+    },
+    {
+      "id": "strategy_defender",
+      "name": "稳固防线",
+      "description": "持有屏障强化且基础技能消耗最高的干员，每次发动时额外获得6/18/36/60点屏障；被动干员按攻击间隔比较，并列者都受益。",
+      "startingStar": 1,
+      "prices": [
+        5,
+        10,
+        20,
+        40
+      ],
+      "icon": {
+        "kind": "stat",
+        "name": "def"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "17b06564-f267-4fea-9549-f953fa872673",
+        "pointer": "/Auras/0"
+      },
+      "conversion": "Steady Defender原始Shield且CooldownMax最高的商品增加护盾量6/18/36/60；塔防以屏障强化作为明确可执行Shield标签，主动按基础SP消耗、被动按基础攻击间隔比较；并列全选是进击定义，不声称原作隐藏算法。",
+      "battle": {
+        "kind": "longestShieldAura",
+        "valuesByStar": [
+          6,
+          18,
+          36,
+          60
+        ]
+      }
+    },
+    {
+      "id": "strategy_frozen",
+      "name": "冰封秘术",
+      "description": "辅助或医疗干员发动基础技能后，随机一名持有冰霜强化且具有主动技能的干员获得1点技力。每场作战最多触发4/8次。",
+      "startingStar": 3,
+      "prices": [
+        5,
+        10,
+        20,
+        40
+      ],
+      "icon": {
+        "kind": "stat",
+        "name": "aspd"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "1252064a-3bf4-478e-9326-946677ecc8b3",
+        "pointer": "/Abilities/0"
+      },
+      "conversion": "Frozen Secrets原始使用Relic时随机Freeze物品Charge1秒、每战Gold4/Diamond8次。Relic转换为辅助/医疗基础施法，Freeze目标限定冰霜强化，Charge转换为1SP；额外施法不重复消耗次数。",
+      "battle": {
+        "kind": "supportCharge",
+        "valuesByStar": [
+          0,
+          0,
+          1,
+          1
+        ],
+        "limitsByStar": [
+          0,
+          0,
+          4,
+          8
+        ]
+      }
+    },
+    {
+      "id": "strategy_burn",
+      "name": "燎原战术",
+      "description": "致命强化触发暴击后，全部烈焰强化本场作战的每秒持续伤害增加2/4点，效果累积。",
+      "startingStar": 3,
+      "prices": [
+        5,
+        10,
+        20,
+        40
+      ],
+      "icon": {
+        "kind": "stat",
+        "name": "atk"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "1e8293e9-c60f-464a-9d44-21e766978edc",
+        "pointer": "/Abilities/0"
+      },
+      "conversion": "Improvised Burn原始任意己方CardCritted提高所有Burn商品的Burn量Gold2/Diamond4，战斗结束清空。进击将来源限定为本层致命强化的实际暴击、目标限定烈焰强化，不伪装成已覆盖全部逐卡原生暴击生产者。",
+      "battle": {
+        "kind": "criticalBurnGrowth",
+        "valuesByStar": [
+          0,
+          0,
+          2,
+          4
+        ]
+      }
+    }
+  ],
+  "enchantments": [
+    {
+      "id": "enchant_golden",
+      "name": "黄金",
+      "description": "该干员出售价格翻倍，包含商人的职业收购加价。",
+      "price": 8,
+      "eligibility": "any",
+      "icon": {
+        "kind": "ui",
+        "name": "crown"
+      },
+      "battle": {
+        "kind": "golden"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "00ab28d4-c3d2-420e-ba71-b88bc29f4834",
+        "pointer": "/Enchantments/Golden"
+      },
+      "conversion": "Aila Chibi具体宿主变体；不同原作物品同名附魔可能不同，不宣称通用原作数值。保留SellPrice×2。"
+    },
+    {
+      "id": "enchant_heavy",
+      "name": "重压",
+      "description": "发动时随机一名敌人移动速度降低50%，持续2秒。主动干员发动基础技能时触发，被动干员普通攻击时触发；多目标攻击只触发一次，额外施法不触发。",
+      "price": 8,
+      "eligibility": "any",
+      "icon": {
+        "kind": "ui",
+        "name": "rook"
+      },
+      "battle": {
+        "kind": "heavy",
+        "duration": 2,
+        "moveMul": 0.5
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "00ab28d4-c3d2-420e-ba71-b88bc29f4834",
+        "pointer": "/Enchantments/Heavy"
+      },
+      "conversion": "Aila Chibi具体宿主变体；不同原作物品同名附魔可能不同，不宣称通用原作数值。原作减缓一个敌方物品冷却2秒，转换为一个敌人的移动缓速；不声称停止技力充能。"
+    },
+    {
+      "id": "enchant_icy",
+      "name": "冰霜",
+      "description": "发动时随机冻结一名敌人0.5秒。主动干员发动基础技能时触发，被动干员普通攻击时触发；多目标攻击只触发一次，额外施法不触发。",
+      "price": 8,
+      "eligibility": "any",
+      "icon": {
+        "kind": "ui",
+        "name": "snow"
+      },
+      "battle": {
+        "kind": "icy",
+        "duration": 0.5
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "00ab28d4-c3d2-420e-ba71-b88bc29f4834",
+        "pointer": "/Enchantments/Icy"
+      },
+      "conversion": "Aila Chibi具体宿主变体；不同原作物品同名附魔可能不同，不宣称通用原作数值。原作冻结一个敌方物品0.5秒，转换为原生敌人冻结；保留敌人固有免疫和控制规则。"
+    },
+    {
+      "id": "enchant_turbo",
+      "name": "迅捷",
+      "description": "发动时随机一名具有自然恢复技力主动技能的己方干员，技力恢复速度提高100%，持续2秒；同类再次触发刷新持续时间，不叠加。主动干员发动基础技能时触发，被动干员普通攻击时触发；多目标攻击只触发一次，额外施法不触发。",
+      "price": 8,
+      "eligibility": "any",
+      "icon": {
+        "kind": "ui",
+        "name": "hourglass"
+      },
+      "battle": {
+        "kind": "turbo",
+        "duration": 2,
+        "spRecoveryMul": 1
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "00ab28d4-c3d2-420e-ba71-b88bc29f4834",
+        "pointer": "/Enchantments/Turbo"
+      },
+      "conversion": "Aila Chibi具体宿主变体；不同原作物品同名附魔可能不同，不宣称通用原作数值。原作友方物品Haste2秒，转换为自然SP恢复加速；不作用于攻击/受击回复型SP。"
+    },
+    {
+      "id": "enchant_shielded",
+      "name": "屏障",
+      "description": "发动时自身获得50/100/200/400点屏障，可累积吸收伤害。主动干员发动基础技能时触发，被动干员普通攻击时触发；多目标攻击只触发一次，额外施法不触发。",
+      "price": 8,
+      "eligibility": "any",
+      "icon": {
+        "kind": "ui",
+        "name": "shield"
+      },
+      "battle": {
+        "kind": "shielded",
+        "valuesByStar": [
+          50,
+          100,
+          200,
+          400
+        ]
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "00ab28d4-c3d2-420e-ba71-b88bc29f4834",
+        "pointer": "/Enchantments/Shielded"
+      },
+      "conversion": "Aila Chibi具体宿主变体；不同原作物品同名附魔可能不同，不宣称通用原作数值。原始10/20/40/80盾量×5生命尺度，玩家屏障改为宿主屏障；使用原生吸收层。"
+    },
+    {
+      "id": "enchant_restorative",
+      "name": "复苏",
+      "description": "发动时自身恢复50/100/200/400点生命。主动干员发动基础技能时触发，被动干员普通攻击时触发；多目标攻击只触发一次，额外施法不触发。",
+      "price": 8,
+      "eligibility": "any",
+      "icon": {
+        "kind": "ui",
+        "name": "plus"
+      },
+      "battle": {
+        "kind": "restorative",
+        "valuesByStar": [
+          50,
+          100,
+          200,
+          400
+        ]
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "00ab28d4-c3d2-420e-ba71-b88bc29f4834",
+        "pointer": "/Enchantments/Restorative"
+      },
+      "conversion": "Aila Chibi具体宿主变体；不同原作物品同名附魔可能不同，不宣称通用原作数值。原始10/20/40/80治疗×5生命尺度，玩家治疗改为宿主生命。"
+    },
+    {
+      "id": "enchant_toxic",
+      "name": "剧毒",
+      "description": "发动时随机一名敌人受到每秒10/20/40/80点真实伤害，持续5秒；同一来源再次触发刷新持续时间。主动干员发动基础技能时触发，被动干员普通攻击时触发；多目标攻击只触发一次，额外施法不触发。",
+      "price": 8,
+      "eligibility": "any",
+      "icon": {
+        "kind": "glyph",
+        "name": "skull"
+      },
+      "battle": {
+        "kind": "toxic",
+        "valuesByStar": [
+          10,
+          20,
+          40,
+          80
+        ],
+        "duration": 5,
+        "damageType": "true"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "00ab28d4-c3d2-420e-ba71-b88bc29f4834",
+        "pointer": "/Enchantments/Toxic"
+      },
+      "conversion": "Aila Chibi具体宿主变体；不同原作物品同名附魔可能不同，不宣称通用原作数值。原始Poison1/2/4/8转换为有期限的敌人真实DoT×10，使用方舟原生伤害和屏障，不模拟原作玩家毒层绕盾无限堆积。"
+    },
+    {
+      "id": "enchant_fiery",
+      "name": "烈焰",
+      "description": "发动时随机一名敌人受到每秒10/20/40/80点法术伤害，持续4秒；同一来源再次触发刷新持续时间。主动干员发动基础技能时触发，被动干员普通攻击时触发；多目标攻击只触发一次，额外施法不触发。",
+      "price": 8,
+      "eligibility": "any",
+      "icon": {
+        "kind": "glyph",
+        "name": "dp"
+      },
+      "battle": {
+        "kind": "fiery",
+        "valuesByStar": [
+          10,
+          20,
+          40,
+          80
+        ],
+        "duration": 4,
+        "damageType": "arts"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "00ab28d4-c3d2-420e-ba71-b88bc29f4834",
+        "pointer": "/Enchantments/Fiery"
+      },
+      "conversion": "Aila Chibi具体宿主变体；不同原作物品同名附魔可能不同，不宣称通用原作数值。原始Burn1/2/4/8转换为有期限的敌人法术DoT×10；不冒充元素灼燃积蓄或原作玩家灼烧衰减。"
+    },
+    {
+      "id": "enchant_deadly",
+      "name": "致命",
+      "description": "该干员每次直接伤害命中有50%概率造成双倍伤害，持续伤害不能暴击。",
+      "price": 8,
+      "eligibility": "any",
+      "icon": {
+        "kind": "glyph",
+        "name": "target"
+      },
+      "battle": {
+        "kind": "deadly",
+        "chance": 0.5,
+        "multiplier": 2
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "00ab28d4-c3d2-420e-ba71-b88bc29f4834",
+        "pointer": "/Enchantments/Deadly"
+      },
+      "conversion": "Aila Chibi具体宿主变体；不同原作物品同名附魔可能不同，不宣称通用原作数值。原始CritChance+50转换为宿主直接命中独立50%暴击；使用战斗随机源。"
+    },
+    {
+      "id": "enchant_obsidian",
+      "name": "黑曜",
+      "description": "该干员造成的伤害翻倍，治疗量不受影响。",
+      "price": 8,
+      "eligibility": "any",
+      "icon": {
+        "kind": "ui",
+        "name": "sword"
+      },
+      "battle": {
+        "kind": "obsidian",
+        "multiplier": 2
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "00ab28d4-c3d2-420e-ba71-b88bc29f4834",
+        "pointer": "/Enchantments/Obsidian"
+      },
+      "conversion": "Aila Chibi具体宿主变体；不同原作物品同名附魔可能不同，不宣称通用原作数值。原始DamageAmount×2转换为原生伤害乘区，不翻倍攻击属性以免间接翻倍治疗。"
+    },
+    {
+      "id": "enchant_mossy",
+      "name": "苔生",
+      "description": "发动时自身每秒恢复10/20/40/80点生命，持续4秒；再次触发刷新持续时间，不叠加。主动干员发动基础技能时触发，被动干员普通攻击时触发；多目标攻击只触发一次，额外施法不触发。",
+      "price": 8,
+      "eligibility": "any",
+      "icon": {
+        "kind": "ui",
+        "name": "users"
+      },
+      "battle": {
+        "kind": "mossy",
+        "valuesByStar": [
+          10,
+          20,
+          40,
+          80
+        ],
+        "duration": 4
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "00ab28d4-c3d2-420e-ba71-b88bc29f4834",
+        "pointer": "/Enchantments/Mossy"
+      },
+      "conversion": "Aila Chibi具体宿主变体；不同原作物品同名附魔可能不同，不宣称通用原作数值。原始Regen1/2/4/8转换为宿主有期限的原生hpRegen×10，禁止将原作无限玩家再生误当可叠瞬时治疗。"
+    },
+    {
+      "id": "enchant_shiny",
+      "name": "辉耀",
+      "description": "每次发动基础主动技能，立即额外施放一次。额外施放不消耗技力，也不会递归触发强化。仅可赋予主动技能干员。",
+      "price": 8,
+      "eligibility": "instant",
+      "icon": {
+        "kind": "ui",
+        "name": "chevrons"
+      },
+      "battle": {
+        "kind": "shiny",
+        "extraCasts": 1
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "00ab28d4-c3d2-420e-ba71-b88bc29f4834",
+        "pointer": "/Enchantments/Shiny"
+      },
+      "conversion": "Aila Chibi具体宿主变体；不同原作物品同名附魔可能不同，不宣称通用原作数值。原始Multicast+1转换为额外recast，基础和额外施放清楚区分。"
+    },
+    {
+      "id": "enchant_radiant",
+      "name": "光耀",
+      "description": "该干员免疫敌方施加的减速、冻结与缴械。生命耗尽仍会倒下。",
+      "price": 8,
+      "eligibility": "any",
+      "icon": {
+        "kind": "ui",
+        "name": "key"
+      },
+      "battle": {
+        "kind": "radiant",
+        "statuses": [
+          "slow",
+          "freeze",
+          "disarm"
+        ]
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "00ab28d4-c3d2-420e-ba71-b88bc29f4834",
+        "pointer": "/Enchantments/Radiant"
+      },
+      "conversion": "Aila Chibi具体宿主变体；不同原作物品同名附魔可能不同，不宣称通用原作数值。原始物品免Slow/Freeze/Destroy；物品毁坏转换为宿主行动阻断中的缴械，不提供免伤、不阻止原生死亡或主动撤退。"
+    }
+  ],
+  "runLifecycleRules": [
+    {
+      "id": "arms_purchase_growth",
+      "owner": {
+        "kind": "skill",
+        "id": "strategy_arms"
+      },
+      "event": "buy",
+      "effects": [
+        {
+          "kind": "enhance",
+          "target": "transaction",
+          "stat": "maxHp",
+          "mode": "flat",
+          "amountByStar": [
+            10,
+            20,
+            30,
+            40
+          ]
+        }
+      ],
+      "transactionFilter": {
+        "professions": [
+          "WARRIOR",
+          "SNIPER",
+          "CASTER",
+          "SPECIAL"
+        ]
+      }
+    },
+    {
+      "id": "catalytic_purchase_growth",
+      "owner": {
+        "kind": "skill",
+        "id": "strategy_catalytic"
+      },
+      "event": "skillBought",
+      "effects": [
+        {
+          "kind": "enhance",
+          "target": "leftmost",
+          "stat": "atk",
+          "mode": "flat",
+          "amountByStar": [
+            2,
+            4,
+            6,
+            8
+          ]
+        }
+      ]
+    },
+    {
+      "id": "catalytic_upgrade_growth",
+      "owner": {
+        "kind": "skill",
+        "id": "strategy_catalytic"
+      },
+      "event": "skillUpgraded",
+      "effects": [
+        {
+          "kind": "enhance",
+          "target": "leftmost",
+          "stat": "atk",
+          "mode": "flat",
+          "amountByStar": [
+            2,
+            4,
+            6,
+            8
+          ]
+        }
+      ]
+    },
+    {
+      "id": "backroom_entry_growth",
+      "owner": {
+        "kind": "skill",
+        "id": "strategy_backroom"
+      },
+      "event": "shopEntered",
+      "effects": [
+        {
+          "kind": "enhance",
+          "target": "team",
+          "stat": "maxHp",
+          "mode": "flat",
+          "amountByStar": [
+            10,
+            20,
+            30,
+            40
+          ]
+        }
+      ]
+    },
+    {
+      "id": "merchant_dealt_discount",
+      "owner": {
+        "kind": "skill",
+        "id": "strategy_merchant"
+      },
+      "event": "shopCardsDealt",
+      "effects": [
+        {
+          "kind": "shopDiscount",
+          "target": "randomOne",
+          "amountByStar": [
+            1,
+            2,
+            4,
+            8
+          ]
+        }
+      ]
+    },
+    {
+      "id": "augmented_sale_growth",
+      "owner": {
+        "kind": "skill",
+        "id": "strategy_augmented"
+      },
+      "event": "sell",
+      "effects": [
+        {
+          "kind": "teamGrowth",
+          "stat": "atk",
+          "amountByStar": [
+            0,
+            0,
+            1,
+            2
+          ]
+        }
+      ],
+      "transactionFilter": {
+        "maxSourceCopies": 1
+      }
+    },
+    {
+      "id": "supply_day_income",
+      "owner": {
+        "kind": "skill",
+        "id": "strategy_supply"
+      },
+      "event": "dayStarted",
+      "effects": [
+        {
+          "kind": "currency",
+          "currency": "gold",
+          "amountByStar": [
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ]
+    }
+  ],
+  "upgradeLayers": {
+    "independentSkills": true,
+    "oneEnchantmentPerPiece": true,
+    "skillUpgrade": "购买相同品质战术升一阶，四阶封顶；未持有按日程品质取得，不能低于起始品质。",
+    "enchantmentInheritance": "合成保留主件强化；主件空槽时继承次件，冲突时主件优先。换形不得使强化失效。",
+    "access": "每日第二时段提供战术商人选项；第二天起第四时段提供强化工匠选项。玩家仍可选择作战或事件。",
+    "scope": "十项独立战术覆盖买卖、日开始、发牌及战斗联动；十三种强化涵盖已核原库附魔类型。并非复制全部573项原作Skill。"
+  },
+  "skillLevelRewards": [
+    {
+      "id": "skill_tech2",
+      "tech": 2,
+      "star": 1,
+      "count": 4,
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "e2fc8bd4-b97d-485b-8bb6-5c966d336c4a",
+        "pointer": "/SelectionContext/SpawnContext"
+      },
+      "conversion": "原作Pip在等级奖励中免费选择Bronze独立Skill，四候选单选可退出，转换为进击科技2奖励；不将原作等级数冒充进击经验曲线。"
+    },
+    {
+      "id": "skill_tech4",
+      "tech": 4,
+      "star": 2,
+      "count": 3,
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "4c3d4b9d-e5b7-469c-be91-67b213c5a975",
+        "pointer": "/SelectionContext/SpawnContext"
+      },
+      "conversion": "原作Argenta免费Silver独立Skill三候选单选可退出，转换为进击科技4奖励；不提供未经核证的怪物掉落或等级升级原作算法。"
+    }
+  ],
+  "operatorUpgradeRewards": [
+    {
+      "id": "operator_upgrade_tech3",
+      "tech": 3,
+      "maxStar": 1,
+      "count": 4,
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "0c410bf1-d560-4bc3-80db-ee06e882a447",
+        "pointer": "/Behavior"
+      },
+      "parentRefs": [
+        {
+          "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+          "table": "level_ups",
+          "rowId": 3,
+          "pointer": "/Rewards/Groups/0/Filters/0/Ids/0",
+          "cardId": "0c410bf1-d560-4bc3-80db-ee06e882a447"
+        }
+      ],
+      "conversion": "参考B1&B2已持有Bronze物品升级行为，转为科技3从本局持有的一星干员中免费选一名升二星；资格、候选数及科技阈值是进击规则。"
+    },
+    {
+      "id": "operator_upgrade_tech5",
+      "tech": 5,
+      "maxStar": 2,
+      "count": 4,
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "586ebd2d-a1c2-4274-875b-c3aeb29ab1ef",
+        "pointer": "/Behavior"
+      },
+      "parentRefs": [
+        {
+          "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+          "table": "level_ups",
+          "rowId": 12,
+          "pointer": "/Rewards/Groups/0/Filters/0/Ids/0",
+          "cardId": "586ebd2d-a1c2-4274-875b-c3aeb29ab1ef"
+        },
+        {
+          "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+          "table": "level_ups",
+          "rowId": 15,
+          "pointer": "/Rewards/Groups/0/Filters/0/Ids/0",
+          "cardId": "586ebd2d-a1c2-4274-875b-c3aeb29ab1ef"
+        }
+      ],
+      "conversion": "参考Forja已持有物品升级行为，转为科技5从本局持有的一至二星干员中免费选一名升一星；资格、候选数及科技阈值是进击规则。"
+    },
+    {
+      "id": "operator_upgrade_tech7",
+      "tech": 7,
+      "maxStar": 3,
+      "count": 4,
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "586ebd2d-a1c2-4274-875b-c3aeb29ab1ef",
+        "pointer": "/Behavior"
+      },
+      "parentRefs": [
+        {
+          "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+          "table": "level_ups",
+          "rowId": 21,
+          "pointer": "/Rewards/Groups/0/Filters/0/Ids/0",
+          "cardId": "586ebd2d-a1c2-4274-875b-c3aeb29ab1ef"
+        },
+        {
+          "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+          "table": "level_ups",
+          "rowId": 24,
+          "pointer": "/Rewards/Groups/0/Filters/0/Ids/0",
+          "cardId": "586ebd2d-a1c2-4274-875b-c3aeb29ab1ef"
+        },
+        {
+          "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+          "table": "level_ups",
+          "rowId": 27,
+          "pointer": "/Rewards/Groups/0/Filters/0/Ids/0",
+          "cardId": "586ebd2d-a1c2-4274-875b-c3aeb29ab1ef"
+        },
+        {
+          "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+          "table": "level_ups",
+          "rowId": 30,
+          "pointer": "/Rewards/Groups/0/Filters/0/Ids/0",
+          "cardId": "586ebd2d-a1c2-4274-875b-c3aeb29ab1ef"
+        }
+      ],
+      "conversion": "参考Forja已持有物品升级行为，转为科技7从本局持有的一至三星干员中免费选一名升一星；资格、候选数及科技阈值是进击规则。"
+    }
+  ],
+  "enchantmentPools": [
+    {
+      "id": "pool_bazaar_random",
+      "entries": [
+        {
+          "enchantmentId": "enchant_heavy",
+          "weight": 50
+        },
+        {
+          "enchantmentId": "enchant_icy",
+          "weight": 10
+        },
+        {
+          "enchantmentId": "enchant_turbo",
+          "weight": 50
+        },
+        {
+          "enchantmentId": "enchant_shielded",
+          "weight": 50
+        },
+        {
+          "enchantmentId": "enchant_restorative",
+          "weight": 50
+        },
+        {
+          "enchantmentId": "enchant_toxic",
+          "weight": 50
+        },
+        {
+          "enchantmentId": "enchant_mossy",
+          "weight": 50
+        },
+        {
+          "enchantmentId": "enchant_fiery",
+          "weight": 50
+        },
+        {
+          "enchantmentId": "enchant_shiny",
+          "weight": 10
+        },
+        {
+          "enchantmentId": "enchant_deadly",
+          "weight": 20
+        },
+        {
+          "enchantmentId": "enchant_radiant",
+          "weight": 10
+        },
+        {
+          "enchantmentId": "enchant_obsidian",
+          "weight": 10
+        }
+      ],
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "a1a898d3-4e07-41bb-a293-bb41fa39a6df",
+        "pointer": "/Abilities/0/Action/Enchantments"
+      },
+      "conversion": "使用原始附魔池权重；先按目标干员的合法性与替换条件过滤，再在合法子集中按权重抽取。"
+    }
+  ],
+  "supplyCapacity": 8,
+  "supplyItems": [
+    {
+      "id": "supply_soda_machine",
+      "name": "苏打机",
+      "kind": "machine",
+      "sizeSlots": 2,
+      "allowedStars": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "buyPrices": [
+        4,
+        8,
+        16,
+        32
+      ],
+      "sellPrices": [
+        2,
+        4,
+        8,
+        16
+      ],
+      "icon": {
+        "kind": "ui",
+        "name": "robot"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "16005305-bce3-4cae-8c90-8b6560def112",
+        "pointer": "/Abilities"
+      },
+      "sourceRules": {
+        "abilityPointer": "/Abilities/0",
+        "trigger": "TTriggerOnHourStarted",
+        "activeIn": "HandAndStash",
+        "worksIn": "Anywhere",
+        "spawnedCardIds": [
+          "099cccf9-2372-4ebe-ac78-eee68f510979",
+          "4c8ea629-990e-4bdf-a7ef-a8520608e47b",
+          "411d0927-857b-468a-afa0-9d525a232922",
+          "199c5f39-cc7a-4ef1-ae55-b19d531e5e66",
+          "740c7183-d8aa-4bd5-b455-62c05309c60a",
+          "44ffc3d6-b696-4753-936b-6d590821de93",
+          "93857582-f36e-4833-82e3-c79d0fd19890",
+          "78eb19fd-4da4-45d5-b4cb-d669b50b6ed6"
+        ],
+        "selectionMethod": "Random",
+        "limit": 1,
+        "allowDuplicates": true,
+        "inheritTier": true
+      },
+      "saleEffect": null,
+      "description": "每个小时开始时，随机获得一份同星级饮料。苏打机占用两格补给箱空间；箱满时暂停生成。",
+      "generationPool": [
+        "supply_yetarian_cooler",
+        "supply_wishful_drinking",
+        "supply_roughtown",
+        "supply_smoothie",
+        "supply_punch",
+        "supply_scovyle",
+        "supply_courage",
+        "supply_mystery"
+      ]
+    },
+    {
+      "id": "supply_yetarian_cooler",
+      "name": "耶塔利安冰饮",
+      "kind": "beverage",
+      "sizeSlots": 1,
+      "allowedStars": [
+        3,
+        4
+      ],
+      "buyPrices": [
+        2,
+        4,
+        8,
+        16
+      ],
+      "sellPrices": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "icon": {
+        "kind": "ui",
+        "name": "hourglass"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "099cccf9-2372-4ebe-ac78-eee68f510979",
+        "pointer": "/Abilities"
+      },
+      "sourceRules": {
+        "abilityPointer": "/Abilities/0",
+        "trigger": "TTriggerOnCardSold",
+        "activeIn": "HandAndStash",
+        "durationType": "UntilEndOfDay",
+        "targetSection": "SelfHandAndStash",
+        "excludeSelf": false,
+        "requiresTargetAttribute": {
+          "attribute": "CooldownMax",
+          "comparison": "GreaterThan",
+          "value": 0
+        },
+        "targetAttributeType": "PercentCooldownReduction",
+        "valueAttributePointer": "/Abilities/0/Action/Value/AttributeType",
+        "valueAttribute": "Custom_0",
+        "modifier": "Multiply",
+        "round": true,
+        "tierValues": {
+          "Gold": 5,
+          "Diamond": 10
+        }
+      },
+      "saleEffect": {
+        "kind": "cooldown",
+        "values": [
+          0,
+          0,
+          5,
+          10
+        ]
+      },
+      "description": "出售时，缩短干员的普通攻击间隔和自然技力充能时间，持续到今日结束。"
+    },
+    {
+      "id": "supply_wishful_drinking",
+      "name": "愿望饮品",
+      "kind": "beverage",
+      "sizeSlots": 1,
+      "allowedStars": [
+        3,
+        4
+      ],
+      "buyPrices": [
+        2,
+        4,
+        8,
+        16
+      ],
+      "sellPrices": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "icon": {
+        "kind": "ui",
+        "name": "plus"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "4c8ea629-990e-4bdf-a7ef-a8520608e47b",
+        "pointer": "/Abilities"
+      },
+      "sourceRules": {
+        "abilities": [
+          {
+            "pointer": "/Abilities/0",
+            "trigger": "TTriggerOnCardSold",
+            "activeIn": "HandAndStash",
+            "durationType": "UntilEndOfDay",
+            "attributeType": "HealthMax",
+            "value": 0.05,
+            "valuePointer": "/Abilities/0/Action/Value/Modifier/Value/Value",
+            "target": "Player",
+            "reference": "HealthMaxUnscaled"
+          },
+          {
+            "pointer": "/Abilities/1",
+            "trigger": "TTriggerOnCardSold",
+            "activeIn": "HandAndStash",
+            "durationType": "UntilEndOfDay",
+            "attributeType": "HealthMax",
+            "value": 0.1,
+            "valuePointer": "/Abilities/1/Action/Value/Modifier/Value/Value",
+            "target": "Player",
+            "reference": "HealthMaxUnscaled"
+          }
+        ],
+        "tierValues": {
+          "Gold": 5,
+          "Diamond": 10
+        },
+        "unusedAuraId": "9"
+      },
+      "saleEffect": {
+        "kind": "maxLife",
+        "mode": "percent",
+        "values": [
+          0,
+          0,
+          5,
+          10
+        ]
+      },
+      "description": "出售时，生命上限提高5%/10%，持续到今日结束。当前生命不会立即恢复。"
+    },
+    {
+      "id": "supply_roughtown",
+      "name": "荒镇惊喜",
+      "kind": "beverage",
+      "sizeSlots": 1,
+      "allowedStars": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "buyPrices": [
+        2,
+        4,
+        8,
+        16
+      ],
+      "sellPrices": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "icon": {
+        "kind": "glyph",
+        "name": "skull"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "411d0927-857b-468a-afa0-9d525a232922",
+        "pointer": "/Abilities"
+      },
+      "sourceRules": {
+        "abilityPointer": "/Abilities/0",
+        "trigger": "TTriggerOnCardSold",
+        "activeIn": "HandAndStash",
+        "durationType": "UntilEndOfDay",
+        "targetSection": "SelfHandAndStash",
+        "excludeSelf": false,
+        "targetHiddenTag": "Poison",
+        "targetAttributeType": "PoisonApplyAmount",
+        "valueAttributePointer": "/Abilities/0/Action/Value/AttributeType",
+        "valueAttribute": "Custom_0",
+        "modifier": "Multiply",
+        "round": true,
+        "tierValues": {
+          "Bronze": 2,
+          "Silver": 4,
+          "Gold": 8,
+          "Diamond": 16
+        }
+      },
+      "saleEffect": {
+        "kind": "poison",
+        "values": [
+          2,
+          4,
+          8,
+          16
+        ]
+      },
+      "description": "出售时，剧毒强化的每次毒伤结算提高2/4/8/16，持续到今日结束。"
+    },
+    {
+      "id": "supply_smoothie",
+      "name": "赫尔玛冰沙",
+      "kind": "beverage",
+      "sizeSlots": 1,
+      "allowedStars": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "buyPrices": [
+        2,
+        4,
+        8,
+        16
+      ],
+      "sellPrices": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "icon": {
+        "kind": "ui",
+        "name": "plus"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "199c5f39-cc7a-4ef1-ae55-b19d531e5e66",
+        "pointer": "/Abilities"
+      },
+      "sourceRules": {
+        "abilities": [
+          {
+            "pointer": "/Abilities/0",
+            "trigger": "TTriggerOnCardSold",
+            "activeIn": "HandAndStash",
+            "durationType": "UntilEndOfDay",
+            "targetSection": "SelfHandAndStash",
+            "targetHiddenTag": "Heal",
+            "targetAttributeType": "HealAmount",
+            "valueAttribute": "Custom_0"
+          },
+          {
+            "pointer": "/Abilities/1",
+            "trigger": "TTriggerOnCardSold",
+            "activeIn": "HandAndStash",
+            "durationType": "UntilEndOfDay",
+            "targetSection": "SelfHandAndStash",
+            "targetHiddenTag": "Regen",
+            "targetAttributeType": "RegenApplyAmount",
+            "valueAttribute": "Custom_1"
+          }
+        ],
+        "modifier": "Multiply",
+        "round": true,
+        "tierValues": {
+          "Bronze": [
+            10,
+            2
+          ],
+          "Silver": [
+            20,
+            4
+          ],
+          "Gold": [
+            40,
+            8
+          ],
+          "Diamond": [
+            80,
+            16
+          ]
+        }
+      },
+      "saleEffect": {
+        "kind": "smoothie",
+        "values": [
+          10,
+          20,
+          40,
+          80
+        ],
+        "secondaryValues": [
+          2,
+          4,
+          8,
+          16
+        ]
+      },
+      "description": "出售时，干员的治疗量提高10/20/40/80，持续回复量提高2/4/8/16，持续到今日结束。"
+    },
+    {
+      "id": "supply_punch",
+      "name": "重拳特饮",
+      "kind": "beverage",
+      "sizeSlots": 1,
+      "allowedStars": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "buyPrices": [
+        2,
+        4,
+        8,
+        16
+      ],
+      "sellPrices": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "icon": {
+        "kind": "ui",
+        "name": "sword"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "740c7183-d8aa-4bd5-b455-62c05309c60a",
+        "pointer": "/Abilities"
+      },
+      "sourceRules": {
+        "abilityPointer": "/Abilities/0",
+        "trigger": "TTriggerOnCardSold",
+        "activeIn": "HandAndStash",
+        "durationType": "UntilEndOfDay",
+        "targetTag": "Weapon",
+        "targetSection": "SelfHandAndStash",
+        "targetAttributeType": "DamageAmount",
+        "valueAttributePointer": "/Abilities/0/Action/Value/AttributeType",
+        "valueAttribute": "Custom_0",
+        "modifier": "Multiply",
+        "round": true,
+        "tierValues": {
+          "Bronze": 10,
+          "Silver": 20,
+          "Gold": 40,
+          "Diamond": 80
+        }
+      },
+      "saleEffect": {
+        "kind": "damage",
+        "values": [
+          10,
+          20,
+          40,
+          80
+        ]
+      },
+      "description": "出售时，干员的直接伤害提高10/20/40/80，持续到今日结束。"
+    },
+    {
+      "id": "supply_scovyle",
+      "name": "斯科维尔热茶",
+      "kind": "beverage",
+      "sizeSlots": 1,
+      "allowedStars": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "buyPrices": [
+        2,
+        4,
+        8,
+        16
+      ],
+      "sellPrices": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "icon": {
+        "kind": "glyph",
+        "name": "bolt"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "44ffc3d6-b696-4753-936b-6d590821de93",
+        "pointer": "/Abilities"
+      },
+      "sourceRules": {
+        "abilityPointer": "/Abilities/0",
+        "trigger": "TTriggerOnCardSold",
+        "activeIn": "HandAndStash",
+        "durationType": "UntilEndOfDay",
+        "targetSection": "SelfHandAndStash",
+        "targetHiddenTag": "Burn",
+        "targetAttributeType": "BurnApplyAmount",
+        "valueAttribute": "Custom_0",
+        "modifier": "Multiply",
+        "round": true,
+        "tierValues": {
+          "Bronze": 2,
+          "Silver": 4,
+          "Gold": 8,
+          "Diamond": 16
+        }
+      },
+      "saleEffect": {
+        "kind": "burn",
+        "values": [
+          2,
+          4,
+          8,
+          16
+        ]
+      },
+      "description": "出售时，干员的灼烧输出提高2/4/8/16，持续到今日结束。"
+    },
+    {
+      "id": "supply_courage",
+      "name": "壮胆饮料",
+      "kind": "beverage",
+      "sizeSlots": 1,
+      "allowedStars": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "buyPrices": [
+        2,
+        4,
+        8,
+        16
+      ],
+      "sellPrices": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "icon": {
+        "kind": "ui",
+        "name": "shield"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "93857582-f36e-4833-82e3-c79d0fd19890",
+        "pointer": "/Abilities"
+      },
+      "sourceRules": {
+        "abilityPointer": "/Abilities/0",
+        "trigger": "TTriggerOnCardSold",
+        "activeIn": "HandAndStash",
+        "durationType": "UntilEndOfDay",
+        "targetSection": "SelfHandAndStash",
+        "targetHiddenTag": "Shield",
+        "targetAttributeType": "ShieldApplyAmount",
+        "valueAttribute": "Custom_0",
+        "modifier": "Multiply",
+        "round": true,
+        "tierValues": {
+          "Bronze": 10,
+          "Silver": 20,
+          "Gold": 40,
+          "Diamond": 80
+        }
+      },
+      "saleEffect": {
+        "kind": "shield",
+        "values": [
+          10,
+          20,
+          40,
+          80
+        ]
+      },
+      "description": "出售时，干员获得的护盾值提高10/20/40/80，持续到今日结束。"
+    },
+    {
+      "id": "supply_mystery",
+      "name": "神秘口味",
+      "kind": "beverage",
+      "sizeSlots": 1,
+      "allowedStars": [
+        4
+      ],
+      "buyPrices": [
+        2,
+        4,
+        8,
+        16
+      ],
+      "sellPrices": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "icon": {
+        "kind": "glyph",
+        "name": "target"
+      },
+      "sourceRef": {
+        "database": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/bazaar/official-GameData.db",
+        "table": "cards",
+        "rowId": "78eb19fd-4da4-45d5-b4cb-d669b50b6ed6",
+        "pointer": "/Abilities"
+      },
+      "sourceRules": {
+        "abilityPointer": "/Abilities/0",
+        "trigger": "TTriggerOnCardSold",
+        "activeIn": "HandAndStash",
+        "durationType": "UntilEndOfDay",
+        "targetSection": "AbsolutePlayerHand",
+        "targetMode": "LeftMostCard",
+        "excludeSelf": true,
+        "condition": "HasEnchantment",
+        "conditionIsNot": false,
+        "preventOverride": false,
+        "targetCount": 1,
+        "tierAttribute": "EnchantTargets",
+        "enchantments": [
+          {
+            "id": "enchant_heavy",
+            "weight": 50
+          },
+          {
+            "id": "enchant_icy",
+            "weight": 10
+          },
+          {
+            "id": "enchant_turbo",
+            "weight": 50
+          },
+          {
+            "id": "enchant_shielded",
+            "weight": 50
+          },
+          {
+            "id": "enchant_restorative",
+            "weight": 50
+          },
+          {
+            "id": "enchant_toxic",
+            "weight": 50
+          },
+          {
+            "id": "enchant_mossy",
+            "weight": 50
+          },
+          {
+            "id": "enchant_fiery",
+            "weight": 50
+          },
+          {
+            "id": "enchant_deadly",
+            "weight": 20
+          },
+          {
+            "id": "enchant_radiant",
+            "weight": 10
+          },
+          {
+            "id": "enchant_obsidian",
+            "weight": 10
+          }
+        ]
+      },
+      "saleEffect": {
+        "kind": "randomEnchant",
+        "values": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "enchantments": [
+          {
+            "id": "enchant_heavy",
+            "weight": 50
+          },
+          {
+            "id": "enchant_icy",
+            "weight": 10
+          },
+          {
+            "id": "enchant_turbo",
+            "weight": 50
+          },
+          {
+            "id": "enchant_shielded",
+            "weight": 50
+          },
+          {
+            "id": "enchant_restorative",
+            "weight": 50
+          },
+          {
+            "id": "enchant_toxic",
+            "weight": 50
+          },
+          {
+            "id": "enchant_mossy",
+            "weight": 50
+          },
+          {
+            "id": "enchant_fiery",
+            "weight": 50
+          },
+          {
+            "id": "enchant_deadly",
+            "weight": 20
+          },
+          {
+            "id": "enchant_radiant",
+            "weight": 10
+          },
+          {
+            "id": "enchant_obsidian",
+            "weight": 10
+          }
+        ]
+      },
+      "description": "出售时，随机强化最左侧尚未强化的干员，持续到今日结束。"
+    }
+  ],
+  "supplyConversions": {
+    "machineGeneration": "Each hour, choose uniformly among registered beverages in the machine pool whose allowedStars contains the machine star; do not clamp to another tier.",
+    "fullCapacity": "Skip generation when the supply box is full.",
+    "beverageSaleDuration": "UntilEndOfDay",
+    "maxLife": "Apply percentage to permanent base max life, round as specified by the Assault conversion, and do not restore current life.",
+    "statusEffects": "Add poison only to own Toxic periodic poison and burn to own Fiery periodic damage or burn elemental gauge application; do not change fixed elemental burst damage or apply weapon damage again to either DOT.",
+    "normalDamage": "Add to direct damage before mitigation; never also add weapon damage to poison/burn damage-over-time.",
+    "cooldown": "Percent cooldown reduction multiplies basic attack interval by (1-reduction); natural SP recovery uses reciprocal scaling. Cap total reduction at 80%.",
+    "mystery": "Leftmost deployed own operator by column then row then UID; if none is deployed, use first unenchanted bench operator. Keep the native eleven enchantment weights filtered by eligibility.",
+    "machinePurchase": "Native Medium ItemBuyPrices: 4/8/16/32; native Medium ItemSellPrices: 2/4/8/16."
+  }
+}

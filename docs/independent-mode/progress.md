@@ -65,3 +65,47 @@
 2026-10-07：五套普通/进阶实际联动链通过，101名两种原生形态202场无机制错误。Victoria按原生阵营修正凯瑟琳1与刺玫1，安洁莉娜按Nomi中立引擎；原始召唤物复制保持精确白值。具名来源消失的十概念装备退出新发放，旧持有兼容。文档两块同步通过，最终集中表186行11列。最终30局公开动作验收休闲15/15、标准14轮8/15完成，均无机制错误；回执 E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/trait-revision-20261007/whole-balance-final/runner-receipt.json。全仓/新客户端编译与浏览器/发布尚待收口。
 
 2026-10-08：本轮全部收口。原生核心版86f9475eb059f6d0fd8d205f90cb1c81f1857486，全仓4402/4390pass/0fail/12skip；202真实形态及五阵容十链通过。apex不可变CF部署fb272973-7401-42e9-ba64-70b4bd34d934、VPS同版规则design/text override续修后两执行模式真实Chrome通过；Workshop release18e9d981保留417VFX、PID499088两模式通过。集中表186x11共2046cells回读同值，总览同一card更新并核对正文，旧附件保留、新桌面与touch图上传。3个任务WT原生收回，317自生成QA文件确认producer后保全至独立tmp，archive native tags保留，未删玩家或QA存档。总回执 E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/trait-revision-20261007/final-receipt.json；公网发布 E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/trait-revision-20261007/publication-86f9475e/publication-final-receipt.json。
+
+## 2026-10-08 成长、原卡目标与完整游玩讲解
+
+用户追加要求两种成长方案、真实阵营与重排科技/比例、原卡效果面板、条件名单、自然重叠小字号跳字、发现头像裁切修复，并明确由Agent自行完整游玩录制讲解及录制中修错。已创建无限定token预算的active goal，保留改前标签workshop-before-growth-destination-20261008。当前源码基线7d9c82dc；并行源树都先no-checkout再稀疏检出，未复制runtime/玩家数据。
+
+原卡101岗位映射正式草案 data/independent-roster-plan.json：哥伦比亚机械16、维多利亚海盗14、炎元素12、卡西米尔龙13、叙拉古野兽14，32通用支持仍保留真实阵营；101原卡与101不同名字完整匹配。科技还需真实原生能力与功能校准，未以草案宣称已上线。新原生内容仅完整实现/测试者入池。
+
+已修蒂比原生必闪只发视觉fx不发dodge事件（tier2.js），并补independent actor解析；普通和精锐真实原生技能测试2/2通过。UI首批a9e0281268222c4ca003b67f8dcf30422a25cb8d、跳字1e54350637cf9e930f5554a31ff50a74192c5976已产出，待root复核融合。研究原始表版本a550f5e048bb94e7cdefc6eb97a4091f0c4c7add含429可获取对象/1236成长phase。审计暂存E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.omni/tmp/growth-destination-20261008/audit/gain-destinations.json与native-growth-factions.json；前者native garrison附录不构成炉石对齐依据，正式判断按具名炉石text与实际执行。
+
+后续：root完成真正等级模型与装备固定落点/期限；native-roster负责原生导入与真实技能/资源；darkmoon-blueprints实现每具名原卡的结构化机制；growth-ui接记录真实DOM/画布及动作时间、介绍播放器，发现布局纳入实际浏览器；全量因果测试、完整游玩、发布/表格回读及worktree保全收尾。
+
+2026-10-08：root真正等级按原生phase/keyframes插值并保持信赖/模组附加值；固定目标装备溢出明确损失不改送库存，战斗临时成长不上永久账。当前定向159项全部通过，日志 E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/root-growth-combat-final.log。普通/进阶蒂比原生闪避因果产出通过；新源卡映射将替换旧额外特质，原生技能/天赋保留。
+
+51条战斗原卡已逐条执行；追加实测发现并修复多来源临时等级突破本体上限、原始复制技能数据存在但未选中SkillSpec，以及金色不能统一将次数/数量翻倍：纳迪娜护盾不翻倍、破浪反击不翻倍、金色鹦鹉随机两次、安全巡游者仅召唤体属性翻倍、金色炸弹真正两次、金色舍身给两个不同友方护盾。原始复制因果验证使用真实杰西卡技能和天赋，不以合成白值对象冒充。
+
+原生能力首轮probe150形态/101映射、0模拟错误；52形态尚缺可执行新默认技能，未称完成。报告 E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/native-power-first.json。当前tier草案10/19/22/17/18/15，普罗旺斯/松果/号角/隐德来希按原生战斗与长期功能调整；其余重新使用原卡科技基线，最终仍需34新本体验证。统一安装脚本严格列pending，未写正式active roster。
+
+34个新本体在最新上游c2a2ef778cf728ff29b953b9842b2a39b1e9cbea均缺失；资料版本a550f5e，实际下载407资源任务无失败（包含已存在7项），24阵营图标全部存在；资源逐路径回执 E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/native-import/growth-import-receipt.json。15新Columbia/Yan与19新Victoria/Kazimierz/Siracusa分工，不重复已有本体；完成默认技能/天赋/召唤物因果测试才标independent专用playable，global继续hidden。
+
+发现头像裁切已真实desktop/touch验收，跳字按iGame-TFT参数移除碰撞避让，保持原字体并缩小。录制rrweb真实DOM和WebGL命令加MediaRecorder实帧，服务stop以ffmpeg无重编码remux提供duration/index/Range；回放黑屏查明为iframe视频GPU合成，视频转顶层stage修复。当前仅短局录制proof，完整终局视频尚未开始；刷新媒体序号/时间偏移还需收口。记录与可见战场截图 E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/recording/recording-real-e2e-replay-controls-proof.json、E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/recording/recording-real-e2e-replay-controls-proof.png。
+
+2026-10-08（完整卡池安装及整局验收继续）：80b31d0a4f3d5b4581bc50f376de462af0ea74b9 安装101名active、34名新增原生默认KIT、真实所属与两种成长模式；科技分布10/19/22/17/18/15，每名保存原卡普通/金色全文。导入与安装回执：E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\growth-destination-20261008\native-import\growth-import-complete-kits.json；E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\growth-destination-20261008\roster-install-final.json。原生202形态90秒测量pending0/errors0，报告 E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\growth-destination-20261008\native-power-integrated.json；该测量发生在最后白铁修复前，不能冒充最终版结果。
+
+完整套件首跑4573项、4446通过、97失败、30跳过，日志 E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\growth-destination-20261008\full-suite-installed.log。失败包含稀疏检出缺scripts/public/dev、旧卡池/特质/白板及代理阵营假设、展示摘要分类遗漏，以及白铁真实方向不变性问题；仍需逐项处理，未通过全量验收。已经补齐scripts/public/dev原生稀疏检出、接入b0f7ad5d展示分类器。蓝图角色fixture改为明确原生TANK，并合入9卡18形态真实prep因果断言。
+
+白铁按PRTS核证E1携带2/部署2、E2携带3/部署2；原表E1黑板cnt=3与文字携带2存在矛盾，保留原始BB并在KIT采用核证的携带数。追加修正设备朝向旋转、每次S1新获得装置、每台设备分别回收、撤退随主人清场；方向测试18/18、跨多次开启及撤退15/15通过。日志 E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\growth-destination-20261008\native-factions\root-native19-facing-tests.log；E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\growth-destination-20261008\native-factions\root-native19-stock-tests.log。原生token成长已贯通owner实际等级与复制体原生身份，保留variant相对原表差额。PRTS入口 https://prts.wiki/w/%E7%99%BD%E9%93%81 。
+
+回放修复c181c087/44666321：rrweb暂停冻结入口动画导致游戏根节点opacity0，已修复；iframe交互恢复、框选时临时交给外层，录制原origin资源重定位允许跨hostname发布。图像验收 E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\growth-destination-20261008\recording\replay-hostname-mismatch.png 与同名JSON。旧小片段只验证播放器，不是完整整局成果；录制agent正在最终池真实UI driver中自主排错。
+
+双模式公共动作矩阵首60局：短局各15/15成功；标准局徽章3/15、等级0/15，中后段压力偏高，需先修pilot漏用预算/目标选择并根据数据调整。原始报告 E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\growth-destination-20261008\balance-qa\all-runs.json。prep源对照61卡122份文本与新增9卡18形态因果测试必须区分，agent继续逐卡查金色副效果，已发现Murozond金色体遗漏及Ragnaros双次候选。完整影片、公开发布、集中表更新、全量回归及工作副本收尾尚未完成，goal保持active。
+
+
+2026-10-08：整合101卡中文规则生成器、完整复制体源能力/原始成长/装备、官方技能触发与原生进阶不降级、两种有限双向交接及商店条件人数。实际143项相关测试全过（完整日志 E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\growth-destination-20261008\integrated-source-regression.log）；重新测量101干员202形态原生能力，缺实现0、战斗错误0（E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\growth-destination-20261008\native-power-final.json，日志同目录native-power-final.log）。记录期间发现详情购买选择null引用两处并修复。当前标准14轮唯一30局：徽章6/15、等级4/15，继续分析防御路线及完成终局录像。全套回归进行中，不宣称完成。
+
+## 2026-10-08 原卡落点、原生输出与录制复核
+
+- 集成逐卡分配依据和真实原生输出表；四项科技升档为普罗旺斯、松果、号角、隐德来希，未按白板批量判断。普通/进阶共202次原卡机制真实战斗验证通过。
+- 修正酸糖最低伤害的输入反推：物理最低伤害两个成立路径取较小输入门槛，避免低防目标被放大约十倍。精确回归55项通过，正式 native power 表重测；日志 `E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/native-aciddrop-floor-exact-regression.log`，测量回执 `E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/native-power-corrected-floor.json`。
+- 修正无合格友方时的合法购买，以及小拉格反应式增益只接受在场受益者；自动 front/adjacent 无目标按既有约定回落自身，显式 UID 继续严格验证。版本 `5bcd8fbe6b951cd59240d32d50346b1068a255cc`；source34项通过，旧惊蛰fixture另行同步。
+- 新增34份正面与33份背面原生模型后，596份模型实际加载检查通过。集成同期正式特效改动至 `63d7d8e784b26f2a706d0aeca909d1942383f580`，根集成版本 `088d659ac6f99b3b9af73b32fab52dbc92585986`；特效/录制接口/集中表7项通过，日志 `E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/integrated-vfx-recording-table-regression.log`。
+- 修正录像采样为独立二维采集面，并加入最终化等待。15秒静止画面实验只证明该实验，不代表整局已同步；完整尝试至第6轮真实败局，但30分钟硬关闭抢断收尾，录像未结束，不能交付。完整失败证据 `E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/recording/driver-run/full-game-543b9ddd-20261008/driver-run-failure.json`、终局画面 `E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/recording/driver-run/full-game-543b9ddd-20261008/025-terminal-finished.png`。采购留资过早导致军队不足，继续修驾驶策略与有界收尾，再录完整成型局。
+- 发现14件已实现补充装备失去当前卡池获取来源，决定通过专项战备授训按科技发现并永久直接装备到指定干员；不添加干员或替换101张原卡主干。正在补完整领奖、选择、落点和展示回归。
+- 已保存原版Git恢复点；两个远端入口、同一集中表和完整视频尚未最终发布，不宣称完成。
+

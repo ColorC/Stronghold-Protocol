@@ -579,36 +579,44 @@ function tokenOwnerId(piece, pieces) {
   return owner && owner.kind === 'chess' ? owner.id : null;
 }
 
-export function TokenDetail({ token, piece, ownerId = null, snapHp = null, live = null }) {
+export function TokenDetail({ token, piece, ownerId = null, snapHp = null, live = null, runtimeDetail = null }) {
   const m = data.get('assets');
   // the owner's variant: its stats, talents and token skill (a golden owner's summon is stronger)
   const v0 = tokenVariantFor(token, ownerId);
-  const s = v0?.stats || token.stats || {};
+  const s = runtimeDetail?.stats || piece?.tokenStats || v0?.stats || token.stats || {};
   const hp = hpOf(live, snapHp);
   const st = {
     maxHp: liveStat(live, 'maxHp', s.maxHp), atk: liveStat(live, 'atk', s.atk), def: liveStat(live, 'def', s.def),
+    res: liveStat(live, 'res', s.res), interval: liveStat(live, 'interval', s.interval ?? attackInterval(s.bat, s.aspd)),
     blockCnt: liveStat(live, 'blockCnt', s.blockCnt, (v) => String(v)),
   };
   // what the summon does lives in its talent (凯瑟琳's 支援装置: "使攻击范围内一名友方干员获得…屏障") or token skill (诅咒娃娃)
-  const talents = (v0?.talents || []).filter((t) => t && t.name && t.desc);
-  const skill = v0?.skill && v0.skill.desc && !/^skcom_withdraw/.test(String(v0.skill.skillId || '')) ? v0.skill : null;
-  const hint = piece ? summonDeployHint(token) : null;
+  const talents = (runtimeDetail ? runtimeDetail.talents || [] : v0?.talents || []).filter((t) => t && t.name && t.desc);
+  const skillSource = runtimeDetail ? runtimeDetail.skill : v0?.skill;
+  const skill = skillSource && skillSource.desc && !/^skcom_withdraw/.test(String(skillSource.skillId || '')) ? skillSource : null;
+  const description = runtimeDetail ? runtimeDetail.description : token.descRaw || token.desc;
+  const shownName = runtimeDetail?.name || token.name;
+  const nativeRecord = runtimeDetail?.nativeChessId ? data.lookup('chess', runtimeDetail.nativeChessId) : null;
+  const avatar = nativeRecord ? chessPortraitUrl(m, nativeRecord, !!nativeRecord.isElite) : tokenAvatarUrl(m, token.tokenId);
+  const hint = piece && !runtimeDetail ? summonDeployHint(token) : null;
   return html`
     <div class="dhead dhead--item">
-      <div class="dhead__icon"><${Img} src=${tokenAvatarUrl(m, token.tokenId)} fallback=${html`<${GIcon} name="target" />`} /></div>
+      <div class="dhead__icon"><${Img} src=${avatar} fallback=${html`<${GIcon} name="target" />`} /></div>
       <div class="dhead__info">
-        <div class="dhead__chips"><span class="dtag-token">召唤物</span>${piece?.count > 1 ? html`<span class="dtag-kind num">×${piece.count}</span>` : null}</div>
-        <h3 class="dhead__name">${token.name}</h3>
+        <div class="dhead__chips"><span class="dtag-token">召唤物</span>${runtimeDetail?.damageType ? html`<span class="dtag-kind">${runtimeDetail.damageType === 'arts' ? '法术' : runtimeDetail.damageType === 'true' ? '真实' : '物理'}</span>` : null}${piece?.count > 1 ? html`<span class="dtag-kind num">×${piece.count}</span>` : null}</div>
+        <h3 class="dhead__name">${shownName}</h3>
+        ${runtimeDetail?.prototypeName ? html`<span class="ix-muted">原型：${runtimeDetail.prototypeName}</span>` : null}
         ${hp ? html`<div class="dhp"><i style=${`width:${Math.max(0, Math.min(100, (hp.hp / Math.max(1, hp.max)) * 100))}%`}></i><span class="num">${fmtNum(hp.hp)} / ${fmtNum(hp.max)}</span></div>` : null}
       </div>
     </div>
     <div class=${cx('dstats', live && 'is-live')} data-live=${live ? live.src || 'prep' : undefined}>
       <${LiveTag} live=${live} />
       <${Stat} k="生命上限" ...${st.maxHp} /><${Stat} k="攻击" ...${st.atk} />
-      <${Stat} k="防御" ...${st.def} /><${Stat} k="阻挡数" ...${st.blockCnt} />
+      <${Stat} k="防御" ...${st.def} /><${Stat} k="法抗" ...${st.res} />
+      <${Stat} k="攻击间隔" ...${st.interval} /><${Stat} k="阻挡数" ...${st.blockCnt} />
     </div>
     ${hint ? html`<p class="dhint"><${Icon} name="info" />${hint}</p>` : null}
-    ${token.descRaw || token.desc ? html`<${Section} title="说明"><${RichText} as="p" text=${token.descRaw || token.desc} class="dtext" /><//>` : null}
+    ${description ? html`<${Section} title="说明"><${RichText} as="p" text=${description} class="dtext" /><//>` : null}
     ${skill ? html`<${Section} title="技能"><p class="dtext"><b>${skill.name}</b> ${skill.desc}</p><//>` : null}
     ${talents.length ? html`<${Section} title="天赋">${talents.map((t, i) => html`<p class="dtext" key=${i}><b>${t.name}</b> ${t.desc}</p>`)}<//>` : null}`;
 }
@@ -729,4 +737,3 @@ export function DetailPanel({ detail, editable, snapHp, onClose, onSell, onDestr
     </div>
   </aside>`;
 }
-
