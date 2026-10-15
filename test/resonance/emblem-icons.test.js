@@ -12,6 +12,7 @@ import { COMPONENT_ICON_IDS, EMBLEM_ICON_DIR, EMBLEM_ICON_PACT_IDS, resonanceEmb
 
 const PUBLIC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../public');
 const EMBLEM_DIR = path.join(PUBLIC, EMBLEM_ICON_DIR);
+const HAS_RESONANCE_ART_BUNDLE = fs.existsSync(path.join(EMBLEM_DIR, 'manifest.json'));
 const CANONICAL = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol';
 const data = loadData(`${CANONICAL}/data/resonance-native`);
 
@@ -23,7 +24,7 @@ function* walk(v) {
   yield* walk(v.props?.children);
 }
 
-test('every emblem of the active season resolves to its own badge file, not the pact icon', () => {
+test('every emblem of the active season resolves to its own badge file, not the pact icon', { skip: !HAS_RESONANCE_ART_BUNDLE }, () => {
   const catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 1 });
   const display = resonanceDisplayCatalog(catalog, data);
   const emblems = Object.entries(catalog.equipment).filter(([, item]) => item.kind === 'emblem');
@@ -45,7 +46,7 @@ test('every emblem of the active season resolves to its own badge file, not the 
   assert.equal(urls.size, emblems.length, 'pacts sharing a pact icon still get distinct badges');
 });
 
-test('the badge list, the files and the provenance manifest agree', () => {
+test('the badge list, the files and the provenance manifest agree', { skip: !HAS_RESONANCE_ART_BUNDLE }, () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(EMBLEM_DIR, 'manifest.json'), 'utf8'));
   assert.deepEqual(Object.keys(manifest.emblems).sort(), [...EMBLEM_ICON_PACT_IDS].sort());
   const files = fs.readdirSync(EMBLEM_DIR).filter((name) => name.endsWith('.webp')).sort();
@@ -74,7 +75,7 @@ test('only emblems take badge art; an emblem whose pact has no badge falls back 
   assert.equal(resonanceItemPactId(catalog, 'prototype_emblem_arts'), null, 'the id convention applies to emblems only');
 });
 
-test('the native catalog packet gives every season emblem its badge as iconUrl, and native items none (the four own-art components are in component-icons.test.js)', () => {
+test('the native catalog packet gives every season emblem its badge as iconUrl, and native items none (the four own-art components are in component-icons.test.js)', { skip: !HAS_RESONANCE_ART_BUNDLE }, () => {
   const catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 13 });
   const packet = resonanceCatalogPacket({ data, catalog, displayCatalog: catalog, nativeChessId: (id, star) => star === 1 ? id : `resonance_${id}_star${star}` });
   const emblems = Object.keys(catalog.equipment).filter((id) => catalog.equipment[id].kind === 'emblem');

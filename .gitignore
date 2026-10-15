@@ -38,3 +38,24 @@ desktop.ini
 .idea/
 .vscode/
 .claude/
+
+# --- project-local runtime and release trees ----------------------------------------------------
+# These are machine/runtime outputs, never GitHub source. Keep the canonical files in the
+# registered runtime/publish locations so Workshop can serve them without copying them into Git.
+/runtime/
+/publish/
+/caddy/
+/.omni/
+/.worktrees/
+
+# --- external reference inputs and copyrighted art/audio -----------------------------------------
+# Raw game dumps and the resonance research bundle stay in the registered input/material store.
+data/assault-sources/
+data/resonance-reference/
+public/resonance-references.zip
+
+# The Workshop deployment may mount these optional resonance art bundles at the same URL paths.
+# They are deliberately absent from GitHub and are not part of the GPL source tree.
+public/css/resonance-components/*.webp
+public/css/resonance-emblems/*.webp
+public/dev/spine-archive/model/

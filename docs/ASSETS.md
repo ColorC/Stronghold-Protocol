@@ -5,6 +5,8 @@ Owner: `tools/fetch-assets.mjs` and `tools/assets/*`. Research background: `docs
 All art, Spine models and audio are **downloaded at install time**. They are never committed; `public/assets/` is git-ignored.
 Everything the client needs is listed in **`data/assets.json`**. The client should only request URLs that appear in that manifest.
 
+The resonance prototype follows the same boundary. Its optional badge/component WebP files and the 2B Spine archive live in the registered local material store and are mounted at runtime when available; `public/css/resonance-components/*.webp`, `public/css/resonance-emblems/*.webp`, and `public/dev/spine-archive/model/` are intentionally absent from GitHub. A source checkout must keep the native icon/glyph fallbacks when that optional bundle is not mounted.
+
 ## Running
 
 ```bash

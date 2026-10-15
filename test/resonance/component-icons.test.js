@@ -13,6 +13,7 @@ import { COMPONENT_ICON_DIR, COMPONENT_ICON_IDS, RESONANCE_ITEM_ICON_IDS, resona
 
 const PUBLIC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../public');
 const COMPONENT_DIR = path.join(PUBLIC, COMPONENT_ICON_DIR);
+const HAS_RESONANCE_ART_BUNDLE = fs.existsSync(path.join(COMPONENT_DIR, 'manifest.json'));
 const CANONICAL = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol';
 const data = loadData(`${CANONICAL}/data/resonance-native`);
 const nativeItems = Object.values(JSON.parse(fs.readFileSync(`${CANONICAL}/data/resonance-native/items.json`, 'utf8')));
@@ -78,7 +79,7 @@ test('the four 养成材料 names are used once in the catalog and the old names
   assert.deepEqual(resonanceContent.equipment.bow.effects, [{ kind: 'component_stat', params: { aspd: 15 } }], 'only the name and art changed');
 });
 
-test('each own-art component has an image file that its manifest describes', () => {
+test('each own-art component has an image file that its manifest describes', { skip: !HAS_RESONANCE_ART_BUNDLE }, () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(COMPONENT_DIR, 'manifest.json'), 'utf8'));
   assert.deepEqual(Object.keys(manifest.components).sort(), [...COMPONENT_ICON_IDS].sort());
   const files = fs.readdirSync(COMPONENT_DIR).filter((name) => name.endsWith('.webp')).sort();
@@ -122,7 +123,7 @@ test('only components in the own-art list resolve to a component image; emblems 
   for (const id of COMPONENT_ICON_IDS) assert.equal(resonanceNativeItem(catalog, id, nativeItems), null, `${id} resolves to no native item`);
 });
 
-test('the native catalog packet gives the four components their material icon as iconUrl and no native art id', () => {
+test('the native catalog packet gives the four components their material icon as iconUrl and no native art id', { skip: !HAS_RESONANCE_ART_BUNDLE }, () => {
   const catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 13 });
   const packet = resonanceCatalogPacket({ data, catalog, displayCatalog: catalog, nativeChessId: (id, star) => star === 1 ? id : `resonance_${id}_star${star}` });
   for (const id of COMPONENT_ICON_IDS) {
@@ -139,7 +140,7 @@ test('the native catalog packet gives the four components their material icon as
   }
 });
 
-test('the mode item icon and the native item thumb show the component image', async () => {
+test('the mode item icon and the native item thumb show the component image', { skip: !HAS_RESONANCE_ART_BUNDLE }, async () => {
   const assetsManifest = JSON.parse(fs.readFileSync(`${CANONICAL}/data/resonance-native/assets.json`, 'utf8'));
   globalThis.fetch = async (url) => String(url).endsWith('/assets.json')
     ? { ok: true, status: 200, json: async () => assetsManifest } : { ok: false, status: 404, json: async () => ({}) };
