@@ -1,0 +1,132 @@
+import { authoredCard as card, pct } from './core-adaptations.js';
+
+export const SUPPORT_ADAPTATIONS=Object.freeze({
+  char_151_myrtle:card(1,'B','medium',20,1,v=>[
+    `获得${v.dp}费用，分${v.heals}次治疗周围伤员各${pct(v.heal)}%。`,
+    `你的先锋每秒回复${v.regen}生命。`,
+  ],{values:{dp:16,heals:6,heal:.5,regen:25},sourceTalent:0}),
+  char_181_flower:card(1,'B','medium',20,3,v=>[
+    `在原范围治疗3名伤员${v.heals}次，每次${pct(v.heal)}%。`,
+    `全体友军每秒回复调香师攻击力${pct(v.regen)}%生命。`,
+  ],{values:{heals:3,heal:3.5,regen:.05},sourceTalent:0}),
+  char_385_finlpp:card(1,'B','medium',20,1,v=>[
+    `连续${v.heals}次治疗原范围内随机伤员，每次${pct(v.heal)}%。`,
+    `自身治疗的目标获得${v.resist}秒抵抗。`,
+  ],{values:{heals:16,heal:.5,resist:4},sourceTalent:0}),
+  char_401_elysm:card(1,'B','medium',20,4,v=>[
+    `获得${v.dp}费用，周围4名敌人减速、揭隐并防御−${pct(v.def)}%。`,
+    `你的狙击部署费用−2；施放时积存${v.uses}次攻速+${v.aspd}攻击。`,
+  ],{values:{dp:20,def:.35,slow:.6,duration:6,uses:4,aspd:20,cost:2},sourceTalent:0,tags:['聆听锁定持续6秒']}),
+  char_4119_wanqin:card(1,'B','medium',20,99,v=>[
+    `获得${v.dp}费用，治疗周围友军${v.heals}次，各${pct(v.heal)}%。`,
+    `周围友军生命+5%，与自身同向时改为+9%。`,
+  ],{values:{dp:20,heals:5,heal:.25,aspd:25,uses:4,hp:.05,extraHP:.04},sourceTalent:0,tags:['同向友军积存4次攻速+25的攻击']}),
+  char_171_bldsk:card(1,'A','medium',24,1,v=>[
+    `自身与范围内随机友军积存${v.uses}次攻击+${pct(v.atk)}%的攻击。`,
+    `范围内敌人倒下，为自身和随机友军充能${v.charge}。`,
+  ],{values:{uses:3,atk:.9,loss:.03,charge:4},sourceTalent:0,tags:['每次强化攻击流失3%最大生命','强化治疗同样生效']}),
+  char_4196_reckpr:card(1,'B','medium',20,1,v=>[
+    `治疗1名伤员${v.heals}次${pct(v.heal)}%，每次积存${v.care}次受伤回复。`,
+    `范围内其他干员施放技能，为自身充能${v.charge}。`,
+  ],{values:{heals:4,heal:1.8,care:2,fixedHeal:150,charge:4,aspd:16,uses:2},sourceTalent:0,tags:['受伤回复150生命','连线同时积存2次攻速+16的治疗']}),
+  char_4114_harold:card(1,'B','medium',20,1,v=>[
+    `连续治疗${v.heals}次，优先元素损伤最重目标；重症回复量×${v.trait}。`,
+    `原范围内元素损伤过半的友军，元素损伤−${pct(v.protect)}%。`,
+  ],{values:{heals:6,heal:1,trait:2.5,protect:.15},sourceTalent:0}),
+  char_494_vendla:card(1,'B','medium',20,1,v=>[
+    `原范围生命上限最高友军积存${v.uses}次反击、嘲讽与吸血。`,
+    `该友军受到的治疗效果提升${pct(v.healing)}%。`,
+  ],{values:{uses:4,scale:.9,leech:.5,healing:.15,taunt:1},sourceTalent:0,tags:['反击90%法伤','反击治疗只给受保护者']}),
+  char_4139_papyrs:card(1,'B','medium',20,1,v=>[
+    `治疗生命上限最高的其他干员${v.heals}次${pct(v.heal)}%，连锁4名。`,
+    `自身治疗为目标附加${pct(v.barrier)}%攻击力屏障，持续${v.duration}秒。`,
+  ],{values:{heals:4,heal:1.5,jumps:3,falloff:.25,barrier:.2,duration:8},sourceTalent:0,tags:['同源屏障保留较高值']}),
+  char_4222_taraxa:card(1,'B','medium',20,2,v=>[
+    `起飞并治疗伤员${v.heals}次${pct(v.heal)}%，另治疗1名飞行者。`,
+    `范围内飞行友军获得${pct(v.protect)}%庇护、阻挡+1。`,
+  ],{values:{heals:3,heal:2.2,splash:1.1,splashTargets:2,protect:.1,liftoff:.5},sourceTalent:0,tags:['每次向目标附近2名友军溅射110%治疗']}),
+  char_4042_lumen:card(2,'D','medium',16,1,v=>[
+    `治疗伤员${pct(v.heal)}%，优先净化异常目标。`,
+    `友军每累计受到${v.every}次异常，立即治疗目标${pct(v.emergency)}%。`,
+    `无异常时，每${v.normalEvery}次普通治疗后追加${pct(v.emergency)}%治疗。`,
+  ],{values:{heal:3.1,every:3,normalEvery:3,emergency:.8,resist:4,highResist:6,highHP:.75},ammo:8,sourceTalent:1,
+    tags:['弹药8','普通治疗附加原4／6秒抵抗']}),
+  char_1016_agoat2:card(2,'B','slow',35,1,v=>[
+    `全场${v.rounds}轮五连治疗，每发${pct(v.heal)}%，优先不同目标。`,
+    `你的干员生命+${pct(v.hp)}%，受到元素损伤−${pct(v.protect)}%。`,
+  ],{values:{rounds:3,heal:.6,hp:.06,protect:.12,mist:.1,mistTime:6,mistCap:3},sourceTalent:1,
+    tags:['保留元素损伤回复','氤氲治疗最多叠加3层']}),
+  char_4163_rosesa:card(1,'B','medium',20,99,v=>[
+    `治疗范围内友军${v.heals}次，并积存${v.uses}次伤害延后。`,
+    `原范围友军受到治疗+${pct(v.amp)}%，自身攻击−5%。`,
+  ],{values:{heals:4,heal:1,uses:2,defer:.5,duration:5,amp:.15,atk:-.05},sourceTalent:0,
+    tags:['物理／法术伤害的50%改为5秒生命流失']}),
+  char_4045_heidi:card(1,'B','medium',20,99,v=>[
+    `原范围友军获得${v.uses}次受击鼓舞：防御、生命与阻挡+1。`,
+    `原范围友军防御+${pct(v.aura)}%。`,
+  ],{values:{uses:4,def:.7,hp:.3,block:1,heal:.3,heals:4,aura:.05},sourceTalent:0,
+    tags:['鼓舞提供海蒂70%防御、30%生命','同时完成4次30%攻击力再生']}),
+  char_4019_ncdeer:card(1,'B','medium',20,1,v=>[
+    `原范围连攻${v.hits}次并治疗伤员，积存${v.uses}次远程物理抵挡。`,
+    `原范围生命低于40%的友军获得${pct(v.protect)}%庇护。`,
+  ],{values:{hits:5,heal:.5,uses:3,chance:.7,protect:.2,threshold:.4},sourceTalent:0,
+    tags:['技能抵挡概率70%','强化期间庇护不受生命门槛限制']}),
+});
+
+export const SUPPORT_CARD_ROLES=Object.freeze({
+  char_151_myrtle:{line:'workshop',produces:['sustain','economy'],consumes:[],roles:['direct','aura']},
+  char_181_flower:{line:'workshop',produces:['sustain'],consumes:[],roles:['direct','aura']},
+  char_385_finlpp:{line:'redeploy',produces:['sustain'],consumes:[],roles:['direct']},
+  char_401_elysm:{line:'ammo',produces:['economy'],consumes:[],roles:['buffOthers','aura']},
+  char_4119_wanqin:{line:'workshop',produces:['sustain','economy'],consumes:[],roles:['direct','aura']},
+  char_171_bldsk:{line:'redeploy',produces:[],consumes:['kill'],roles:['buffOthers','feed']},
+  char_4196_reckpr:{line:'workshop',produces:['sustain'],consumes:['skill'],roles:['direct','feed']},
+  char_4114_harold:{line:'workshop',produces:['sustain'],consumes:['element'],roles:['direct','aura']},
+  char_494_vendla:{line:'workshop',produces:['sustain'],consumes:['sustain'],roles:['buffOthers','aura']},
+  char_4139_papyrs:{line:'workshop',produces:['sustain'],consumes:['sustain'],roles:['direct']},
+  char_4222_taraxa:{line:'redeploy',produces:['sustain'],consumes:['displacement'],roles:['direct','aura']},
+  char_4042_lumen:{line:'ammo',produces:['sustain'],consumes:['control','sustain'],roles:['direct']},
+  char_1016_agoat2:{line:'workshop',produces:['sustain'],consumes:['sustain'],roles:['direct','aura']},
+  char_4163_rosesa:{line:'workshop',produces:['sustain'],consumes:['sustain'],roles:['direct','aura']},
+  char_4045_heidi:{line:'workshop',produces:['sustain'],consumes:[],roles:['buffOthers','aura']},
+  char_4019_ncdeer:{line:'redeploy',produces:['sustain'],consumes:[],roles:['direct','aura']},
+});
+const pair=(key,value,text,linkKey,linkValue,linkText)=>[
+  {sourceKind:'skill',key,value,text},{sourceKind:'talent',key:linkKey,value:linkValue,text:linkText},
+];
+export const SUPPORT_MODULES=Object.freeze({
+  char_151_myrtle:pair('heals',8,'治愈之翼提升至8次治疗。','regen',35,'先锋再生提升至每秒35生命。'),
+  char_181_flower:pair('heals',4,'精调提升至4次治疗。','regen',.07,'全场再生提升至攻击力7%。'),
+  char_385_finlpp:pair('heals',20,'涌泉提升至20次治疗。','resist',6,'治疗附加抵抗延长至6秒。'),
+  char_401_elysm:pair('def',.45,'聆听防御削减提升至45%。','aspd',30,'狙击强化攻击速度提升至+30。'),
+  char_4119_wanqin:pair('heals',7,'应东风提升至7次治疗。','extraHP',.07,'同向干员生命加成提升至12%。'),
+  char_171_bldsk:pair('uses',4,'血浆增加至4次强化攻击。','charge',6,'血液回收充能提升至6。'),
+  char_4196_reckpr:pair('heals',5,'一点关窍提升至5次治疗。','charge',6,'学成于聚充能提升至6。'),
+  char_4114_harold:pair('trait',3,'重症元素回复倍率提升至3。','protect',.2,'重症元素保护提升至20%。'),
+  char_494_vendla:pair('uses',6,'荆藤庇荫增加至6次反击。','healing',.2,'受保护者治疗效果提升至+20%。'),
+  char_4139_papyrs:pair('heals',5,'临考发挥提升至5轮。','barrier',.3,'治疗屏障提升至30%攻击力。'),
+  char_4222_taraxa:pair('heals',4,'扶风起提升至4轮治疗。','protect',.15,'飞行友军庇护提升至15%。'),
+  char_4042_lumen:pair('heal',3.8,'灯火不灭治疗量提升至380%。','every',2,'每累计2次异常触发应急处理。'),
+  char_1016_agoat2:pair('rounds',4,'火山回响提升至4轮。','protect',.18,'元素保护提升至18%。'),
+  char_4163_rosesa:pair('uses',3,'每次施放积存3次伤害延后。','amp',.2,'范围治疗增益提升至+20%。'),
+  char_4045_heidi:pair('uses',6,'锈城鼓舞增加至6次受击。','aura',.08,'范围防御光环提升至+8%。'),
+  char_4019_ncdeer:pair('hits',7,'仙山去远提升至7次攻击。','protect',.25,'飘渺彩云庇护提升至25%。'),
+});
+export const SUPPORT_INNATES=Object.freeze({
+  char_151_myrtle:['浮光跃金保留所有先锋的每秒25点生命再生；治愈之翼只选择周围原范围内的一名伤员。'],
+  char_181_flower:['熏衣香按调香师自身攻击力为全体友军提供生命再生，能作用于禁疗目标。'],
+  char_385_finlpp:['每次治疗附加原作4秒抵抗；连续治疗每次重新随机选择已受伤目标。'],
+  char_401_elysm:['聆听保留4名目标、60%减速、35%防御削减与揭隐；强化攻击次数可积存。'],
+  char_4119_wanqin:['周围八格生命光环保留部署方向条件；同向攻速强化按攻击次数积存。'],
+  char_171_bldsk:['强化仍作用于自身和范围内随机一名其他友军；每次强化攻击或治疗流失3%最大生命。'],
+  char_4196_reckpr:['每次技能治疗积存2次受伤回复150生命，重复施放继续积存；原16攻速转为2次强化治疗。'],
+  char_4114_harold:['技能优先治疗元素损伤最严重者；元素损伤超过50%时回复量提升至原2.5倍。'],
+  char_494_vendla:['荆藤锁定生命上限最高者；每次反击造成90%法伤并仅治疗该保护目标。'],
+  char_4139_papyrs:['保留链式治疗衰减、原跳跃半径和额外1次跳跃；同源屏障持续8秒并保留较高剩余值。'],
+  char_4222_taraxa:['起飞维持原动作；额外治疗飞行友军，周围两名友军获得原溅射治疗。'],
+  char_4042_lumen:['普通治疗附加4秒抵抗，高于75%生命时为6秒；异常处理保留原优先级和完整净化。'],
+  char_1016_agoat2:['火山回响保留全场范围、五连发与元素回复；普通治疗附加6秒氤氲，最多3层。'],
+  char_4163_rosesa:['每次受击仅消耗一份延后次数，50%伤害独立分5秒流失；重复施放积存次数。'],
+  char_4045_heidi:['鼓舞保留70%海蒂防御、30%海蒂最大生命、阻挡+1；按受击次数积存。'],
+  char_4019_ncdeer:['普通攻击保留护佑者治疗；技能70%远程物理抵挡按次数积存，剩余次数期间庇护无生命门槛。'],
+});

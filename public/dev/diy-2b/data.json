@@ -1,0 +1,47 @@
+{
+ "_note": "DIY 干员草案：2B（尼尔：机械纪元）。数值以网页版 6 星剑豪「锏」为基准；技能取材原作的 Pod 射击、A090 激光与自爆。设定待业主确认，可改。",
+ "id": "char_diy_2b",
+ "name": "2B",
+ "appellation": "YoRHa No.2 Type B",
+ "rarity": 6,
+ "profession": "WARRIOR",
+ "professionName": "近卫",
+ "subProfessionId": "sword",
+ "subProfessionName": "剑豪",
+ "position": "MELEE",
+ "dmgType": "phys",
+ "attackKind": "melee",
+ "projectile": "none",
+ "stats": { "maxHp": 2050, "atk": 520, "def": 260, "res": 10, "cost": 22, "blockCnt": 2, "bat": 1.2, "respawnTime": 70 },
+ "rangeId": "1-1",
+ "rangeGrid": [[0, 0], [0, 1]],
+ "trait": { "desc": "普通攻击连续造成两次伤害" },
+ "talents": [
+  { "name": "辅助机 Pod 042", "desc": "每第 3 次攻击后，Pod 对攻击目标追加一轮射击，造成相当于攻击力 60% 的物理伤害" },
+  { "name": "闪避与反击", "desc": "受到攻击时有 15% 的几率闪避；闪避后下一次攻击的攻击力提升至 150%" }
+ ],
+ "skills": [
+  { "index": 0, "name": "轻重连段", "skillType": "AUTO", "spType": "INCREASE_WHEN_ATTACK", "spCost": 5, "initSp": 0, "duration": 0,
+    "desc": "下次攻击变为三连斩，每次斩击造成相当于攻击力 160% 的物理伤害", "anims": ["Skill_1"] },
+  { "index": 1, "name": "程序 A090：激光", "skillType": "MANUAL", "spType": "INCREASE_WITH_TIME", "spCost": 30, "initSp": 15, "duration": 8,
+    "desc": "Pod 向前方一直线发射激光，每 0.3 秒对直线上所有敌人造成相当于攻击力 70% 的法术伤害；期间 2B 照常攻击", "anims": ["Skill_2_Begin", "Skill_2_Loop", "Skill_2_End"] },
+  { "index": 2, "name": "自爆", "skillType": "MANUAL", "spType": "INCREASE_WITH_TIME", "spCost": 40, "initSp": 20, "duration": 0,
+    "desc": "蓄力 1 秒后自爆，对周围 2 格内所有敌人造成相当于攻击力 600% 的法术伤害并晕眩 3 秒；之后机体重组，6 秒内无法行动，结束后恢复全部生命", "anims": ["Skill_3_Begin", "Skill_3_End", "Stun_Skill_3"] }
+ ],
+ "assets": {
+  "front": "model/front/char_diy_2b.json",
+  "back": "model/back/char_diy_2b_back.json",
+  "avatar": "icons/avatar_e0.png",
+  "avatarE2": "icons/avatar_e2.png",
+  "portrait": "icons/portrait_e0.png",
+  "portraitE2": "icons/portrait_e2.png",
+  "skillIcons": ["icons/skill_1.png", "icons/skill_2.png", "icons/skill_3.png"]
+ },
+ "animContract": {
+  "body": ["Default", "Start", "Idle", "Attack", "Skill_1", "Skill_2_Begin", "Skill_2_Loop", "Skill_2_End", "Skill_3_Begin", "Skill_3_End", "Stun", "Stun_Skill_3", "Die", "Hit"],
+  "pod": ["Pod_Idle", "Pod_Shot", "Pod_Laser_Begin", "Pod_Laser_Loop", "Pod_Laser_End"],
+  "events": { "OnStart": "部署落地", "OnAttack": "一次斩击命中", "OnPodShot": "Pod 一发子弹出膛", "OnLaser": "激光一跳伤害", "OnBlast": "自爆爆发", "OnJolt": "机体重组时一次抽搐（放电）" },
+  "bones": { "pod": "Pod 本体", "pod_muzzle": "Pod 炮口，激光和子弹从这里出", "sword_tip": "剑尖，斩击光效挂点" },
+  "tracks": "身体动作放第 0 轨，Pod 动作放第 1 轨（覆盖 Pod 骨骼）"
+ }
+}

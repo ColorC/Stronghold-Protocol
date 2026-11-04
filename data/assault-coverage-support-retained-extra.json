@@ -1,0 +1,64 @@
+{
+  "schema": "assault-support-retained-extra-coverage/v2",
+  "group": "support",
+  "implementation": "server/sim/content/assault/cards/synergy-support.js",
+  "inventorySourceRevision": "27c1b8e77189054b6da0bd77300c24c036c856c1",
+  "entries": [
+    {
+      "sourcePointer": "/char_107_liskam/talents/1",
+      "charId": "char_107_liskam",
+      "mode": "synergyCard",
+      "implementation": "server/sim/content/assault/cards/synergy-support.js",
+      "testFiles": [
+        "test/assault/synergy-support-4.test.mjs"
+      ],
+      "evidenceTests": [
+        "雷蛇：部署时抵挡下一次伤害；充能防御 抵挡下一次伤害、防御 +100% 8 秒；受到攻击时为自身与周围 1 名其他干员充能 1（每 1 秒一次）",
+        "雷蛇：周围 4 格的其他干员施放技能时本场防御 +3%、法抗 +1；模组 范围内敌人隐匿失效，战术防御 60% 几率额外充能 1"
+      ],
+      "status": "complete"
+    },
+    {
+      "sourcePointer": "/char_401_elysm/talents/0",
+      "charId": "char_401_elysm",
+      "mode": "synergyCard",
+      "implementation": "server/sim/content/assault/cards/synergy-support.js",
+      "testFiles": [
+        "test/assault/synergy-support.test.mjs"
+      ],
+      "evidenceTests": [
+        "极境：10-23改写后，两次即时结算与进阶模组均生效",
+        "极境：固有机制与成长限制"
+      ],
+      "status": "complete"
+    },
+    {
+      "sourcePointer": "/char_4196_reckpr/talents/0",
+      "charId": "char_4196_reckpr",
+      "mode": "synergyCard",
+      "implementation": "server/sim/content/assault/cards/synergy-support.js",
+      "testFiles": [
+        "test/assault/synergy-support-2.test.mjs"
+      ],
+      "evidenceTests": [
+        "录武官：部署时范围内干员攻击速度 +16，10 秒；触类旁通 治疗 170% 并额外治疗 1 名干员（需要有人受伤）",
+        "录武官：攻击范围内的其他干员施放技能时充能 2、攻击速度 +16 持续 12 秒，本场治疗量 +3%；范围外不算；模组 充能 3"
+      ],
+      "status": "complete"
+    },
+    {
+      "sourcePointer": "/char_4207_branch/talents/0",
+      "charId": "char_4207_branch",
+      "mode": "synergyCard",
+      "implementation": "server/sim/content/assault/cards/synergy-support.js",
+      "testFiles": [
+        "test/assault/synergy-support-4.test.mjs"
+      ],
+      "evidenceTests": [
+        "折桠：10-23改写后，两次即时结算与进阶模组均生效",
+        "折桠：相邻干员受到攻击时充能 0.5（每 1 秒一次）；其他干员回复任一干员生命时本场防御 +1%（每 2 秒），不屈者仍不能被友方治疗；其他干员使敌人战栗/晕眩时本局永久生命上限 +1%（每 2 秒）"
+      ],
+      "status": "complete"
+    }
+  ]
+}

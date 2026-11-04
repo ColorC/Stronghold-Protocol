@@ -1,0 +1,13 @@
+body.ar-replay{margin:0;min-height:100vh;background:#0d1214;color:#d9dfdc;font:500 16px/1.5 var(--font-cjk,"Noto Sans SC",sans-serif)}
+.ar-replay{padding:clamp(.65rem,2vw,1.5rem)}.ar-replay__shell{max-width:1400px;margin:0 auto}
+.ar-replay__head{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:.7rem}.ar-replay__head h1{font-size:1.2rem;margin:.25rem 0}.ar-replay__head p{margin:.25rem auto .25rem .5rem;color:#9aa6a0;font-size:.85rem}
+.ar-replay button,.ar-replay__head a{border:1px solid #5b665f;border-radius:4px;padding:2px 8px;background:#1b2421;color:#e8d9ae;text-decoration:none;cursor:pointer;font:inherit}
+.ar-replay__screen{position:relative;width:min(100%,1280px);margin:0 auto;overflow:hidden;background:#06090a;border:1px solid #2d3833;border-radius:.4rem}
+.ar-replay__stage{position:relative;width:100%;height:auto;overflow:hidden;transform-origin:top left}
+.ar-replay__stage iframe{width:var(--ar-frame-width);height:var(--ar-frame-height);max-width:none;transform-origin:top left;display:block;border:0}
+.ar-replay__caption{position:absolute;z-index:9;left:23%;bottom:2.6%;max-width:38%;padding:.1em .5em;border-radius:3px;background:#0d1214a6;color:#f3ead0;font:600 clamp(11px,1.3cqw,16px)/1.45 var(--font-cjk,sans-serif);text-align:left;white-space:nowrap;pointer-events:none;text-shadow:0 1px 2px #000}
+.ar-replay__screen{container-type:inline-size}
+.ar-replay__controls{display:flex;align-items:center;gap:.65rem;width:min(100%,1280px);margin:.75rem auto}.ar-replay__controls input[type=range]{flex:1;min-width:80px;accent-color:#d6a85a}.ar-replay__controls time{min-width:7rem;text-align:center;font-variant-numeric:tabular-nums;color:#b6beba}
+.ar-replay .replayer-mouse{width:24px;height:32px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='32' viewBox='0 0 24 32'%3E%3Cpath d='M2 1v27l6.5-6.5L14 31l4-2-5.5-9H22z' fill='%23000' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");filter:drop-shadow(0 0 1px #111)}.ar-replay .replayer-mouse::after{display:none}
+html.ar-review-mode{overflow:hidden}.ar-review-mode .ar-replay{width:100%;height:100%;min-height:0;padding:0;overflow:hidden}.ar-review-mode .ar-replay__shell{width:100%;max-width:none;margin:0}.ar-review-mode .ar-replay__screen{width:100%;max-width:none;margin:0;border:0;border-radius:0}.ar-review-mode .ar-replay__stage{width:100%;height:auto}
+.ar-replay [hidden],.ar-replay__caption[hidden]{display:none!important}

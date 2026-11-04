@@ -1,0 +1,1157 @@
+{
+ "schema": "assault-bazaar-collectibles/v1",
+ "collectibles": [
+  {
+   "id": "cold-frostsignal",
+   "name": "留春",
+   "text": "当敌人被击倒时，对其周围的敌人施加 3 秒寒冷。",
+   "template": "当敌人被击倒时，对其周围的敌人施加 3 秒寒冷。",
+   "params": {},
+   "trigger": {
+    "event": "kill(敌人)",
+    "subject": "任意敌人被击倒",
+    "condition": null
+   },
+   "target": "enemies(adjacent8 of 被击倒者, all)",
+   "effect": "applyStatus(cold, dur=3)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "cold-frozenhusk",
+   "name": "冰结的躯壳",
+   "text": "当你的近战干员受伤时，其下一次攻击施加 1 秒寒冷（4 秒内）。",
+   "template": "当你的近战干员受伤时，其下一次攻击施加 1 秒寒冷（4 秒内）。",
+   "params": {},
+   "trigger": {
+    "event": "damageTaken",
+    "subject": "你的近战干员",
+    "condition": null
+   },
+   "target": "eventTarget",
+   "effect": "buff(frostShell, dur=4, 下一次攻击 applyStatus(cold,1))",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "cold-triumphhorn",
+   "name": "凯旋号角",
+   "text": "敌人获得的寒冷或冻结持续时间 +25%。",
+   "template": "敌人获得的寒冷或冻结持续时间 +25%。",
+   "params": {},
+   "trigger": {
+    "event": "statusApplied(cold|frozen)",
+    "subject": "任意敌人",
+    "condition": null
+   },
+   "target": "eventTarget",
+   "effect": "状态持续时间 ×1.25",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "cold-cabaretsinger",
+   "name": "“当红歌手”",
+   "text": "当你施加寒冷时，对目标造成 35% 法术伤害，停顿 0.3 秒。",
+   "template": "当你施加寒冷时，对目标造成 35% 法术伤害，停顿 0.3 秒。",
+   "params": {},
+   "trigger": {
+    "event": "statusApplied(cold)",
+    "subject": "你的单位施加",
+    "condition": null
+   },
+   "target": "eventTarget",
+   "effect": "damage(scale=0.35×施加者攻击力, type=arts); applyStatus(pause, 0.3)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "cold-niflheimr",
+   "name": "凝冰砥石",
+   "text": "你的干员攻击时施加 1 秒寒冷，但攻击间隔 +20%。",
+   "template": "你的干员攻击时施加 1 秒寒冷，但攻击间隔 +20%。",
+   "params": {},
+   "trigger": {
+    "event": "battleStart",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "allies(field, all)",
+   "effect": "buff(attackInterval×1.2, onAttack applyStatus(cold,1), dur=battle)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "cold-mirrorarchive",
+   "name": "精神治疗录像带",
+   "text": "你每施加寒冷 5 次，对全体敌人施加 1.5 秒冻结。",
+   "template": "你每施加寒冷 5 次，对全体敌人施加 1.5 秒冻结。",
+   "params": {},
+   "trigger": {
+    "event": "statusApplied(cold)",
+    "subject": "你的单位施加",
+    "condition": null
+   },
+   "target": "enemies(field, all)",
+   "effect": "第 5 次时 applyStatus(frozen, 1.5) 后归零",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "redeploy-spring",
+   "name": "医者-涌泉",
+   "text": "当你部署干员时，若医疗干员在场，全队再部署等待 -5%（最多 4 层）。",
+   "template": "当你部署干员时，若医疗干员在场，全队再部署等待 -5%（最多 4 层）。",
+   "params": {},
+   "trigger": {
+    "event": "redeploy(entryKind=deploy)",
+    "subject": "你的干员",
+    "condition": "场上有医疗干员"
+   },
+   "target": "allies(field, all)",
+   "effect": "redeployCooldown ×0.95",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "redeploy-newedict",
+   "name": "锈刃-新典训",
+   "text": "当你的特种干员部署时，其下一次再部署等待 -25%。",
+   "template": "当你的特种干员部署时，其下一次再部署等待 -25%。",
+   "params": {},
+   "trigger": {
+    "event": "redeploy(entryKind=deploy)",
+    "subject": "你的特种干员",
+    "condition": null
+   },
+   "target": "self",
+   "effect": "nextRedeployCooldown ×0.75",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "redeploy-vanguardrally",
+   "name": "钝爪-振奋",
+   "text": "当你的先锋干员部署时，等待最久的另一名干员再部署等待 -30%。",
+   "template": "当你的先锋干员部署时，等待最久的另一名干员再部署等待 -30%。",
+   "params": {},
+   "trigger": {
+    "event": "redeploy(entryKind=deploy)",
+    "subject": "你的先锋干员",
+    "condition": null
+   },
+   "target": "allies(field, 等待最久, 1)",
+   "effect": "redeployRemaining ×0.7",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "redeploy-specialstill",
+   "name": "锈刃-可视静谧",
+   "text": "当你的特种干员部署时，其本场战斗内再部署等待 -20%。",
+   "template": "当你的特种干员部署时，其本场战斗内再部署等待 -20%。",
+   "params": {},
+   "trigger": {
+    "event": "redeploy(entryKind=deploy)",
+    "subject": "你的特种干员",
+    "condition": null
+   },
+   "target": "self",
+   "effect": "redeployCooldown ×0.8（dur=battle，不重复）",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "redeploy-brokenblade",
+   "name": "“断剑”",
+   "text": "你的干员最大生命 -20%，再部署等待 -30%；再部署后无敌 1 秒。",
+   "template": "你的干员最大生命 -20%，再部署等待 -30%；再部署后无敌 1 秒。",
+   "params": {},
+   "trigger": {
+    "event": "battleStart；redeploy",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "allies(field, all)",
+   "effect": "maxHp ×0.8; redeployCooldown ×0.7; 再部署后 invulnerable 1s",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "redeploy-airdrop",
+   "name": "垂降劫掠装置",
+   "text": "全队再部署等待 -25%；当你部署干员时，对随机敌人及其周围造成 150% 物理伤害。",
+   "template": "全队再部署等待 -25%；当你部署干员时，对随机敌人及其周围造成 150% 物理伤害。",
+   "params": {},
+   "trigger": {
+    "event": "battleStart；redeploy(entryKind=deploy)",
+    "subject": "你的干员",
+    "condition": null
+   },
+   "target": "enemies(random 1 + adjacent8)",
+   "effect": "redeployCooldown ×0.75; damage(scale=1.5×部署者攻击力, type=phys)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "ammo-charsetglossary",
+   "name": "《炎国字汇》",
+   "text": "当你的干员弹药首次降至 30% 时，装填 20% 弹药（每场战斗前 2 次）。",
+   "template": "当你的干员弹药首次降至 30% 时，装填 20% 弹药（每场战斗前 2 次）。",
+   "params": {},
+   "trigger": {
+    "event": "ammoUsed",
+    "subject": "你的弹药干员",
+    "condition": "剩余 ≤30%，每次技能首次"
+   },
+   "target": "self",
+   "effect": "ammo +20% 上限",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "ammo-holycollar",
+   "name": "显圣吊坠",
+   "text": "当你的远程干员装填时，其攻击力 +15%，持续 5 秒。",
+   "template": "当你的远程干员装填时，其攻击力 +15%，持续 5 秒。",
+   "params": {},
+   "trigger": {
+    "event": "reloaded",
+    "subject": "你的远程干员",
+    "condition": null
+   },
+   "target": "eventTarget",
+   "effect": "buff(atk%+15, dur=5)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "ammo-carvedplate",
+   "name": "传芳雕版",
+   "text": "弹药技能期间，你的干员每次造成伤害 +1% 攻击力（最多 20 层）。",
+   "template": "弹药技能期间，你的干员每次造成伤害 +1% 攻击力（最多 20 层）。",
+   "params": {},
+   "trigger": {
+    "event": "hit（弹药技能期间）",
+    "subject": "你的弹药干员",
+    "condition": null
+   },
+   "target": "self",
+   "effect": "buff(atk%+1, stack≤20, 技能结束清空)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "ammo-thousandforms",
+   "name": "三尺万象",
+   "text": "当你的干员装填时，为其充能 2，攻击速度 +30，持续 5 秒。",
+   "template": "当你的干员装填时，为其充能 2，攻击速度 +30，持续 5 秒。",
+   "params": {},
+   "trigger": {
+    "event": "reloaded",
+    "subject": "你的干员",
+    "condition": null
+   },
+   "target": "eventTarget",
+   "effect": "sp(2); buff(aspd+30, dur=5)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "ammo-anthology",
+   "name": "《雅集》",
+   "text": "当你的干员弹药首次降至 30% 时，装填 35% 弹药（每场战斗前 3 次）。",
+   "template": "当你的干员弹药首次降至 30% 时，装填 35% 弹药（每场战斗前 3 次）。",
+   "params": {},
+   "trigger": {
+    "event": "ammoUsed",
+    "subject": "你的弹药干员",
+    "condition": "剩余 ≤30%，每次技能首次"
+   },
+   "target": "self",
+   "effect": "ammo +35% 上限，并发出 reloaded",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "ammo-fireworkhand",
+   "name": "烟花之手",
+   "text": "你的速射手、回环射手、哨戒铁卫命中时有 20% 几率对目标及相邻敌人追加 120% 物理伤害。",
+   "template": "你的速射手、回环射手、哨戒铁卫命中时有 20% 几率对目标及相邻敌人追加 120% 物理伤害。",
+   "params": {},
+   "trigger": {
+    "event": "hit",
+    "subject": "你的速射手/回环射手/哨戒铁卫",
+    "condition": null
+   },
+   "target": "enemies(目标 + adjacent4)",
+   "effect": "20% 几率 damage(scale=1.2, type=phys)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "element-voile",
+   "name": "讴歌者面纱",
+   "text": "当你引发元素爆发时，为引发的干员充能 1。",
+   "template": "当你引发元素爆发时，为引发的干员充能 1。",
+   "params": {},
+   "trigger": {
+    "event": "elementBurst",
+    "subject": "你的干员",
+    "condition": null
+   },
+   "target": "eventSource",
+   "effect": "sp(1)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "element-wotuncle",
+   "name": "沃特大叔养护套装",
+   "text": "你的远程干员受到的元素损伤 -20%。",
+   "template": "你的远程干员受到的元素损伤 -20%。",
+   "params": {},
+   "trigger": {
+    "event": "battleStart",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "allies(field, 远程)",
+   "effect": "elementGaugeTaken ×0.8",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "element-catastrophe",
+   "name": "灾难之源",
+   "text": "敌人受到的法术伤害 +8%，元素损伤 +25%。",
+   "template": "敌人受到的法术伤害 +8%，元素损伤 +25%。",
+   "params": {},
+   "trigger": {
+    "event": "battleStart（含后续出现的敌人）",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "enemies(field, all)",
+   "effect": "damageTaken(arts) ×1.08; elementGaugeTaken ×1.25",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "element-ameng",
+   "name": "“阿猛”",
+   "text": "你引发的元素爆发伤害 +30%。",
+   "template": "你引发的元素爆发伤害 +30%。",
+   "params": {},
+   "trigger": {
+    "event": "elementBurst",
+    "subject": "你的干员",
+    "condition": null
+   },
+   "target": "eventTarget",
+   "effect": "burstDamage ×1.3",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "element-riverblessing",
+   "name": "河谷祭祈",
+   "text": "你引发的元素爆发伤害 +30%；爆发后 3 秒内该敌人受到的元素损伤 +15%。",
+   "template": "你引发的元素爆发伤害 +30%；爆发后 3 秒内该敌人受到的元素损伤 +15%。",
+   "params": {},
+   "trigger": {
+    "event": "elementBurst",
+    "subject": "你的干员",
+    "condition": null
+   },
+   "target": "eventTarget",
+   "effect": "burstDamage ×1.3; buff(elementGaugeTaken ×1.15, dur=3)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "element-houndremedy",
+   "name": "猎犬病特效药",
+   "text": "当你引发元素爆发时，引发的干员攻击速度 +25，持续 5 秒，并免疫该次爆发的持续伤害。",
+   "template": "当你引发元素爆发时，引发的干员攻击速度 +25，持续 5 秒，并免疫该次爆发的持续伤害。",
+   "params": {},
+   "trigger": {
+    "event": "elementBurst",
+    "subject": "你的干员",
+    "condition": null
+   },
+   "target": "eventSource",
+   "effect": "buff(aspd+25, dur=5); suppressDotFromBurst",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "summon-minorbattle",
+   "name": "支柱-次要战场",
+   "text": "当你的辅助干员的召唤物部署时，其攻击力 +20%，持续 5 秒，并为主人充能 1。",
+   "template": "当你的辅助干员的召唤物部署时，其攻击力 +20%，持续 5 秒，并为主人充能 1。",
+   "params": {},
+   "trigger": {
+    "event": "summonSpawned（真正入场）",
+    "subject": "你的辅助干员的召唤物",
+    "condition": null
+   },
+   "target": "eventTarget；召唤物主人",
+   "effect": "buff(atk%+20, dur=5); sp(1)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "summon-ledger",
+   "name": "伥物房账簿",
+   "text": "你的召唤物与装置所需费用 -3。",
+   "template": "你的召唤物与装置所需费用 -3。",
+   "params": {},
+   "trigger": {
+    "event": "deploymentCost",
+    "subject": "你的召唤物/装置/战术道具",
+    "condition": null
+   },
+   "target": "deployingEntity",
+   "effect": "dpCost -3（最低 0）",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "summon-derivative",
+   "name": "衍生者终端-超级改",
+   "text": "你的召唤物最大生命与攻击力 +15%，攻击速度 +15。",
+   "template": "你的召唤物最大生命与攻击力 +15%，攻击速度 +15。",
+   "params": {},
+   "trigger": {
+    "event": "summonSpawned",
+    "subject": "你的召唤物",
+    "condition": null
+   },
+   "target": "eventTarget",
+   "effect": "buff(maxHp×1.15, atk%+15, aspd+15)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "summon-arcticpack",
+   "name": "极地改型包",
+   "text": "当白铁的装置或修复台部署时，为相邻干员充能 2，治疗主人 20% 攻击力。",
+   "template": "当白铁的装置或修复台部署时，为相邻干员充能 2，治疗主人 20% 攻击力。",
+   "params": {},
+   "trigger": {
+    "event": "summonSpawned（真正入场，白铁装置/工坊修复台）",
+    "subject": "白铁的装置",
+    "condition": null
+   },
+   "target": "allies(adjacent4 of 装置, all)；主人",
+   "effect": "sp(2); heal(scale=0.2×主人攻击力)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "summon-poeticrelic",
+   "name": "散轶诗简",
+   "text": "当你的召唤物首次部署时，获得 2 费用（每场战斗前 6 次）。",
+   "template": "当你的召唤物首次部署时，获得 2 费用（每场战斗前 6 次）。",
+   "params": {},
+   "trigger": {
+    "event": "summonSpawned（首次真正入场）",
+    "subject": "你的召唤物",
+    "condition": null
+   },
+   "target": "player",
+   "effect": "gainDP(2)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "summon-windfeather",
+   "name": "空羽兽",
+   "text": "你的召唤物最大生命与攻击力 +15%；有召唤物在场时，其主人攻击力 +20%。",
+   "template": "你的召唤物最大生命与攻击力 +15%；有召唤物在场时，其主人攻击力 +20%。",
+   "params": {},
+   "trigger": {
+    "event": "summonSpawned",
+    "subject": "你的召唤物",
+    "condition": null
+   },
+   "target": "eventTarget；召唤物主人",
+   "effect": "buff(maxHp×1.15, atk%+15)；owner buff(atk%+20, 1 层)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "heal-mercenarypolicy",
+   "name": "佣兵保单",
+   "text": "当你的医疗干员施放技能时，你的干员获得 10% 庇护，持续 3 秒。",
+   "template": "当你的医疗干员施放技能时，你的干员获得 10% 庇护，持续 3 秒。",
+   "params": {},
+   "trigger": {
+    "event": "skillResolved",
+    "subject": "你的医疗干员",
+    "condition": null
+   },
+   "target": "allies(field, all)",
+   "effect": "buff(shelter 10%, dur=3)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "heal-scaleshell",
+   "name": "鳞皮壳盾",
+   "text": "当你的远程干员部署时，其获得 2 层护盾（每层最大生命 6%）。",
+   "template": "当你的远程干员部署时，其获得 2 层护盾（每层最大生命 6%）。",
+   "params": {},
+   "trigger": {
+    "event": "redeploy(entryKind=deploy)",
+    "subject": "你的远程干员",
+    "condition": null
+   },
+   "target": "self",
+   "effect": "shield(layers=2, maxHpRatio=0.06)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "heal-pharmacon",
+   "name": "药枚",
+   "text": "当你部署干员时，其获得 2 层护盾（每层最大生命 8%）。",
+   "template": "当你部署干员时，其获得 2 层护盾（每层最大生命 8%）。",
+   "params": {},
+   "trigger": {
+    "event": "redeploy(entryKind=deploy)",
+    "subject": "你的干员",
+    "condition": null
+   },
+   "target": "self",
+   "effect": "shield(layers=2, maxHpRatio=0.08)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "heal-sanctuary",
+   "name": "“庇护”",
+   "text": "当你的高台干员部署时，其获得最大生命 25% 的护盾。",
+   "template": "当你的高台干员部署时，其获得最大生命 25% 的护盾。",
+   "params": {},
+   "trigger": {
+    "event": "redeploy(entryKind=deploy)",
+    "subject": "你的高台干员",
+    "condition": null
+   },
+   "target": "self",
+   "effect": "shield(maxHpRatio=0.25)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "heal-lakeshield",
+   "name": "湖中神盾",
+   "text": "每场战斗开始时，若有干员拥有护盾，你的干员最大生命 +20%，并获得最大生命 8% 的护盾。",
+   "template": "每场战斗开始时，若有干员拥有护盾，你的干员最大生命 +20%，并获得最大生命 8% 的护盾。",
+   "params": {},
+   "trigger": {
+    "event": "battleStart",
+    "subject": "玩家",
+    "condition": "任一友军有护盾"
+   },
+   "target": "allies(field, all)",
+   "effect": "maxHp ×1.2; shield(maxHpRatio=0.08)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "heal-kingform",
+   "name": "王命凡形",
+   "text": "每场战斗开始时，你的干员失去 40% 最大生命，获得原最大生命 60% 的护盾。",
+   "template": "每场战斗开始时，你的干员失去 40% 最大生命，获得原最大生命 60% 的护盾。",
+   "params": {},
+   "trigger": {
+    "event": "battleStart",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "allies(field, all)",
+   "effect": "maxHp ×0.6; shield(原 maxHp×0.6)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "block-wallchild",
+   "name": "城墙之子",
+   "text": "部署在蓝色目标点周围的干员阻挡数 +1，最大生命 +20%。",
+   "template": "部署在蓝色目标点周围的干员阻挡数 +1，最大生命 +20%。",
+   "params": {},
+   "trigger": {
+    "event": "redeploy(entryKind=deploy)",
+    "subject": "你的干员",
+    "condition": "部署在蓝色目标点周围八格"
+   },
+   "target": "self",
+   "effect": "blockCnt+1; maxHp ×1.2",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "block-pickflower",
+   "name": "“摘花”",
+   "text": "你的近战干员所需费用 +3，阻挡数 +1，防御力 +25%。",
+   "template": "你的近战干员所需费用 +3，阻挡数 +1，防御力 +25%。",
+   "params": {},
+   "trigger": {
+    "event": "deploymentCost；deploy",
+    "subject": "你的近战干员",
+    "condition": null
+   },
+   "target": "self",
+   "effect": "dpCost +3; blockCnt+1; def ×1.25",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "block-unyielding",
+   "name": "折戟-一夫当关",
+   "text": "你的近卫干员阻挡数 +1；阻挡至少 2 名敌人时受到伤害 -20%。",
+   "template": "你的近卫干员阻挡数 +1；阻挡至少 2 名敌人时受到伤害 -20%。",
+   "params": {},
+   "trigger": {
+    "event": "deploy；damageTaken",
+    "subject": "你的近卫干员",
+    "condition": "阻挡 ≥2"
+   },
+   "target": "self",
+   "effect": "blockCnt+1; damageTaken ×0.8",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "block-tempfortress",
+   "name": "铁卫-临时要塞",
+   "text": "你的重装干员部署后 6 秒内攻防 +40%、阻挡数 +1；阻挡至少 2 名敌人时受伤充能 0.25。",
+   "template": "你的重装干员部署后 6 秒内攻防 +40%、阻挡数 +1；阻挡至少 2 名敌人时受伤充能 0.25。",
+   "params": {},
+   "trigger": {
+    "event": "redeploy(entryKind=deploy)；damageTaken",
+    "subject": "你的重装干员",
+    "condition": "阻挡 ≥2"
+   },
+   "target": "self",
+   "effect": "buff(atk%+40, def×1.4, blockCnt+1, dur=6); sp(0.25)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "block-spikehand",
+   "name": "尖刺之手",
+   "text": "你的铁卫、驭法铁卫、决战者每秒对其阻挡的敌人造成 50% 防御力的法术伤害。",
+   "template": "你的铁卫、驭法铁卫、决战者每秒对其阻挡的敌人造成 50% 防御力的法术伤害。",
+   "params": {},
+   "trigger": {
+    "event": "onTimer(1s)",
+    "subject": "你的铁卫/驭法铁卫/决战者",
+    "condition": null
+   },
+   "target": "被其阻挡的敌人(all)",
+   "effect": "damage(amount=0.5×防御力, type=arts)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "block-loyalty",
+   "name": "“忠义”",
+   "text": "你的干员阻挡至少 3 名敌人时，每秒治疗 150。",
+   "template": "你的干员阻挡至少 3 名敌人时，每秒治疗 150。",
+   "params": {},
+   "trigger": {
+    "event": "onTimer(1s)",
+    "subject": "你的干员",
+    "condition": "阻挡 ≥3"
+   },
+   "target": "self",
+   "effect": "heal(amount=150)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "pierce-newedict",
+   "name": "残弩-新典训",
+   "text": "当你的狙击干员部署时，其下一次伤害无视 30% 防御。",
+   "template": "当你的狙击干员部署时，其下一次伤害无视 30% 防御。",
+   "params": {},
+   "trigger": {
+    "event": "redeploy(entryKind=deploy)",
+    "subject": "你的狙击干员",
+    "condition": null
+   },
+   "target": "self",
+   "effect": "buff(defIgnore 30%, 下一次伤害消耗)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "pierce-altar",
+   "name": "圆石祭坛",
+   "text": "每场战斗胜利后，你的干员本局游戏内 +2% 攻击力与防御力（最多 10 层）。",
+   "template": "每场战斗胜利后，你的干员本局游戏内 +2% 攻击力与防御力（最多 10 层）。",
+   "params": {},
+   "trigger": {
+    "event": "battleEnd(victory)",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "allies(全部持有干员)",
+   "effect": "persistGrowth(atk%+2, def%+2)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "pierce-rendhand",
+   "name": "撕扯之手",
+   "text": "你的无畏者、剑豪、教官造成的伤害无视 35% 防御。",
+   "template": "你的无畏者、剑豪、教官造成的伤害无视 35% 防御。",
+   "params": {},
+   "trigger": {
+    "event": "hit",
+    "subject": "你的无畏者/剑豪/教官",
+    "condition": null
+   },
+   "target": "eventTarget",
+   "effect": "defIgnore 35%",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "pierce-rockhand",
+   "name": "裂岩之手",
+   "text": "你的收割者、武者、斗士伤害无视 35% 防御，击倒敌人时治疗最大生命 1.5%。",
+   "template": "你的收割者、武者、斗士伤害无视 35% 防御，击倒敌人时治疗最大生命 1.5%。",
+   "params": {},
+   "trigger": {
+    "event": "hit；kill",
+    "subject": "你的收割者/武者/斗士",
+    "condition": null
+   },
+   "target": "eventTarget；self",
+   "effect": "defIgnore 35%; heal(maxHpRatio=0.015)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "pierce-hunterinsight",
+   "name": "猎人的洞察",
+   "text": "你的干员造成的伤害无视 25% 防御与法抗，并使目标停顿 0.3 秒。",
+   "template": "你的干员造成的伤害无视 25% 防御与法抗，并使目标停顿 0.3 秒。",
+   "params": {},
+   "trigger": {
+    "event": "hit",
+    "subject": "你的干员",
+    "condition": null
+   },
+   "target": "eventTarget",
+   "effect": "defIgnore 25%; resIgnore 25%; applyStatus(pause, 0.3)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "pierce-breederseed",
+   "name": "养育者基因种",
+   "text": "你的干员无视 15% 防御与法抗，并获得 10% 庇护。",
+   "template": "你的干员无视 15% 防御与法抗，并获得 10% 庇护。",
+   "params": {},
+   "trigger": {
+    "event": "battleStart",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "allies(field, all)",
+   "effect": "buff(defIgnore 15%, resIgnore 15%, shelter 10%, dur=battle)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "cycle-oldcoin",
+   "name": "古高卢银币",
+   "text": "每场战斗开始时，为你的干员充能 3。",
+   "template": "每场战斗开始时，为你的干员充能 3。",
+   "params": {},
+   "trigger": {
+    "event": "battleStart",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "allies(field, all)",
+   "effect": "sp(3)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "cycle-elysee",
+   "name": "爱丽舍钱袋",
+   "text": "每场战斗开始时，为你的干员充能 5。",
+   "template": "每场战斗开始时，为你的干员充能 5。",
+   "params": {},
+   "trigger": {
+    "event": "battleStart",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "allies(field, all)",
+   "effect": "sp(5)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "cycle-ecaz",
+   "name": "衣卡兹",
+   "text": "当你的干员首次施放技能时，为其充能 8。",
+   "template": "当你的干员首次施放技能时，为其充能 8。",
+   "params": {},
+   "trigger": {
+    "event": "skillResolved（每名干员首次）",
+    "subject": "你的干员",
+    "condition": null
+   },
+   "target": "eventSource",
+   "effect": "sp(8)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "cycle-fortunecookie",
+   "name": "幸运饼干",
+   "text": "每场战斗开始时，加速随机 2 名干员，持续 15 秒。",
+   "template": "每场战斗开始时，加速随机 2 名干员，持续 15 秒。",
+   "params": {},
+   "trigger": {
+    "event": "battleStart",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "allies(field, random 2, 存档随机源)",
+   "effect": "haste(dur=15)",
+   "changeKind": "rewire",
+   "engineChange": "整场每秒 +0.25 技力（等同本局游戏内加速）改为开战加速 15 秒；保留存档随机源选人"
+  },
+  {
+   "id": "cycle-everflow",
+   "name": "永流之手",
+   "text": "当你的中坚术师、秘术师、召唤师施放技能时，加速该干员，持续 4 秒。",
+   "template": "当你的中坚术师、秘术师、召唤师施放技能时，加速该干员，持续 4 秒。",
+   "params": {},
+   "trigger": {
+    "event": "skillResolved",
+    "subject": "你的中坚术师/秘术师/召唤师",
+    "condition": null
+   },
+   "target": "eventSource",
+   "effect": "haste(dur=4)",
+   "changeKind": "rewire",
+   "engineChange": "每次施放叠一层每秒 +0.15 技力（最多 4 层，整场有效）改为每次施放加速 4 秒"
+  },
+  {
+   "id": "cycle-royalliqueur",
+   "name": "皇家利口酒",
+   "text": "当你的干员攻击或受到攻击时，为其充能 0.2（每场战斗前 25 次）。",
+   "template": "当你的干员攻击或受到攻击时，为其充能 0.2（每场战斗前 25 次）。",
+   "params": {},
+   "trigger": {
+    "event": "attack；damageTaken(攻击)",
+    "subject": "你的干员",
+    "condition": null
+   },
+   "target": "eventSource / eventTarget",
+   "effect": "sp(0.2)",
+   "changeKind": "rewire",
+   "engineChange": "由「原技能为攻击/受击回复者每 1.5 秒充能 0.5」改为攻击/受击事件充能，每名干员每场 25 次"
+  },
+  {
+   "id": "econ-oldcoins",
+   "name": "古旧钱币",
+   "text": "当你获得此收藏品时，获得 6 金币。",
+   "template": "当你获得此收藏品时，获得 6 金币。",
+   "params": {},
+   "trigger": {
+    "event": "acquire",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "player",
+   "effect": "gold +6（每局一次）",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "econ-scrapmedal",
+   "name": "维多利亚“废铁”勋章",
+   "text": "战斗胜利获得的科技经验 +10%。",
+   "template": "战斗胜利获得的科技经验 +10%。",
+   "params": {},
+   "trigger": {
+    "event": "battleEnd(victory)",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "player",
+   "effect": "battleXp ×1.1",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "econ-friendship",
+   "name": "友谊之证",
+   "text": "战斗胜利获得的金币 +15%。",
+   "template": "战斗胜利获得的金币 +15%。",
+   "params": {},
+   "trigger": {
+    "event": "battleEnd(victory)",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "player",
+   "effect": "battleGold ×1.15",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "econ-leithmedal",
+   "name": "莱塔尼亚荣誉勋章",
+   "text": "战斗胜利获得的科技经验 +15%。",
+   "template": "战斗胜利获得的科技经验 +15%。",
+   "params": {},
+   "trigger": {
+    "event": "battleEnd(victory)",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "player",
+   "effect": "battleXp ×1.15",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "econ-rings",
+   "name": "至宝指环",
+   "text": "战斗胜利获得的金币 +25%。",
+   "template": "战斗胜利获得的金币 +25%。",
+   "params": {},
+   "trigger": {
+    "event": "battleEnd(victory)",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "player",
+   "effect": "battleGold ×1.25",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "econ-flawlessjade",
+   "name": "无瑕宝玉",
+   "text": "当你获得此收藏品时，获得 15 金币。",
+   "template": "当你获得此收藏品时，获得 15 金币。",
+   "params": {},
+   "trigger": {
+    "event": "acquire",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "player",
+   "effect": "gold +15（每局一次）",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "cross-bundle",
+   "name": "束伥索",
+   "text": "你的召唤物所需费用 -2，攻击力 +15%，攻击间隔 -15%。",
+   "template": "你的召唤物所需费用 -2，攻击力 +15%，攻击间隔 -15%。",
+   "params": {},
+   "trigger": {
+    "event": "deploymentCost；summonSpawned",
+    "subject": "你的召唤物",
+    "condition": null
+   },
+   "target": "deployingEntity",
+   "effect": "dpCost -2; atk%+15; attackInterval ×0.85",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "cross-chivalry",
+   "name": "骑士戒律·新编",
+   "text": "每持有 5 金币，你的干员攻击速度 +2（最多 +12）。",
+   "template": "每持有 5 金币，你的干员攻击速度 +2（最多 +12）。",
+   "params": {},
+   "trigger": {
+    "event": "hourStarted（每时段重算）",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "allies(全部)",
+   "effect": "buff(aspd +2/5 金币, 上限 30 金币)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "cross-artinstall",
+   "name": "立体艺术装置",
+   "text": "获得时 +3 行动生命；每场战斗结束后 +1 行动生命（不超过上限）。",
+   "template": "获得时 +3 行动生命；每场战斗结束后 +1 行动生命（不超过上限）。",
+   "params": {},
+   "trigger": {
+    "event": "acquire；battleEnd",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "player",
+   "effect": "runHp +3（一次）; runHp +1",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "cross-cloverfossil",
+   "name": "四叶草化石",
+   "text": "战斗胜利的收藏品奖励多 1 个候选。",
+   "template": "战斗胜利的收藏品奖励多 1 个候选。",
+   "params": {},
+   "trigger": {
+    "event": "battleEnd(victory, 收藏品奖励)",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "player",
+   "effect": "collectibleChoice +1",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "cross-icefire",
+   "name": "冰中火",
+   "text": "敌人受到的元素损伤与元素爆发伤害 +25%。",
+   "template": "敌人受到的元素损伤与元素爆发伤害 +25%。",
+   "params": {},
+   "trigger": {
+    "event": "battleStart（含后续出现的敌人）",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "enemies(field, all)",
+   "effect": "elementGaugeTaken ×1.25; burstDamage ×1.25",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "cross-lancepro",
+   "name": "骑士长枪专业版",
+   "text": "每场战斗胜利额外获得 1 金币；商店刷新价格 -1（最低 1 金币）。",
+   "template": "每场战斗胜利额外获得 1 金币；商店刷新价格 -1（最低 1 金币）。",
+   "params": {},
+   "trigger": {
+    "event": "battleEnd(victory)；shop refresh",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "player",
+   "effect": "gold +1; refreshCost -1(min 1)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "cross-houndcoffee",
+   "name": "猎犬咖啡",
+   "text": "你的干员最大生命与攻击力 +15%；首批敌人中随机 1 名最大生命 +50%。",
+   "template": "你的干员最大生命与攻击力 +15%；首批敌人中随机 1 名最大生命 +50%。",
+   "params": {},
+   "trigger": {
+    "event": "battleStart",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "allies(field, all)；enemies(random 1)",
+   "effect": "maxHp ×1.15, atk%+15；enemy maxHp ×1.5",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "cross-everlight",
+   "name": "长明灯引",
+   "text": "你首个部署的地面干员攻击力 +20%，获得抵抗，受到的元素损伤 -25%。",
+   "template": "你首个部署的地面干员攻击力 +20%，获得抵抗，受到的元素损伤 -25%。",
+   "params": {},
+   "trigger": {
+    "event": "redeploy(entryKind=deploy, 首个地面)",
+    "subject": "你的地面干员",
+    "condition": null
+   },
+   "target": "self",
+   "effect": "buff(atk%+20, statusResist, elementGaugeTaken ×0.75, 至退场)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "cross-shadow",
+   "name": "商影",
+   "text": "开战时待部署区最右侧干员阻挡 +1、防御与生命 +20%，部署后获得所需费用的 25%。",
+   "template": "开战时待部署区最右侧干员阻挡 +1、防御与生命 +20%，部署后获得所需费用的 25%。",
+   "params": {},
+   "trigger": {
+    "event": "battleStart；redeploy(entryKind=deploy)",
+    "subject": "玩家",
+    "condition": null
+   },
+   "target": "待部署区最右侧干员",
+   "effect": "blockCnt+1; def×1.2; maxHp×1.2; 部署后 gainDP(实付×0.25)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "leader-svash2-frostsigil",
+   "name": "凛御银灰的霜迹徽记",
+   "text": "每场战斗首个部署的干员再部署等待 -30%，攻击时施加 1 秒寒冷。",
+   "template": "每场战斗首个部署的干员再部署等待 -30%，攻击时施加 1 秒寒冷。",
+   "params": {},
+   "trigger": {
+    "event": "redeploy(entryKind=deploy, 首个)",
+    "subject": "你的干员",
+    "condition": null
+   },
+   "target": "self",
+   "effect": "redeployCooldown ×0.7; onAttack applyStatus(cold, 1)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "leader-ironmn-workshopkey",
+   "name": "白铁的工坊钥匙",
+   "text": "开战时免费放置修复台：每 2.5 秒造成 150% 物理伤害，每 5 秒治疗相邻干员 500。",
+   "template": "开战时免费放置修复台：每 2.5 秒造成 150% 物理伤害，每 5 秒治疗相邻干员 500。",
+   "params": {},
+   "trigger": {
+    "event": "battleStart",
+    "subject": "白铁（在编队）",
+    "condition": null
+   },
+   "target": "修复台；enemies(range)；allies(adjacent4)",
+   "effect": "grantSummon(assault_workshop_platform); damage(1.5×白铁攻击力); heal(amount=500)",
+   "changeKind": "text",
+   "engineChange": null
+  },
+  {
+   "id": "leader-angel2-oldmagazine",
+   "name": "新约能天使的旧弹匣",
+   "text": "每场战斗开始时，新约能天使获得 6 发额外弹药，命中时消耗 1 发追加 40% 物理伤害。",
+   "template": "每场战斗开始时，新约能天使获得 6 发额外弹药，命中时消耗 1 发追加 40% 物理伤害。",
+   "params": {},
+   "trigger": {
+    "event": "battleStart；hit",
+    "subject": "新约能天使",
+    "condition": null
+   },
+   "target": "self；eventTarget",
+   "effect": "ammo +6; 命中消耗 1 发 damage(scale=0.4, type=phys)",
+   "changeKind": "text",
+   "engineChange": null
+  }
+ ]
+}

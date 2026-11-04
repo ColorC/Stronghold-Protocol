@@ -1,0 +1,558 @@
+{
+  "schema": "assault-native-model-evidence/v1",
+  "verifiedAt": "2026-10-09T02:15:47.927043+00:00",
+  "sourceVersion": "26-09-22-07-47-20_6c71fa",
+  "nativeIndexGitCommit": "404cf368572a4f346f66614612c40fd7779012b5",
+  "bundleDirectory": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/assetbundles/26-09-22-07-47-20_6c71fa",
+  "operators": [
+    {
+      "characterId": "char_1012_skadi2",
+      "source": {
+        "path": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/assetbundles/26-09-22-07-47-20_6c71fa/chararts_char_1012_skadi2.dat",
+        "url": "https://ak.hycdn.cn/assetbundle/official/Android/assets/26-09-22-07-47-20_6c71fa/chararts_char_1012_skadi2.dat",
+        "bytes": 3873965,
+        "zipMember": "chararts/char_1012_skadi2.ab",
+        "nativeMemberBytes": 4449237
+      },
+      "containerPath": "dyn/battle/prefabs/skins/character/char_1012_skadi2/defaultskin.prefab",
+      "rootGameObjectPathId": "4512962532026002166",
+      "hierarchy": [
+        "DefaultSkin",
+        "DefaultSkin/FaceSwitcher",
+        "DefaultSkin/FaceSwitcher/HeadPoint",
+        "DefaultSkin/FaceSwitcher/HitPoint",
+        "DefaultSkin/FaceSwitcher/Spine",
+        "DefaultSkin/FaceSwitcher/Spine/SpecialPoint0",
+        "DefaultSkin/FaceSwitcher/Spine/SpecialPoint1"
+      ],
+      "animator": {
+        "pathId": "-7614107427555923210",
+        "script": {
+          "pointer": {
+            "fileId": 1,
+            "pathId": "6360585277869116281"
+          },
+          "serializedFile": "CAB-658d74aab777086fc32b93f385be999a",
+          "className": "SingleSpineAnimator",
+          "namespace": "Torappu.Battle",
+          "assembly": "Assembly-CSharp.dll"
+        },
+        "skeletonPointer": {
+          "fileId": 0,
+          "pathId": "-2040545106773759242"
+        },
+        "faceSwitcherPointer": {
+          "fileId": 0,
+          "pathId": "0"
+        }
+      },
+      "faceSwitcher": {
+        "pathId": "4583612378340567798",
+        "goPath": "DefaultSkin/FaceSwitcher",
+        "script": {
+          "pointer": {
+            "fileId": 1,
+            "pathId": "-8154061065964361586"
+          },
+          "serializedFile": "CAB-658d74aab777086fc32b93f385be999a",
+          "className": "FaceSwitcher",
+          "namespace": "Torappu.Battle",
+          "assembly": "Assembly-CSharp.dll"
+        },
+        "switchTime": 0.15000000596046448,
+        "defaultLOrR": 3
+      },
+      "skeletonAnimationCount": 1,
+      "nativeSingleSpine": true,
+      "directionModelSharing": "native-single-spine",
+      "chain": {
+        "rendererPathId": "-2040545106773759242",
+        "goPath": "DefaultSkin/FaceSwitcher/Spine",
+        "rendererScript": {
+          "pointer": {
+            "fileId": 1,
+            "pathId": "175525945580115722"
+          },
+          "serializedFile": "CAB-658d74aab777086fc32b93f385be999a",
+          "className": "SkeletonAnimation",
+          "namespace": "Spine.Unity",
+          "assembly": "spine-unity.dll"
+        },
+        "skeletonDataPathId": "3029177629447104315",
+        "skeleton": {
+          "pathId": "-616070740437220603",
+          "name": "char_1012_skadi2.skel",
+          "bytes": 1397714
+        },
+        "atlasAssetPathId": "-8085729164833059311",
+        "atlas": {
+          "pathId": "-3770965256318535916",
+          "name": "char_1012_skadi2.atlas",
+          "bytes": 17856,
+          "page": "char_1012_skadi2.png"
+        },
+        "material": {
+          "pathId": "-6002024034688354604",
+          "name": "char_1012_skadi2_Material",
+          "useAlphaTex": 1,
+          "useBleed": 0
+        },
+        "mainTexture": {
+          "pathId": "-2732472851961315983",
+          "name": "char_1012_skadi2",
+          "width": 512,
+          "height": 512,
+          "format": 34,
+          "stream": {
+            "offset": 524288,
+            "size": 131072,
+            "path": "archive:/CAB-e53da307758ef62010dda81c52dc69dd/CAB-e53da307758ef62010dda81c52dc69dd.resS"
+          }
+        },
+        "alphaTexture": {
+          "pathId": "3124728008467313211",
+          "name": "char_1012_skadi2[alpha]",
+          "width": 512,
+          "height": 512,
+          "format": 34,
+          "stream": {
+            "offset": 6363808,
+            "size": 131072,
+            "path": "archive:/CAB-e53da307758ef62010dda81c52dc69dd/CAB-e53da307758ef62010dda81c52dc69dd.resS"
+          }
+        }
+      }
+    },
+    {
+      "characterId": "char_291_aglina",
+      "source": {
+        "path": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/assetbundles/26-09-22-07-47-20_6c71fa/chararts_char_291_aglina.dat",
+        "url": "https://ak.hycdn.cn/assetbundle/official/Android/assets/26-09-22-07-47-20_6c71fa/chararts_char_291_aglina.dat",
+        "bytes": 1541068,
+        "zipMember": "chararts/char_291_aglina.ab",
+        "nativeMemberBytes": 1775484
+      },
+      "containerPath": "dyn/battle/prefabs/skins/character/char_291_aglina/defaultskin.prefab",
+      "rootGameObjectPathId": "7744822654660596820",
+      "hierarchy": [
+        "DefaultSkin",
+        "DefaultSkin/FaceSwitcher",
+        "DefaultSkin/FaceSwitcher/Front",
+        "DefaultSkin/FaceSwitcher/Front/MuzzlePoint",
+        "DefaultSkin/FaceSwitcher/Front/SpecialPoint0",
+        "DefaultSkin/FaceSwitcher/HeadPoint",
+        "DefaultSkin/FaceSwitcher/HitPoint"
+      ],
+      "animator": {
+        "pathId": "-7079845475485330348",
+        "script": {
+          "pointer": {
+            "fileId": 1,
+            "pathId": "6360585277869116281"
+          },
+          "serializedFile": "CAB-658d74aab777086fc32b93f385be999a",
+          "className": "SingleSpineAnimator",
+          "namespace": "Torappu.Battle",
+          "assembly": "Assembly-CSharp.dll"
+        },
+        "skeletonPointer": {
+          "fileId": 0,
+          "pathId": "8733284887641674836"
+        },
+        "faceSwitcherPointer": {
+          "fileId": 0,
+          "pathId": "-5034219865241332652"
+        }
+      },
+      "faceSwitcher": {
+        "pathId": "-5034219865241332652",
+        "goPath": "DefaultSkin/FaceSwitcher",
+        "script": {
+          "pointer": {
+            "fileId": 1,
+            "pathId": "-8154061065964361586"
+          },
+          "serializedFile": "CAB-658d74aab777086fc32b93f385be999a",
+          "className": "FaceSwitcher",
+          "namespace": "Torappu.Battle",
+          "assembly": "Assembly-CSharp.dll"
+        },
+        "switchTime": 0.15000000596046448,
+        "defaultLOrR": 3
+      },
+      "skeletonAnimationCount": 1,
+      "nativeSingleSpine": true,
+      "directionModelSharing": "native-single-spine",
+      "chain": {
+        "rendererPathId": "8733284887641674836",
+        "goPath": "DefaultSkin/FaceSwitcher/Front",
+        "rendererScript": {
+          "pointer": {
+            "fileId": 1,
+            "pathId": "175525945580115722"
+          },
+          "serializedFile": "CAB-658d74aab777086fc32b93f385be999a",
+          "className": "SkeletonAnimation",
+          "namespace": "Spine.Unity",
+          "assembly": "spine-unity.dll"
+        },
+        "skeletonDataPathId": "2487774365004373499",
+        "skeleton": {
+          "pathId": "-5682991485742054914",
+          "name": "char_291_aglina.skel",
+          "bytes": 238973
+        },
+        "atlasAssetPathId": "6784480013559830554",
+        "atlas": {
+          "pathId": "7559082714057508132",
+          "name": "char_291_aglina.atlas",
+          "bytes": 7663,
+          "page": "char_291_aglina.png"
+        },
+        "material": {
+          "pathId": "3269860266280462410",
+          "name": "char_291_aglina_Material",
+          "useAlphaTex": 1,
+          "useBleed": 0
+        },
+        "mainTexture": {
+          "pathId": "-5456462649946526306",
+          "name": "char_291_aglina",
+          "width": 512,
+          "height": 512,
+          "format": 34,
+          "stream": {
+            "offset": 131072,
+            "size": 131072,
+            "path": "archive:/CAB-b6f0f4ce38bef2fb939a332961469bde/CAB-b6f0f4ce38bef2fb939a332961469bde.resS"
+          }
+        },
+        "alphaTexture": {
+          "pathId": "-6653811009475102338",
+          "name": "char_291_aglina[alpha]",
+          "width": 512,
+          "height": 512,
+          "format": 34,
+          "stream": {
+            "offset": 0,
+            "size": 131072,
+            "path": "archive:/CAB-b6f0f4ce38bef2fb939a332961469bde/CAB-b6f0f4ce38bef2fb939a332961469bde.resS"
+          }
+        }
+      }
+    },
+    {
+      "characterId": "char_4045_heidi",
+      "source": {
+        "path": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/assetbundles/26-09-22-07-47-20_6c71fa/chararts_char_4045_heidi.dat",
+        "url": "https://ak.hycdn.cn/assetbundle/official/Android/assets/26-09-22-07-47-20_6c71fa/chararts_char_4045_heidi.dat",
+        "bytes": 1950183,
+        "zipMember": "chararts/char_4045_heidi.ab",
+        "nativeMemberBytes": 2337540
+      },
+      "containerPath": "dyn/battle/prefabs/skins/character/char_4045_heidi/defaultskin.prefab",
+      "rootGameObjectPathId": "3247092373996810650",
+      "hierarchy": [
+        "DefaultSkin",
+        "DefaultSkin/FaceSwitcher",
+        "DefaultSkin/FaceSwitcher/Front",
+        "DefaultSkin/FaceSwitcher/Front/SpecialPoint0",
+        "DefaultSkin/FaceSwitcher/HeadPoint",
+        "DefaultSkin/FaceSwitcher/HitPoint"
+      ],
+      "animator": {
+        "pathId": "-3753488708146712166",
+        "script": {
+          "pointer": {
+            "fileId": 1,
+            "pathId": "6360585277869116281"
+          },
+          "serializedFile": "CAB-658d74aab777086fc32b93f385be999a",
+          "className": "SingleSpineAnimator",
+          "namespace": "Torappu.Battle",
+          "assembly": "Assembly-CSharp.dll"
+        },
+        "skeletonPointer": {
+          "fileId": 0,
+          "pathId": "-894682026849029734"
+        },
+        "faceSwitcherPointer": {
+          "fileId": 0,
+          "pathId": "1186744384827994522"
+        }
+      },
+      "faceSwitcher": {
+        "pathId": "1186744384827994522",
+        "goPath": "DefaultSkin/FaceSwitcher",
+        "script": {
+          "pointer": {
+            "fileId": 1,
+            "pathId": "-8154061065964361586"
+          },
+          "serializedFile": "CAB-658d74aab777086fc32b93f385be999a",
+          "className": "FaceSwitcher",
+          "namespace": "Torappu.Battle",
+          "assembly": "Assembly-CSharp.dll"
+        },
+        "switchTime": 0.15000000596046448,
+        "defaultLOrR": 3
+      },
+      "skeletonAnimationCount": 1,
+      "nativeSingleSpine": true,
+      "directionModelSharing": "native-single-spine",
+      "chain": {
+        "rendererPathId": "-894682026849029734",
+        "goPath": "DefaultSkin/FaceSwitcher/Front",
+        "rendererScript": {
+          "pointer": {
+            "fileId": 1,
+            "pathId": "175525945580115722"
+          },
+          "serializedFile": "CAB-658d74aab777086fc32b93f385be999a",
+          "className": "SkeletonAnimation",
+          "namespace": "Spine.Unity",
+          "assembly": "spine-unity.dll"
+        },
+        "skeletonDataPathId": "-112101429125904982",
+        "skeleton": {
+          "pathId": "-5797763487048795231",
+          "name": "char_4045_heidi.skel",
+          "bytes": 707492
+        },
+        "atlasAssetPathId": "5202455507653482652",
+        "atlas": {
+          "pathId": "-8012008994985211988",
+          "name": "char_4045_heidi.atlas",
+          "bytes": 16482,
+          "page": "char_4045_heidi.png"
+        },
+        "material": {
+          "pathId": "4832981631037811380",
+          "name": "char_4045_heidi_Material",
+          "useAlphaTex": 1,
+          "useBleed": 0
+        },
+        "mainTexture": {
+          "pathId": "8895278826373687792",
+          "name": "char_4045_heidi",
+          "width": 512,
+          "height": 512,
+          "format": 34,
+          "stream": {
+            "offset": 7558720,
+            "size": 131072,
+            "path": "archive:/CAB-8bda97134d13e856fc2fffb04c925e69/CAB-8bda97134d13e856fc2fffb04c925e69.resS"
+          }
+        },
+        "alphaTexture": {
+          "pathId": "-959505774246077900",
+          "name": "char_4045_heidi[alpha]",
+          "width": 512,
+          "height": 512,
+          "format": 34,
+          "stream": {
+            "offset": 5330496,
+            "size": 131072,
+            "path": "archive:/CAB-8bda97134d13e856fc2fffb04c925e69/CAB-8bda97134d13e856fc2fffb04c925e69.resS"
+          }
+        }
+      }
+    },
+    {
+      "characterId": "char_4134_cetsyr",
+      "source": {
+        "path": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/assetbundles/26-09-22-07-47-20_6c71fa/chararts_char_4134_cetsyr.dat",
+        "url": "https://ak.hycdn.cn/assetbundle/official/Android/assets/26-09-22-07-47-20_6c71fa/chararts_char_4134_cetsyr.dat",
+        "bytes": 2602521,
+        "zipMember": "chararts/char_4134_cetsyr.ab",
+        "nativeMemberBytes": 2844776
+      },
+      "containerPath": "dyn/battle/prefabs/skins/character/char_4134_cetsyr/defaultskin.prefab",
+      "rootGameObjectPathId": "-3267883007806064974",
+      "hierarchy": [
+        "DefaultSkin",
+        "DefaultSkin/FaceSwitcher",
+        "DefaultSkin/FaceSwitcher/Front",
+        "DefaultSkin/FaceSwitcher/HeadPoint",
+        "DefaultSkin/FaceSwitcher/HitPoint"
+      ],
+      "animator": {
+        "pathId": "2976034210316170930",
+        "script": {
+          "pointer": {
+            "fileId": 1,
+            "pathId": "6360585277869116281"
+          },
+          "serializedFile": "CAB-658d74aab777086fc32b93f385be999a",
+          "className": "SingleSpineAnimator",
+          "namespace": "Torappu.Battle",
+          "assembly": "Assembly-CSharp.dll"
+        },
+        "skeletonPointer": {
+          "fileId": 0,
+          "pathId": "-7660042171554580814"
+        },
+        "faceSwitcherPointer": {
+          "fileId": 0,
+          "pathId": "2651262855302035122"
+        }
+      },
+      "faceSwitcher": {
+        "pathId": "2651262855302035122",
+        "goPath": "DefaultSkin/FaceSwitcher",
+        "script": {
+          "pointer": {
+            "fileId": 1,
+            "pathId": "-8154061065964361586"
+          },
+          "serializedFile": "CAB-658d74aab777086fc32b93f385be999a",
+          "className": "FaceSwitcher",
+          "namespace": "Torappu.Battle",
+          "assembly": "Assembly-CSharp.dll"
+        },
+        "switchTime": 0.15000000596046448,
+        "defaultLOrR": 3
+      },
+      "skeletonAnimationCount": 1,
+      "nativeSingleSpine": true,
+      "directionModelSharing": "native-single-spine",
+      "chain": {
+        "rendererPathId": "-7660042171554580814",
+        "goPath": "DefaultSkin/FaceSwitcher/Front",
+        "rendererScript": {
+          "pointer": {
+            "fileId": 1,
+            "pathId": "175525945580115722"
+          },
+          "serializedFile": "CAB-658d74aab777086fc32b93f385be999a",
+          "className": "SkeletonAnimation",
+          "namespace": "Spine.Unity",
+          "assembly": "spine-unity.dll"
+        },
+        "skeletonDataPathId": "-1170418846027482249",
+        "skeleton": {
+          "pathId": "-9064517397430232610",
+          "name": "char_4134_cetsyr.skel",
+          "bytes": 619141
+        },
+        "atlasAssetPathId": "-2318689635908570032",
+        "atlas": {
+          "pathId": "5579346289035956455",
+          "name": "char_4134_cetsyr.atlas",
+          "bytes": 17910,
+          "page": "char_4134_cetsyr.png"
+        },
+        "material": {
+          "pathId": "6025963436035109941",
+          "name": "char_4134_cetsyr_Material",
+          "useAlphaTex": 0,
+          "useBleed": 1
+        },
+        "mainTexture": {
+          "pathId": "4014667109789587654",
+          "name": "char_4134_cetsyr",
+          "width": 500,
+          "height": 500,
+          "format": 50,
+          "stream": {
+            "offset": 2917264,
+            "size": 112896,
+            "path": "archive:/CAB-6e8586f87b9a6cf984c15b273278e535/CAB-6e8586f87b9a6cf984c15b273278e535.resS"
+          }
+        },
+        "alphaTexture": null
+      }
+    }
+  ],
+  "errors": [],
+  "scriptSource": {
+    "path": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/assetbundles/26-09-22-07-47-20_6c71fa/anon_b1571a1194a50f0abd5da9a91d24f6d6.dat",
+    "url": "https://ak.hycdn.cn/assetbundle/official/Android/assets/26-09-22-07-47-20_6c71fa/anon_b1571a1194a50f0abd5da9a91d24f6d6.dat",
+    "bytes": 391328,
+    "zipMember": "anon/b1571a1194a50f0abd5da9a91d24f6d6.bin",
+    "nativeMemberBytes": 464796
+  },
+  "cathy": {
+    "characterId": "token_10041_cathy_catsld",
+    "source": {
+      "path": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/arknights/assetbundles/26-09-22-07-47-20_6c71fa/pkgrps_btl_pfb_tokens_0.dat",
+      "url": "https://ak.hycdn.cn/assetbundle/official/Android/assets/26-09-22-07-47-20_6c71fa/pkgrps_btl_pfb_tokens_0.dat",
+      "bytes": 4113000,
+      "zipMember": "pkgrps/btl_pfb_tokens_0.ab",
+      "nativeMemberBytes": 5046810
+    },
+    "containerPath": "dyn/battle/prefabs/[uc]tokens/token_10041_cathy_catsld.prefab",
+    "rootGameObjectPathId": "5721268775577746847",
+    "chain": {
+      "rendererPathId": "7088402573345258911",
+      "goPath": "token_10041_cathy_catsld/Graphic/DefaultSkin/FaceSwitcher/Back",
+      "rendererScript": {
+        "pointer": {
+          "fileId": 1,
+          "pathId": "175525945580115722"
+        },
+        "serializedFile": "CAB-658d74aab777086fc32b93f385be999a",
+        "className": "SkeletonAnimation",
+        "namespace": "Spine.Unity",
+        "assembly": "spine-unity.dll"
+      },
+      "skeletonDataPathId": "-5045784943107176665",
+      "skeleton": {
+        "pathId": "5827191562966740029",
+        "name": "token_10041_cathy_catsld.skel",
+        "bytes": 15258
+      },
+      "atlasAssetPathId": "3336857742580886784",
+      "atlas": {
+        "pathId": "-2841195859794216468",
+        "name": "token_10041_cathy_catsld.atlas",
+        "bytes": 1710,
+        "page": "token_10041_cathy_catsld.png"
+      },
+      "material": {
+        "pathId": "3110422463429099002",
+        "name": "token_10041_cathy_catsld_Material",
+        "useAlphaTex": 0,
+        "useBleed": 1
+      },
+      "mainTexture": {
+        "pathId": "3000751526514175534",
+        "name": "token_10041_cathy_catsld",
+        "width": 216,
+        "height": 216,
+        "format": 50,
+        "stream": {
+          "offset": 8100256,
+          "size": 20736,
+          "path": "archive:/CAB-f68700761ef4b9b267b0af89309727d6/CAB-f68700761ef4b9b267b0af89309727d6.resS"
+        }
+      },
+      "alphaTexture": null
+    },
+    "decoded": {
+      "width": 216,
+      "height": 216,
+      "mode": "RGBA",
+      "alphaExtrema": [
+        0,
+        255
+      ],
+      "alphaBBox": [
+        0,
+        0,
+        102,
+        131
+      ]
+    },
+    "output": {
+      "path": "E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/assault-sources/assets/summons/token_10041_cathy_catsld/model/token_10041_cathy_catsld.png",
+      "status": "created",
+      "bytes": 17169,
+      "size": [
+        216,
+        216
+      ]
+    }
+  },
+  "ok": true
+}

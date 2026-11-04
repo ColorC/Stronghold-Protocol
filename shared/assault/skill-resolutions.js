@@ -1,0 +1,95 @@
+// Authored 10-23 revisions. The compiler and the battle consume this same table.
+// Values are per star. Casts resolve their native identity without universal
+// permanent stat growth. Essential native stances keep an independent recast payoff.
+const hit=(scale,type='phys',count=1,hits=1,status=null)=>({action:'damage',scale,type,count,hits,status});
+const heal=(scale,count=1)=>({action:'heal',scale,count});
+const selfHeal=ratio=>({action:'heal',ratio,target:'self'});
+const dp=amount=>({action:'dp',amount});
+const form=mods=>({action:'form',mods});
+const guard=ratio=>({action:'barrier',ratio,target:'self'});
+const status=(name,seconds)=>({name,seconds});
+const rule=(text,steps,gate='enemy')=>({text,steps,gate});
+export const SKILL_RESOLUTIONS=Object.freeze({
+ char_337_utage:rule('流失20%当前生命，立即斩击前方敌人，造成250/300/350/400%法术伤害。',[{action:'loseHp',currentRatio:.2},hit([2.5,3,3.5,4],'arts')]),
+ char_154_morgan:rule('流失20%最大生命，立即斩击造成260/300/340/380%物理伤害，并获得50%最大生命的屏障。',[{action:'loseHp',maxRatio:.2},hit([2.6,3,3.4,3.8]),guard(.5)],'always'),
+ char_140_whitew:rule('立即对2名敌人各发动3次狼魂斩击，每次造成140/160/180/200%法术伤害。',[hit([1.4,1.6,1.8,2],'arts',2,3)]),
+ char_356_broca:rule('立即对3名敌人各造成2次180/210/240/270%法术伤害，并停顿1秒。',[hit([1.8,2.1,2.4,2.7],'arts',3,2,status('sluggish',1))]),
+ char_4155_talr:rule('立即消耗6/8/10/12部署费用，束缚周围4名敌人3秒，并各造成2次200/240/280/320%物理伤害。',[{action:'payDP',amount:[6,8,10,12]},{...hit([2,2.4,2.8,3.2],'phys',4,2,status('bind',3)),scope:'adjacent8'}]),
+ char_1028_texas2:rule('部署或再部署时，立即对周围敌人各结算5道剑雨，每道造成100/110/120/130%法术伤害，并晕眩2秒。',[{...hit([1,1.1,1.2,1.3],'arts',99,5,status('stun',2)),scope:'adjacent8'}]),
+ char_437_mizuki:rule('立即对范围内3名敌人造成300/350/400/450%法术伤害并晕眩1秒；不足3名时流失12%最大生命。',[hit([3,3.5,4,4.5],'arts',3,1,status('stun',1)),{action:'shortfallCost',count:3,maxRatio:.12}]),
+ char_4037_demetr:rule('立即向3名敌人各射击3次，每次造成140/160/180/200%物理伤害，并停顿1秒。',[hit([1.4,1.6,1.8,2],'phys',3,3,status('sluggish',1))]),
+ char_4010_etlchi:rule('立即在自身与最近一名其他地面干员周围各挥动4次血镰，每次造成120/145/170/195%物理伤害；每次施放独立结算。',[{action:'scythes',scale:[1.2,1.45,1.7,1.95],hits:4}]),
+ char_253_greyy:rule('立即释放静电，对3名敌人各造成2次120/140/160/180%法术伤害，并停顿2秒。',[hit([1.2,1.4,1.6,1.8],'arts',3,2,status('sluggish',2))]),
+ char_469_indigo:rule('立即对1名敌人造成3次120/140/160/180%法术伤害并束缚2秒；已被束缚的目标每击伤害再+50%。',[{...hit([1.2,1.4,1.6,1.8],'arts',1,3,status('bind',2)),boundBonus:.5}]),
+ char_190_clour:rule('立即向2名敌人各射击2次，每次造成130/150/170/190%物理伤害。',[hit([1.3,1.5,1.7,1.9],'phys',2,2)]),
+ char_366_acdrop:rule('立即向1名敌人射击3次，每次造成180/210/240/270%物理伤害，无视25%防御。',[{...hit([1.8,2.1,2.4,2.7],'phys',1,3),defIgnorePct:.25}]),
+ char_183_skgoat:rule('立即使范围内敌人停顿3秒并受到150/180/210/240%法术伤害；为周围其他干员充能1。',[hit([1.5,1.8,2.1,2.4],'arts',99,1,status('sluggish',3)),{action:'charge',amount:1,target:'adjacentOthers'}]),
+ char_1021_kroos2:rule('立即向1名敌人射击6次，每次造成100/115/130/145%物理伤害，最后晕眩0.5秒。',[hit([1,1.15,1.3,1.45],'phys',1,6,status('stun',.5))]),
+ char_279_excu:rule('立即向攻击范围内所有敌人各射击2次，每次造成180/210/240/270%物理伤害。',[hit([1.8,2.1,2.4,2.7],'phys',99,2)]),
+ char_346_aosta:rule('立即向3名敌人发射影钉，造成250/300/350/400%物理伤害并束缚1.5秒。',[hit([2.5,3,3.5,4],'phys',3,1,status('bind',1.5))]),
+ char_002_amiya:rule('立即向3名敌人各造成350/400/450/500%真实伤害，然后流失20%当前生命。',[hit([3.5,4,4.5,5],'true',3),{action:'loseHp',currentRatio:.2}]),
+ char_306_leizi:rule('立即释放不衰减的闪电，对4名敌人各造成220/260/300/340%法术伤害并停顿1秒。',[hit([2.2,2.6,3,3.4],'arts',4,1,status('sluggish',1))]),
+ char_341_sntlla:rule('立即使3名敌人受到240/280/320/360%法术伤害与2秒寒冷。',[hit([2.4,2.8,3.2,3.6],'arts',3,1,status('cold',2))]),
+ char_388_mint:rule('立即把范围内敌人中等力度拖向自身，并各造成250/300/350/400%法术伤害。',[{action:'pull',force:2},hit([2.5,3,3.5,4],'arts',99)]),
+ char_103_angel:rule('立即向当前敌人结算5连射，每发造成110%物理伤害；重复施放再完整结算5发。',[hit(1.1,'phys',1,5)]),
+ char_430_fartth:rule('本场攻击范围永久向前+2格（不重复增加）；每次施放立即射出300/350/400/450%物理伤害的光羽箭。',[form({rangeExtend:2}),hit([3,3.5,4,4.5])]),
+ char_213_mostma:rule('立即锁住范围内敌人，晕眩3/3.5/4/4.5秒并造成250/300/350/400%法术伤害。',[hit([2.5,3,3.5,4],'arts',99,1,status('stun',[3,3.5,4,4.5]))]),
+ char_291_aglina:rule('立即使全场敌人失重4秒，并对攻击范围内5名敌人各造成300/350/400/450%法术伤害。',[{action:'statusField',status:'weightless',seconds:4},hit([3,3.5,4,4.5],'arts',5)]),
+ char_358_lisa:rule('立即治疗范围内所有干员200/240/280/320%攻击力的生命，并使范围内所有敌人停顿3秒。',[heal([2,2.4,2.8,3.2],99),{action:'statusRange',status:'sluggish',seconds:3}],'always'),
+ char_151_myrtle:rule('立即获得8/10/12/14部署费用，并治疗周围3名干员200%攻击力的生命。',[dp([8,10,12,14]),{...heal(2,3),scope:'adjacent8'}],'always'),
+ char_128_plosis:rule('立即治疗生命比例最低的2名干员180/210/240/270%攻击力的生命，并为其他干员各充能1/1.5/2/2.5。',[heal([1.8,2.1,2.4,2.7],2),{action:'charge',amount:[1,1.5,2,2.5],target:'others'}],'always'),
+ char_4137_udflow:rule('立即发射鳍刺，穿过范围内4名敌人，各造成2次150/180/210/240%物理伤害并停顿1秒。',[hit([1.5,1.8,2.1,2.4],'phys',4,2,status('sluggish',1))]),
+ char_431_ashlok:rule('立即向范围内3名敌人各发射3枚炮弹，每枚造成140/160/180/200%物理伤害。',[hit([1.4,1.6,1.8,2],'phys',3,3)]),
+ char_416_zumama:rule('立即劈砍阻挡的所有敌人，造成350/400/450/500%物理伤害，并晕眩3秒。',[{...hit([3.5,4,4.5,5],'phys',99,1,status('stun',3)),scope:'adjacent8'}]),
+});
+
+// A few native mechanics still need a window (overload, drones, flight, retaliation).
+// Their stance refreshes once, but EVERY activation pays this separate immediate effect.
+export const CAST_PAYOFFS=Object.freeze({
+ char_127_estell:rule("每次施放立即攻击所有阻挡的敌人，造成200%物理伤害；不接受治疗的舍身姿态刷新。",[{...hit(2,'phys',99),scope:'blocked'}],'always'),
+ char_308_swire:rule("每次施放立即攻击2名敌人，各造成180%物理伤害；近距离作战指导提升至3倍的姿态刷新。",[hit(1.8,'phys',2)],'always'),
+ char_265_sophia:rule("每次施放立即鞭击扩大范围内3名敌人，各造成220%物理伤害；扩围、阻挡与责骂姿态刷新。",[hit(2.2,'phys',3)],'always'),
+ char_1023_ghost2:rule("每次施放立即攻击所有阻挡的敌人，造成250%物理伤害；保留生命比例追加伤害与流失生命的重压姿态。",[{...hit(2.5,'phys',99),scope:'blocked'}],'always'),
+ char_264_f12yin:rule("每次施放立即回复15%最大生命，并攻击所有阻挡的敌人造成180%物理伤害；横扫架势刷新。",[selfHeal(.15),{...hit(1.8,'phys',99),scope:'blocked'}],'always'),
+ char_172_svrash:rule("每次施放立即回复20%最大生命；雪境防御与生命回复姿态刷新，再部署减时照常结算。",[selfHeal(.2)],'always'),
+ char_1026_gvial2:rule("每次施放立即攻击所有阻挡的敌人，造成220%物理伤害；保留阻挡+2与伤害延后结算。",[{...hit(2.2,'phys',99),scope:'blocked'}],'always'),
+ char_263_skadi:rule("每次施放立即回复20%最大生命，并斩击1名敌人造成250%物理伤害；涌潮悲歌的三项属性加成取原姿态数值，不累加。",[selfHeal(.2),hit(2.5)],'always'),
+ char_204_platnm:rule("每次施放立即向扩大攻击范围内的1名敌人射出300%物理伤害的箭矢；天马视域刷新。",[hit(3)],'always'),
+ char_145_prove:rule("每次施放立即狙击攻击范围内生命不高于80%的敌人，造成400%物理伤害；杀戮嗅觉刷新。",[{...hit(4),maxHpRatio:.8}],'always'),
+ char_174_slbell:rule("每次施放使范围内敌人防御−60%、法抗−30%，持续12秒；再次施放刷新，不叠加。",[{action:'statusRange',status:'defDown',seconds:12}],'always'),
+ char_4122_grabds:rule("每次施放立即向范围内3名非沉睡敌人各射击2次，每次120%物理伤害；保留原有沉睡与多目标姿态。",[hit(1.2,'phys',3,2)],'always'),
+ char_4045_heidi:rule("每次施放立即治疗范围内所有干员120%攻击力的生命；阻挡+1及防御、生命鼓舞取原数值，不累加。",[heal(1.2,99)],'always'),
+ char_4019_ncdeer:rule("每次施放立即治疗范围内生命比例最低的3名干员180%攻击力的生命；保留远程物理抵挡与彩云范围。",[heal(1.8,3)],'always'),
+ char_1012_skadi2:rule("每次施放立即对范围内敌人造成200%真实伤害，并流失5%当前生命；鼓舞取原数值，不累加。",[{action:'loseHp',currentRatio:.05},hit(2,'true',99)],'always'),
+ char_240_wyvern:rule("每次施放立即获得原数值的费用，并攻击1名敌人造成135%物理伤害；攻击+35%的姿态刷新，不累加。",[hit(1.35)],'always'),
+ char_290_vigna:rule("每次施放立即重击1名敌人，造成330%物理伤害；保留攻击间隔增加的槌音姿态。",[hit(3.3)],'always'),
+ char_181_flower:rule("每次施放立即治疗范围内所有干员300%攻击力的生命；精调按原数值强化治疗和薰衣草，不永久累加。",[heal(3,99)],'always'),
+ char_199_yak:rule("每次施放立即回复20%最大生命；保留生命、防御与法抗的抗寒姿态，不累加。",[selfHeal(.2)],'always'),
+ char_150_snakek:rule("每次施放立即回复20%最大生命；保留停止攻击、阻挡+1、防御与自愈的壳状防御，不累加。",[selfHeal(.2)],'always'),
+ char_401_elysm:rule("每次施放立即获得原数值的费用并使周围原数量敌人停顿2秒；保留减防、揭隐及狙击支援，不永久累加。",[{action:'statusRange',status:'sluggish',seconds:2,scope:'adjacent8',count:4}],'always'),
+ char_4119_wanqin:rule("每次施放立即治疗周围干员150%攻击力的生命；费用、周围治疗与攻速支援照常执行，攻速不永久累加。",[{...heal(1.5,99),scope:'adjacent8'}],'always'),
+ char_171_bldsk:rule("每次施放立即治疗血浆目标120%攻击力的生命；保留双目标攻击强化与持续失血，强化不累加。",[heal(1.2,1)],'always'),
+ char_4207_branch:rule("每次施放立即攻击所有阻挡的敌人，造成250%物理伤害；保留周围地面敌人战栗与防御姿态。",[{...hit(2.5,'phys',99),scope:'blocked'}],'always'),
+ char_136_hsguma:rule("每次施放立即切割前方一格所有敌人，造成350%物理伤害；力之锯姿态刷新，防御不累加。",[{...hit(3.5,'phys',99),scope:'front'}],'always'),
+ char_2026_yu:rule("每次施放立即回复10%最大生命；周围法术伤害、地面传送、阻挡+2与法术普攻照常结算，属性不累加。",[selfHeal(.1)],'always'),
+ char_220_grani:rule("每次施放立即攻击所有阻挡的敌人，造成180%物理伤害并回复15%最大生命；永不后退姿态刷新。",[{...hit(1.8,'phys',99),scope:'blocked'},selfHeal(.15)],'always'),
+ char_1019_siege2:rule('每次施放立即斩击范围内3名敌人，各造成180%真实伤害；姿态刷新，斩击分别结算。',[hit(1.8,'true',3)],'always'),
+ char_4064_mlynar:rule('每次施放立即斩击范围内5名敌人，各造成200%物理伤害；姿态刷新，斩击分别结算。',[hit(2,'phys',5)],'always'),
+ char_4000_jnight:rule('每次施放立即治疗范围内3名干员150%攻击力的生命，防护姿态刷新。',[heal(1.5,3)],'always'),
+ char_4013_kjera:rule('每次施放立即向2名敌人各发射2次120%法术伤害的冰弹，并施加1秒寒冷；浮游姿态刷新。',[hit(1.2,'arts',2,2,status('cold',1))],'always'),
+ char_4040_rockr:rule('每次施放立即向2名敌人各追加2次150%法术伤害；过载姿态刷新。',[hit(1.5,'arts',2,2)],'always'),
+ char_4162_cathy:rule('每次施放立即回复自身10%最大生命，并获得10%最大生命的独立屏障；支援姿态刷新。',[selfHeal(.1),guard(.1)],'always'),
+ char_4133_logos:rule('每次施放立即对4名敌人各造成200%法术伤害；弹道减速姿态刷新。',[hit(2,'arts',4)],'always'),
+ char_426_billro:rule('每次施放立即向1名敌人连续射击4次，各造成80%法术伤害并束缚1秒；射击姿态刷新。',[hit(.8,'arts',1,4,status('bind',1))],'always'),
+ char_1038_whitw2:rule('每次施放立即对2名敌人各造成2次120%法术伤害，并恐惧、战栗3秒；浮游姿态刷新。',[hit(1.2,'arts',2,2,status('fear',3)),{action:'statusRange',status:'tremble',seconds:3,count:2}],'always'),
+ char_4134_cetsyr:rule('每次施放立即追加1枚微尘，对1名敌人造成160%真实伤害并束缚3.5秒；原有微尘补满与鼓舞照常生效。',[hit(1.6,'true',1,1,status('bind',3.5))],'always'),
+ char_4202_haruka:rule('每次施放立即对2名敌人各造成180%法术伤害并浮空1秒；浮泡姿态刷新。',[hit(1.8,'arts',2,1,status('levitate',1))],'always'),
+ char_381_bubble:rule('每次施放立即对周围敌人造成150%物理伤害，并回复10%最大生命；反击姿态刷新。',[{...hit(1.5,'phys',99),scope:'adjacent8'},selfHeal(.1)],'always'),
+ char_4114_harold:rule('每次施放立即治疗范围内生命比例最低的2名干员200%攻击力的生命；急救姿态刷新。',[heal(2,2)],'always'),
+ char_494_vendla:rule('每次施放立即治疗范围内生命比例最低的2名干员180%攻击力的生命；庇荫姿态刷新。',[heal(1.8,2)],'always'),
+ char_4222_taraxa:rule('每次施放立即治疗范围内生命比例最低的3名干员150%攻击力的生命；起飞姿态刷新。',[heal(1.5,3)],'always'),
+ char_4148_philae:rule('每次施放立即对周围地面敌人造成200%法术伤害，并回复10%最大生命；反击姿态刷新。',[{...hit(2,'arts',99),scope:'adjacent8',groundOnly:true},selfHeal(.1)],'always'),
+ char_4056_titi:rule('每次施放立即对3名敌人各造成150%法术伤害并沉睡5秒；绽放姿态刷新。',[hit(1.5,'arts',3,1,status('sleep',5))],'always'),
+ char_497_ctable:rule('每次部署或再部署立即获得3部署费用，观火姿态刷新。',[dp(3)],'always'),
+ char_496_wildmn:rule('每次部署或再部署立即回复15%最大生命、斩击1名敌人造成200%物理伤害，冲锋姿态刷新。',[selfHeal(.15),hit(2)],'always'),
+});

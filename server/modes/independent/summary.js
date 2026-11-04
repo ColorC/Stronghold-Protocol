@@ -1,0 +1,144 @@
+import { t, N_, tName } from '../../../shared/i18n.js';
+// Icon summary of an operator's own trait (自有特质) for shop cards and unit plates: when it fires, what it gives and
+// the conditions worth a glance. It is an index into the full text the detail card shows, never a replacement: every
+// rule of the structured catalog effect (catalog.js nativeTrait.effect) yields one entry, unknown behaviors included.
+
+/** Trigger → the player-facing moment. */
+export const TRAIT_WHEN = Object.freeze({
+  gain: N_('获得时'), roundStart: N_('整备开始'), prepEnd: N_('整备结束时'), sold: N_('出售时'), refresh: N_('刷新后'), merge: N_('三连时'),
+  passive: N_('常驻'), battleStart: N_('战斗开始'), deploy: N_('部署时'), kill: N_('击杀'), hit: N_('命中'), skillStart: N_('技能开启'),
+  death: N_('倒下时'), statusApplied: N_('施加状态时'), ammoUsed: N_('消耗弹药时'), nativeProduction: N_('原生效果产出时'), dollSwap: N_('替身切换时'),
+  aura: N_('在场时'), selling: N_('出售时'), battleProduction: N_('战斗产出时'), bought: N_('购买干员后'),
+  battle: N_('战斗中'), attack: N_('攻击时'),
+  allyGain: N_('友方获得时'), retiring: N_('退场时'), summon:N_('召唤友方时'), allyDamaged:N_('友方受到伤害时'), allyKill:N_('友方击杀时'), allyDeath:N_('友方退场时'),
+  // 干员特质 v4 (2026-10-07)
+  heal: N_('治疗时'), damaged: N_('受到伤害时'), dodge: N_('闪避时'), elementBurst: N_('元素爆发时'), battleEnd: N_('战斗结束时'),
+  shieldLayersGained: N_('获得护盾层时'), shieldLayersBroken: N_('护盾层破碎时'), shieldLayersThreshold: N_('护盾层达到门槛时'),
+  freeze: N_('冻结敌人时'), stun: N_('使敌人晕眩时'),
+});
+
+// temporary combat traits (干员表 v3, 2026-10-07): a buff for this battle, or damage / control in it
+const TEMP_STAT = new Set(['battleStartBuff', 'deployBuff', 'skillStartBuff', 'allyDownStacks', 'shieldAllies', 'summonBoost', 'aura', 'healedBuff', 'onKillSp']);
+const TEMP_DAMAGE = new Set(['firstWaveStrike', 'everyNthAttack', 'overkillSpill', 'onDown', 'rangeDebuff', 'statusOnHit', 'markSpread', 'blockRetaliate']);
+
+const FORGE_SINGLE = new Set(['grantEquipmentByTier', 'forgePerGainedChess', 'forgeAdjacent', 'forgeFactionTierCount', 'forgeRowCount',
+  'forgeDominantFactionTierCount', 'forgeBenchPairs', 'forgeBenchCount', 'forgePerFundsSpent', 'forgePerRefresh']);
+const RECRUIT = new Set(['recruitOffer', 'conditionalRecruit', 'randomChessOffer', 'dominantFactionRecruit']);
+
+const counts = (p) => ({ normal: Number(p.normal ?? p.quantity ?? 1), elite: Number(p.elite ?? p.normal ?? p.quantity ?? 1) });
+const caps = (p) => (p.capNormal != null ? { normal: Number(p.capNormal), elite: Number(p.capElite ?? p.capNormal) } : undefined);
+
+/**
+ * One summary entry per rule: { when, kind, items?, amount?, cap?, perBattle?, bench?, faction?, condition?, stats? }.
+ * The normal and the elite form are separate catalog entries, and some rules keep the elite numbers only in the
+ * elite entry (eventProduction): read a form's count from its own entry — normal entry `.normal`, elite entry `.elite`.
+ * kind ∈ forge | funds | refresh | recruit | shopBadge | random | stat | damage | copy | merge | double | boost | transfer | devour | doubleWorn.
+ * `items` = [{ id, normal, elite }] (id null = decided in play, e.g. the dominant faction's recipe).
+ */
+export function traitSummary(effect) {
+  const rules = [...(effect?.prep || []), ...(effect?.combat || [])];
+  return rules.map((rule) => {
+    const p = rule.params || {};
+    const entry = { when: rule.trigger, kind: null };
+    const b = rule.behavior;
+    if (b === 'factionReaction') {
+      entry.kind = p.mode === 'shop' ? 'shopBadge' : p.mode==='discount' ? 'discount' : ['refund','funds'].includes(p.mode) ? 'funds' : 'forge';
+      if(['refund','funds','discount'].includes(p.mode))entry.amount={normal:p.count,elite:p.count};
+      entry.faction=p.faction ? tName(p.faction) : p.faction; entry.items=(p.outputs||[]).map(o=>({id:o.id,normal:o.quantity,elite:o.quantity})); entry.perPrep=p.maxEventsPerPrep; entry.targets=p.targets;
+      entry.description={badge:t('友方获得后分发徽章'),shop:t('为指定阵营的商店干员增添徽章'),refund:t('购买指定阵营干员后返还资金'),discount:t('获得时减少商店升级费用'),funds:t('出售时额外获得资金')}[p.mode];
+    } else if (b === 'retiringEffect') {
+      entry.when='retiring';entry.kind=p.summon||p.returnFallen?'summon':'stat';entry.temporary=true;entry.perBattle=p.perBattle;entry.stats=p.buff?.stats;const faction=p.buff?.faction||p.shield?.faction||p.returnFallen?.faction;entry.faction=faction ? tName(faction) : faction;
+      entry.description=p.returnFallen?t('退场时重新召唤本战最早倒下的召唤物'):p.summon?t('退场时召唤友方'):p.shield?t('退场时为友方增添护盾'):t('退场时强化指定阵营友方');
+    } else if (b === 'deathrattleEcho') { entry.kind='copy';entry.every=p.every;entry.perBattle=p.perBattle;entry.faction=p.faction ? tName(p.faction) : p.faction;entry.description=t('普通攻击后触发另一名友方的退场效果');
+    } else if (b === 'retirementMultiplier') { entry.kind='double';entry.amount={normal:1+p.extra,elite:1+p.extra};entry.hook='retiring';entry.description=t('让友方退场效果额外触发');
+    } else if (b === 'warbandEvent') { entry.kind='stat';entry.temporary=true;entry.stats=p.stats;entry.faction=p.faction ? tName(p.faction) : p.faction;entry.targets=p.targets;entry.maxStacks=p.maxStacks;entry.when={damaged:'allyDamaged',kill:'allyKill',death:'allyDeath'}[p.event]||p.event;entry.description=t('指定阵营友方行动后强化友方');
+    } else if (b === 'firstWaveStrike') { entry.kind='damage';entry.temporary=true;entry.description=t('战斗开始后对敌方造成伤害');
+    } else if (b === 'allyConditionStats') {
+      entry.kind = 'stat'; entry.temporary = true; entry.stats = { ...p.stats }; entry.maxCount = p.maxCount;
+      entry.countBy = p.countBy; entry.match = { ...p.match };
+      entry.condition = p.match?.keywordGear ? t('携带{keywordGear}的友方', { keywordGear: tName(p.match.keywordGear) }) : p.match?.faction ? t('{faction}友方', { faction: tName(p.match.faction) })
+        : p.match?.professions || p.match?.profession ? t('指定职业友方') : p.match?.baseStat ? t('满足原生属性条件的友方') : t('其他在场友方');
+    } else if (b === 'teamForge') {
+      entry.kind = 'forge'; entry.grows = true; entry.targets = p.targets; entry.excludeSelf = p.excludeSelf; entry.targetCount = p.count; entry.sort = p.sort;
+      entry.items = (p.outputs || []).map((o) => ({ id: o.id, normal: o.normal, elite: o.elite }));
+      entry.condition = p.targets.startsWith('faction:') ? t('{0}友方', { 0: tName(p.targets.slice(8)) }) : p.targets.startsWith('profession:') ? t('指定职业友方')
+        : p.targets === 'adjacent' ? t('相邻友方') : p.targets === 'row' ? t('同排友方') : t('在场友方');
+    } else if (b === 'grantEquipment' || b === 'conditionalGrant') {
+      entry.kind = 'forge'; entry.items = (p.outputs || []).map((o) => ({ id: o.id, normal: Number(o.normal ?? 1), elite: Number(o.elite ?? o.normal ?? 1) }));
+      if (p.alsoAt) entry.alsoAt = p.alsoAt;
+    } else if (b === 'eventProduction') {
+      // copyOutputFromEvent (魔王): the item is whatever the copied production made
+      entry.kind = p.copyOutputFromEvent ? 'copy' : 'forge';
+      entry.items = (p.outputs || []).map((o) => ({ id: o.idFromEvent ? null : (o.id ?? null), normal: Number(o.quantity ?? o.normal ?? 1), elite: Number(o.eliteQuantity ?? o.elite ?? o.quantity ?? 1) }));
+      if (p.counterEvery > 1) entry.every = Number(p.counterEvery);
+      if (p.maxPerBattle) entry.perBattle = Number(p.maxPerBattle);
+      entry.afterBattle = true;
+    } else if (FORGE_SINGLE.has(b)) {
+      entry.kind = 'forge'; entry.items = [{ id: p.id ?? null, ...counts(p) }];
+      if (b === 'grantEquipmentByTier') entry.items = [{ id: p.id, normal: null, elite: null }];
+      entry.cap = caps(p);
+    } else if (b === 'forgeFactionTierPair') {
+      entry.kind = 'forge'; entry.items = (p.ids || []).map((id) => ({ id, ...counts(p) })); entry.cap = caps(p);
+    } else if (b === 'forgeDominantFaction') {
+      entry.kind = 'forge'; entry.items = [{ id: null, ...counts(p) }];
+    } else if (b === 'deferredFunds' || b === 'deferredFundsIf') {
+      entry.kind = 'funds'; entry.amount = counts(p);
+    } else if (b === 'freeRefresh' || b === 'freeRefreshOnce') {
+      entry.kind = 'refresh'; entry.amount = counts(p);
+    } else if (RECRUIT.has(b)) {
+      entry.kind = 'recruit';
+    } else if (b === 'attachShopBadgeFirstRefresh' || b === 'attachShopByRefreshCount') {
+      entry.kind = 'shopBadge'; entry.items = [{ id: p.id, ...counts(p) }]; entry.cap = caps(p);
+    } else if (b === 'randomEquipment' || b === 'randomUnlockedEquipment' || b === 'randomSupply') {
+      entry.kind = 'random'; entry.amount = counts(p);
+    } else if (b === 'staticStats' || b === 'badgeThresholdStat' || b === 'startDerivedStats' || b === 'deployWindowStats') {
+      entry.kind = 'stat';
+      if (p.badgeIds?.length && p.badgeIds.length < 4) entry.items = p.badgeIds.map((id) => ({ id }));
+      if (p.every) entry.every = Number(p.every);
+    } else if (TEMP_STAT.has(b)) {
+      entry.kind = 'stat'; entry.temporary = true;
+    } else if (TEMP_DAMAGE.has(b)) {
+      entry.kind = b === 'onDown' && !p.blast ? 'stat' : 'damage'; entry.temporary = true;
+    } else if (b === 'conditionalDamage' || b === 'weakDamage') {
+      entry.kind = 'damage';
+    } else if (b === 'triggerMultiplier' || b === 'productionMultiplier') {
+      // a doubler: which moment runs how many times (productionMultiplier: the battle's yield)
+      entry.kind = 'double'; entry.hook = b === 'productionMultiplier' ? 'battleProduction' : p.hook;
+      const extra = p.extra && typeof p.extra === 'object' ? p.extra : { normal: p.extra, elite: p.extra };
+      entry.amount = { normal: 1 + Number(extra.normal ?? 1), elite: 1 + Number(extra.elite ?? extra.normal ?? 1) };
+    } else if (b === 'badgeAmplifier') {
+      entry.kind = 'stat'; entry.items = (p.badgeIds || []).map((id) => ({ id })); entry.times = Number(p.multiplier);
+    } else if (b === 'grantByTotal') {
+      entry.kind = 'forge'; entry.items = (p.outputs || []).map((o) => ({ id: o.id, normal: Number(o.normal ?? 1), elite: Number(o.elite ?? o.normal ?? 1) }));
+      entry.total = { counter: p.counter, per: Number(p.per) };
+    } else if (b === 'shopCarry') {
+      entry.kind = 'shopBadge'; entry.items = [{ id: p.id, ...counts(p) }]; entry.lasting = true;
+    } else if (b === 'badgeBoost') {
+      entry.kind = 'boost'; entry.items = (p.badgeIds || []).map((id) => ({ id }));
+      entry.amount = { normal: Number(p.percent?.normal ?? p.percent), elite: Number(p.percent?.elite ?? p.percent?.normal ?? p.percent) };
+    } else if (b === 'sellTransfer') {
+      entry.kind = 'transfer';
+    } else if (b === 'devourShop') {
+      entry.kind = 'devour'; entry.items = [{ id: p.id, ...counts(p) }];
+    } else if (b === 'doubleWorn') {
+      entry.kind = 'doubleWorn';
+    } else if (b === 'escalatingGrant' || b === 'diversityGrant' || b === 'perEliteGrant' || b === 'buyGear') {
+      const n = b === 'escalatingGrant' || b === 'buyGear' ? p.start : { normal: p.normal, elite: p.elite };
+      entry.kind = 'forge'; entry.items = [{ id: p.id, normal: Number(n?.normal ?? n), elite: Number(n?.elite ?? n?.normal ?? n) }];
+      entry.condition = { escalatingGrant: 'escalate', perEliteGrant: 'elites', buyGear: 'improves', diversityGrant: p.by === 'faction' ? 'factions' : 'professions' }[b];
+    } else if (b === 'replayAdjacentNative' || b === 'copyFrontNative') {
+      entry.kind = 'copy';
+    } else if (b === 'twoCopyElite') {
+      entry.kind = 'merge';
+    }
+    if (!entry.kind) throw new Error(`UNCLASSIFIED_TRAIT_RULE:${rule.trigger}:${b}`);
+    if (p.requiresFactionOnField) entry.faction = p.requiresFactionOnField;
+    else if (p.faction) entry.faction = p.faction;
+    if (p.worksFromBench) entry.bench = true;
+    if (p.growth) entry.grows = true;
+    if (p.totalBonus) entry.total = { counter: p.totalBonus.counter, per: Number(p.totalBonus.per) };
+    if (typeof p.condition === 'string' && !p.condition.includes('Tag')) entry.condition = p.condition;
+    for (const k of Object.keys(entry)) if (entry[k] === undefined) delete entry[k];
+    return entry;
+  });
+}

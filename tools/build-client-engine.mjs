@@ -1,0 +1,170 @@
+#!/usr/bin/env node
+// Copy the exact session engine import closure into the public build output, replacing only server/data.js.
+// The generated data shim embeds this checkout's JSON so no Node filesystem module is exposed to the browser.
+import fs from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { DATA_FILES, getData } from '../server/data.js';
+import { BADGE_IDS, getCatalog } from '../server/modes/independent/catalog.js';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const ENTRY = path.join(ROOT, 'server', 'modes', 'independent', 'session.js');
+const CONTENT_ROOT = path.join(ROOT, 'server', 'sim', 'content');
+const ASSAULT_ROOT = path.join(CONTENT_ROOT, 'assault') + path.sep;
+function filesUnder(directory) {
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const target = path.join(directory, entry.name);
+    return entry.isDirectory() ? filesUnder(target) : (entry.isFile() && entry.name.endsWith('.js') ? [target] : []);
+  });
+}
+// Independent mode uses the old sim's native kits and token/domain helpers. The new assault mode is a separate
+// client/API DTO and must not be pulled into this generated workshop engine through the shared content barrel.
+const EXTRA_ENTRIES = [
+  path.join(ROOT, 'server', 'modes', 'independent', 'display.js'),
+  ...filesUnder(CONTENT_ROOT).filter((file) => !file.startsWith(ASSAULT_ROOT)),
+];
+const CATALOG_ENTRY = path.join(ROOT, 'server', 'modes', 'independent', 'catalog.js');
+const OUTPUT = path.join(ROOT, 'public', 'js', 'independent', 'engine');
+const DATA_DIR = process.env.SP_DATA_DIR ? path.resolve(process.env.SP_DATA_DIR) : path.join(ROOT, 'data');
+const allowedRoots = ['server/modes/independent/', 'server/match/', 'server/sim/', 'shared/', 'public/js/ui/'];
+
+function parseArgs(argv) {
+  const args = {};
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === '--out') args.out = argv[++i];
+    else throw new Error(`未知参数：${argv[i]}`);
+  }
+  if (!args.out || !path.isAbsolute(args.out)) throw new Error('必须通过 --out 提供项目内 public/js/independent/engine 的绝对路径');
+  return path.resolve(args.out);
+}
+
+function assertPlainPath(target) {
+  if (target !== OUTPUT) throw new Error(`输出目录必须是 ${OUTPUT}`);
+  let current = ROOT;
+  const relative = path.relative(ROOT, target);
+  for (const part of relative.split(path.sep)) {
+    current = path.join(current, part);
+    if (!fs.existsSync(current)) continue;
+    const stat = fs.lstatSync(current);
+    if (stat.isSymbolicLink() || (stat.isDirectory() && (stat.attributes & 0x400))) throw new Error(`输出路径包含链接或 reparse point：${current}`);
+    if (current !== target && !stat.isDirectory()) throw new Error(`输出路径祖先不是目录：${current}`);
+  }
+}
+
+function specifiers(source) {
+  const out = [];
+  const re = /\b(?:import|export)\s+(?:[^'";]*?\s+from\s*)?['"]([^'"]+)['"]/g;
+  for (const match of source.matchAll(re)) out.push(match[1]);
+  return out;
+}
+
+function projectedSource(file, source) {
+  const rel = path.relative(ROOT, file).split(path.sep).join('/');
+  if (rel === 'server/sim/simdata.js') {
+    const nodeFlag = "const IS_NODE = typeof process !== 'undefined' && !!(process && process.versions && process.versions.node);";
+    const nodeLoader = `if (IS_NODE) {\n  try {\n    nodeLoader = await import('./nodeData.js');\n    generatedCache = await nodeLoader.loadGenerated();\n  } catch {\n    nodeLoader = null;\n  }\n}`;
+    if (source.split(nodeFlag).length !== 2 || source.split(nodeLoader).length !== 2) {
+      throw new Error(`无法安全投影 simdata.js 的 Node-only loader：${file}`);
+    }
+    return source.replace(nodeFlag, 'const IS_NODE = false;').replace(nodeLoader, '/* Node-only data loader omitted from the browser projection. */');
+  }
+  if (rel !== 'server/sim/content/index.js') return source;
+  const assaultImport = "import { buildAssaultKit, installAssaultContent } from './assault/index.js';\n";
+  if (!source.includes(assaultImport)) throw new Error(`旧工坊 content/index.js 缺少预期的 assault 分支：${file}`);
+  const withoutAssault = source.replace(assaultImport, '');
+  const projected = withoutAssault.replace("  if (mode === 'assault') return buildAssaultKit(battle, unit);\n", '');
+  const start = projected.indexOf("  if (mode === 'assault') {");
+  const end = projected.indexOf("  try {\n    const view = withUnitLoadouts", start);
+  if (start < 0 || end <= start) throw new Error(`无法安全投影旧工坊 content/index.js：${file}`);
+  return `// Generated independent-engine projection: the separate attack mode is served by its own API/DTO.\n` +
+    projected.slice(0, start) + projected.slice(end);
+}
+
+function dataShim() {
+  const data = {};
+  // Keep the browser engine's source surface explicit. Never embed assault runtime/assets/coverage or source-analysis
+  // JSON merely because server/data.js tolerates every JSON in the data directory.
+  for (const name of [...DATA_FILES, 'independent-game-text']) {
+    if (!fs.existsSync(path.join(DATA_DIR, `${name}.json`))) continue;
+    const key = name;
+    data[key] = JSON.parse(fs.readFileSync(path.join(DATA_DIR, `${name}.json`), 'utf8'));
+  }
+  for (const [key, configured] of [
+    ['independent-game-text', process.env.SP_INDEPENDENT_GAME_TEXT_PATH],
+  ]) if (configured) data[key] = JSON.parse(fs.readFileSync(path.resolve(configured), 'utf8'));
+  return `// Generated by tools/build-client-engine.mjs from this checkout's data/*.json.\n` +
+    `const DATA = ${JSON.stringify(data)};\n` +
+    `export const ROOT = '/'; export const DATA_DIR = '/data';\n` +
+    `export const DATA_FILES = Object.freeze(${JSON.stringify(Object.keys(data))});\n` +
+    `export function deepFreeze(root) { const stack=[root], seen=new Set(); while(stack.length){const o=stack.pop();if(o===null||typeof o!=='object'||seen.has(o))continue;seen.add(o);for(const v of Object.values(o))if(v!==null&&typeof v==='object')stack.push(v);Object.freeze(o);}return root; }\n` +
+    `const FROZEN = deepFreeze(DATA); let singleton=FROZEN;\n` +
+    `export function loadData(){return FROZEN;} export function getData(){return singleton;} export function resetData(){singleton=FROZEN;}\n` +
+    `export const INDEXED_FILES=Object.freeze({chess:'getChess',bonds:'getBond',garrisons:'getGarrison',items:'getItem',bands:'getBand',effects:'getEffect',enemies:'getEnemy',waves:'getWave',stages:'getStage',bosses:'getBoss',tokens:'getToken'});\n` +
+    `function ownRecord(map,id){if(typeof id!=='string'||!id.length||!map||typeof map!=='object'||Array.isArray(map)||!Object.hasOwn(map,id))return null;const rec=map[id];return rec!==null&&typeof rec==='object'?rec:null;}\n` +
+    `export function lookup(file,id,data=getData()){return data&&typeof data==='object'&&typeof file==='string'&&Object.hasOwn(data,file)?ownRecord(data[file],id):null;}\n` +
+    `export const getChess=(id,data)=>lookup('chess',id,data),getBond=(id,data)=>lookup('bonds',id,data),getGarrison=(id,data)=>lookup('garrisons',id,data),getItem=(id,data)=>lookup('items',id,data),getBand=(id,data)=>lookup('bands',id,data),getEffect=(id,data)=>lookup('effects',id,data),getEnemy=(id,data)=>lookup('enemies',id,data),getWave=(id,data)=>lookup('waves',id,data),getStage=(id,data)=>lookup('stages',id,data),getBoss=(id,data)=>lookup('bosses',id,data),getToken=(id,data)=>lookup('tokens',id,data);\n` +
+    `export function getConfig(data=getData()){const cfg=data&&typeof data==='object'&&Object.hasOwn(data,'config')?data.config:null;return cfg!==null&&typeof cfg==='object'&&!Array.isArray(cfg)?cfg:null;}\n` +
+    `export function getMode(modeId,data=getData()){const cfg=getConfig(data);return cfg?ownRecord(cfg.modes,modeId):null;}\n`;
+}
+
+function catalogShim() {
+  const catalog = getCatalog(getData());
+  return `// Generated by tools/build-client-engine.mjs from this checkout's data and catalog rules.\n` +
+    `const CATALOG = ${JSON.stringify(catalog)};\n` +
+    `export function getCatalog(){return structuredClone(CATALOG);}\n` +
+    `export const BADGE_IDS = Object.freeze(${JSON.stringify(BADGE_IDS)});\n`;
+}
+
+function sourceStatus() {
+  try {
+    const sourceRevision = execFileSync('git', ['-C', ROOT, 'rev-parse', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || null;
+    const status = execFileSync('git', ['-C', ROOT, 'status', '--porcelain', '--untracked-files=all', '--', 'server', 'data', 'shared', 'public/js/ui', 'tools/build-client-engine.mjs'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    return { sourceRevision, sourceDirty: !!status.trim() };
+  } catch { return { sourceRevision: null, sourceDirty: null }; }
+}
+
+function main() {
+  const outDir = parseArgs(process.argv.slice(2));
+  assertPlainPath(outDir);
+  fs.mkdirSync(outDir, { recursive: true });
+  const copied = new Set();
+  const queue = [ENTRY, ...EXTRA_ENTRIES];
+  while (queue.length) {
+    const file = queue.pop();
+    if (copied.has(file)) continue;
+    copied.add(file);
+    if (file === CATALOG_ENTRY) continue;
+    const rel = path.relative(ROOT, file).split(path.sep).join('/');
+    const source = projectedSource(file, fs.readFileSync(file, 'utf8'));
+    for (const spec of specifiers(source)) {
+      if (!spec.startsWith('.')) throw new Error(`引擎闭包含非相对模块，拒绝写入：${rel} -> ${spec}`);
+      const dep = path.resolve(path.dirname(file), spec);
+      const depRel = path.relative(ROOT, dep).split(path.sep).join('/');
+      if (depRel === 'server/data.js') continue;
+      if (!allowedRoots.some((prefix) => depRel.startsWith(prefix))) throw new Error(`引擎闭包超出允许目录：${rel} -> ${depRel}`);
+      if (!fs.existsSync(dep) || !fs.statSync(dep).isFile()) throw new Error(`模块依赖不存在：${dep}`);
+      queue.push(dep);
+    }
+  }
+  fs.mkdirSync(path.join(outDir, 'server'), { recursive: true });
+  for (const source of copied) {
+    const rel = path.relative(ROOT, source);
+    const target = path.join(outDir, rel);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, projectedSource(source, fs.readFileSync(source, 'utf8')), 'utf8');
+  }
+  fs.writeFileSync(path.join(outDir, 'server', 'data.js'), dataShim(), 'utf8');
+  const catalogTarget = path.join(outDir, 'server', 'modes', 'independent', 'catalog.js');
+  fs.mkdirSync(path.dirname(catalogTarget), { recursive: true });
+  fs.writeFileSync(catalogTarget, catalogShim(), 'utf8');
+  const outputFiles = [...new Set([...copied].map((source) => path.relative(ROOT, source).split(path.sep).join('/')))
+    .add('server/data.js').add('server/modes/independent/catalog.js')].sort();
+  const manifest = { ...sourceStatus(), modules: outputFiles.map((relativePath) => ({ path: relativePath,
+    bytes: fs.statSync(path.join(outDir, relativePath)).size })), totalBytes: outputFiles.reduce((sum, relativePath) => sum + fs.statSync(path.join(outDir, relativePath)).size, 0) };
+  fs.writeFileSync(path.join(outDir, 'engine-build.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+  process.stdout.write(`Browser engine modules: ${copied.size + 1}\nOutput: ${outDir}\n`);
+}
+
+try { main(); }
+catch (error) { process.stderr.write(`${error.stack || error.message}\n`); process.exitCode = 1; }

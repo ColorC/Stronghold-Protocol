@@ -1,0 +1,1259 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-08",
+  "scope": "visible non-DIY operators with tier >= 5",
+  "ordering": "tier descending, then name",
+  "summary": {
+    "uniqueOperators": 38,
+    "tier6": 19,
+    "tier5": 19,
+    "sourceMapped": 2,
+    "needsSourceExtraction": 36
+  },
+  "operators": [
+    {
+      "priority": 1,
+      "tier": 6,
+      "charId": "char_4082_qiubai",
+      "name": "仇白",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_qiubai_1",
+          "index": 0,
+          "prefabId": "skchr_qiubai_1"
+        },
+        {
+          "skillId": "skchr_qiubai_2",
+          "index": 1,
+          "prefabId": "skchr_qiubai_2"
+        },
+        {
+          "skillId": "skchr_qiubai_3",
+          "index": 2,
+          "prefabId": "skchr_qiubai_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 2,
+      "tier": 6,
+      "charId": "char_1016_agoat2",
+      "name": "纯烬艾雅法拉",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_agoat2_1",
+          "index": 0,
+          "prefabId": "skchr_agoat2_1"
+        },
+        {
+          "skillId": "skchr_agoat2_2",
+          "index": 1,
+          "prefabId": "skchr_agoat2_2"
+        },
+        {
+          "skillId": "skchr_agoat2_3",
+          "index": 2,
+          "prefabId": "skchr_agoat2_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 3,
+      "tier": 6,
+      "charId": "char_1038_whitw2",
+      "name": "荒芜拉普兰德",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_whitw2_1",
+          "index": 0,
+          "prefabId": "skchr_whitw2_1"
+        },
+        {
+          "skillId": "skchr_whitw2_2",
+          "index": 1,
+          "prefabId": "skchr_whitw2_2"
+        },
+        {
+          "skillId": "skchr_whitw2_3",
+          "index": 2,
+          "prefabId": "skchr_whitw2_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 4,
+      "tier": 6,
+      "charId": "char_4116_blkkgt",
+      "name": "锏",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_blkkgt_1",
+          "index": 0,
+          "prefabId": "skchr_blkkgt_1"
+        },
+        {
+          "skillId": "skchr_blkkgt_2",
+          "index": 1,
+          "prefabId": "skchr_blkkgt_2"
+        },
+        {
+          "skillId": "skchr_blkkgt_3",
+          "index": 2,
+          "prefabId": "skchr_blkkgt_3"
+        }
+      ],
+      "status": "source-mapped",
+      "sourceEvidence": "data/vfx/character-vfx-coverage.json",
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 5,
+      "tier": 6,
+      "charId": "char_4193_lemuen",
+      "name": "蕾缪安",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_lemuen_1",
+          "index": 0,
+          "prefabId": "skchr_lemuen_1"
+        },
+        {
+          "skillId": "skchr_lemuen_2",
+          "index": 1,
+          "prefabId": "skchr_lemuen_2"
+        },
+        {
+          "skillId": "skchr_lemuen_3",
+          "index": 2,
+          "prefabId": "skchr_lemuen_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 6,
+      "tier": 6,
+      "charId": "char_4042_lumen",
+      "name": "流明",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_lumen_1",
+          "index": 0,
+          "prefabId": "skchr_lumen_1"
+        },
+        {
+          "skillId": "skchr_lumen_2",
+          "index": 1,
+          "prefabId": "skchr_lumen_2"
+        },
+        {
+          "skillId": "skchr_lumen_3",
+          "index": 2,
+          "prefabId": "skchr_lumen_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 7,
+      "tier": 6,
+      "charId": "char_391_rosmon",
+      "name": "迷迭香",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_rosmon_1",
+          "index": 0,
+          "prefabId": "skchr_rosmon_1"
+        },
+        {
+          "skillId": "skchr_rosmon_2",
+          "index": 1,
+          "prefabId": "skchr_rosmon_2"
+        },
+        {
+          "skillId": "skchr_rosmon_3",
+          "index": 2,
+          "prefabId": "skchr_rosmon_3"
+        }
+      ],
+      "status": "source-mapped",
+      "sourceEvidence": "data/vfx/character-vfx-coverage.json",
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 8,
+      "tier": 6,
+      "charId": "char_249_mlyss",
+      "name": "缪尔赛思",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_mlyss_1",
+          "index": 0,
+          "prefabId": "skchr_mlyss_1"
+        },
+        {
+          "skillId": "skchr_mlyss_2",
+          "index": 1,
+          "prefabId": "skchr_mlyss_2"
+        },
+        {
+          "skillId": "skchr_mlyss_3",
+          "index": 2,
+          "prefabId": "skchr_mlyss_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 9,
+      "tier": 6,
+      "charId": "char_4058_pepe",
+      "name": "佩佩",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_pepe_1",
+          "index": 0,
+          "prefabId": "skchr_pepe_1"
+        },
+        {
+          "skillId": "skchr_pepe_2",
+          "index": 1,
+          "prefabId": "skchr_pepe_2"
+        },
+        {
+          "skillId": "skchr_pepe_3",
+          "index": 2,
+          "prefabId": "skchr_pepe_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 10,
+      "tier": 6,
+      "charId": "char_1046_sbell2",
+      "name": "圣聆初雪",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_sbell2_1",
+          "index": 0,
+          "prefabId": "skchr_sbell2_1"
+        },
+        {
+          "skillId": "skchr_sbell2_2",
+          "index": 1,
+          "prefabId": "skchr_sbell2_2"
+        },
+        {
+          "skillId": "skchr_sbell2_3",
+          "index": 2,
+          "prefabId": "skchr_sbell2_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 11,
+      "tier": 6,
+      "charId": "char_245_cello",
+      "name": "塑心",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_cello_1",
+          "index": 0,
+          "prefabId": "skchr_cello_1"
+        },
+        {
+          "skillId": "skchr_cello_2",
+          "index": 1,
+          "prefabId": "skchr_cello_2"
+        },
+        {
+          "skillId": "skchr_cello_3",
+          "index": 2,
+          "prefabId": "skchr_cello_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 12,
+      "tier": 6,
+      "charId": "char_1047_halo2",
+      "name": "溯光星源",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_halo2_1",
+          "index": 0,
+          "prefabId": "skchr_halo2_1"
+        },
+        {
+          "skillId": "skchr_halo2_2",
+          "index": 1,
+          "prefabId": "skchr_halo2_2"
+        },
+        {
+          "skillId": "skchr_halo2_3",
+          "index": 2,
+          "prefabId": "skchr_halo2_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 13,
+      "tier": 6,
+      "charId": "char_1019_siege2",
+      "name": "维娜·维多利亚",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_siege2_1",
+          "index": 0,
+          "prefabId": "skchr_siege2_1"
+        },
+        {
+          "skillId": "skchr_siege2_2",
+          "index": 1,
+          "prefabId": "skchr_siege2_2"
+        },
+        {
+          "skillId": "skchr_siege2_3",
+          "index": 2,
+          "prefabId": "skchr_siege2_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 14,
+      "tier": 6,
+      "charId": "char_1041_angel2",
+      "name": "新约能天使",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_angel2_1",
+          "index": 0,
+          "prefabId": "skchr_angel2_1"
+        },
+        {
+          "skillId": "skchr_angel2_2",
+          "index": 1,
+          "prefabId": "skchr_angel2_2"
+        },
+        {
+          "skillId": "skchr_angel2_3",
+          "index": 2,
+          "prefabId": "skchr_angel2_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 15,
+      "tier": 6,
+      "charId": "char_1020_reed2",
+      "name": "焰影苇草",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skcom_quickattack[3]",
+          "index": 0,
+          "prefabId": "skcom_quickattack"
+        },
+        {
+          "skillId": "skchr_reed2_2",
+          "index": 1,
+          "prefabId": "skchr_reed2_2"
+        },
+        {
+          "skillId": "skchr_reed2_3",
+          "index": 2,
+          "prefabId": "skchr_reed2_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 16,
+      "tier": 6,
+      "charId": "char_1014_nearl2",
+      "name": "耀骑士临光",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_nearl2_1",
+          "index": 0,
+          "prefabId": "skchr_nearl2_1"
+        },
+        {
+          "skillId": "skchr_nearl2_2",
+          "index": 1,
+          "prefabId": "skchr_nearl2_2"
+        },
+        {
+          "skillId": "skchr_nearl2_3",
+          "index": 2,
+          "prefabId": "skchr_nearl2_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 17,
+      "tier": 6,
+      "charId": "char_472_pasngr",
+      "name": "异客",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_pasngr_1",
+          "index": 0,
+          "prefabId": "skchr_pasngr_1"
+        },
+        {
+          "skillId": "skchr_pasngr_2",
+          "index": 1,
+          "prefabId": "skchr_pasngr_2"
+        },
+        {
+          "skillId": "skchr_pasngr_3",
+          "index": 2,
+          "prefabId": "skchr_pasngr_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 18,
+      "tier": 6,
+      "charId": "char_2026_yu",
+      "name": "余",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_yu_1",
+          "index": 0,
+          "prefabId": "skchr_yu_1"
+        },
+        {
+          "skillId": "skchr_yu_2",
+          "index": 1,
+          "prefabId": "skchr_yu_2"
+        },
+        {
+          "skillId": "skchr_yu_3",
+          "index": 2,
+          "prefabId": "skchr_yu_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 19,
+      "tier": 6,
+      "charId": "char_1012_skadi2",
+      "name": "浊心斯卡蒂",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_skadi2_1",
+          "index": 0,
+          "prefabId": "skchr_skadi2_1"
+        },
+        {
+          "skillId": "skchr_skadi2_2",
+          "index": 1,
+          "prefabId": "skchr_skadi2_2"
+        },
+        {
+          "skillId": "skchr_skadi2_3",
+          "index": 2,
+          "prefabId": "skchr_skadi2_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 20,
+      "tier": 5,
+      "charId": "char_291_aglina",
+      "name": "安洁莉娜",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_aglina_1",
+          "index": 0,
+          "prefabId": "skchr_aglina_1"
+        },
+        {
+          "skillId": "skchr_aglina_2",
+          "index": 1,
+          "prefabId": "skchr_aglina_2"
+        },
+        {
+          "skillId": "skchr_aglina_3",
+          "index": 2,
+          "prefabId": "skchr_aglina_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 21,
+      "tier": 5,
+      "charId": "char_1023_ghost2",
+      "name": "归溟幽灵鲨",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_ghost2_1",
+          "index": 0,
+          "prefabId": "skchr_ghost2_1"
+        },
+        {
+          "skillId": "skchr_ghost2_2",
+          "index": 1,
+          "prefabId": "skchr_ghost2_2"
+        },
+        {
+          "skillId": "skchr_ghost2_3",
+          "index": 2,
+          "prefabId": "skchr_ghost2_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 22,
+      "tier": 5,
+      "charId": "char_341_sntlla",
+      "name": "寒檀",
+      "rarity": 5,
+      "skills": [
+        {
+          "skillId": "skcom_quickattack[3]",
+          "index": 0,
+          "prefabId": "skcom_quickattack"
+        },
+        {
+          "skillId": "skchr_sntlla_2",
+          "index": 1,
+          "prefabId": "skchr_sntlla_2"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 23,
+      "tier": 5,
+      "charId": "char_4039_horn",
+      "name": "号角",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_horn_1",
+          "index": 0,
+          "prefabId": "skchr_horn_1"
+        },
+        {
+          "skillId": "skchr_horn_2",
+          "index": 1,
+          "prefabId": "skchr_horn_2"
+        },
+        {
+          "skillId": "skchr_horn_3",
+          "index": 2,
+          "prefabId": "skchr_horn_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 24,
+      "tier": 5,
+      "charId": "char_1045_svash2",
+      "name": "凛御银灰",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_svash2_1",
+          "index": 0,
+          "prefabId": "skchr_svash2_1"
+        },
+        {
+          "skillId": "skchr_svash2_2",
+          "index": 1,
+          "prefabId": "skchr_svash2_2"
+        },
+        {
+          "skillId": "skchr_svash2_3",
+          "index": 2,
+          "prefabId": "skchr_svash2_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 25,
+      "tier": 5,
+      "charId": "char_358_lisa",
+      "name": "铃兰",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_lisa_1",
+          "index": 0,
+          "prefabId": "skchr_lisa_1"
+        },
+        {
+          "skillId": "skchr_lisa_2",
+          "index": 1,
+          "prefabId": "skchr_lisa_2"
+        },
+        {
+          "skillId": "skchr_lisa_3",
+          "index": 2,
+          "prefabId": "skchr_lisa_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 26,
+      "tier": 5,
+      "charId": "char_4196_reckpr",
+      "name": "录武官",
+      "rarity": 5,
+      "skills": [
+        {
+          "skillId": "skchr_reckpr_1",
+          "index": 0,
+          "prefabId": "skchr_reckpr_1"
+        },
+        {
+          "skillId": "skchr_reckpr_2",
+          "index": 1,
+          "prefabId": "skchr_reckpr_2"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 27,
+      "tier": 5,
+      "charId": "char_4064_mlynar",
+      "name": "玛恩纳",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_mlynar_1",
+          "index": 0,
+          "prefabId": "skchr_mlynar_1"
+        },
+        {
+          "skillId": "skchr_mlynar_2",
+          "index": 1,
+          "prefabId": "skchr_mlynar_2"
+        },
+        {
+          "skillId": "skchr_mlynar_3",
+          "index": 2,
+          "prefabId": "skchr_mlynar_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 28,
+      "tier": 5,
+      "charId": "char_4146_nymph",
+      "name": "妮芙",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_nymph_1",
+          "index": 0,
+          "prefabId": "skchr_nymph_1"
+        },
+        {
+          "skillId": "skchr_nymph_2",
+          "index": 1,
+          "prefabId": "skchr_nymph_2"
+        },
+        {
+          "skillId": "skchr_nymph_3",
+          "index": 2,
+          "prefabId": "skchr_nymph_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 29,
+      "tier": 5,
+      "charId": "char_202_demkni",
+      "name": "塞雷娅",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_demkni_1",
+          "index": 0,
+          "prefabId": "skchr_demkni_1"
+        },
+        {
+          "skillId": "skchr_demkni_2",
+          "index": 1,
+          "prefabId": "skchr_demkni_2"
+        },
+        {
+          "skillId": "skchr_demkni_3",
+          "index": 2,
+          "prefabId": "skchr_demkni_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 30,
+      "tier": 5,
+      "charId": "char_264_f12yin",
+      "name": "山",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_f12yin_1",
+          "index": 0,
+          "prefabId": "skchr_f12yin_1"
+        },
+        {
+          "skillId": "skchr_f12yin_2",
+          "index": 1,
+          "prefabId": "skchr_f12yin_2"
+        },
+        {
+          "skillId": "skchr_f12yin_3",
+          "index": 2,
+          "prefabId": "skchr_f12yin_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 31,
+      "tier": 5,
+      "charId": "char_1032_excu2",
+      "name": "圣约送葬人",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_excu2_1",
+          "index": 0,
+          "prefabId": "skchr_excu2_1"
+        },
+        {
+          "skillId": "skchr_excu2_2",
+          "index": 1,
+          "prefabId": "skchr_excu2_2"
+        },
+        {
+          "skillId": "skchr_excu2_3",
+          "index": 2,
+          "prefabId": "skchr_excu2_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 32,
+      "tier": 5,
+      "charId": "char_350_surtr",
+      "name": "史尔特尔",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_surtr_1",
+          "index": 0,
+          "prefabId": "skchr_surtr_1"
+        },
+        {
+          "skillId": "skchr_surtr_2",
+          "index": 1,
+          "prefabId": "skchr_surtr_2"
+        },
+        {
+          "skillId": "skchr_surtr_3",
+          "index": 2,
+          "prefabId": "skchr_surtr_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 33,
+      "tier": 5,
+      "charId": "char_4056_titi",
+      "name": "缇缇",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_titi_1",
+          "index": 0,
+          "prefabId": "skchr_titi_1"
+        },
+        {
+          "skillId": "skchr_titi_2",
+          "index": 1,
+          "prefabId": "skchr_titi_2"
+        },
+        {
+          "skillId": "skchr_titi_3",
+          "index": 2,
+          "prefabId": "skchr_titi_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 34,
+      "tier": 5,
+      "charId": "char_4145_ulpia",
+      "name": "乌尔比安",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_ulpia_1",
+          "index": 0,
+          "prefabId": "skchr_ulpia_1"
+        },
+        {
+          "skillId": "skchr_ulpia_2",
+          "index": 1,
+          "prefabId": "skchr_ulpia_2"
+        },
+        {
+          "skillId": "skchr_ulpia_3",
+          "index": 2,
+          "prefabId": "skchr_ulpia_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 35,
+      "tier": 5,
+      "charId": "char_2015_dusk",
+      "name": "夕",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_dusk_1",
+          "index": 0,
+          "prefabId": "skchr_dusk_1"
+        },
+        {
+          "skillId": "skchr_dusk_2",
+          "index": 1,
+          "prefabId": "skchr_dusk_2"
+        },
+        {
+          "skillId": "skchr_dusk_3",
+          "index": 2,
+          "prefabId": "skchr_dusk_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 36,
+      "tier": 5,
+      "charId": "char_1039_thorn2",
+      "name": "引星棘刺",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_thorn2_1",
+          "index": 0,
+          "prefabId": "skchr_thorn2_1"
+        },
+        {
+          "skillId": "skchr_thorn2_2",
+          "index": 1,
+          "prefabId": "skchr_thorn2_2"
+        },
+        {
+          "skillId": "skchr_thorn2_3",
+          "index": 2,
+          "prefabId": "skchr_thorn2_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 37,
+      "tier": 5,
+      "charId": "char_4010_etlchi",
+      "name": "隐德来希",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_etlchi_1",
+          "index": 0,
+          "prefabId": "skchr_etlchi_1"
+        },
+        {
+          "skillId": "skchr_etlchi_2",
+          "index": 1,
+          "prefabId": "skchr_etlchi_2"
+        },
+        {
+          "skillId": "skchr_etlchi_3",
+          "index": 2,
+          "prefabId": "skchr_etlchi_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    },
+    {
+      "priority": 38,
+      "tier": 5,
+      "charId": "char_1040_blaze2",
+      "name": "烛煌",
+      "rarity": 6,
+      "skills": [
+        {
+          "skillId": "skchr_blaze2_1",
+          "index": 0,
+          "prefabId": "skchr_blaze2_1"
+        },
+        {
+          "skillId": "skchr_blaze2_2",
+          "index": 1,
+          "prefabId": "skchr_blaze2_2"
+        },
+        {
+          "skillId": "skchr_blaze2_3",
+          "index": 2,
+          "prefabId": "skchr_blaze2_3"
+        }
+      ],
+      "status": "needs-source-extraction",
+      "sourceEvidence": null,
+      "acceptance": [
+        "raw action/effect references mapped",
+        "material and shader support verified",
+        "mount/target/ground placement verified",
+        "dense browser screenshot comparison",
+        "event coverage has no missing/unresolved"
+      ]
+    }
+  ]
+}

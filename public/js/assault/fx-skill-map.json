@@ -1,0 +1,4813 @@
+{
+  "schema": "assault-fx-skill-map/v1",
+  "index": {
+    "version": 3,
+    "client": "26-10-08-04-51-28-56071834"
+  },
+  "defaults": {
+    "instant": {
+      "loop": {
+        "holdS": 0.8
+      },
+      "range": {
+        "holdS": 0.8
+      },
+      "targets": "status",
+      "attackFrom": "skill",
+      "hits": "byCount",
+      "end": "play",
+      "ready": "skip",
+      "modeSwitch": false
+    },
+    "passive": {
+      "loop": "skill",
+      "range": "skill",
+      "targets": "status",
+      "attackFrom": "skill",
+      "hits": "byCount",
+      "end": "play",
+      "ready": "skip",
+      "modeSwitch": true
+    }
+  },
+  "entries": {
+    "char_127_estell": {
+      "assaultSkill": "舍身突击（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_127_estell",
+        "skill": "skchr_estell_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "none"
+      },
+      "extras": [],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "进击结算直接 dmg（不发 atk）；原作自身攻击 buff 循环压成 0.6 秒；巴扎卡已删去治疗分支",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/0",
+        "card": "server/sim/content/assault/cards/assault.js:620",
+        "original": "skill_table skchr_estell_2: MANUAL, durationType NONE, duration 15, spType INCREASE_WHEN_TAKEN_DAMAGE, spCost 20, maxChargeTime 1",
+        "index": "skills.skchr_estell_2: start 无, loop [estell_skill_02_buff*], range 无, end 无, targets 无, attacks 0 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_337_utage": {
+      "assaultSkill": "落地斩·破门（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_337_utage",
+        "skill": "skchr_utage_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作是开 S2 换攻击模式的重击；进击每个目标只吃一击，S2 模式仅 1 组 hit，byCount 即可",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/1",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_utage_2: PASSIVE, durationType NONE, duration -1, spType 8, spCost 0, maxChargeTime 0",
+        "index": "skills.skchr_utage_2: start 无, loop [utage_skill_02_buff*], range 无, end 无, targets 无, attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 1 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_491_humus": {
+      "assaultSkill": "固废切割（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_491_humus",
+        "skill": "skchr_humus_1"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "heal",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "回复 80 生命由程序治疗提示表现，原作无对应命中特效"
+        }
+      ],
+      "confidence": "high",
+      "status": "filled",
+      "notes": "技能预制体自带 1 组 cast/hit，攻击行全部取默认",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/2",
+        "card": "server/sim/content/assault/cards/assault.js:27",
+        "original": "skill_table skchr_humus_1: AUTO, durationType NONE, duration 0, spType INCREASE_WHEN_ATTACK, spCost 3, maxChargeTime 1",
+        "index": "skills.skchr_humus_1: start 无, loop 无, range 无, end 无, targets 无, attacks 1 条（hit 1 组）, mode 无"
+      }
+    },
+    "char_237_gravel": {
+      "assaultSkill": "鼠群（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_237_gravel",
+        "skill": "skchr_gravel_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "屏障由原作自身 buff 循环 gravel_skill_02_buff 覆盖"
+        },
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "强制敌人优先攻击自身是纯目标选择，无官方特效"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "结算无伤害，攻击行为 none；10–12 秒衰减屏障压成 0.6 秒光效",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/3",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_gravel_2: PASSIVE, durationType NONE, duration -1, spType 8, spCost 0, maxChargeTime 0",
+        "index": "skills.skchr_gravel_2: start 无, loop [gravel_skill_02_buff], range 无, end 无, targets 无, attacks 0 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_308_swire": {
+      "assaultSkill": "协同作战（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_308_swire",
+        "skill": "skchr_swire_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [
+        {
+          "what": "link",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "被号令的近战友方各播自己的普攻特效"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "号令友方立即攻击属于联动，本条只负责本体一击",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/4",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_swire_2: MANUAL, durationType NONE, duration 30, spType INCREASE_WHEN_ATTACK, spCost 45, maxChargeTime 1",
+        "index": "skills.skchr_swire_2: start 无, loop [swire_skill_01_buff*, swire_skill_02_buff*, swire_skill_02_buff_02*], range 无, end 无, targets 无, attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 1 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_265_sophia": {
+      "assaultSkill": "鞭刃（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_265_sophia",
+        "skill": "skchr_sophia_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "护盾由原作自身 buff 循环 sophia_skill_02_buff 覆盖"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "至多 3 名敌人各一击，H=1；S2 模式 hit 1 组",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/5",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_sophia_2: MANUAL, durationType NONE, duration 25, spType INCREASE_WITH_TIME, spCost 60, maxChargeTime 1",
+        "index": "skills.skchr_sophia_2: start 无, loop [sophia_skill_02_buff*], range 无, end 无, targets 无, attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 1 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_154_morgan": {
+      "assaultSkill": "无畏招架（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_154_morgan",
+        "skill": "skchr_morgan_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "屏障由原作自身 buff/shield 循环覆盖"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "自身最大生命代价与屏障为即时结算，S2 模式 hit 1 组",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/6",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_morgan_2: PASSIVE, durationType NONE, duration 18, spType 8, spCost 0, maxChargeTime 1",
+        "index": "skills.skchr_morgan_2: start [morgan_skill_02_shield_start], loop [morgan_skill_02_buff*, morgan_skill_02_shield*], range 无, end 无, targets 无, attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 2 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_155_tiger": {
+      "assaultSkill": "碎甲拳（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_155_tiger",
+        "skill": "skchr_tiger_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": "技能预制体自带 1 组 cast/hit，无循环，全部默认"
+    },
+    "char_140_whitew": {
+      "assaultSkill": "狼魂（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_140_whitew",
+        "skill": "skchr_whitew_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [
+        {
+          "what": "status:silence",
+          "signal": {
+            "event": "status",
+            "name": "silence"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "沉默由通用状态循环 buff_silence 自动播"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "S2 模式无 hit 行、投射物在模式攻击上；至多 3 名敌人各一击",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/8",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_whitew_2: AUTO, durationType NONE, duration 20, spType INCREASE_WHEN_ATTACK, spCost 17, maxChargeTime 1",
+        "index": "skills.skchr_whitew_2: start 无, loop [whitew_skill_02_buff_02*], range 无, end 无, targets 无, attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 1 条, hit 0 组, projectile projectile_whitew_s2"
+      }
+    },
+    "char_294_ayer": {
+      "assaultSkill": "多导向散射弹丸（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_294_ayer",
+        "skill": "skchr_ayer_1"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "status:sluggish",
+          "signal": {
+            "event": "status",
+            "name": "sluggish"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "停顿由通用状态循环 buff_sluggish 自动播"
+        }
+      ],
+      "confidence": "high",
+      "status": "filled",
+      "notes": "技能预制体 RangedAttack 带投射物，攻击行全部默认",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/9",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_ayer_1: AUTO, durationType NONE, duration 0, spType INCREASE_WHEN_ATTACK, spCost 3, maxChargeTime 1",
+        "index": "skills.skchr_ayer_1: start 无, loop 无, range 无, end 无, targets 无, attacks 1 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_143_ghost": {
+      "assaultSkill": "肉斩骨断（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_143_ghost",
+        "skill": "skchr_ghost_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "致命伤保护由 ghost_skill_02_buff 循环覆盖"
+        },
+        {
+          "what": "status:stun",
+          "signal": {
+            "event": "status",
+            "name": "stun"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "保护触发后的自我晕眩由通用状态循环 buff_stun 播"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "周围至多 3 名敌人各一击，无攻击行；自我晕眩只在保护触发后出现",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/10",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_ghost_2: MANUAL, durationType NONE, duration 15, spType INCREASE_WITH_TIME, spCost 40, maxChargeTime 1",
+        "index": "skills.skchr_ghost_2: start 无, loop [ghost_skill_02_buff*, buff_stun*], range 无, end 无, targets 无, attacks 0 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_356_broca": {
+      "assaultSkill": "高压电流（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_356_broca",
+        "skill": "skchr_broca_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [
+        {
+          "what": "status:sluggish",
+          "signal": {
+            "event": "status",
+            "name": "sluggish"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "停顿由通用状态循环 buff_sluggish 自动播"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "S2 模式只有 cast/range 行、无 hit 行；至多 6 名敌人各一击",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/11",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_broca_2: MANUAL, durationType NONE, duration 25, spType INCREASE_WITH_TIME, spCost 35, maxChargeTime 1",
+        "index": "skills.skchr_broca_2: start 无, loop [broca_skill_02_buff*, broca_skill_02_buff_02*, buff_stun*], range 无, end 无, targets 无, attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 2 条, hit 0 组, projectile 无"
+      }
+    },
+    "char_4155_talr": {
+      "assaultSkill": "缝线缠身（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4155_talr",
+        "skill": "skchr_talr_2"
+      },
+      "phases": {
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "status:bind",
+          "signal": {
+            "event": "status",
+            "name": "bind"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "束缚由通用状态循环自动播"
+        },
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "每秒持续伤害与固定部署费用消耗由程序表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作目标 buff 挂在 targets（3 条），进击改为 sim 束缚状态；无攻击行",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/12",
+        "card": "server/sim/content/assault/cards/assault.js:1178",
+        "original": "skill_table skchr_talr_2: MANUAL, durationType NONE, duration 8, spType INCREASE_WITH_TIME, spCost 8, maxChargeTime 1",
+        "index": "skills.skchr_talr_2: start 无, loop 无, range 无, end 无, targets [talr_skill_02_buff_01*, talr_skill_02_hit_01*, talr_skill_02_buff_02*], attacks 0 条（hit 0 组）, mode s2; modes[s2].attack cast 0 条, hit 0 组, projectile 无"
+      }
+    },
+    "char_173_slchan": {
+      "assaultSkill": "束缚链（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_173_slchan",
+        "skill": "skchr_slchan_2"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "status:stun",
+          "signal": {
+            "event": "status",
+            "name": "stun"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "晕眩由通用状态循环 buff_stun 自动播"
+        }
+      ],
+      "confidence": "high",
+      "status": "filled",
+      "notes": "钩锁投射物保留，真实伤害为直接 dmg；至多 3 名敌人各一击",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/13",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_slchan_2: MANUAL, durationType NONE, duration 0, spType INCREASE_WITH_TIME, spCost 15, maxChargeTime 1",
+        "index": "skills.skchr_slchan_2: start 无, loop 无, range 无, end 无, targets 无, attacks 1 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_4036_forcer": {
+      "assaultSkill": "惊爆射击（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4036_forcer",
+        "skill": "skchr_forcer_2"
+      },
+      "phases": {
+        "projectile": "none"
+      },
+      "extras": [
+        {
+          "what": "status:stun",
+          "signal": {
+            "event": "status",
+            "name": "stun"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "撞墙/碰撞延长由通用状态循环播晕眩"
+        },
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "推挤位移由 sim 推挤动画表现，无官方对应键"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "进击是原地把范围内所有敌人推开，不是远程命中，故不飞投射物",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/14",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_forcer_2: MANUAL, durationType NONE, duration -1, spType INCREASE_WITH_TIME, spCost 17, maxChargeTime 1",
+        "index": "skills.skchr_forcer_2: start 无, loop 无, range 无, end 无, targets 无, attacks 2 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_451_robin": {
+      "assaultSkill": "弹射“夹子”（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_451_robin",
+        "skill": "skchr_robin_2"
+      },
+      "phases": {
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "夹子是具名装置，复用原作夹子资源"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "伤害在夹子被踩中时结算，施放本身无攻击行",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/15",
+        "card": "server/sim/content/assault/cards/assault.js:97",
+        "original": "skill_table skchr_robin_2: AUTO, durationType NONE, duration 0, spType INCREASE_WITH_TIME, spCost 12, maxChargeTime 1",
+        "index": "skills.skchr_robin_2: start 无, loop 无, range 无, end 无, targets 无, attacks 0 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_4016_kazema": {
+      "assaultSkill": "纸艺·迅击（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4016_kazema",
+        "skill": "skchr_kazema_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": "技能预制体 1 组 cast/hit，单体一击，全部默认"
+    },
+    "char_4151_tinman": {
+      "assaultSkill": "“大拉里”（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4151_tinman",
+        "skill": "skchr_tinman_2"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "heal",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "范围内友军每秒治疗由程序治疗提示表现"
+        },
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "大拉里持续 12–15 秒，由装置自身生命周期表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "投掷行取技能预制体 RangedAttack + 投射物；装置场不做同帧压缩",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/17",
+        "card": "server/sim/content/assault/cards/assault.js:91",
+        "original": "skill_table skchr_tinman_2: MANUAL, durationType NONE, duration -1, spType INCREASE_WITH_TIME, spCost 25, maxChargeTime 2",
+        "index": "skills.skchr_tinman_2: start [tinman_skill_02_start_03, tinman_skill_02_start_04], loop 无, range 无, end 无, targets [tinman_skill_02_heal_01*, tinman_skill_02_heal_01*], attacks 1 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_4191_tippi": {
+      "assaultSkill": "紧急赶场通知（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4191_tippi",
+        "skill": "skchr_tippi_2"
+      },
+      "phases": {
+        "attackFrom": "mode:S2"
+      },
+      "extras": [],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "三连射按同一目标 H=3，S2 模式无 hit 行，byCount；不使用起飞模式",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/18",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_tippi_2: AUTO, durationType NONE, duration 15, spType INCREASE_WITH_TIME, spCost 10, maxChargeTime 1",
+        "index": "skills.skchr_tippi_2: start 无, loop 无, range 无, end 无, targets 无, attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 1 条, hit 0 组, projectile projectile_chr_tippi_s2"
+      }
+    },
+    "char_1028_texas2": {
+      "assaultSkill": "剑雨滂沱（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1028_texas2",
+        "skill": "skchr_texas2_3"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 1.2
+        }
+      },
+      "extras": [
+        {
+          "what": "status:stun",
+          "signal": {
+            "event": "status",
+            "name": "stun"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "落地晕眩由通用状态循环 buff_stun 自动播"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "剑雨范围是技能主体画面，循环取 1.2 秒；每目标 2 段，攻击行取技能预制体",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/19",
+        "card": "server/sim/content/assault/cards/assault.js:19",
+        "original": "skill_table skchr_texas2_3: PASSIVE, durationType NONE, duration 8, spType 8, spCost 0, maxChargeTime 1",
+        "index": "skills.skchr_texas2_3: start [common_empty], loop [texas2_skill_03_range*, texas2_skill_03_buff*, texas2_skill_03_buff*], range 无, end 无, targets 无, attacks 2 条（hit 0 组）, mode S3; modes[S3].attack cast 1 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_1033_swire2": {
+      "assaultSkill": "“见面礼”（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1033_swire2",
+        "skill": "skchr_swire2_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 1.2
+        },
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "status:sluggish",
+          "signal": {
+            "event": "status",
+            "name": "sluggish"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "停顿由通用状态循环 buff_sluggish 自动播"
+        },
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "香槟炸弹是具名装置，复用原作装置资源"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "施放只放装置，S2 模式是 Trigger 节点、无攻击行；伤害在炸弹触发时结算",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/20",
+        "card": "server/sim/content/assault/cards/assault.js:88",
+        "original": "skill_table skchr_swire2_2: PASSIVE, durationType NONE, duration -1, spType 8, spCost 0, maxChargeTime 1",
+        "index": "skills.skchr_swire2_2: start 无, loop [swire2_skill_02_range*], range 无, end 无, targets 无, attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 0 条, hit 0 组, projectile 无"
+      }
+    },
+    "char_1041_angel2": {
+      "assaultSkill": "使命必达！（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1041_angel2",
+        "skill": "skchr_angel2_3"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S3"
+      },
+      "extras": [
+        {
+          "what": "redeploy",
+          "signal": {
+            "event": "deploy"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "被投送干员自己的部署特效"
+        },
+        {
+          "what": "spGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "返还 6 技力是游戏事实提示"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "同次五发对同一目标 H=5，S3 模式无 hit 行，byCount；巴扎卡已删去投送落点溅射",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/21",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_angel2_3: MANUAL, durationType AMMO, duration -1, spType INCREASE_WITH_TIME, spCost 35, maxChargeTime 1",
+        "index": "skills.skchr_angel2_3: start 无, loop [angel2_skill_3_buff_01*], range 无, end 无, targets 无, attacks 0 条（hit 0 组）, mode S3; modes[S3].attack cast 0 条, hit 0 组, projectile 无"
+      }
+    },
+    "char_474_glady": {
+      "assaultSkill": "缺水的大洋裂断（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_474_glady",
+        "skill": "skchr_glady_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": "技能预制体 RangedAttack + 投射物，单体一击并拖拽，全部默认"
+    },
+    "char_437_mizuki": {
+      "assaultSkill": "唤醒（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_437_mizuki",
+        "skill": "skchr_mizuki_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "medium",
+      "status": "default",
+      "notes": "技能预制体 MeleeAttack 有 cast、hit 组为空；命中特效可能只落通用火花，需实跑看"
+    },
+    "char_1023_ghost2": {
+      "assaultSkill": "生存的重压（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1023_ghost2",
+        "skill": "skchr_ghost2_3"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S3"
+      },
+      "extras": [
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "护盾由自身 buff 循环 ghost2_skill_03_buff_01 覆盖"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "阻挡敌人各一击（H=1），巴扎卡已删去条件追加伤害；S3 模式 hit 1 组",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/24",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_ghost2_3: MANUAL, durationType NONE, duration 25, spType INCREASE_WITH_TIME, spCost 40, maxChargeTime 1",
+        "index": "skills.skchr_ghost2_3: start 无, loop [ghost2_skill_03_buff_01*], range 无, end 无, targets 无, attacks 0 条（hit 0 组）, mode S3; modes[S3].attack cast 4 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_4048_doroth": {
+      "assaultSkill": "高速共振排障（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4048_doroth",
+        "skill": "skchr_doroth_3"
+      },
+      "phases": {
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "status:sluggish",
+          "signal": {
+            "event": "status",
+            "name": "sluggish"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "停顿由通用状态循环 buff_sluggish 自动播"
+        },
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "共振装置与延迟其他装置由装置自身生命周期表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "施放只补一枚装置，伤害在装置被踩中时结算，无攻击行",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/25",
+        "card": "server/sim/content/assault/cards/assault.js:166",
+        "original": "skill_table skchr_doroth_3: AUTO, durationType NONE, duration -1, spType INCREASE_WITH_TIME, spCost 12, maxChargeTime 1",
+        "index": "skills.skchr_doroth_3: start 无, loop 无, range 无, end 无, targets 无, attacks 0 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_1039_thorn2": {
+      "assaultSkill": "“我的海疆”（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1039_thorn2",
+        "skill": "skchr_thorn2_3"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "status:defDown",
+          "signal": {
+            "event": "status",
+            "name": "defDown"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "防御降低由通用状态循环 buff_defdown 播"
+        },
+        {
+          "what": "status:resDown",
+          "signal": {
+            "event": "status",
+            "name": "resDown"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "法抗降低由通用状态循环 buff_magic_resistance_down 播"
+        },
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "炼金单元持续 20–23 秒，由装置自身生命周期表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "只投掷装置，本体无伤害；装置的持续伤害不压缩成同帧特效",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/26",
+        "card": "server/sim/content/assault/cards/assault.js:2244",
+        "original": "skill_table skchr_thorn2_3: MANUAL, durationType NONE, duration -1, spType INCREASE_WITH_TIME, spCost 60, maxChargeTime 1",
+        "index": "skills.skchr_thorn2_3: start 无, loop 无, range 无, end 无, targets 无, attacks 1 条（hit 0 组）, mode S3; modes[S3].attack cast 1 条, hit 0 组, projectile projectile_chr_thorn2"
+      }
+    },
+    "char_264_f12yin": {
+      "assaultSkill": "左勾扫拳（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_264_f12yin",
+        "skill": "skchr_f12yin_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": "技能预制体 1 组 cast/hit，至多 2 名敌人各一击，全部默认"
+    },
+    "char_2024_chyue": {
+      "assaultSkill": "我无（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_2024_chyue",
+        "skill": "skchr_chyue_3"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "medium",
+      "status": "default",
+      "notes": "技能有 3 条 RangedAttack（同一结算只打一下），会连播 3 个投射物；巴扎卡已删去增强形态"
+    },
+    "char_4037_demetr": {
+      "assaultSkill": "家主的余裕（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4037_demetr",
+        "skill": "skchr_demetr_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": "MultiMeleeAttack 1 组 hit，单体 2 段（H=2, G=1），全部默认"
+    },
+    "char_172_svrash": {
+      "assaultSkill": "强力击·γ型（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_172_svrash",
+        "skill": "skchr_svrash_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": "技能预制体 RangedAttack + 投射物，单体一击，全部默认"
+    },
+    "char_4082_qiubai": {
+      "assaultSkill": "留羽（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4082_qiubai",
+        "skill": "skchr_qiubai_1"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "status:bind",
+          "signal": {
+            "event": "status",
+            "name": "bind"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "束缚由通用状态循环自动播"
+        }
+      ],
+      "confidence": "high",
+      "status": "filled",
+      "notes": "技能预制体 RangedAttack + 投射物；延迟范围伤害与束缚都是同次结算的直接 dmg/状态",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/31",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_qiubai_1: AUTO, durationType NONE, duration -1, spType INCREASE_WHEN_ATTACK, spCost 4, maxChargeTime 1",
+        "index": "skills.skchr_qiubai_1: start 无, loop 无, range 无, end 无, targets [qiubai_skill_01_buff*], attacks 1 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_4145_ulpia": {
+      "assaultSkill": "必须促成的接触（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4145_ulpia",
+        "skill": "skchr_ulpia_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": "技能预制体 RangedAttack + 投射物，落点至多 2 名敌人各一击，全部默认"
+    },
+    "char_4058_pepe": {
+      "assaultSkill": "盖戳！（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4058_pepe",
+        "skill": "skchr_pepe_1"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        }
+      },
+      "extras": [],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "start 行照播；自身 buff 循环压成 0.6 秒；清除减益无独立官方键",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/33",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_pepe_1: AUTO, durationType NONE, duration -1, spType INCREASE_WITH_TIME, spCost 5, maxChargeTime 2",
+        "index": "skills.skchr_pepe_1: start [pepe_skill_01_hit_01], loop [pepe_skill_01_buff_01*], range 无, end 无, targets 无, attacks 1 条（hit 1 组）, mode 无"
+      }
+    },
+    "char_4116_blkkgt": {
+      "assaultSkill": "归于宁静（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4116_blkkgt",
+        "skill": "skchr_blkkgt_3"
+      },
+      "phases": {
+        "targets": {
+          "holdS": 0.8
+        }
+      },
+      "extras": [
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "震颤是进击新增的随机打断/伤害，无官方对应键"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "同目标 10 段（H=10），原作攻击行只有 1 组 hit；目标挂的震颤无 sim 状态，按 0.8 秒持有",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/34",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_blkkgt_3: MANUAL, durationType NONE, duration 0, spType INCREASE_WITH_TIME, spCost 30, maxChargeTime 1",
+        "index": "skills.skchr_blkkgt_3: start 无, loop 无, range 无, end 无, targets [blkkgt_skill_03_hit_1*], attacks 3 条（hit 1 组）, mode 无"
+      }
+    },
+    "char_1026_gvial2": {
+      "assaultSkill": "丛林之魂（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1026_gvial2",
+        "skill": "skchr_gvial2_3"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 1.2
+        },
+        "attackFrom": "mode:S3"
+      },
+      "extras": [
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "护盾由自身 buff 循环覆盖"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "电锯常驻光是技能主体画面，取 1.2 秒；同目标 3 段，S3 模式 hit 1 组",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/35",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_gvial2_3: MANUAL, durationType NONE, duration 25, spType INCREASE_WITH_TIME, spCost 35, maxChargeTime 1",
+        "index": "skills.skchr_gvial2_3: start 无, loop [gvial2_skill_3_buff_01_f*, gvial2_skill_3_buff_01_b*, gvial2_chainsaw_glow_02*], range 无, end 无, targets 无, attacks 0 条（hit 0 组）, mode S3; modes[S3].attack cast 1 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_350_surtr": {
+      "assaultSkill": "烈焰魔剑（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_350_surtr",
+        "skill": "skchr_surtr_1"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "spGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "击杀重置技力是游戏事实提示"
+        }
+      ],
+      "confidence": "high",
+      "status": "filled",
+      "notes": "技能预制体 1 组 cast/hit，单体一击；余烬天赋由 kit fx 自己播",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/36",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_surtr_1: AUTO, durationType NONE, duration 0, spType INCREASE_WHEN_ATTACK, spCost 2, maxChargeTime 1",
+        "index": "skills.skchr_surtr_1: start 无, loop 无, range 无, end 无, targets 无, attacks 1 条（hit 1 组）, mode 无"
+      }
+    },
+    "char_1019_siege2": {
+      "assaultSkill": "重铸晖光（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1019_siege2",
+        "skill": "skchr_siege2_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": "技能预制体 MeleeAttack 只有 cast，真实伤害为直接 dmg；周围 8 格各一击"
+    },
+    "char_188_helage": {
+      "assaultSkill": "新月（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_188_helage",
+        "skill": "skchr_helage_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": "MultiMeleeAttack 1 组 hit，单体 2 段（H=2, G=1），全部默认"
+    },
+    "char_1014_nearl2": {
+      "assaultSkill": "耀阳颔首（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1014_nearl2",
+        "skill": "skchr_nearl2_3"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S3"
+      },
+      "extras": [
+        {
+          "what": "summon",
+          "signal": {
+            "event": "spawn"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "耀阳出场播自己的出生特效"
+        },
+        {
+          "what": "status:stun",
+          "signal": {
+            "event": "status",
+            "name": "stun"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "耀阳晕眩由通用状态循环 buff_stun 自动播"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "S3 模式 2 组 hit；耀阳真实伤害 + 本体范围物理各一击（H=2）",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/39",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_nearl2_3: MANUAL, durationType NONE, duration 25, spType INCREASE_WITH_TIME, spCost 40, maxChargeTime 1",
+        "index": "skills.skchr_nearl2_3: start 无, loop [nearl2_skill_03_buff_02_a*], range 无, end 无, targets 无, attacks 0 条（hit 0 组）, mode S3; modes[S3].attack cast 1 条, hit 2 组, projectile 无"
+      }
+    },
+    "char_1032_excu2": {
+      "assaultSkill": "圣约决裁（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1032_excu2",
+        "skill": "skchr_excu2_3"
+      },
+      "phases": {
+        "attackFrom": "mode:S3"
+      },
+      "extras": [
+        {
+          "what": "atkBuff",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "每发弹药攻击力提升由 excu2_common_fx01 循环覆盖"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "同次 3 发 + 终结一击（H=4），S3 模式 hit 1 组，byCount",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/40",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_excu2_3: MANUAL, durationType AMMO, duration 0, spType INCREASE_WHEN_ATTACK, spCost 24, maxChargeTime 1",
+        "index": "skills.skchr_excu2_3: start 无, loop [excu2_common_fx01], range 无, end 无, targets 无, attacks 0 条（hit 0 组）, mode S3; modes[S3].attack cast 4 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_4010_etlchi": {
+      "assaultSkill": "玫影觅迹（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4010_etlchi",
+        "skill": "skchr_etlchi_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": "MultiMeleeAttack 1 组 hit，单体 2 段（H=2, G=1），全部默认"
+    },
+    "char_4064_mlynar": {
+      "assaultSkill": "未照耀的荣光（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4064_mlynar",
+        "skill": "skchr_mlynar_3"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S3"
+      },
+      "extras": [
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "护盾由自身 buff 循环覆盖"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "S3 BigAttack 1 组 hit；至多 5 名敌人各一击；巴扎卡已删去附带真实伤害",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/42",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_mlynar_3: MANUAL, durationType NONE, duration 28, spType INCREASE_WITH_TIME, spCost 42, maxChargeTime 1",
+        "index": "skills.skchr_mlynar_3: start 无, loop [mlynar_skill_03_buff_02*, mlynar_skill_03_buff_03*], range 无, end 无, targets 无, attacks 0 条（hit 0 组）, mode S3; modes[S3].attack cast 3 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_263_skadi": {
+      "assaultSkill": "涌潮悲歌（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_263_skadi",
+        "skill": "skchr_skadi_3"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S3"
+      },
+      "extras": [
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "护盾由自身 buff 循环覆盖"
+        },
+        {
+          "what": "heal",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "回复最大生命由程序治疗提示表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "S3 模式 hit 1 组，至多 3 名敌人各一击；巴扎卡已删去治疗分支但仍保留护盾",
+      "evidence": {
+        "design": "data/assault-design/roster-assault.json#/operators/43",
+        "card": "server/sim/content/assault/cards/assault.js:584",
+        "original": "skill_table skchr_skadi_3: MANUAL, durationType NONE, duration 50, spType INCREASE_WITH_TIME, spCost 90, maxChargeTime 1",
+        "index": "skills.skchr_skadi_3: start 无, loop [skadi_skill_03_buff*], range 无, end 无, targets 无, attacks 0 条（hit 0 组）, mode S3; modes[S3].attack cast 2 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_4232_hbound": {
+      "assaultSkill": "座浅",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4232_hbound",
+        "skill": "skchr_hbound_2"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "medium",
+      "status": "default",
+      "notes": "座浅是原生技能直通（nativeMechanism），不进击重写；攻击行取技能预制体 RangedAttack + 投射物"
+    },
+    "char_4231_clemnt": {
+      "assaultSkill": "冲蚀（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4231_clemnt",
+        "skill": "skchr_clemnt_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": "技能预制体 1 组 cast/hit，单体一击 + 侵蚀追加伤害（H=2, G=1），全部默认"
+    },
+    "char_4000_jnight": {
+      "assaultSkill": "正义助威（进击）",
+      "shape": "passive",
+      "official": null,
+      "phases": {},
+      "extras": [
+        {
+          "what": "status:fragile",
+          "signal": {
+            "event": "status",
+            "name": "fragile"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "空中单位脆弱是 sim 状态，通用状态循环自动播 buff_fragile"
+        },
+        {
+          "what": "other",
+          "signal": {
+            "event": "deploy"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "远程位嘲讽窗口是索敌事实，没有对应特效；入场表现走自身部署特效"
+        }
+      ],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/0",
+        "card": "server/sim/content/assault/cards/ranged-plans.js:33",
+        "original": "无（正义骑士号没有原生技能，skill_table 无条目）",
+        "index": "index.units.char_4000_jnight 存在但没有 skills；plan 全空"
+      },
+      "confidence": "low",
+      "status": "filled",
+      "notes": "无原生技能，official 为 null，只用 extras；脆弱交给通用状态循环"
+    },
+    "char_253_greyy": {
+      "assaultSkill": "静电释放（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_253_greyy",
+        "skill": "skchr_greyy_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2",
+        "projectile": "none"
+      },
+      "extras": [],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/1",
+        "card": "server/sim/content/assault/cards/ranged-plans.js:202",
+        "original": "skill_table skchr_greyy_2: MANUAL, duration 30, spCost 60, 充能 1 次",
+        "index": "ActiveBuffAbility；loop greyy_skill_02_buff(owner, switch_mode)；mode S2 cast greyy_attack_01_start + projectile_greyy，无 hit 组"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "范围法术伤害在进击里是原地一次结算（无弹道），projectile 关掉；S2 模式只提供施法起手特效；停顿是 sim 状态 slow"
+    },
+    "char_4051_akkord": {
+      "assaultSkill": "反拍重音（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4051_akkord",
+        "skill": "skchr_akkord_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_469_indigo": {
+      "assaultSkill": "光影迷宫（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_469_indigo",
+        "skill": "skchr_indigo_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2",
+        "projectile": "none"
+      },
+      "extras": [],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/3",
+        "card": "server/sim/content/assault/cards/ranged-plans.js:51",
+        "original": "skill_table skchr_indigo_2: MANUAL, duration 20, spCost 40, 充能 1 次",
+        "index": "ActiveAbilityWrapper；3 个 owner loop（indigo_skill_02_buff_01/02/04）；mode S2 cast indigo_skill_01_start + projectile_chr_indigo_s2，无 hit 组"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "范围法术伤害与概率束缚原地结算，不飞投射物；束缚是 sim 状态 bind，交给通用状态循环"
+    },
+    "char_235_jesica": {
+      "assaultSkill": "强力击·β型（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_235_jesica",
+        "skill": "skchr_jesica_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_126_shotst": {
+      "assaultSkill": "碎甲击（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_126_shotst",
+        "skill": "skchr_shotst_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_190_clour": {
+      "assaultSkill": "双弦开弓（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_190_clour",
+        "skill": "skchr_clour_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 1.2
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/6",
+        "card": "server/sim/content/assault/cards/ranged-plans.js:67",
+        "original": "skill_table skchr_clour_2: MANUAL, duration 20, spCost 20, 充能 1 次",
+        "index": "ActiveBuffAbility；loop common_ignite_attack(owner, switch_mode)；mode S2 cast clour_skill_02_start + projectile_clour_s12，无 hit 组"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "至多两名敌人各一击（每个目标 H=1），byCount 取首组；loop 是武器点火光，按技能主体 1.2 秒"
+    },
+    "char_440_pinecn": {
+      "assaultSkill": "RMA长钉（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_440_pinecn",
+        "skill": "skchr_pinecn_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_366_acdrop": {
+      "assaultSkill": "扳机时刻（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_366_acdrop",
+        "skill": "skchr_acdrop_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/8",
+        "card": "server/sim/content/assault/cards/ranged-plans.js:109",
+        "original": "skill_table skchr_acdrop_2: MANUAL, duration 25, spCost 50, 充能 1 次",
+        "index": "ActiveBuffAbility；loop acdrop_skill_02_buff(owner, switch_mode)；mode S2 cast acdrop_skill_02_start + projectile_chr_acdrop_s2，无 hit 组"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "两发各算一次命中（H=2），byCount；每发独立最低伤害不改命中组数"
+    },
+    "char_4100_caper": {
+      "assaultSkill": "强力击·β型（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4100_caper",
+        "skill": "skchr_caper_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_183_skgoat": {
+      "assaultSkill": "流沙化（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_183_skgoat",
+        "skill": "skchr_skgoat_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 1.2
+        },
+        "attackFrom": "none",
+        "projectile": "none"
+      },
+      "extras": [],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/10",
+        "card": "server/sim/content/assault/cards/ranged-plans.js:133",
+        "original": "skill_table skchr_skgoat_2: MANUAL, duration 25, spCost 40, 充能 1 次",
+        "index": "ActiveAbilityWrapper；loop skgoat_skill_02_range(owner, switch_mode_restart_fsm)；mode S2 无 cast/hit，projectile_skgoat"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "进击不发伤害，只施加停顿（sim 状态 slow）；loop 是沙地范围场，按技能主体 1.2 秒；不播攻击行"
+    },
+    "char_258_podego": {
+      "assaultSkill": "孢子扩散（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_258_podego",
+        "skill": "skchr_podego_2"
+      },
+      "phases": {
+        "attackFrom": "none"
+      },
+      "extras": [],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/11",
+        "card": "server/sim/content/assault/cards/ranged-plans.js:145",
+        "original": "skill_table skchr_podego_2: MANUAL, duration 0, spCost 23, 充能 1 次",
+        "index": "RangedAttack；start podego_skill_02_start；targets buff_silence；attack 只有 projectile_chr_podego_s2，无 hit 组"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "伤害来自孢子群每秒场地跳伤，不是一次攻击：关掉攻击行，避免每跳都飞一发投射物；沉默是 sim 状态 silence"
+    },
+    "char_484_robrta": {
+      "assaultSkill": "全自动造型仪（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_484_robrta",
+        "skill": "skchr_robrta_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "summon",
+          "signal": {
+            "event": "spawn"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "造型仪是库存装置，放下时走召唤物自己的部署特效"
+        },
+        {
+          "what": "shield",
+          "signal": {
+            "event": "status",
+            "name": "shield"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "护盾光效已由 loop robrta_skill_02_buff 覆盖"
+        }
+      ],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/12",
+        "card": "server/sim/content/assault/cards/ranged-plans.js:97",
+        "original": "skill_table skchr_robrta_2: MANUAL, duration 25, spCost 30, 充能 1 次",
+        "index": "ActiveBuffAbility；loop robrta_skill_02_buff(owner, switch_mode_restart_fsm)；mode S2 无 cast/hit/projectile"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "进击只发装置与护盾，没有伤害：attackFrom none；护盾数值增益由原技能自身 buff 光效覆盖"
+    },
+    "char_204_platnm": {
+      "assaultSkill": "天马视域（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_204_platnm",
+        "skill": "skchr_platnm_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/13",
+        "card": "server/sim/content/assault/cards/ranged-plans.js:157",
+        "original": "skill_table skchr_platnm_2: AUTO, duration 0, spCost 50, 充能 1 次",
+        "index": "ActiveBuffAbility；loop platnm_skill_02_buff(owner, switch_mode)；mode S2 cast platnm_skill_02_start + projectile_platnm_s2，无 hit 组"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "单发物理射击（每个目标 H=1），投射物保留 auto；进击不保留攻击力/射程姿态，只播一次蓄力射击"
+    },
+    "char_1021_kroos2": {
+      "assaultSkill": "封喉（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1021_kroos2",
+        "skill": "skchr_kroos2_2"
+      },
+      "phases": {
+        "attackFrom": "mode:S2"
+      },
+      "extras": [],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/14",
+        "card": "server/sim/content/assault/cards/ranged-plans.js:163",
+        "original": "skill_table skchr_kroos2_2: MANUAL, duration 30, spCost 35, 充能 1 次",
+        "index": "ActiveBuffAbility；mode S2 cast kroos2_skill_02_start_01 + projectile_chr_kroos2_s2，无 loop/hit 组"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "二连射=同一目标 H=2，byCount；封喉计数升级只改发数，不改命中组"
+    },
+    "char_498_inside": {
+      "assaultSkill": "“解决麻烦”（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_498_inside",
+        "skill": "skchr_inside_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/15",
+        "card": "server/sim/content/assault/cards/ranged-plans.js:169",
+        "original": "skill_table skchr_inside_2: MANUAL, durationType AMMO, spCost 20, 充能 1 次",
+        "index": "ActiveBuffAbility；loop inside_skill_02_buff_01(owner, switch_mode_restart_fsm)；mode S2 cast inside_skill_02_start_front + projectile_chr_inside_s2，无 hit 组"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "2–4 发点射，每个目标按发数 H=2–4，byCount；弹药是原作机制（skill_table AMMO），不新增 extras"
+    },
+    "char_279_excu": {
+      "assaultSkill": "最终旅程（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_279_excu",
+        "skill": "skchr_excu_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/16",
+        "card": "server/sim/content/assault/cards/ranged-plans.js:193",
+        "original": "skill_table skchr_excu_2: MANUAL, duration 20, spCost 70, 充能 1 次",
+        "index": "ActiveBuffAbility；loop excu_skill_02_buff(owner)；mode S2 cast excu_skill_02_start/02_start_02，hit 2 组（excu_attack_01_hit、excu_attack_02_hit），无投射物"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "二连击 H=2 与原技能 hit 2 组对齐，byCount；范围伤害原地结算，不写 projectile"
+    },
+    "char_346_aosta": {
+      "assaultSkill": "影钉（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_346_aosta",
+        "skill": "skchr_aosta_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/17",
+        "card": "server/sim/content/assault/cards/ranged-mid.js:433",
+        "original": "skill_table skchr_aosta_2: MANUAL, duration 25, spCost 50, 充能 1 次",
+        "index": "ActiveBuffAbility；loop aosta_skill_02_buff(owner)；mode S2 cast aosta_skill_02_start/02_start_02，hit 1 组 aosta_skill_02_hit"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "bazaar 已删去技能流血（ranged-mid.js:122 注释：流血只由普攻施加），实际结算只有范围伤害+束缚；每个目标 H=1"
+    },
+    "char_002_amiya": {
+      "assaultSkill": "奇美拉（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_002_amiya",
+        "skill": "skchr_amiya_3"
+      },
+      "phases": {
+        "attackFrom": "mode:S3"
+      },
+      "extras": [],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/18",
+        "card": "server/sim/content/assault/cards/ranged-mid.js:433",
+        "original": "skill_table skchr_amiya_3: MANUAL, duration 30, spCost 120, 充能 1 次",
+        "index": "ActiveBuffAbility；start 2 个 cast 键（amiya_skill_03_buff、amiya_skill_03_buff_02）；mode S3 cast amiya_skill_03_start + projectile_amiya_s3，无 hit 组"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "6–8 发随机目标，每个目标 H=1，byCount；结算后自身晕眩走通用状态循环 buff_stun；start 保留（技能开启姿态）"
+    },
+    "char_306_leizi": {
+      "assaultSkill": "初雷（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_306_leizi",
+        "skill": "skchr_leizi_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/19",
+        "card": "server/sim/content/assault/cards/ranged-mid.js:433",
+        "original": "skill_table skchr_leizi_2: MANUAL, duration 35, spCost 80, 充能 1 次",
+        "index": "ActiveBuffAbility；loop leizi_skill_02_buff(owner, switch_mode)；mode S2 cast leizi_skill_02_start + projectile_leizi_s2，无 hit 组"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "连锁闪电每名敌人一跳（每个目标 H=1），byCount；停顿是 sim 状态 slow"
+    },
+    "char_344_beewax": {
+      "assaultSkill": "守卫尖碑（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_344_beewax",
+        "skill": "skchr_beewax_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "summon",
+          "signal": {
+            "event": "spawn"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "方尖塔有自己的出生/部署特效"
+        },
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "方尖塔落地的八邻伤害与晕眩在塔的位置结算，不再从本体发攻击行，保留程序命中表现"
+        }
+      ],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/20",
+        "card": "server/sim/content/assault/cards/ranged-mid.js:433",
+        "original": "skill_table skchr_beewax_2: MANUAL, duration 20, spCost 20, 充能 1 次",
+        "index": "AbilitySequenceGroup；2 个 owner loop（beewax_skill_02_buff、buff_01）；mode S2 cast beewax_skill_02_range，hit 1 组 beewax_skill_01_hit"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "伤害发生在召唤物位置，本体不发攻击行；晕眩是 sim 状态 stun"
+    },
+    "char_373_lionhd": {
+      "assaultSkill": "解构与爆破（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_373_lionhd",
+        "skill": "skchr_lionhd_2"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_341_sntlla": {
+      "assaultSkill": "“女巫之泪”（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_341_sntlla",
+        "skill": "skchr_sntlla_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "none"
+      },
+      "extras": [],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/22",
+        "card": "server/sim/content/assault/cards/ranged-mid.js:434",
+        "original": "skill_table skchr_sntlla_2: MANUAL, duration 15, spCost 40, 充能 1 次",
+        "index": "ActiveBuffAbility；2 个 owner loop（sntlla_skill_02_buff_02_left、sntlla_skill_02_buff_01）；mode S2 无 cast/hit/projectile"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "冰凌在随机地块落地结算八邻伤害，伤害点不在本体：attackFrom none；寒冷是 sim 状态 cold"
+    },
+    "char_4031_liesel": {
+      "assaultSkill": "直到终曲（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4031_liesel",
+        "skill": "skchr_liesel_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 1.2
+        }
+      },
+      "extras": [],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/23",
+        "card": "server/sim/content/assault/cards/ranged-mid.js:434",
+        "original": "skill_table skchr_liesel_2: MANUAL, duration -1, spCost 12, 充能 1 次",
+        "index": "MultiRangedAttack；3 个 owner loop（liesel_skill_02_start_01、buff_01、buff_02）；attack cast liesel_skill_02_start_01 + projectile_chr_liesel_s2_1，无 hit 组"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "至多 3 个目标各一击（每个目标 H=1），byCount；loop 含施法起手光，按技能主体 1.2 秒；灼烧是 sim 状态 burn"
+    },
+    "char_388_mint": {
+      "assaultSkill": "聚能涡旋（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_388_mint",
+        "skill": "skchr_mint_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 1.2
+        }
+      },
+      "extras": [],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/24",
+        "card": "server/sim/content/assault/cards/ranged-mid.js:434",
+        "original": "skill_table skchr_mint_2: MANUAL, duration 20, spCost 25, 充能 1 次",
+        "index": "ActiveBuffAbility；2 个 owner loop（mint_skill_02_buff、mint_skill_02_range）；attacks 1（MeleeAttack，hit 1 组 mint_skill_01_hit）；mode S2 hit 同一组"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "卡面没有拖入近身格后的追加伤害实例（ranged-mid.js:216 只有一段 damage），每个目标 H=1；loop 含涡旋范围特效，按技能主体 1.2 秒"
+    },
+    "char_446_aroma": {
+      "assaultSkill": "强效清洁（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_446_aroma",
+        "skill": "skchr_aroma_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_4013_kjera": {
+      "assaultSkill": "心随意动（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4013_kjera",
+        "skill": "skchr_kjera_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/26",
+        "card": "server/sim/content/assault/cards/ranged-mid.js:435",
+        "original": "skill_table skchr_kjera_2: MANUAL, duration 25, spCost 40, 充能 1 次",
+        "index": "ActiveBuffAbility；loop kjera_skill_02_buff_01(owner, switch_mode_restart_fsm)；mode S2 cast kjera_skill_02_start_01 + projectile_chr_kjera_s2，无 hit 组"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "两台浮游单元对每个目标各打一次（H=2），byCount；寒冷是 sim 状态 cold"
+    },
+    "char_4040_rockr": {
+      "assaultSkill": "自负此轭（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4040_rockr",
+        "skill": "skchr_rockr_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/27",
+        "card": "server/sim/content/assault/cards/ranged-mid.js:435",
+        "original": "skill_table skchr_rockr_2: MANUAL, duration 40, spCost 40, 充能 1 次",
+        "index": "ActiveBuffAbility；4 个 owner loop；end 2 个（rockr_stun_01/02）；mode S2 cast rockr_skill_02_start_01/start_weapon_01 + projectile_chr_rockr_s2"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "单发浮游单元攻击（H=1）；自身晕眩由 end 的 rockr_stun 特效表现，end 保持 play"
+    },
+    "char_4054_malist": {
+      "assaultSkill": "神工意匠（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4054_malist",
+        "skill": "skchr_malist_2"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_242_otter": {
+      "assaultSkill": "爆破回收（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_242_otter",
+        "skill": "skchr_otter_2"
+      },
+      "phases": {
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "summon",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "被引爆的水獭回收，出场/离场走召唤物自己的特效"
+        },
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "每只水獭八邻爆炸在原地结算（伤害记在本体名下），没有从本体出发的攻击行"
+        }
+      ],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/29",
+        "card": "server/sim/content/assault/cards/ranged-mid.js:436",
+        "original": "skill_table skchr_otter_2: MANUAL, duration 0, spCost 30, 充能 1 次",
+        "index": "AnimatedActionToTargetAbility；start otter_skill_02_start；无 loop/attacks/mode"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "爆炸发生在每只水獭位置，攻击行会从本体发，故 attackFrom none；晕眩是 sim 状态 stun"
+    },
+    "char_145_prove": {
+      "assaultSkill": "杀戮嗅觉（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_145_prove",
+        "skill": "skchr_prove_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [
+        {
+          "what": "spGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "返还技力是游戏事实提示，保留程序表现"
+        }
+      ],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/30",
+        "card": "server/sim/content/assault/cards/ranged-mid.js:436",
+        "original": "skill_table skchr_prove_2: MANUAL, duration 35, spCost 30, 充能 1 次",
+        "index": "ActiveBuffAbility；start prove_skill_02_start；2 个 owner loop（prove_skill_02_buff、buff_02）；mode S2 cast prove_attack_01_start + projectile_prove"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "bazaar 改成对生命最低敌人结算、每少 20% 生命加一档（ranged-mid.js:289），仍是一发（H=1）；技力返还 4–7 是进击新增"
+    },
+    "char_4211_snhunt": {
+      "assaultSkill": "风雪连弩（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4211_snhunt",
+        "skill": "skchr_snhunt_2"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_174_slbell": {
+      "assaultSkill": "自然震慑（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_174_slbell",
+        "skill": "skchr_slbell_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 1.2
+        },
+        "attackFrom": "none",
+        "projectile": "none"
+      },
+      "extras": [
+        {
+          "what": "status:cold",
+          "signal": {
+            "event": "status",
+            "name": "cold"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "寒冷/冻结由通用状态循环 buff_cold / buff_autochess_frozen 自动播"
+        }
+      ],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/32",
+        "card": "server/sim/content/assault/cards/ranged-mid.js:436",
+        "original": "skill_table skchr_slbell_2: MANUAL, duration 25, spCost 40, 充能 1 次",
+        "index": "ActiveAbilityWrapper；2 个 loop（slbell_skill_02_range、slbell_skill_01_start）；mode S1-2 hit 1 组 slbell_attack_01_hit"
+      },
+      "confidence": "high",
+      "status": "filled",
+      "notes": "进击不普攻也不造成伤害，attackFrom none；寒冷是 sim 状态；范围场是技能主体，按 1.2 秒"
+    },
+    "char_254_vodfox": {
+      "assaultSkill": "诅咒娃娃（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_254_vodfox",
+        "skill": "skchr_vodfox_2"
+      },
+      "phases": {
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "summon",
+          "signal": {
+            "event": "deploy"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "诅咒娃娃是装置，放置时走自己的部署特效"
+        },
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "娃娃周围攻防削减是纯数值 buff（ranged-mid.js:322），sim 里没有对应状态可挂通用循环"
+        }
+      ],
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/33",
+        "card": "server/sim/content/assault/cards/ranged-mid.js:437",
+        "original": "skill_table skchr_vodfox_2: AUTO, duration -1, spCost 30, 充能 1 次",
+        "index": "InstantActionToOwnerAbility；无 loop/attacks/targets/start"
+      },
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "进击只发装置与数值光环，没有伤害：attackFrom none"
+    },
+    "char_4079_haini": {
+      "assaultSkill": "迷惑性洋流图（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4079_haini",
+        "skill": "skchr_haini_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_4032_provs": {
+      "assaultSkill": "纠纷起诉（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4032_provs",
+        "skill": "skchr_provs_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_4122_grabds": {
+      "assaultSkill": "竹笛飞声（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4122_grabds",
+        "skill": "skchr_grabds_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_4162_cathy": {
+      "assaultSkill": "战火淬炼（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4162_cathy",
+        "skill": "skchr_cathy_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "summon",
+          "signal": {
+            "event": "spawn"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "支援装置出场播它自己的出生特效，官方层不重复播"
+        },
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "自身护盾由 loop 的 skill_02_buff 光效覆盖"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "进击只投放支援装置并为自身加一次性护盾，没有伤害/治疗行；原作 30 秒 buff 窗压成 0.6 秒；装置的屏障补充走装置自己的计时",
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/37",
+        "card": "server/sim/content/assault/cards/ranged-mid.js:356",
+        "original": "skill_table skchr_cathy_2: MANUAL, durationType NONE, duration 30, spType INCREASE_WITH_TIME, spCost 30, maxChargeTime 1",
+        "index": "skills.skchr_cathy_2: start 无, loop [cathy_skill_02_buff], range 无, end 无, targets 无, attacks 0 条（无）, mode S2；modeAttack Modes/S2/Body/Attack cast 0 行、hit 0 组、projectile 无"
+      }
+    },
+    "char_4045_heidi": {
+      "assaultSkill": "虚构故事·锈城（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4045_heidi",
+        "skill": "skchr_heidi_2"
+      },
+      "phases": {
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "heal",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "即时治疗量由程序治疗表现承载，官方层只播 start 的鼓舞光效"
+        },
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "友方护盾由 start_01 循环光效覆盖"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "进击是即时群体治疗+护盾，无持续鼓舞窗口；S2 模式是 AuraHeal，没有 cast/hit 行，故不播攻击行；原作 20 秒窗压成一次",
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/38",
+        "card": "server/sim/content/assault/cards/ranged-mid.js:365",
+        "original": "skill_table skchr_heidi_2: MANUAL, durationType NONE, duration 20, spType INCREASE_WITH_TIME, spCost 30, maxChargeTime 1",
+        "index": "skills.skchr_heidi_2: start [heidi_skill_02_start_01, heidi_skill_02_start_02], loop 无, range 无, end 无, targets 无, attacks 0 条（无）, mode S2；modeAttack Modes/S2/Body/AuraHeal cast 0 行、hit 0 组、projectile 无"
+      }
+    },
+    "char_4019_ncdeer": {
+      "assaultSkill": "仙山去远（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4019_ncdeer",
+        "skill": "skchr_ncdeer_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 1.2
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "庇护（伤害减免）与自身远程物理抵挡是纯数值减伤，没有对应官方键，保留程序表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作 20 秒范围庇护场（loop 里含 ncdeer_skill_02_range）按主体画面压成 1.2 秒；治疗沿用 S2 模式的 Heal hit 行；庇护持续 10–12 秒、远程抵挡 15–20 秒由程序与状态图标表示",
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/39",
+        "card": "server/sim/content/assault/cards/ranged-mid.js:375",
+        "original": "skill_table skchr_ncdeer_2: MANUAL, durationType NONE, duration 20, spType INCREASE_WITH_TIME, spCost 40, maxChargeTime 1",
+        "index": "skills.skchr_ncdeer_2: start 无, loop [ncdeer_skill_02_buff, ncdeer_skill_02_buff_02, ncdeer_skill_02_buff_03, ncdeer_skill_02_buff_04, ncdeer_skill_02_range], range 无, end 无, targets 无, attacks 0 条（无）, mode S2；modeAttack Modes/S2/Body/Heal cast 1 行、hit 1 组、projectile 无"
+      }
+    },
+    "char_103_angel": {
+      "assaultSkill": "冲锋模式（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_103_angel",
+        "skill": "skchr_angel_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_332_archet": {
+      "assaultSkill": "箭矢·追猎（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_332_archet",
+        "skill": "skchr_archet_2"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_430_fartth": {
+      "assaultSkill": "光羽箭（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_430_fartth",
+        "skill": "skchr_fartth_3"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S3"
+      },
+      "extras": [],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作是 30 秒 S3 模式、技能本体没有攻击行；loop 两条自身 buff 光效压成 0.6 秒；直线一箭按 S3 模式攻击行播（cast 有、hit 0 组，命中走通用命中）",
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/42",
+        "card": "server/sim/content/assault/cards/ranged-elite.js:241",
+        "original": "skill_table skchr_fartth_3: MANUAL, durationType NONE, duration 20, spType INCREASE_WITH_TIME, spCost 20, maxChargeTime 1",
+        "index": "skills.skchr_fartth_3: start 无, loop [fartth_skill_03_buff_02, fartth_skill_03_buff_04], range 无, end 无, targets 无, attacks 0 条（无）, mode S3；modeAttack Modes/S3/Body/Attack cast 1 行、hit 0 组、projectile projectile_chr_fartth_s3"
+      }
+    },
+    "char_4193_lemuen": {
+      "assaultSkill": "礼炮·强制追思（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4193_lemuen",
+        "skill": "skchr_lemuen_3"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S3"
+      },
+      "extras": [],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作是弹药技能；loop 一条自身 buff 光效压成 0.6 秒；多点轰炸按 S3 模式攻击行播，该模式只有 aim 投射物、hit 0 组，命中走通用命中；每个被锁定目标各一击（H=1）",
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/43",
+        "card": "server/sim/content/assault/cards/ranged-elite.js:253",
+        "original": "skill_table skchr_lemuen_3: MANUAL, durationType AMMO, duration -1, spType INCREASE_WITH_TIME, spCost 38, maxChargeTime 1",
+        "index": "skills.skchr_lemuen_3: start 无, loop [lemuen_skill_03_buff_01], range 无, end 无, targets 无, attacks 0 条（无）, mode S3；modeAttack Modes/S3/Body/Attack cast 0 行、hit 0 组、projectile projectile_chr_lemuen_s3_aim"
+      }
+    },
+    "char_391_rosmon": {
+      "assaultSkill": "思维膨大（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_391_rosmon",
+        "skill": "skchr_rosmon_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_1035_wisdel": {
+      "assaultSkill": "定点清算（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1035_wisdel",
+        "skill": "skchr_wisdel_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_4117_ray": {
+      "assaultSkill": "脱身矢（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4117_ray",
+        "skill": "skchr_ray_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_213_mostma": {
+      "assaultSkill": "荒时之锁（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_213_mostma",
+        "skill": "skchr_mostma_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 1.2
+        },
+        "range": {
+          "holdS": 1.2
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作 7 秒时滞场+全场晕眩，loop/range 是技能主体画面，按规则 3 取 1.2 秒；范围伤害沿用 S2 模式 hit 组；晕眩是通用状态（targets 保持 status，不重复播）",
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/47",
+        "card": "server/sim/content/assault/cards/ranged-elite.js:336",
+        "original": "skill_table skchr_mostma_2: MANUAL, durationType NONE, duration 7, spType INCREASE_WITH_TIME, spCost 50, maxChargeTime 1",
+        "index": "skills.skchr_mostma_2: start 无, loop [mostma_skill_02_start], range [mostma_skill_02_range_02, mostma_skill_02_range], end 无, targets [mostma_skill_02_buff], attacks 0 条（无）, mode S2；modeAttack Modes/S2/Body/Attack cast 3 行、hit 1 组、projectile 无"
+      }
+    },
+    "char_4027_heyak": {
+      "assaultSkill": "但为求索（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4027_heyak",
+        "skill": "skchr_heyak_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_4133_logos": {
+      "assaultSkill": "延异视阈（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4133_logos",
+        "skill": "skchr_logos_3"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 1.2
+        },
+        "attackFrom": "mode:S3"
+      },
+      "extras": [],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作 30 秒 S3 模式，loop 含范围场 logos_skill3_range_01（主体画面）压成 1.2 秒；敌方子弹减速 6–9 秒是 sim 机制，官方层没有可持有键，只播开头一次",
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/49",
+        "card": "server/sim/content/assault/cards/ranged-elite.js:363",
+        "original": "skill_table skchr_logos_3: MANUAL, durationType NONE, duration 30, spType INCREASE_WITH_TIME, spCost 45, maxChargeTime 1",
+        "index": "skills.skchr_logos_3: start 无, loop [logos_skill3_range_01, logos_skill3_buff_01], range 无, end 无, targets 无, attacks 0 条（无）, mode S3；modeAttack Modes/S3/Body/Attack cast 2 行、hit 0 组、projectile projectile_chr_logos_s3"
+      }
+    },
+    "char_2015_dusk": {
+      "assaultSkill": "工笔入化（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_2015_dusk",
+        "skill": "skchr_dusk_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_472_pasngr": {
+      "assaultSkill": "辉煌裂片（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_472_pasngr",
+        "skill": "skchr_pasngr_3"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "雷暴领域持续 4–5 秒、每 0.5 秒 tick，超过 3 秒没有可持有的官方循环键，保留程序表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "进击在最高生命敌人位置生成 4–5 秒雷暴领域，逐 0.5 秒连锁；每次 tick 的伤害按技能攻击行（cast pasngr_skill_03_start + 投射物）播，领域本身由程序表现承载",
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/51",
+        "card": "server/sim/content/assault/cards/ranged-elite.js:416",
+        "original": "skill_table skchr_pasngr_3: MANUAL, durationType NONE, duration -1, spType INCREASE_WITH_TIME, spCost 30, maxChargeTime 2",
+        "index": "skills.skchr_pasngr_3: start 无, loop 无, range 无, end 无, targets 无, attacks 1 条（cast [pasngr_skill_03_start]，hit 0 组，projectile projectile_chr_pasngr_s3）, mode 无"
+      }
+    },
+    "char_426_billro": {
+      "assaultSkill": "沙缚镣锁（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_426_billro",
+        "skill": "skchr_billro_2"
+      },
+      "phases": {
+        "attackFrom": "mode:S2"
+      },
+      "extras": [
+        {
+          "what": "heal",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "自身按最大生命比例回血由程序治疗表现承载"
+        },
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "official": [
+              "common_shield_01"
+            ],
+            "at": "owner",
+            "holdS": 0.6
+          },
+          "why": "一次性护盾是纯数值增益，原技能没有自身 buff 循环，挑语义最近的通用护盾只持有 0.6 秒"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作 25 秒 S2 模式；进击只结算一次范围法伤（沿用 S2 hit 行，每目标一击）+ 自身回血与一次性护盾；持续防御强化在进击里不存在",
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/52",
+        "card": "server/sim/content/assault/cards/ranged-elite.js:430",
+        "original": "skill_table skchr_billro_2: MANUAL, durationType NONE, duration 25, spType INCREASE_WITH_TIME, spCost 25, maxChargeTime 2",
+        "index": "skills.skchr_billro_2: start 无, loop 无, range 无, end 无, targets 无, attacks 0 条（无）, mode S2；modeAttack Modes/S2/Attack cast 2 行、hit 1 组、projectile 无"
+      }
+    },
+    "char_1046_sbell2": {
+      "assaultSkill": "铃音吹雪（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1046_sbell2",
+        "skill": "skchr_sbell2_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_1038_whitw2": {
+      "assaultSkill": "终幕·浩劫（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1038_whitw2",
+        "skill": "skchr_whitw2_3"
+      },
+      "phases": {
+        "attackFrom": "mode:S3"
+      },
+      "extras": [],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作 40 秒 S3 模式、技能本体没有攻击行；每道狼影对每个目标一击（H=1，byCount）；恐惧/减速走通用状态，8–14 秒领域伤害是 sim 机制",
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/54",
+        "card": "server/sim/content/assault/cards/ranged-elite.js:462",
+        "original": "skill_table skchr_whitw2_3: MANUAL, durationType NONE, duration 40, spType INCREASE_WITH_TIME, spCost 54, maxChargeTime 1",
+        "index": "skills.skchr_whitw2_3: start 无, loop 无, range 无, end 无, targets 无, attacks 0 条（无）, mode S3；modeAttack Modes/S3/Body/Attack cast 1 行、hit 0 组、projectile projectile_chr_whitw2_s3"
+      }
+    },
+    "char_4146_nymph": {
+      "assaultSkill": "怵然震爆（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4146_nymph",
+        "skill": "skchr_nymph_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        }
+      },
+      "extras": [],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作 loop 一条自身 buff 光效压成 0.6 秒；恐惧走通用 fear 状态；凋亡损伤是元素通道，不占技能命中组",
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/55",
+        "card": "server/sim/content/assault/cards/ranged-elite.js:479",
+        "original": "skill_table skchr_nymph_2: MANUAL, durationType NONE, duration -1, spType INCREASE_WITH_TIME, spCost 12, maxChargeTime 2",
+        "index": "skills.skchr_nymph_2: start 无, loop [nymph_skill_02_buff], range 无, end 无, targets 无, attacks 1 条（cast [nymph_skill_02_start]，hit 0 组，projectile projectile_chr_nymph_s2）, mode 无"
+      }
+    },
+    "char_1040_blaze2": {
+      "assaultSkill": "炙手之援（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1040_blaze2",
+        "skill": "skchr_blaze2_1"
+      },
+      "phases": {
+        "attackFrom": "none",
+        "targets": {
+          "holdS": 1.2
+        }
+      },
+      "extras": [],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "进击把原作 20 秒灼燃支援挂给友方并独立存续，本体不结算攻击（attackFrom none）；targets 的灼燃范围标记持有 1.2 秒；灼燃损伤与逐秒伤害是 sim 机制",
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/56",
+        "card": "server/sim/content/assault/cards/ranged-elite.js:494",
+        "original": "skill_table skchr_blaze2_1: AUTO, durationType NONE, duration -1, spType INCREASE_WITH_TIME, spCost 16, maxChargeTime 1",
+        "index": "skills.skchr_blaze2_1: start [blaze2_skill_01_start], loop 无, range 无, end 无, targets [blaze2_skill_01_hit_range], attacks 0 条（无）, mode 无"
+      }
+    },
+    "char_206_gnosis": {
+      "assaultSkill": "零度爆发（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_206_gnosis",
+        "skill": "skchr_gnosis_2"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_291_aglina": {
+      "assaultSkill": "秘杖·反重力模式（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_291_aglina",
+        "skill": "skchr_aglina_3"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 1.2
+        },
+        "attackFrom": "mode:S3"
+      },
+      "extras": [],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作 25 秒 S3 模式：start 是循环 buff（hold cast，照播一次）、loop 是全场范围场，按主体画面压成 1.2 秒；失重=levitate 走通用状态；多目标伤害沿用 S3 模式攻击行（hit 0 组）",
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/58",
+        "card": "server/sim/content/assault/cards/ranged-elite.js:527",
+        "original": "skill_table skchr_aglina_3: MANUAL, durationType NONE, duration 25, spType INCREASE_WITH_TIME, spCost 25, maxChargeTime 1",
+        "index": "skills.skchr_aglina_3: start [aglina_skill_03_start], loop [aglina_skill_03_range], range 无, end 无, targets 无, attacks 0 条（无）, mode S3；modeAttack Modes/S3/Body/Attack cast 0 行、hit 0 组、projectile projectile_aglina"
+      }
+    },
+    "char_358_lisa": {
+      "assaultSkill": "狐火渺然（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_358_lisa",
+        "skill": "skchr_lisa_3"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 1.2
+        },
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "heal",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "领域逐秒治疗由程序治疗表现承载"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作 35 秒狐火领域：loop 三条（两条自身 buff + 一条范围场）按主体画面压成 1.2 秒；进击只铺领域并给一次减速与治疗，没有攻击行（attackFrom none）；停顿走通用 sluggish 状态",
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/59",
+        "card": "server/sim/content/assault/cards/ranged-elite.js:541",
+        "original": "skill_table skchr_lisa_3: MANUAL, durationType NONE, duration 35, spType INCREASE_WITH_TIME, spCost 70, maxChargeTime 1",
+        "index": "skills.skchr_lisa_3: start 无, loop [lisa_skill_03_buff, lisa_skill_03_buff_02, lisa_skill_03_range], range 无, end 无, targets 无, attacks 0 条（无）, mode S3；modeAttack Modes/S3/Body/Heal cast 0 行、hit 0 组、projectile 无"
+      }
+    },
+    "char_1047_halo2": {
+      "assaultSkill": "星束引力（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1047_halo2",
+        "skill": "skchr_halo2_2"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_1012_skadi2": {
+      "assaultSkill": "\"潮涌，潮枯\"（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1012_skadi2",
+        "skill": "skchr_skadi2_3"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "潮涌领域持续 15–22 秒（每秒真伤+鼓舞+自身流失生命）是 sim 机制，官方层没有可持有的循环键，保留程序表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作 loop 三条全为自身 buff 光效，按规则 3 取 0.6 秒；进击不造成普通攻击（S3 是 EmptyAbility），领域伤害与鼓舞由程序与通用表现承载",
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/61",
+        "card": "server/sim/content/assault/cards/ranged-elite.js:574",
+        "original": "skill_table skchr_skadi2_3: MANUAL, durationType NONE, duration 20, spType INCREASE_WITH_TIME, spCost 35, maxChargeTime 1",
+        "index": "skills.skchr_skadi2_3: start [skadi2_skill_03_begin_start], loop [skadi2_skill_03_buff, skadi2_skill_03_buff_02, skadi2_skill_03_buff_03], range 无, end 无, targets 无, attacks 0 条（无）, mode S3；modeAttack Modes/S3/Body/EmptyAbility cast 0 行、hit 0 组、projectile 无"
+      }
+    },
+    "char_4134_cetsyr": {
+      "assaultSkill": "明日渺远不及（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4134_cetsyr",
+        "skill": "skchr_cetsyr_2"
+      },
+      "phases": {
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "微尘外扩 15–22 秒的轨道与碰撞真伤是 sim 机制，官方层没有可持有的循环键，保留程序表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作 S2 是微尘外扩模式，modeAttack 为 AuraHeal、没有 cast/hit 行；进击只补 6 枚微尘并进入外扩，真伤与束缚来自微尘碰撞（sim 机制），本体不结算攻击；束缚走通用 bind 状态",
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/62",
+        "card": "server/sim/content/assault/cards/ranged-elite.js:586",
+        "original": "skill_table skchr_cetsyr_2: MANUAL, durationType NONE, duration 35, spType INCREASE_WITH_TIME, spCost 35, maxChargeTime 1",
+        "index": "skills.skchr_cetsyr_2: start 无, loop 无, range 无, end 无, targets 无, attacks 0 条（无）, mode S2；modeAttack Modes/S2/Body/AuraHeal cast 0 行、hit 0 组、projectile 无"
+      }
+    },
+    "char_4202_haruka": {
+      "assaultSkill": "夏末游鳞（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4202_haruka",
+        "skill": "skchr_haruka_3"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "浮泡护盾由 loop 的 haruka_skill_03_buff 光效覆盖"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作 40 秒 S3：loop 是浮泡 buff + 范围标记，按 buff 光效压成 0.6 秒；进击只补一个浮泡，破泡时才结算伤害与浮空，本体没有攻击行；浮空走通用 levitate 状态",
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/63",
+        "card": "server/sim/content/assault/cards/ranged-elite.js:605",
+        "original": "skill_table skchr_haruka_3: MANUAL, durationType NONE, duration 40, spType INCREASE_WITH_TIME, spCost 60, maxChargeTime 1",
+        "index": "skills.skchr_haruka_3: start 无, loop [haruka_skill_03_buff, haruka_skill_03_range], range 无, end 无, targets 无, attacks 0 条（无）, mode S3；modeAttack Modes/S3/Body/Attack cast 0 行、hit 0 组、projectile 无"
+      }
+    },
+    "char_2023_ling": {
+      "assaultSkill": "笑鸣瑟（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_2023_ling",
+        "skill": "skchr_ling_2"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "status:bind",
+          "signal": {
+            "event": "status",
+            "name": "bind"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "束缚由通用状态循环自动播"
+        },
+        {
+          "what": "summon",
+          "signal": {
+            "event": "spawn"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "补 1 只召唤物只补库存；出场时播召唤物自己的出生特效"
+        }
+      ],
+      "confidence": "high",
+      "status": "filled",
+      "notes": "原作就是充能型即时技能，判定与命中组一致（每目标一击）；本体与在场召唤物的伤害同帧记在令名下，按令的技能命中组播",
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/64",
+        "card": "server/sim/content/assault/cards/ranged-elite.js:614",
+        "original": "skill_table skchr_ling_2: MANUAL, durationType NONE, duration -1, spType INCREASE_WITH_TIME, spCost 13, maxChargeTime 2",
+        "index": "skills.skchr_ling_2: start 无, loop 无, range 无, end 无, targets [token_soul_02_die_debuff_01], attacks 1 条（cast [ling_skill_02_start_01, ling_skill_02_start_02]，hit 0 组，projectile projectile_chr_ling_s2）, mode 无"
+      }
+    },
+    "char_4072_ironmn": {
+      "assaultSkill": "高效补给（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4072_ironmn",
+        "skill": "skchr_ironmn_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S1"
+      },
+      "extras": [
+        {
+          "what": "spGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "为友方一次授予技力是游戏事实提示，保留程序表现"
+        },
+        {
+          "what": "summon",
+          "signal": {
+            "event": "spawn"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "补 1 个支援装置，出场播装置自己的出生特效"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作 30 秒装置技能：loop 自身 buff 光效压成 0.6 秒；范围伤害沿用 S1 模式攻击行（hit 1 组），每个目标一击；修复装置是治疗数值，走程序表现",
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/65",
+        "card": "server/sim/content/assault/cards/ranged-elite.js:634",
+        "original": "skill_table skchr_ironmn_2: MANUAL, durationType NONE, duration 30, spType INCREASE_WITH_TIME, spCost 50, maxChargeTime 1",
+        "index": "skills.skchr_ironmn_2: start 无, loop [ironmn_skill_02_buff], range 无, end 无, targets 无, attacks 0 条（无）, mode S1；modeAttack Modes/S1/Body/Attack cast 2 行、hit 1 组、projectile 无"
+      }
+    },
+    "char_245_cello": {
+      "assaultSkill": "“黄金的狂喜”（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_245_cello",
+        "skill": "skchr_cello_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_393_toledo": {
+      "assaultSkill": "危言耸听",
+      "shape": "instant",
+      "official": {
+        "unit": "char_393_toledo",
+        "skill": "skchr_toledo_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "summon",
+          "signal": {
+            "event": "spawn"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "守卫（token_10067_toledo_tldptm）出场播它自己的出生特效"
+        },
+        {
+          "what": "status:tremble",
+          "signal": {
+            "event": "status",
+            "name": "tremble"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "战栗没有对应的通用状态循环键，保留程序表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作 20 秒召唤守卫：loop 是守卫 buff 光效压成 0.6 秒；伤害由守卫按快照攻击力自行结算，本体没有攻击行；守卫退场走它自己的离场",
+      "evidence": {
+        "design": "data/assault-design/roster-ranged.json#/operators/67",
+        "card": "server/sim/content/assault/cards/latest-operators.js:18",
+        "original": "skill_table skchr_toledo_2: MANUAL, durationType NONE, duration 20, spType INCREASE_WITH_TIME, spCost 30, maxChargeTime 1",
+        "index": "skills.skchr_toledo_2: start [toledo_f_skill_2_weapon_01], loop [toledo_f_skill_2_buff_01], range 无, end 无, targets 无, attacks 0 条（无）, mode S2；modeAttack Modes/S2/Body/Attack cast 1 行、hit 0 组、projectile projectile_chr_toledo_s2"
+      }
+    },
+    "char_240_wyvern": {
+      "assaultSkill": "冲锋号令·援军（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_240_wyvern",
+        "skill": "skchr_wyvern_1"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "costGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "费用增加是游戏事实提示，保留程序表现"
+        }
+      ],
+      "confidence": "high",
+      "status": "filled",
+      "notes": "进击只结算部署费用，无伤害，攻击行 none；原作 10 秒攻击提升光效压成 0.6 秒，避免与天赋攻击提升混淆",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/0",
+        "card": "server/sim/content/assault/cards/support-instant.js:100",
+        "original": "skill_table skchr_wyvern_1: MANUAL, durationType NONE, duration 10, spType INCREASE_WITH_TIME, spCost 20, maxChargeTime 1",
+        "index": "skills.skchr_wyvern_1: start [common_charge_cost_start_01], loop [common_ignite_attack], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_290_vigna": {
+      "assaultSkill": "槌音（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_290_vigna",
+        "skill": "skchr_vigna_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S1-2"
+      },
+      "extras": [],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "每个目标只吃一击（H=1）；原作画面主体是 S1-2 模式重击，模式 hit 1 组；暴击不新增伤害实例，不需要额外命中特效",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/1",
+        "card": "server/sim/content/assault/cards/support-plans.js:92",
+        "original": "skill_table skchr_vigna_2: MANUAL, durationType NONE, duration 30, spType INCREASE_WITH_TIME, spCost 25, maxChargeTime 1",
+        "index": "skills.skchr_vigna_2: start [无], loop [vigna_skill_02_buff_02], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode S1-2; modes[S1-2].attack cast 2 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_151_myrtle": {
+      "assaultSkill": "治愈之翼（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_151_myrtle",
+        "skill": "skchr_myrtle_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [
+        {
+          "what": "costGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "费用增加是游戏事实提示，保留程序表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "S2 模式的 hit 组是 common_heal_hit_01，单体治疗按该组播；自身 buff 循环压成 0.6 秒",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/2",
+        "card": "server/sim/content/assault/cards/support-instant.js:151",
+        "original": "skill_table skchr_myrtle_2: MANUAL, durationType NONE, duration 16, spType INCREASE_WITH_TIME, spCost 24, maxChargeTime 1",
+        "index": "skills.skchr_myrtle_2: start [无], loop [myrtle_skill_02_buff,myrtle_skill_02_buff_02], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 0 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_181_flower": {
+      "assaultSkill": "精调（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_181_flower",
+        "skill": "skchr_flower_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 1.2
+        },
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "heal",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "official": [
+              "common_heal_hit_01"
+            ],
+            "at": "target",
+            "holdS": 0.8
+          },
+          "why": "技能没有攻击行，全体治疗用通用命中表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作技能画面是治疗范围场 flower_skill_02_range，按技能主体压成 1.2 秒；每名伤员各治疗一次（H=1）",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/3",
+        "card": "server/sim/content/assault/cards/support-instant.js:152",
+        "original": "skill_table skchr_flower_2: MANUAL, durationType NONE, duration 30, spType INCREASE_WITH_TIME, spCost 60, maxChargeTime 1",
+        "index": "skills.skchr_flower_2: start [无], loop [flower_skill_02_range], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_385_finlpp": {
+      "assaultSkill": "治愈水波（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_385_finlpp",
+        "skill": "skchr_finlpp_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": "技能预制体自带 1 组 cast/hit（finlpp_skill_01_start + finlpp_attack_01_hit），治疗行全部默认"
+    },
+    "char_199_yak": {
+      "assaultSkill": "抗寒体质（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_199_yak",
+        "skill": "skchr_yak_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "法术护盾由原作自身 buff 循环 yak_skill_02_buff 覆盖"
+        }
+      ],
+      "confidence": "high",
+      "status": "filled",
+      "notes": "结算只有法术护盾，无伤害，攻击行 none；原作 30 秒自身 buff 光效压成 0.6 秒",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/5",
+        "card": "server/sim/content/assault/cards/support-instant.js:182",
+        "original": "skill_table skchr_yak_2: MANUAL, durationType NONE, duration 30, spType INCREASE_WITH_TIME, spCost 32, maxChargeTime 1",
+        "index": "skills.skchr_yak_2: start [无], loop [yak_skill_02_buff], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_150_snakek": {
+      "assaultSkill": "壳状防御（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_150_snakek",
+        "skill": "skchr_snakek_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "屏障由原作自身 buff 循环 snakek_skill_02_buff_01 覆盖"
+        },
+        {
+          "what": "heal",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "回复生命上限是纯数值结算，无独立光效"
+        }
+      ],
+      "confidence": "high",
+      "status": "filled",
+      "notes": "自愈与屏障都记在自身，攻击行 none；S2 普攻模式在瞬发里不切换，沿用默认 modeSwitch false",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/6",
+        "card": "server/sim/content/assault/cards/support-instant.js:179",
+        "original": "skill_table skchr_snakek_2: MANUAL, durationType NONE, duration 30, spType INCREASE_WITH_TIME, spCost 40, maxChargeTime 1",
+        "index": "skills.skchr_snakek_2: start [无], loop [snakek_skill_02_buff_01], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 0 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_381_bubble": {
+      "assaultSkill": "“挨打”（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_381_bubble",
+        "skill": "skchr_bubble_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "屏障由原作自身 buff 循环 bubble_skill_02_buff* 覆盖"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "周围每个敌人吃一击（H=1），反击按 S2 模式 hit 组播；自身 buff 循环压成 0.6 秒",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/7",
+        "card": "server/sim/content/assault/cards/support-instant.js:202",
+        "original": "skill_table skchr_bubble_2: MANUAL, durationType NONE, duration 25, spType INCREASE_WITH_TIME, spCost 45, maxChargeTime 1",
+        "index": "skills.skchr_bubble_2: start [无], loop [bubble_skill_02_buff,bubble_skill_02_buff_02], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 0 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_196_sunbr": {
+      "assaultSkill": "备用军粮（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_196_sunbr",
+        "skill": "skchr_sunbr_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": "RangedHeal 1 条，hit 组为空、投射物 projectile_sunbr 由上游默认决定；每个目标各治疗一次"
+    },
+    "char_128_plosis": {
+      "assaultSkill": "脑啡肽（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_128_plosis",
+        "skill": "skchr_plosis_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 1.2
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [
+        {
+          "what": "spGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "补技力是游戏事实提示，保留程序表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "S2 模式是治疗 hit（common_heal_hit_01）；plosis_attack_01_start 循环是治疗场，按技能主体压成 1.2 秒",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/9",
+        "card": "server/sim/content/assault/cards/support-instant.js:177",
+        "original": "skill_table skchr_plosis_2: MANUAL, durationType NONE, duration 40, spType INCREASE_WITH_TIME, spCost 100, maxChargeTime 1",
+        "index": "skills.skchr_plosis_2: start [无], loop [plosis_attack_01_start], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 0 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_4163_rosesa": {
+      "assaultSkill": "上佳的应急药呀（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4163_rosesa",
+        "skill": "skchr_rosesa_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": "Heal 1 条（rosesa_attack_hit_01）；ready 循环按默认 skip（进击技力满即放）"
+    },
+    "char_102_texas": {
+      "assaultSkill": "剑雨（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_102_texas",
+        "skill": "skchr_texas_2"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "costGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "费用增加是游戏事实提示，保留程序表现"
+        }
+      ],
+      "confidence": "high",
+      "status": "filled",
+      "notes": "晕眩交给通用状态循环（targets 默认 status）；剑雨 cast 与投射物 projectile_sword_rain 由上游默认播放，两段伤害 H=2 按 byCount",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/11",
+        "card": "server/sim/content/assault/cards/support-plans.js:985",
+        "original": "skill_table skchr_texas_2: MANUAL, durationType NONE, duration 0, spType INCREASE_WITH_TIME, spCost 40, maxChargeTime 1",
+        "index": "skills.skchr_texas_2: start [无], loop [无], range [无], end [无], targets [buff_stun], attacks 1 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_349_chiave": {
+      "assaultSkill": "火焰剥离（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_349_chiave",
+        "skill": "skchr_chiave_2"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "costGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "费用增加是游戏事实提示，保留程序表现"
+        }
+      ],
+      "confidence": "high",
+      "status": "filled",
+      "notes": "法抗降低是 sim 状态 resDown，交给通用状态循环；MeleeAttack 1 组 hit",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/12",
+        "card": "server/sim/content/assault/cards/support-plans.js:1073",
+        "original": "skill_table skchr_chiave_2: MANUAL, durationType NONE, duration -1, spType INCREASE_WITH_TIME, spCost 45, maxChargeTime 1",
+        "index": "skills.skchr_chiave_2: start [无], loop [无], range [无], end [无], targets [无], attacks 1 条（hit 1 组）, mode 无"
+      }
+    },
+    "char_496_wildmn": {
+      "assaultSkill": "夹枪冲锋（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_496_wildmn",
+        "skill": "skchr_wildmn_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "推退是程序位移表现，官方没有对应攻击行"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "前方直线每个敌人吃一击（H=1），S2 模式提供突刺 cast 与 hit 组；自身 buff 循环压成 0.6 秒",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/13",
+        "card": "server/sim/content/assault/cards/support-plans.js:1175",
+        "original": "skill_table skchr_wildmn_2: MANUAL, durationType NONE, duration 20, spType INCREASE_WITH_TIME, spCost 40, maxChargeTime 1",
+        "index": "skills.skchr_wildmn_2: start [无], loop [wildmn_skill_02_buff], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 1 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_401_elysm": {
+      "assaultSkill": "聆听（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_401_elysm",
+        "skill": "skchr_elysm_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "costGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "费用增加是游戏事实提示，保留程序表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "本体不造成伤害，攻击行 none；减速与减防交给通用状态循环（slow/defDown），隐匿失效只是 reveal 状态；自身 buff 与范围光压成 0.6 秒",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/14",
+        "card": "server/sim/content/assault/cards/support-plans.js:1270",
+        "original": "skill_table skchr_elysm_2: MANUAL, durationType NONE, duration 15, spType INCREASE_WITH_TIME, spCost 30, maxChargeTime 1",
+        "index": "skills.skchr_elysm_2: start [无], loop [elysm_skill_02_buff,elysm_skill_02_buff_01,elysm_skill_02_range], range [无], end [无], targets [elysm_skill_02_buff_02], attacks 0 条（hit 0 组）, mode S1; modes[S1].attack cast 0 条, hit 0 组, projectile 无"
+      }
+    },
+    "char_4119_wanqin": {
+      "assaultSkill": "应东风（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4119_wanqin",
+        "skill": "skchr_wanqin_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [
+        {
+          "what": "costGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "费用增加是游戏事实提示，保留程序表现"
+        },
+        {
+          "what": "spGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "补技力是游戏事实提示，保留程序表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "S2 模式 hit 组是 wanqin_buff_02（治疗）；同朝向补技力是数值结算，保留程序提示",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/15",
+        "card": "server/sim/content/assault/cards/support-instant.js:209",
+        "original": "skill_table skchr_wanqin_2: MANUAL, durationType NONE, duration 15, spType INCREASE_WITH_TIME, spCost 30, maxChargeTime 1",
+        "index": "skills.skchr_wanqin_2: start [无], loop [wanqin_skill_02_buff], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 0 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_497_ctable": {
+      "assaultSkill": "浮光（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_497_ctable",
+        "skill": "skchr_ctable_2"
+      },
+      "phases": {
+        "attackFrom": "mode:S2"
+      },
+      "extras": [
+        {
+          "what": "costGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "每发命中回费是游戏事实提示，保留程序表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "三发齐射 H=3，S2 模式无 hit 组；投射物 projectile_chr_ctable_s2 由默认 auto 播放",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/16",
+        "card": "server/sim/content/assault/cards/support-instant.js:223",
+        "original": "skill_table skchr_ctable_2: MANUAL, durationType AMMO, duration 0, spType INCREASE_WITH_TIME, spCost 25, maxChargeTime 1",
+        "index": "skills.skchr_ctable_2: start [无], loop [无], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 1 条, hit 0 组, projectile projectile_chr_ctable_s2"
+      }
+    },
+    "char_4017_puzzle": {
+      "assaultSkill": "关键线索（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4017_puzzle",
+        "skill": "skchr_puzzle_1"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "costGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "费用增加是游戏事实提示，保留程序表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "两条攻击行（远程 cast 无 hit、近战 1 组 hit）；单目标一击，命中按默认 byCount",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/17",
+        "card": "server/sim/content/assault/cards/support-instant.js:112",
+        "original": "skill_table skchr_puzzle_1: AUTO, durationType NONE, duration 0, spType INCREASE_WHEN_ATTACK, spCost 5, maxChargeTime 1",
+        "index": "skills.skchr_puzzle_1: start [无], loop [无], range [无], end [无], targets [无], attacks 2 条（hit 1 组）, mode 无"
+      }
+    },
+    "char_108_silent": {
+      "assaultSkill": "医疗无人机（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_108_silent",
+        "skill": "skchr_silent_2"
+      },
+      "phases": {
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "summon",
+          "signal": {
+            "event": "spawn"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "医疗无人机出场走它自己的出生特效"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "官方技能计划为空（无 start/loop/attack 行），画面由医疗无人机的出生与持续治疗承担",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/18",
+        "card": "server/sim/content/assault/cards/support-plans.js:1698",
+        "original": "skill_table skchr_silent_2: AUTO, durationType NONE, duration 0, spType INCREASE_WITH_TIME, spCost 18, maxChargeTime 1",
+        "index": "skills.skchr_silent_2: start [无], loop [无], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_171_bldsk": {
+      "assaultSkill": "不稳定血浆（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_171_bldsk",
+        "skill": "skchr_bldsk_2"
+      },
+      "phases": {
+        "targets": {
+          "holdS": 0.8
+        },
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "每秒失血是数值结算，没有对应 sim 状态光效"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "攻击提升是纯数值 buff（无 sim 状态），按目标 buff 持有 0.8 秒；本体不造成伤害，攻击行 none",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/19",
+        "card": "server/sim/content/assault/cards/support-plans.js:1774",
+        "original": "skill_table skchr_bldsk_2: MANUAL, durationType NONE, duration -1, spType INCREASE_WITH_TIME, spCost 60, maxChargeTime 1",
+        "index": "skills.skchr_bldsk_2: start [无], loop [无], range [无], end [无], targets [bldsk_skill_02_buff], attacks 0 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_4196_reckpr": {
+      "assaultSkill": "触类旁通（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4196_reckpr",
+        "skill": "skchr_reckpr_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": "RangedHeal 1 条（reckpr_skill1_start + reckpr_skill1_hit、投射物 projectile_chr_reckpr_s1）；每个目标各治疗一次"
+    },
+    "char_4114_harold": {
+      "assaultSkill": "重症优先（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4114_harold",
+        "skill": "skchr_harold_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "元素损伤回复是数值结算，无官方对应光效"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "S2 模式是治疗 cast（无 hit 组）、投射物 projectile_chr_harold_2；自身攻速 buff 循环压成 0.6 秒",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/21",
+        "card": "server/sim/content/assault/cards/support-instant.js:203",
+        "original": "skill_table skchr_harold_2: MANUAL, durationType NONE, duration 25, spType INCREASE_WITH_TIME, spCost 30, maxChargeTime 1",
+        "index": "skills.skchr_harold_2: start [无], loop [harold_skill_02_buff_01], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 1 条, hit 0 组, projectile projectile_chr_harold_2"
+      }
+    },
+    "char_494_vendla": {
+      "assaultSkill": "荆藤庇荫（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_494_vendla",
+        "skill": "skchr_vendla_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "荆棘护盾由原作自身 buff 循环 vendla_skill_02_buff_01 覆盖"
+        },
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "破盾反击是受击事件，官方没有对应攻击行"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "治疗与护盾都作用在目标，攻击行 none；start vendla_skill_02_start_01 照播，自身 buff 循环压成 0.6 秒",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/22",
+        "card": "server/sim/content/assault/cards/support-instant.js:217",
+        "original": "skill_table skchr_vendla_2: MANUAL, durationType NONE, duration 15, spType INCREASE_WITH_TIME, spCost 30, maxChargeTime 1",
+        "index": "skills.skchr_vendla_2: start [vendla_skill_02_start_01], loop [vendla_skill_02_buff_01], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_4139_papyrs": {
+      "assaultSkill": "巧思乍现（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4139_papyrs",
+        "skill": "skchr_papyrs_1"
+      },
+      "phases": {
+        "targets": {
+          "holdS": 0.8
+        }
+      },
+      "extras": [
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "双倍天赋屏障是纯数值护盾，沿用原作天赋 buff 光效"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "RangedHeal 1 条（cast papyrs_attack_start_01、投射物 projectile_chr_papyrs）；三份天赋屏障按目标 buff 持有 0.8 秒",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/23",
+        "card": "server/sim/content/assault/cards/support-instant.js:132",
+        "original": "skill_table skchr_papyrs_1: AUTO, durationType NONE, duration 0, spType INCREASE_WITH_TIME, spCost 8, maxChargeTime 2",
+        "index": "skills.skchr_papyrs_1: start [无], loop [无], range [无], end [无], targets [papyrs_talent_01,papyrs_talent_01,papyrs_talent_01], attacks 1 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_4222_taraxa": {
+      "assaultSkill": "扶风起（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4222_taraxa",
+        "skill": "skchr_taraxa_2"
+      },
+      "phases": {
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "heal",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "official": [
+              "common_heal_hit_01"
+            ],
+            "at": "target",
+            "holdS": 0.8
+          },
+          "why": "技能没有攻击行，主目标与溅射治疗共用通用命中"
+        }
+      ],
+      "confidence": "low",
+      "status": "filled",
+      "notes": "官方技能计划为空（无循环/攻击行），只能保留程序治疗；主目标与周围两名友方治疗共用通用命中",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/24",
+        "card": "server/sim/content/assault/cards/support-instant.js:164",
+        "original": "skill_table skchr_taraxa_2: MANUAL, durationType NONE, duration 25, spType INCREASE_WITH_TIME, spCost 35, maxChargeTime 1",
+        "index": "skills.skchr_taraxa_2: start [无], loop [无], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_107_liskam": {
+      "assaultSkill": "充能防御（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_107_liskam",
+        "skill": "skchr_liskam_1"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "抵挡一次伤害是数值护盾，官方只有防御提升循环"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "结算只有护盾与防御提升，攻击行 none；common_ignite_defense 循环压成 0.6 秒",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/25",
+        "card": "server/sim/content/assault/cards/support-instant.js:101",
+        "original": "skill_table skchr_liskam_1: AUTO, durationType NONE, duration -1, spType INCREASE_WHEN_TAKEN_DAMAGE, spCost 18, maxChargeTime 1",
+        "index": "skills.skchr_liskam_1: start [无], loop [common_ignite_defense], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_4137_udflow": {
+      "assaultSkill": "行动能力剥夺（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4137_udflow",
+        "skill": "skchr_udflow_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "直线穿透至多 4 个目标，每目标 H=1；停顿交给通用状态循环（sluggish）；S2 模式 hit 1 组",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/26",
+        "card": "server/sim/content/assault/cards/support-plans.js:2454",
+        "original": "skill_table skchr_udflow_2: MANUAL, durationType NONE, duration 15, spType INCREASE_WITH_TIME, spCost 32, maxChargeTime 1",
+        "index": "skills.skchr_udflow_2: start [无], loop [udflow_skill_02_buff_01], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 4 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_4207_branch": {
+      "assaultSkill": "生存决心（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4207_branch",
+        "skill": "skchr_branch_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "战栗交给通用状态循环（fear）；S2 模式无 cast/hit 行，强化一击只能保留程序表现",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/27",
+        "card": "server/sim/content/assault/cards/support-instant.js:210",
+        "original": "skill_table skchr_branch_2: MANUAL, durationType NONE, duration 15, spType INCREASE_WITH_TIME, spCost 18, maxChargeTime 1",
+        "index": "skills.skchr_branch_2: start [无], loop [branch_skill_02_buff_01], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 0 条, hit 0 组, projectile 无"
+      }
+    },
+    "char_431_ashlok": {
+      "assaultSkill": "专注轰击（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_431_ashlok",
+        "skill": "skchr_ashlok_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "三发榴弹的落点溅射保留程序表现"
+        }
+      ],
+      "confidence": "low",
+      "status": "filled",
+      "notes": "原作 S2 是自身攻击 buff（无攻击行），进击三发榴弹与原作差得远，只能保留程序溅射；自身 buff 循环压成 0.6 秒",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/28",
+        "card": "server/sim/content/assault/cards/support-instant.js:213",
+        "original": "skill_table skchr_ashlok_2: MANUAL, durationType NONE, duration 10, spType INCREASE_WITH_TIME, spCost 18, maxChargeTime 1",
+        "index": "skills.skchr_ashlok_2: start [无], loop [ashlok_skill_02_buff], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_4148_philae": {
+      "assaultSkill": "冥河诅咒（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4148_philae",
+        "skill": "skchr_philae_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "屏障由原作自身 buff 循环 philae_skill_02_buff_01 覆盖"
+        },
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "凋亡损伤是元素数值结算，没有 sim 状态光效"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "周围地面每个敌人吃一击（H=1）；S2 模式无攻击行，命中保留程序表现；自身 buff 循环压成 0.6 秒",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/29",
+        "card": "server/sim/content/assault/cards/support-instant.js:160",
+        "original": "skill_table skchr_philae_2: MANUAL, durationType NONE, duration 40, spType INCREASE_WITH_TIME, spCost 45, maxChargeTime 1",
+        "index": "skills.skchr_philae_2: start [无], loop [philae_skill_02_buff_01], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 0 条, hit 0 组, projectile 无"
+      }
+    },
+    "char_112_siege": {
+      "assaultSkill": "跃空锤（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_112_siege",
+        "skill": "skchr_siege_2"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "costGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "费用增加是游戏事实提示，保留程序表现"
+        }
+      ],
+      "confidence": "high",
+      "status": "filled",
+      "notes": "MeleeAttack cast 2 条、无 hit 组，周围每个敌人一击按默认 byCount",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/30",
+        "card": "server/sim/content/assault/cards/support-plans.js:2830",
+        "original": "skill_table skchr_siege_2: AUTO, durationType NONE, duration 0, spType INCREASE_WITH_TIME, spCost 10, maxChargeTime 3",
+        "index": "skills.skchr_siege_2: start [无], loop [无], range [无], end [无], targets [无], attacks 1 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_222_bpipe": {
+      "assaultSkill": "高效冲击（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_222_bpipe",
+        "skill": "skchr_bpipe_2"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": "MultiMeleeAttack 1 组 hit（bpipe_skill_02_hit + _hit_02）；进击两击 H=2，byCount 让每击取对应键"
+    },
+    "char_4026_vulpis": {
+      "assaultSkill": "小施惩戒（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4026_vulpis",
+        "skill": "skchr_vulpis_1"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "costGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "费用增加是游戏事实提示，保留程序表现"
+        }
+      ],
+      "confidence": "high",
+      "status": "filled",
+      "notes": "单目标 1 组 hit（vulpis_skill_01_hit_01）；追加法伤按该组播",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/32",
+        "card": "server/sim/content/assault/cards/support-plans.js:3023",
+        "original": "skill_table skchr_vulpis_1: AUTO, durationType NONE, duration 0, spType INCREASE_WITH_TIME, spCost 4, maxChargeTime 3",
+        "index": "skills.skchr_vulpis_1: start [无], loop [无], range [无], end [无], targets [无], attacks 1 条（hit 1 组）, mode 无"
+      }
+    },
+    "char_479_sleach": {
+      "assaultSkill": "光辉旗帜（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_479_sleach",
+        "skill": "skchr_sleach_3"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S3"
+      },
+      "extras": [
+        {
+          "what": "costGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "费用增加是游戏事实提示，保留程序表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "军旗落地走 kit fx zone/aoe（support.js:536/540）；晕眩与脆弱交给通用状态循环；start 三条照播，自身 buff 循环压成 0.6 秒",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/33",
+        "card": "server/sim/content/assault/cards/support-plans.js:3137",
+        "original": "skill_table skchr_sleach_3: MANUAL, durationType NONE, duration 10, spType INCREASE_WITH_TIME, spCost 20, maxChargeTime 1",
+        "index": "skills.skchr_sleach_3: start [sleach_skill_03_trail_01,sleach_skill_03_buff_02,common_charge_cost_start_01], loop [sleach_skill_03_buff_01], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode S3; modes[S3].attack cast 0 条, hit 0 组, projectile 无"
+      }
+    },
+    "char_420_flamtl": {
+      "assaultSkill": "“红松林”（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_420_flamtl",
+        "skill": "skchr_flamtl_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 1.2
+        }
+      },
+      "extras": [
+        {
+          "what": "costGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "费用增加是游戏事实提示，保留程序表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "flamtl_skill_02_range_01 是范围场（技能主体），压成 1.2 秒；六名敌人各两击 H=2、hit 1 组按 byCount；物理闪避是数值 buff，由范围光效覆盖",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/34",
+        "card": "server/sim/content/assault/cards/support-instant.js:147",
+        "original": "skill_table skchr_flamtl_2: MANUAL, durationType NONE, duration 0, spType INCREASE_WITH_TIME, spCost 40, maxChargeTime 1",
+        "index": "skills.skchr_flamtl_2: start [无], loop [flamtl_skill_02_range_01], range [无], end [无], targets [无], attacks 1 条（hit 1 组）, mode 无"
+      }
+    },
+    "char_427_vigil": {
+      "assaultSkill": "领袖的呼唤（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_427_vigil",
+        "skill": "skchr_vigil_1"
+      },
+      "phases": {
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "costGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "费用增加是游戏事实提示，保留程序表现"
+        },
+        {
+          "what": "summon",
+          "signal": {
+            "event": "spawn"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "狼影出场走它自己的出生特效"
+        }
+      ],
+      "confidence": "high",
+      "status": "filled",
+      "notes": "结算无伤害，攻击行 none；start 四条照播（含 common_charge_cost_start_01）",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/35",
+        "card": "server/sim/content/assault/cards/support-plans.js:3400",
+        "original": "skill_table skchr_vigil_1: AUTO, durationType NONE, duration 0, spType INCREASE_WITH_TIME, spCost 21, maxChargeTime 1",
+        "index": "skills.skchr_vigil_1: start [common_charge_cost_start_01,vigil_skill_01_start_01,vigil_skill_01_start_02,vigil_skill_01_start_03], loop [无], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_249_mlyss": {
+      "assaultSkill": "浅层非熵适应（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_249_mlyss",
+        "skill": "skchr_mlyss_3"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S3"
+      },
+      "extras": [
+        {
+          "what": "costGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "费用增加是游戏事实提示，保留程序表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "流形攻击记在本体名下；S3 模式无 hit 组、投射物 projectile_chr_mlyss_s3 由默认 auto；晕眩交给通用状态循环",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/36",
+        "card": "server/sim/content/assault/cards/support-instant.js:186",
+        "original": "skill_table skchr_mlyss_3: MANUAL, durationType NONE, duration 15, spType INCREASE_WITH_TIME, spCost 35, maxChargeTime 1",
+        "index": "skills.skchr_mlyss_3: start [common_charge_cost_start_01], loop [mlyss_skill_03_buff_weapon_01,mlyss_skill_03_buff_02,mlyss_skill_03_buff_01], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode S3; modes[S3].attack cast 1 条, hit 0 组, projectile projectile_chr_mlyss_s3"
+      }
+    },
+    "char_1045_svash2": {
+      "assaultSkill": "御敌的锋锐（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1045_svash2",
+        "skill": "skchr_svash2_2"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "status:cold",
+          "signal": {
+            "event": "status",
+            "name": "cold"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "寒冷由通用状态循环 buff_cold 自动播"
+        },
+        {
+          "what": "redeploy",
+          "signal": {
+            "event": "deploy"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "被再部署干员自己的部署特效负责画面"
+        }
+      ],
+      "confidence": "high",
+      "status": "filled",
+      "notes": "前方至多 6 名敌人各一击（H=1），MeleeAttack 1 组 hit；再部署与减费是账目结算，不另播特效",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/37",
+        "card": "server/sim/content/assault/cards/support-plans.js:3646",
+        "original": "skill_table skchr_svash2_2: MANUAL, durationType NONE, duration 0, spType INCREASE_WITH_TIME, spCost 17, maxChargeTime 2",
+        "index": "skills.skchr_svash2_2: start [无], loop [无], range [无], end [无], targets [无], attacks 1 条（hit 1 组）, mode 无"
+      }
+    },
+    "char_4087_ines": {
+      "assaultSkill": "淬影突袭（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4087_ines",
+        "skill": "skchr_ines_1"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "costGain",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "费用增加是游戏事实提示，保留程序表现"
+        }
+      ],
+      "confidence": "high",
+      "status": "filled",
+      "notes": "法术流血是 sim dot（无命中组），RangedAttack 无 hit、投射物 projectile_chr_ines_s1 由默认 auto；攻速偷取交给通用状态循环",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/38",
+        "card": "server/sim/content/assault/cards/support-instant.js:127",
+        "original": "skill_table skchr_ines_1: AUTO, durationType NONE, duration 0, spType INCREASE_WHEN_ATTACK, spCost 3, maxChargeTime 1",
+        "index": "skills.skchr_ines_1: start [无], loop [无], range [无], end [无], targets [ines_skill_01_debuff_01], attacks 1 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_4042_lumen": {
+      "assaultSkill": "沛霖（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4042_lumen",
+        "skill": "skchr_lumen_2"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "解除异常是状态清除，官方没有独立光效"
+        }
+      ],
+      "confidence": "high",
+      "status": "filled",
+      "notes": "Heal 1 组 hit（lumen_skill_02_start* + lumen_skill_02_hit）；至多 3 名友方各治疗一次",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/39",
+        "card": "server/sim/content/assault/cards/support-plans.js:4021",
+        "original": "skill_table skchr_lumen_2: MANUAL, durationType NONE, duration -1, spType INCREASE_WITH_TIME, spCost 13, maxChargeTime 2",
+        "index": "skills.skchr_lumen_2: start [无], loop [无], range [无], end [无], targets [无], attacks 1 条（hit 1 组）, mode 无"
+      }
+    },
+    "char_1016_agoat2": {
+      "assaultSkill": "云霭荫佑（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1016_agoat2",
+        "skill": "skchr_agoat2_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 1.2
+        }
+      },
+      "extras": [
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "元素屏障是纯数值护盾，由治疗范围场光效覆盖"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作画面是治疗范围场 agoat2_skill_02_range_01，压成 1.2 秒；Heal 1 组 hit 覆盖全体治疗",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/40",
+        "card": "server/sim/content/assault/cards/support-plans.js:4130",
+        "original": "skill_table skchr_agoat2_2: MANUAL, durationType NONE, duration -1, spType INCREASE_WITH_TIME, spCost 20, maxChargeTime 1",
+        "index": "skills.skchr_agoat2_2: start [无], loop [agoat2_skill_02_range_01], range [无], end [无], targets [无], attacks 1 条（hit 1 组）, mode 无"
+      }
+    },
+    "char_1020_reed2": {
+      "assaultSkill": "枯荣共息（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1020_reed2",
+        "skill": "skchr_reed2_2"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "other",
+          "signal": {
+            "event": "fx",
+            "kind": "splash"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "火种灼烧的落点爆炸是 sim 的 splash kit fx，随伤害保留程序表现"
+        }
+      ],
+      "confidence": "high",
+      "status": "filled",
+      "notes": "AroundTargetRangedAttack 1 条（cast reed2_skill_02_start、投射物 projectile_chr_reed2_fire）；至多 2 名近战友方各一枚火种",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/41",
+        "card": "server/sim/content/assault/cards/support-instant.js:167",
+        "original": "skill_table skchr_reed2_2: MANUAL, durationType NONE, duration 20, spType INCREASE_WITH_TIME, spCost 27, maxChargeTime 1",
+        "index": "skills.skchr_reed2_2: start [无], loop [无], range [无], end [无], targets [无], attacks 1 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_4056_titi": {
+      "assaultSkill": "旧日绽放（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4056_titi",
+        "skill": "skchr_titi_3"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S3"
+      },
+      "extras": [
+        {
+          "what": "status:sleep",
+          "signal": {
+            "event": "status",
+            "name": "sleep"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "沉睡由通用状态循环 buff_sleep 自动播"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "至多 2 名目标各一击（H=1）；S3 模式是投射物 cast（无 hit 组）；自身 buff 循环压成 0.6 秒",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/42",
+        "card": "server/sim/content/assault/cards/support-instant.js:156",
+        "original": "skill_table skchr_titi_3: MANUAL, durationType NONE, duration 25, spType INCREASE_WITH_TIME, spCost 37, maxChargeTime 1",
+        "index": "skills.skchr_titi_3: start [无], loop [titi_skill_03_buff_01], range [无], end [无], targets [titi_skill_03_hit_02], attacks 0 条（hit 0 组）, mode S3; modes[S3].attack cast 1 条, hit 0 组, projectile projectile_chr_titi_s3"
+      }
+    },
+    "char_4179_monstr": {
+      "assaultSkill": "策略：超压链接（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4179_monstr",
+        "skill": "skchr_monstr_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": "RangedHeal 1 条（monstr_skill_01_start_01、hit 组为空、投射物 projectile_chr_monstr_s1）；链式跳跃由程序治疗表现"
+    },
+    "char_136_hsguma": {
+      "assaultSkill": "力之锯（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_136_hsguma",
+        "skill": "skchr_hsguma_3"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "none"
+      },
+      "extras": [
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "横扫命中保留程序表现（原作技能没有攻击行）"
+        },
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "屏障由原作自身 buff 循环 hsguma_skill_03_buff 覆盖"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作只有自身 buff 循环（hsguma_skill_03_start/buff），没有攻击行；前方 1 格内每个敌人一击按程序命中",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/44",
+        "card": "server/sim/content/assault/cards/support-instant.js:178",
+        "original": "skill_table skchr_hsguma_3: MANUAL, durationType NONE, duration 25, spType INCREASE_WITH_TIME, spCost 50, maxChargeTime 1",
+        "index": "skills.skchr_hsguma_3: start [无], loop [hsguma_skill_03_start,hsguma_skill_03_buff], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_202_demkni": {
+      "assaultSkill": "药物配置（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_202_demkni",
+        "skill": "skchr_demkni_2"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": "Heal 1 条（demkni_skill_02_start + common_heal_hit_01）；附近范围内每名友方各治疗一次"
+    },
+    "char_423_blemsh": {
+      "assaultSkill": "光芒涌动（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_423_blemsh",
+        "skill": "skchr_blemsh_1"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "medium",
+      "status": "default",
+      "notes": "两条攻击行（MeleeAttack 1 组 hit + Heal 1 组 hit），伤害与治疗各播一次，全部默认"
+    },
+    "char_2025_shu": {
+      "assaultSkill": "化被草木（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_2025_shu",
+        "skill": "skchr_shu_1"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "summon",
+          "signal": {
+            "event": "spawn"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "播种地块是装置，出场走自己的出生特效"
+        }
+      ],
+      "confidence": "high",
+      "status": "filled",
+      "notes": "Heal 1 组 hit（shu_skill_01_start + shu_skill_01_hit）；治疗地块走 kit fx healField，无需另配",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/47",
+        "card": "server/sim/content/assault/cards/support-instant.js:105",
+        "original": "skill_table skchr_shu_1: AUTO, durationType NONE, duration 0, spType INCREASE_WITH_TIME, spCost 4, maxChargeTime 3",
+        "index": "skills.skchr_shu_1: start [无], loop [无], range [无], end [无], targets [无], attacks 1 条（hit 1 组）, mode 无"
+      }
+    },
+    "char_311_mudrok": {
+      "assaultSkill": "岩崩锤（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_311_mudrok",
+        "skill": "skchr_mudrok_2"
+      },
+      "phases": {
+        "range": {
+          "holdS": 0.6
+        }
+      },
+      "extras": [],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "回血是 start common_heal_hit_01；范围标记原计划已是 hold:cast，压到 0.6 秒（spCostMin 4 防叠影）；晕眩交给通用状态循环",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/48",
+        "card": "server/sim/content/assault/cards/support-plans.js:5041",
+        "original": "skill_table skchr_mudrok_2: AUTO, durationType NONE, duration 0, spType INCREASE_WHEN_TAKEN_DAMAGE, spCost 4, maxChargeTime 1",
+        "index": "skills.skchr_mudrok_2: start [common_heal_hit_01], loop [无], range [mudrok_skill_02_range], end [无], targets [无], attacks 1 条（hit 1 组）, mode 无"
+      }
+    },
+    "char_4065_judge": {
+      "assaultSkill": "一锤定音（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4065_judge",
+        "skill": "skchr_judge_1"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        }
+      },
+      "extras": [],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "单目标一击、hit 1 组；晕眩交给通用状态循环；自身 buff 循环因 spCostMin 3 压到 0.6 秒；ready 循环默认 skip",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/49",
+        "card": "server/sim/content/assault/cards/support-plans.js:5157",
+        "original": "skill_table skchr_judge_1: AUTO, durationType NONE, duration -1, spType INCREASE_WITH_TIME, spCost 3, maxChargeTime 2",
+        "index": "skills.skchr_judge_1: start [无], loop [judge_skill_01_buff_02], range [无], end [无], targets [无], attacks 1 条（hit 1 组）, mode 无"
+      }
+    },
+    "char_416_zumama": {
+      "assaultSkill": "震慑劈砍（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_416_zumama",
+        "skill": "skchr_zumama_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "只打阻挡目标，每目标一击（H=1）；晕眩交给通用状态循环；S2 模式 cast 2 条、hit 1 组",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/50",
+        "card": "server/sim/content/assault/cards/support-plans.js:5261",
+        "original": "skill_table skchr_zumama_2: MANUAL, durationType NONE, duration 18, spType INCREASE_WITH_TIME, spCost 28, maxChargeTime 1",
+        "index": "skills.skchr_zumama_2: start [无], loop [zumama_skill_02_buff], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 2 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_4039_horn": {
+      "assaultSkill": "照明榴弹（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4039_horn",
+        "skill": "skchr_horn_1"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "other",
+          "signal": {
+            "event": "fx",
+            "kind": "splash"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "落点溅射走 sim 的 splash kit fx；照明区域只是 reveal 状态循环，没有独立光效"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "4 条攻击行（MeleeAttack、RangedAttack projectile_chr_horn_s1、重复 MeleeAttack、照明 RangedAttack projectile_chr_horn_s1_light），命中按默认 byCount；照明持续 7–8 秒只是 reveal 状态",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/51",
+        "card": "server/sim/content/assault/cards/support-instant.js:115",
+        "original": "skill_table skchr_horn_1: AUTO, durationType NONE, duration -1, spType INCREASE_WITH_TIME, spCost 5, maxChargeTime 2",
+        "index": "skills.skchr_horn_1: start [无], loop [无], range [无], end [无], targets [无], attacks 4 条（hit 2 组）, mode 无"
+      }
+    },
+    "char_1034_jesca2": {
+      "assaultSkill": "饱和迸射（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1034_jesca2",
+        "skill": "skchr_jesca2_3"
+      },
+      "phases": {
+        "attackFrom": "mode:S3"
+      },
+      "extras": [
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "机动盾牌追加炮击是装置联动，保留程序表现"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "三发齐射 H=3，S3 模式无 hit 组；盾牌在场追加一次炮击并晕眩（晕眩交给通用状态循环）",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/52",
+        "card": "server/sim/content/assault/cards/support-instant.js:171",
+        "original": "skill_table skchr_jesca2_3: MANUAL, durationType AMMO, duration -1, spType INCREASE_WITH_TIME, spCost 40, maxChargeTime 1",
+        "index": "skills.skchr_jesca2_3: start [无], loop [jesca2_skill_03_buff_01], range [无], end [无], targets [token_jesca2_jckshd_skill_03_buff_01], attacks 0 条（hit 0 组）, mode S3; modes[S3].attack cast 0 条, hit 0 组, projectile 无"
+      }
+    },
+    "char_4194_rmixer": {
+      "assaultSkill": "铳骑主考官（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_4194_rmixer",
+        "skill": "skchr_rmixer_1"
+      },
+      "phases": {},
+      "extras": [
+        {
+          "what": "charge",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "给友方补弹是弹药账目，保留程序提示"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "三连击 H=3，MultiRangedAttack 无 hit 组、投射物 projectile_chr_rmixer_sk1 由默认 auto",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/53",
+        "card": "server/sim/content/assault/cards/support-instant.js:142",
+        "original": "skill_table skchr_rmixer_1: AUTO, durationType NONE, duration -1, spType INCREASE_WHEN_TAKEN_DAMAGE, spCost 4, maxChargeTime 1",
+        "index": "skills.skchr_rmixer_1: start [无], loop [无], range [无], end [无], targets [无], attacks 1 条（hit 0 组）, mode 无"
+      }
+    },
+    "char_2026_yu": {
+      "assaultSkill": "厚礼上宾（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_2026_yu",
+        "skill": "skchr_yu_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 1.2
+        }
+      },
+      "extras": [
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "屏障由原作自身 buff 循环 yu_skill2_buff_01 覆盖"
+        },
+        {
+          "what": "other",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "牵引是程序位移，官方没有对应攻击行"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作画面是自身 buff + range 场（yu_skill2_buff_01/yu_skill2_range_01），按技能主体压成 1.2 秒；MeleeAttack hit 1 组",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/54",
+        "card": "server/sim/content/assault/cards/support-instant.js:183",
+        "original": "skill_table skchr_yu_2: MANUAL, durationType NONE, duration 20, spType INCREASE_WITH_TIME, spCost 26, maxChargeTime 1",
+        "index": "skills.skchr_yu_2: start [无], loop [yu_skill2_buff_01,yu_skill2_range_01], range [无], end [无], targets [无], attacks 1 条（hit 1 组）, mode S2; modes[S2].attack cast 1 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_220_grani": {
+      "assaultSkill": "永不后退！（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_220_grani",
+        "skill": "skchr_grani_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        },
+        "attackFrom": "mode:S2"
+      },
+      "extras": [
+        {
+          "what": "shield",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "none": true
+          },
+          "why": "冲锋屏障是纯数值护盾，由原作自身 buff 循环 grani_skill_02_buff 覆盖"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "只打被自身阻挡的敌人，每目标一击（H=1）；S2 模式 hit 1 组；自身 buff 循环压成 0.6 秒",
+      "evidence": {
+        "design": "data/assault-design/roster-support.json#/operators/55",
+        "card": "server/sim/content/assault/cards/support-instant.js:185",
+        "original": "skill_table skchr_grani_2: MANUAL, durationType NONE, duration 30, spType INCREASE_WITH_TIME, spCost 70, maxChargeTime 1",
+        "index": "skills.skchr_grani_2: start [无], loop [grani_skill_02_buff], range [无], end [无], targets [无], attacks 0 条（hit 0 组）, mode S2; modes[S2].attack cast 1 条, hit 1 组, projectile 无"
+      }
+    },
+    "char_1001_amiya2": {
+      "assaultSkill": "影霄·绝影（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1001_amiya2",
+        "skill": "skchr_amiya2_2"
+      },
+      "phases": {},
+      "extras": [],
+      "confidence": "high",
+      "status": "default",
+      "notes": ""
+    },
+    "char_1037_amiya3": {
+      "assaultSkill": "慈悲愿景（进击）",
+      "shape": "instant",
+      "official": {
+        "unit": "char_1037_amiya3",
+        "skill": "skchr_amiya3_2"
+      },
+      "phases": {
+        "loop": {
+          "holdS": 0.6
+        }
+      },
+      "extras": [
+        {
+          "what": "heal",
+          "signal": {
+            "event": "none"
+          },
+          "look": {
+            "procedural": "keep"
+          },
+          "why": "咒愈师特性治疗一名友方由程序治疗表现承载"
+        }
+      ],
+      "confidence": "medium",
+      "status": "filled",
+      "notes": "原作 loop 两条自身 buff 光效压成 0.6 秒；攻速/移速削减走通用状态循环（targets 保持 status，不重复播）；本体攻击沿用原技能攻击行（hit 0 组）",
+      "evidence": {
+        "design": "data/assault-design/forms.json#/forms/1",
+        "card": "server/sim/content/assault/cards/assault.js:848",
+        "original": "skill_table skchr_amiya3_2: MANUAL, durationType NONE, duration 32, spType INCREASE_WITH_TIME, spCost 20, maxChargeTime 1",
+        "index": "skills.skchr_amiya3_2: start 无, loop [amiya3_skill_02_buff_02, amiya3_skill_02_buff], range 无, end 无, targets [amiya3_skill_02_hit_buff], attacks 1 条（cast [amiya3_skill_02_start]，hit 0 组，projectile 无）, mode S2；modeAttack Modes/S2/Body/Attack cast 1 行、hit 1 组、projectile 无"
+      }
+    }
+  }
+}

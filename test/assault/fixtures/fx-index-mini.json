@@ -1,0 +1,92 @@
+{
+  "version": 3,
+  "set": "fx-index-mini",
+  "source": { "client": "mini" },
+  "units": {
+    "char_290_vigna": {
+      "kind": "char",
+      "modes": [
+        { "name": "Default" },
+        {
+          "name": "S2",
+          "attack": {
+            "node": "S2_Attack",
+            "class": "MeleeAttack",
+            "cast": [{ "effects": ["vigna_skill_02_cast_01"] }],
+            "hit": [
+              { "effects": ["vigna_skill_02_hit_01"] },
+              { "effects": ["vigna_skill_02_hit_02"] },
+              { "effects": ["vigna_skill_02_hit_03"] }
+            ]
+          }
+        }
+      ],
+      "skills": {
+        "skchr_vigna_2": {
+          "mode": 1,
+          "rootClass": "ActiveBuffAbility",
+          "uses": [
+            {
+              "role": "start",
+              "keys": ["vigna_skill_02_start"],
+              "from": "UberEffectEmitter._castEffects",
+              "node": "sk",
+              "ability": "ActiveBuffAbility",
+              "startEvent": "ON_CAST_START",
+              "endEvent": "ON_CAST_END",
+              "oneshot": true,
+              "list": "cast"
+            },
+            {
+              "role": "loop",
+              "keys": ["vigna_skill_02_buff"],
+              "from": "BuffDuringSkill._buffs",
+              "node": "sk",
+              "on": "owner"
+            }
+          ]
+        }
+      }
+    },
+    "char_240_wyvern": {
+      "kind": "char",
+      "modes": [{ "name": "Default" }],
+      "skills": {
+        "skchr_wyvern_1": {
+          "rootClass": "ActiveBuffAbility",
+          "uses": [
+            {
+              "role": "start",
+              "keys": ["wyvern_skill_01_start"],
+              "from": "CastSkill._beginEffect",
+              "node": "sk"
+            },
+            {
+              "role": "loop",
+              "keys": ["wyvern_skill_01_buff"],
+              "from": "BuffDuringSkill._buffs",
+              "node": "sk",
+              "on": "owner"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "skills": {},
+  "prefabs": {
+    "vigna_skill_02_start": { "file": "vigna_skill_02_start.json", "looping": false },
+    "vigna_skill_02_buff": { "file": "vigna_skill_02_buff.json", "looping": true },
+    "vigna_skill_02_cast_01": { "file": "vigna_skill_02_cast_01.json", "looping": false },
+    "vigna_skill_02_hit_01": { "file": "vigna_skill_02_hit_01.json", "looping": false },
+    "vigna_skill_02_hit_02": { "file": "vigna_skill_02_hit_02.json", "looping": false },
+    "vigna_skill_02_hit_03": { "file": "vigna_skill_02_hit_03.json", "looping": false },
+    "wyvern_skill_01_start": { "file": "wyvern_skill_01_start.json", "looping": false },
+    "wyvern_skill_01_buff": { "file": "wyvern_skill_01_buff.json", "looping": true }
+  },
+  "projectiles": {},
+  "generic": {
+    "keys": ["buff_atk_up"],
+    "status": { "cold": ["buff_cold"] }
+  }
+}

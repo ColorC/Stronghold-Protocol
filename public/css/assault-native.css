@@ -1,0 +1,138 @@
+/* Only Assault phase placement. All widget art, typography, motion and states come from native game CSS. */
+.assault-presentation { position: relative; min-height: 100dvh; -webkit-user-select: text; user-select: text; overflow-x: clip; }
+.assault-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .08rem; margin-top: .1rem; }
+.assault-actions .uthumb { margin-right: .06rem; vertical-align: middle; }
+.assault-actions .btn__label { display: flex; align-items: center; }
+.gm .spov { inset: 1.48rem 0 .9rem; }
+.gm .spov__inner { max-height: 100%; overflow-y: auto; }
+.gm .shopbar__cards { overflow-x: auto; scrollbar-width: thin; }
+.gm .shopbar__cards .scard { flex-shrink: 0; }
+.assault-presentation .gm__field { -webkit-user-select: none; user-select: none; }
+.assault-presentation .spcard, .assault-presentation .scard, .assault-presentation .dpanel,
+.assault-presentation .result, .assault-presentation .title { user-select: text; }
+.assault-presentation .dpanel { z-index: 24; }
+.assault-presentation .spov--visual .spov__inner { overflow-y: auto; }
+.assault-presentation .spov--visual .spov__grid { flex: none; grid-template-columns: repeat(auto-fit, minmax(min(2.9rem, 100%), 1fr)); grid-template-rows: none; grid-auto-rows: minmax(3.3rem, auto); margin-top: .12rem; }
+.assault-presentation .spov--visual .spov__grid--3 { grid-template-columns: repeat(3, minmax(0, 4.3rem)); }
+.assault-presentation .spov--visual .spcard { gap: .12rem; padding-bottom: .48rem; }
+.assault-presentation .spov--visual .spcard__head { justify-content: center; text-align: center; }
+.assault-presentation .spov--visual .spcard__title { align-items: center; }
+.assault-presentation .spov--visual .spcard__desc { -webkit-line-clamp: 4; text-align: center; }
+.assault-presentation .spov__extra .btn__label { display: flex; align-items: center; gap: .06rem; }
+.assault-presentation .spov__backdrop { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .28; pointer-events: none; }
+.assault-choice-visual { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: .12rem; min-height: 2.1rem; flex: 1; }
+.assault-choice-visual--leader { position: relative; padding-top: .05rem; }
+.assault-leader-image { width: 100%; height: 2.2rem; object-fit: contain; }
+.assault-scene-image { width: 100%; height: 2.1rem; object-fit: cover; }
+.assault-choice-visual--relic > .assault-relic-image { width: 1.8rem; height: 1.8rem; }
+.assault-choice-visual--skill > .icon, .assault-choice-visual--skill > .sprite { width: 1.25rem; height: 1.25rem; color: var(--gold-2); }
+.assault-object-group { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: .08rem; }
+.assault-shop-image { width: .6rem; height: .6rem; object-fit: contain; }
+.assault-profession-image { width: .4rem; height: .4rem; object-fit: contain; }
+.assault-action-object { display: flex; align-items: center; justify-content: center; min-height: 1.45rem; }
+.assault-action-object > .icon, .assault-action-object > .coin-glyph, .assault-action-object > .sprite { width: 1.25rem; height: 1.25rem; }
+.assault-object-group > .icon { width: .5rem; height: .5rem; }
+.assault-relic-image { width: .8rem; height: .8rem; object-fit: contain; }
+.assault-values, .assault-effects { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .14rem; }
+.assault-value { display: inline-flex; align-items: center; gap: .06rem; }
+.assault-value .icon, .assault-value .coin-glyph, .assault-value .sprite { width: .28rem; height: .28rem; }
+.assault-value b { font-size: calc(.22rem * var(--t)); }
+.assault-effect { display: inline-flex; align-items: center; gap: .08rem; font-size: calc(.18rem * var(--t)); }
+.assault-effect > .icon, .assault-effect > .coin-glyph, .assault-effect > .sprite { width: .3rem; height: .3rem; }
+.assault-actions .assault-profession-image { margin-right: .06rem; }
+.assault-presentation .dpanel--right { top: .12rem; bottom: .12rem; right: .12rem; width: min(max(8rem, 680px), 86vw); max-height: none; }
+.assault-presentation .dpanel--right.is-shop { top: max(1.12rem, 54px); bottom: 1.02rem; left: .12rem; right: auto; width: min(max(8rem, 680px), max(0px, calc(100% - var(--assault-shop-space, 9rem) - .24rem))); max-height: none; }
+.assault-presentation .gm.is-collapsed ~ .dpanel--right { bottom: 1.02rem; }
+.assault-presentation .dpanel--right .dhead__art { width: .9rem; height: 1.2rem; }
+.assault-detail-tabs { display: flex; gap: .08rem; border-bottom: 1px solid var(--line); padding-bottom: .08rem; }
+.assault-detail-tabs .btn { flex: 1; min-width: 0; }
+.assault-mechanics-columns { display: block; }
+.assault-effect-column { display: flex; flex-direction: column; gap: .16rem; min-width: 0; }
+.assault-mechanic-passive { display: grid; grid-template-columns: 1fr auto; gap: .06rem .1rem; padding: .1rem 0; border-top: 1px solid var(--line); }
+.assault-mechanic-passive .dtag-kind { white-space: normal; overflow-wrap: anywhere; }
+.assault-mechanic-passive > .rt, .assault-mechanic-passive > .dtext, .assault-mechanic-passive > .assault-mechanic-detail { grid-column: 1 / -1; }
+.assault-passive-badge { display: inline-flex; align-items: center; gap: .05rem; color: var(--text-md); font-size: calc(.16rem * var(--t)); }
+.assault-role-detail { margin: .06rem 0 .12rem; }
+.assault-role-detail summary { cursor: pointer; color: var(--text-md); font-size: calc(.18rem * var(--t)); }
+.assault-role-detail > .rt { margin-top: .08rem; }
+.assault-mechanic-detail { margin: .08rem 0; }
+.assault-mechanic-detail summary { cursor: pointer; color: var(--text-md); font-size: calc(.18rem * var(--t)); }
+.assault-mechanic-detail > .rt, .assault-mechanic-detail > .dtext { display: block; margin-top: .08rem; }
+.assault-presentation .dmodule > .assault-module-choice { display: flex; align-items: center; justify-content: flex-start; gap: .1rem; min-width: 0; text-align: left; }
+.assault-presentation .dmodule > .assault-module-choice .btn__label { display: inline-flex; align-items: center; gap: .1rem; }
+.assault-module-choice.is-active .lo-mglyph { border-color: var(--gold-2); box-shadow: 0 0 .08rem rgba(255, 198, 0, .35); }
+.assault-module-choice__text { display: flex; flex-direction: column; min-width: 0; }
+.assault-module-choice__type { color: var(--text-md); font-size: calc(.16rem * var(--t)); line-height: 1.2; }
+.dmodule .assault-mechanic-detail { margin-left: .08rem; }
+@media (min-width: 700px) {
+  .assault-presentation .dpanel--right .assault-mechanics-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .12rem; align-items: start; }
+  .assault-presentation .dpanel--right .assault-mechanics-columns > .dsec { min-width: 0; }
+}
+@media (max-height: 450px) {
+  .gm .spov { inset: 1.45rem 0 .82rem; }
+  .gm .spov__head { margin-bottom: .1rem; }
+  .assault-presentation .spov--visual .spov__grid { grid-auto-rows: minmax(2.4rem, auto); }
+  .assault-choice-visual { min-height: 1.4rem; }
+  .assault-leader-image, .assault-scene-image { height: 1.4rem; }
+  .assault-presentation .dpanel--right { top: .04rem; bottom: .08rem; width: min(6.5rem, 58vw); }
+}
+@media (max-width: 767px) {
+  .assault-presentation .dpanel--right.is-shop { top: max(1.12rem, 54px); bottom: var(--assault-shop-bottom, 4.4rem); left: .12rem; right: .12rem; width: auto; }
+}
+
+.assault-collection-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,3.4rem),1fr)); gap:.16rem; }
+.assault-collection-grid .dmodule { margin:0; }
+.assault-collection-grid .dskill { align-items:center; gap:.12rem; }
+.assault-collection-icon { display:inline-flex; flex:none; width:.65rem; height:.65rem; align-items:center; justify-content:center; }
+.assault-collection-icon img { width:100%; height:100%; object-fit:contain; }
+.assault-upgrade-art { position:relative; display:inline-flex; width:100%; height:100%; min-width:32px; min-height:32px; max-width:96px; max-height:96px; align-items:center; justify-content:center; }
+.assault-upgrade-art>img { width:100%; height:100%; object-fit:contain; border-radius:10%; }
+.assault-upgrade-art__badge { position:absolute; right:-5%; bottom:-5%; width:34%; height:34%; min-width:18px; min-height:18px; display:flex; align-items:center; justify-content:center; border:1px solid #e4c680; border-radius:50%; color:#ffe0a0; background:#172322; }
+.assault-upgrade-art__badge .icon { width:75%; height:75%; }
+.assault-choice-visual--skill>.assault-upgrade-art,.assault-choice-visual--reward>.assault-upgrade-art { width:1.15rem; height:1.15rem; }
+.assault-presentation .tier--stars { clip-path:none; display:inline-flex; align-items:center; justify-content:center; gap:1px; width:auto; min-width:var(--tier-h); padding:0 3px; color:#ffe0a0; background:#172322; border:1px solid #c8af73; border-radius:3px; }
+.assault-presentation .tier--stars::before,.assault-presentation .tier--stars::after { display:none; }
+.assault-presentation .tier--stars i { flex:none; display:block; width:9px; height:9px; background:currentColor; clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 94%,50% 72%,21% 94%,32% 57%,2% 35%,39% 35%); }
+
+/* Bazaar-style card face: type label + skill-cost badge, ≤3 effect lines, module line. */
+.assault-mechanics-card { display: flex; flex-direction: column; gap: .14rem; min-width: 0; }
+.assault-bazaar-card { display: flex; flex-direction: column; gap: .1rem; padding: .12rem .14rem; border: 1px solid var(--line); border-radius: .08rem; background: color-mix(in srgb, var(--panel, #1c1f24) 88%, transparent); }
+.assault-bazaar-card__head { display: flex; align-items: center; justify-content: space-between; gap: .1rem; min-width: 0; }
+.assault-bazaar-card__type { color: var(--text-md); font-size: calc(.17rem * var(--t)); overflow-wrap: anywhere; }
+.assault-sp-badge { display: inline-flex; align-items: center; gap: .04rem; flex: none; padding: .02rem .08rem; border-radius: 999px; background: var(--amber, #c9a227); color: #111; font-size: calc(.19rem * var(--t)); }
+.assault-sp-badge.is-passive { background: var(--line); color: var(--text-md); }
+.assault-bazaar-lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .06rem; }
+.assault-bazaar-line { line-height: 1.45; font-size: calc(.2rem * var(--t)); overflow-wrap: anywhere; }
+.assault-bazaar-line + .assault-bazaar-line { border-top: 1px solid var(--line); padding-top: .06rem; }
+.assault-bazaar-line.is-active { font-weight: 600; }
+.assault-bazaar-line.is-module { color: var(--accent, #7fc8ff); }
+.assault-card-growth-current { display:inline-block; padding:0 .05rem; border:1px solid var(--line); border-radius:.03rem; color:var(--accent,#7fc8ff); }
+.assault-ledger-growth { margin:.1rem 0; }
+.assault-ledger-growth p { margin:.04rem 0; }
+.assault-kw { display: inline-flex; align-items: baseline; gap: .02rem; color: var(--amber, #e3b341); font-weight: 600; }
+.assault-kw .icon { align-self: center; }
+.assault-tiers { white-space: nowrap; }
+.assault-tier { color: var(--text-md); }
+.assault-tier.is-current { color: var(--amber, #e3b341); font-weight: 700; }
+
+/* 攻击范围 on the detail card's first screen (ui.js NativePieceDetail): the official card's mini-map — own tile filled,
+   range tiles outlined, facing right. Larger cells than the shared .rgrid (game-panels.css); same markup (RangeGrid). */
+.assault-range { display: flex; align-items: center; flex-wrap: wrap; gap: .1rem .18rem; min-width: 0; }
+.assault-growth { position:absolute; top:1.1rem; left:.2rem; z-index:12; display:flex; align-items:center; padding:8px 12px; background:rgba(13,18,20,.88); border:1px solid var(--line); pointer-events:auto; }
+.assault-growth .lvcard { position:relative; display:grid; grid-template-columns:38px 62px; grid-template-rows:22px 20px; gap:0 6px; width:106px; min-width:106px; height:48px; min-height:0; padding:0 0 6px; border:0; background:transparent; color:inherit; }
+.assault-growth .lvcard::before,.assault-growth .lvcard::after { display:none; }
+.assault-growth .lvcard__frame { position:static; grid-row:1/3; width:38px; height:40px; display:flex; flex-direction:column; align-items:center; justify-content:center; margin:0; padding:0; background:transparent; border:1px solid #58d6b0; color:#58d6b0; }
+.assault-growth .lvcard__micro { position:static; font-size:9px; line-height:11px; color:inherit; }
+.assault-growth .lvcard__num { font-size:24px; line-height:25px; color:inherit; }
+.assault-growth .lvcard__label { position:static; grid-column:2; align-self:end; font-size:13px; line-height:18px; padding:0; margin:0; color:inherit; }
+.assault-growth .lvcard__key { position:static; grid-column:2; font-size:11px; line-height:16px; color:var(--text-md); background:transparent; border:0; padding:0; margin:0; }
+.assault-xp-track { position:absolute; bottom:0; height:5px; left:0; right:0; background:#263537; overflow:hidden; }
+.assault-xp-track i { display:block; height:100%; background:var(--mint-400,#58d6b0); transition:width .15s linear; }
+@media(max-width:900px) { .assault-growth { top:.85rem; padding:5px 8px; } }
+.assault-ledger-select { display:flex; flex-wrap:wrap; align-items:center; gap:.1rem; margin-bottom:.15rem; }
+.assault-ledger-select select { max-width:100%; background:var(--bg-panel,#14201f); color:var(--text-hi,#fff); border:1px solid var(--line); padding:.08rem; }
+.assault-ledger th,.assault-ledger td { white-space:nowrap; }
+.assault-ledger .is-zero { color:var(--amber,#e3b341); }
+/* Deployed / cap readout of battle prep and battle: the native shop bar's pill (.shopbar__remain) in the shop bar's own
+   corner, in prep and in battle alike (the battle speed bar is the native single-player one, top right). */
+.gm__hud > .assault-cap { z-index: 2; }

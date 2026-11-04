@@ -1,0 +1,104 @@
+/* 进击页面：原版界面，只把「框」换成古铜色（暗古铜为主、受光处稍亮）。
+   只改描边、四角括号、外框与选中态描边；按钮填充、文字、品质色、价格色一律保持原版。
+   全部选择器限定在 html.assault-page 下，主模式页面不受影响；不引用任何外部资源。 */
+
+html.assault-page {
+  --sp-bronze-dk: #4f3a22;
+  --sp-bronze: #8a6236;
+  --sp-bronze-hi: #b88a52;
+  --sp-bronze-a25: rgba(138, 98, 54, .25);
+  --sp-bronze-a45: rgba(138, 98, 54, .45);
+  --sp-bronze-a60: rgba(138, 98, 54, .6);
+  --sp-bronze-glow: rgba(184, 138, 82, .35);
+  /* 原版的中性描边（--line*）换成同明度的古铜；四角括号默认色 */
+  --line: #3b2f22;
+  --line-2: #574330;
+  --line-3: #7a6043;
+  --bk-c: var(--sp-bronze-hi);
+}
+
+/* ---- 四角括号：原版各组件自带的薄荷绿 --bk-c ------------------------------------------------------------------ */
+html.assault-page .panel,
+html.assault-page .panel--mint,
+html.assault-page .modal__box:not(.modal__box--red):not(.modal__box--amber):not(.modal__box--orange):not(.modal__box--gold):not(.modal__box--ice),
+html.assault-page .dpanel,
+html.assault-page .title-login,
+html.assault-page .gtop__center,
+html.assault-page .avatar.is-self,
+html.assault-page .avatar.is-ready,
+html.assault-page .field__box:focus-within,
+html.assault-page .btn:not(.btn--primary):not(.btn--amber):not(.btn--ice):not(.btn--danger) { --bk-c: var(--sp-bronze-hi); }
+html.assault-page .modal__box:not(.modal__box--red):not(.modal__box--amber):not(.modal__box--orange):not(.modal__box--gold):not(.modal__box--ice) {
+  --mstripe: var(--sp-bronze);
+  box-shadow: 0 .3rem .9rem rgba(0, 0, 0, .65), 0 0 .4rem rgba(184, 138, 82, .06);
+}
+
+/* ---- 按钮的描边（填充与文字不变） ------------------------------------------------------------------------------ */
+html.assault-page .btn { --btn-bd-hover: var(--sp-bronze); --btn-glow: var(--sp-bronze-a25); }
+html.assault-page .btn.is-active { --btn-bd: var(--sp-bronze-hi); box-shadow: inset 0 0 0 1px var(--sp-bronze-a45); }
+
+/* ---- 面板、提示框、标签页选中态 ------------------------------------------------------------------------------- */
+html.assault-page .panel--glow { border-color: var(--sp-bronze-dk); box-shadow: 0 0 0 1px rgba(184, 138, 82, .12), 0 0 .3rem rgba(184, 138, 82, .12), 0 .12rem .3rem rgba(0, 0, 0, .35); }
+html.assault-page .tooltip { border-left-color: var(--sp-bronze); }
+html.assault-page .tabs__tab::after { background: var(--sp-bronze-hi); box-shadow: 0 0 8px var(--sp-bronze-glow); }
+html.assault-page .section-label__idx { border-color: var(--sp-bronze-dk); }
+html.assault-page .field__box:focus-within { border-color: var(--sp-bronze); box-shadow: 0 0 0 1px rgba(184, 138, 82, .15), 0 0 .18rem rgba(184, 138, 82, .15); }
+html.assault-page .avatar.is-self { border-color: var(--sp-bronze-dk); }
+html.assault-page .title-corner__mark { border-color: var(--sp-bronze); }
+html.assault-page .title-login { box-shadow: 0 .2rem .5rem rgba(0, 0, 0, .5), 0 0 .5rem rgba(184, 138, 82, .06); }
+html.assault-page .title-login::before { background: linear-gradient(90deg, var(--sp-bronze-hi), transparent 60%); }
+
+/* ---- 顶栏 HUD 外框 ------------------------------------------------------------------------------------------- */
+html.assault-page .gtop__iconbtn { border-color: var(--sp-bronze); }
+html.assault-page .gtop__iconbtn:hover,
+html.assault-page .gtop__iconbtn.is-on { border-color: var(--sp-bronze-hi); }
+html.assault-page .capsule:not(.capsule--combat):not(.capsule--boss) {
+  border-color: var(--sp-bronze);
+  box-shadow: inset 0 0 .14rem rgba(138, 98, 54, .3), 0 0 .16rem rgba(138, 98, 54, .25);
+}
+html.assault-page .team__row.is-self .pavatar { box-shadow: 0 0 0 2px var(--sp-bronze), 0 0 .18rem var(--sp-bronze-glow); }
+html.assault-page .team__row.is-open .pavatar { box-shadow: 0 0 0 2px var(--sp-bronze-hi), 0 0 .2rem var(--sp-bronze-glow); }
+html.assault-page .team__frame--plain { border-color: var(--sp-bronze); box-shadow: 0 0 .14rem var(--sp-bronze-glow); }
+html.assault-page .effect--band { border-color: var(--sp-bronze-dk); }
+html.assault-page .effect--team { border-color: var(--sp-bronze-a60); }
+html.assault-page .gm__gear:hover,
+html.assault-page .ewheel__btn:hover,
+html.assault-page .ewheel__btn.is-on,
+html.assault-page .ewheel__item:hover:not(:disabled) { border-color: var(--sp-bronze); }
+html.assault-page .readybtn,
+html.assault-page .readybtn__box { border-color: var(--sp-bronze-hi); }
+html.assault-page .readybtn.is-on .readybtn__key { border-color: var(--sp-bronze); }
+html.assault-page .ebubble { border-color: var(--sp-bronze-a45); }
+html.assault-page .dpbox { border-right-color: var(--sp-bronze); }
+html.assault-page .chud__prog { border-color: var(--sp-bronze-a25); }
+html.assault-page .chud__prog.is-done { border-left-color: var(--sp-bronze); }
+html.assault-page .chud__layers { border-color: var(--sp-bronze); }
+html.assault-page .set-toggle.is-on,
+html.assault-page .set-key:hover,
+html.assault-page .set-key:focus-visible,
+html.assault-page .set-diag__text:focus { border-color: var(--sp-bronze); }
+
+/* ---- 商店货架与卡牌 ------------------------------------------------------------------------------------------ */
+html.assault-page .shopbar__row,
+html.assault-page .shopbar-tab { border-top-color: var(--sp-bronze); }
+html.assault-page .shopbar__remain { border-left-color: var(--sp-bronze); }
+html.assault-page .shopbar__row::before { background: linear-gradient(90deg, var(--sp-bronze-hi), transparent 30%, transparent 70%, var(--sp-bronze-hi)); }
+/* :where() 保持原版特异性，合成 / 售罄 / 奖励 / 禁用等状态色仍由原版规则决定 */
+html.assault-page :where(.scard) { border-color: var(--sp-bronze-a60); }
+html.assault-page .scard:not(.is-disabled):not(.scard--sold):hover { border-color: var(--sp-bronze-hi); box-shadow: 0 0 0 1px var(--sp-bronze-hi), 0 .1rem .24rem rgba(0, 0, 0, .5); }
+html.assault-page .scard__skill.is-custom { border-color: var(--sp-bronze-hi); box-shadow: 0 0 0 1px var(--sp-bronze), 0 0 .08rem var(--sp-bronze-glow); }
+
+/* ---- 选择卡（领袖 / 下一站 / 奖励）与详情里的羁绊、模组 --------------------------------------------------------- */
+html.assault-page :where(.spcard) { border-color: var(--sp-bronze-a60); }
+html.assault-page .spcard.is-pickable:hover { border-color: var(--sp-bronze-hi); box-shadow: 0 0 0 1px var(--sp-bronze-hi), 0 .1rem .3rem rgba(0, 0, 0, .35); }
+html.assault-page .spcard.is-mine,
+html.assault-page .spcard.is-busy { border-color: var(--sp-bronze-hi); box-shadow: inset 0 0 0 1px var(--sp-bronze-hi); }
+html.assault-page .spcard__taker .pavatar { border-color: var(--sp-bronze-hi); }
+html.assault-page .spov__who.is-done { border-color: var(--sp-bronze-dk); }
+html.assault-page .dbond { border-color: var(--sp-bronze-dk); }
+html.assault-page .dbonds--top button.dbond:hover { border-color: var(--sp-bronze); }
+html.assault-page .dbonds--top .dbond.is-active { border-color: var(--sp-bronze); }
+html.assault-page .dmorph__row.is-worn { border-left-color: var(--sp-bronze-hi); }
+html.assault-page .bpop__sec--now { border-left-color: var(--sp-bronze); }
+html.assault-page .bpop__member.is-on .uthumb__art { border-color: var(--sp-bronze-hi); box-shadow: 0 0 .1rem var(--sp-bronze-glow); }
+html.assault-page .iband { border-color: var(--sp-bronze-dk); }

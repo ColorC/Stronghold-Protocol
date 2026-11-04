@@ -1,0 +1,488 @@
+/* 罗德岛战备演习: what the original game screen (theme.css, components.css, screens/game*.css) does not have — the
+   start page, inventory strip, production column, detail card, unit equipment chips, overlays. Sizes follow the
+   original rem scale (1rem = 100 px at 1920×1080, theme.css). */
+
+/* ---- start page --------------------------------------------------------------------------------------------- */
+.ix-start {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .36rem;
+  padding: .3rem; background: radial-gradient(ellipse at 50% 0%, #1d2c25 0%, var(--bg-0) 60%); color: var(--text-md); overflow: auto;
+}
+.ix-start__head { text-align: center; }
+.ix-start__head h1 { margin: .06rem 0; font-family: var(--font-display); font-size: calc(.56 * var(--t)); color: var(--text-hi); letter-spacing: .04em; }
+.ix-start__head p { margin: 0; font-size: max(calc(.19 * var(--t)), 15px); color: var(--text-lo); }
+.ix-start__modes { display: grid; grid-template-columns: repeat(3, minmax(0, 2.8rem)); gap: .18rem; }
+.ix-mode {
+  position: relative; display: flex; flex-direction: column; gap: .08rem; min-height: 1.3rem; padding: .2rem .22rem; text-align: left;
+  background: linear-gradient(160deg, rgba(30, 44, 37, .95), rgba(13, 19, 16, .95)); border: 1px solid var(--line-2); color: var(--text-md);
+  cursor: pointer; transition: border-color var(--t-fast), transform var(--t-fast);
+}
+.ix-mode b { font-size: calc(.26 * var(--t)); color: var(--text-hi); }
+.ix-mode span { font-size: max(calc(.16 * var(--t)), 14px); line-height: 1.5; color: var(--text-lo); }
+.ix-mode:hover:not(:disabled) { border-color: var(--mint-500); transform: translateY(-2px); }
+.ix-mode:disabled { opacity: .55; cursor: default; }
+.ix-mode .spinner { position: absolute; right: .16rem; top: .16rem; }
+.ix-start__foot { display: flex; align-items: flex-end; gap: .2rem; flex-wrap: wrap; justify-content: center; }
+.ix-seed { width: 3rem; }
+.ix-start__back { font-size: max(calc(.16 * var(--t)), 14px); color: var(--mint-400); align-self: center; }
+
+/* ---- shared bits ------------------------------------------------------------------------------------------------ */
+.ix-muted { color: var(--text-lo); font-size: max(calc(.15 * var(--t)), 13px); }
+.ix-note { margin: .06rem 0; color: var(--text-lo); font-size: max(calc(.14 * var(--t)), 13px); line-height: 1.5; }
+.ix-warn { margin: .06rem 0; color: var(--orange-hi); font-size: max(calc(.15 * var(--t)), 13px); line-height: 1.5; }
+.ix-chip {
+  padding: .04rem .12rem; font-size: max(calc(.15 * var(--t)), 13px); background: rgba(8, 11, 10, .85); border: 1px solid var(--line-2); color: var(--text-md); cursor: pointer;
+}
+.ix-chip.is-on { border-color: var(--mint-500); color: var(--mint-400); }
+.ix-chip:disabled { cursor: default; }
+.ix-inherit__role .ix-chip:disabled { opacity: .4; }
+.ix-perm { display: inline-block; padding: 0 .05rem; font-size: max(calc(.13 * var(--t)), 12px); line-height: 1.5; color: #1a1406; background: var(--gold); }
+.ix-perm .rt-term { color: inherit; border-bottom-color: rgba(26, 20, 6, .5); }
+.ix-elite { margin-left: .06rem; padding: 0 .05rem; font-style: normal; font-size: max(calc(.14 * var(--t)), 12px); color: #1a1406; background: var(--gold-2); vertical-align: middle; }
+.ix-gear { display: inline-grid; place-items: center; width: .26rem; height: .26rem; flex: none; }
+.ix-gear .bglyph, .ix-gear img { width: 100%; height: 100%; }
+.ix-gear--item .uthumb { width: .26rem; height: .26rem; }
+.ix-gear--txt { font-size: max(calc(.15 * var(--t)), 13px); color: var(--text-hi); background: var(--bg-3); border: 1px solid var(--line-2); }
+/* 交接凭证: a key on gold, the rare permission gear */
+.ix-gear--permit { color: #1a1406; background: var(--gold); }
+.ix-gear--permit .icon { width: 72%; height: 72%; fill: currentColor; }
+
+/* trait icon line (shop cards, detail card, choices) */
+.ix-trait { display: flex; flex-wrap: wrap; align-items: center; gap: .02rem .08rem; font-size: max(calc(.14 * var(--t)), 12px); color: var(--text-md); min-width: 0; }
+.ix-trait__rule { display: inline-flex; align-items: center; gap: .03rem; white-space: nowrap; }
+.ix-trait__when { color: var(--mint-400); }
+.ix-trait__arrow { color: var(--text-dim); }
+.ix-trait__out { display: inline-flex; align-items: center; gap: .01rem; }
+.ix-trait__out .ix-gear { width: .2rem; height: .2rem; }
+.ix-trait__out b { font-size: max(calc(.14 * var(--t)), 12px); color: var(--text-hi); }
+.ix-trait__out .icon, .ix-trait__out .coin-glyph { width: .16rem; height: .16rem; }
+.ix-trait__word { color: var(--text-md); }
+.ix-trait__cond { padding: 0 .03rem; font-size: max(calc(.13 * var(--t)), 12px); color: var(--gold); border: 1px solid var(--gold-a20); }
+.ix-trait__more { color: var(--text-lo); }
+.scard .scard__trait { margin: .02rem 0; }
+
+/* ---- inventory strip (the bond strip's place) ------------------------------------------------------------------ */
+.ix-strip { position: absolute; left: .24rem; top: 1.06rem; display: flex; align-items: stretch; gap: .06rem; pointer-events: none; }
+.ix-strip > * { pointer-events: auto; }
+.ix-strip__head, .ix-strip__slot, .ix-strip__more {
+  display: inline-flex; align-items: center; gap: .05rem; height: .4rem; padding: 0 .08rem; background: rgba(8, 11, 10, .82);
+  border: 1px solid var(--line-2); color: var(--text-md); cursor: pointer;
+}
+.ix-strip__head b, .ix-strip__slot b { font-size: max(calc(.17 * var(--t)), 14px); color: var(--text-hi); }
+.ix-strip__slot .ix-gear { width: .28rem; height: .28rem; }
+.ix-strip__slot:hover, .ix-strip__head:hover { border-color: var(--mint-600); }
+.ix-strip__slot.is-armed { border-color: var(--mint-400); }
+/* the stock as tiles: drag one onto an operator to wear it (hud.js InventoryStrip) */
+.ix-strip__tiles { display: grid; grid-template-columns: repeat(10, auto); gap: .04rem; align-content: start; }
+.ix-strip__head { flex-direction: column; justify-content: center; height: auto; min-height: .4rem; }
+.ix-strip__tiles .ix-strip__slot { height: .38rem; }
+.ix-strip__slot { touch-action: none; cursor: grab; user-select: none; }
+.ix-strip__slot.is-dragging { opacity: .45; }
+.ix-strip__head.is-full { border-color: var(--danger, #e05a4f); }
+.ix-strip__head.is-full b { color: var(--danger, #e05a4f); }
+.ix-ghost { position: fixed; left: 0; top: 0; z-index: 60; pointer-events: none; display: flex; align-items: center; gap: .06rem; margin: -.18rem 0 0 -.18rem;
+  padding: .04rem .08rem .04rem .04rem; background: rgba(8, 11, 10, .92); border: 1px solid var(--mint-500); color: var(--text-hi); font-size: max(calc(.15 * var(--t)), 13px); white-space: nowrap; }
+.ix-ghost .ix-gear { width: .32rem; height: .32rem; }
+.ix-prod__row.is-lost { opacity: .55; }
+.ix-prod__row.is-lost .ix-prod__out { text-decoration: line-through; }
+.ix-prod__tag--lost { color: var(--danger, #e05a4f); border-color: currentColor; }
+.ix-strip__empty { font-size: max(calc(.14 * var(--t)), 13px); color: var(--text-dim); padding: 0 .06rem; }
+
+/* ---- production column (the team panel's place) ---------------------------------------------------------------- */
+.ix-prod { position: absolute; left: .24rem; top: 2.02rem; width: 2.2rem; max-height: calc(100% - 5rem); display: flex; flex-direction: column; gap: .04rem; }
+.ix-prod.is-closed { width: auto; }
+.ix-prod__toggle { align-self: flex-start; display: inline-flex; align-items: center; gap: .04rem; padding: .03rem .08rem; font-size: max(calc(.14 * var(--t)), 13px);
+  background: rgba(8, 11, 10, .85); border: 1px solid var(--line-2); color: var(--text-lo); cursor: pointer; }
+.ix-prod__toggle .icon { width: .16rem; height: .16rem; }
+.ix-prod__body { overflow: hidden; padding: .08rem .1rem; background: rgba(8, 11, 10, .78); border: 1px solid var(--line); }
+.ix-prod__list { list-style: none; margin: 0; padding: 0; }
+.ix-prod__h { margin: .04rem 0; font-size: max(calc(.14 * var(--t)), 13px); color: var(--mint-400); }
+.ix-prod__pager { display: flex; align-items: center; justify-content: center; gap: .1rem; padding-top: .04rem; border-top: 1px solid var(--line); font-size: max(calc(.13 * var(--t)), 12px); color: var(--text-lo); }
+.ix-prod__pager button { display: grid; place-items: center; width: max(.3rem, 24px); height: max(.3rem, 24px); background: none; border: 1px solid var(--line-2); color: var(--text-md); cursor: pointer; }
+.ix-prod__pager button:disabled { opacity: .35; cursor: default; }
+.ix-prod__pager .icon { width: .16rem; height: .16rem; }
+.ix-prod h3 { margin: .04rem 0; font-size: max(calc(.14 * var(--t)), 13px); font-weight: 500; color: var(--mint-400); }
+.ix-prod ul { list-style: none; margin: 0 0 .06rem; padding: 0; }
+.ix-prod__row { display: flex; align-items: center; gap: .06rem; min-height: .3rem; font-size: max(calc(.14 * var(--t)), 13px); color: var(--text-md); }
+.ix-prod__row.is-idle { color: var(--text-dim); }
+.ix-prod__row.is-idle > span:last-child { margin-left: auto; font-size: max(calc(.13 * var(--t)), 12px); }
+.ix-prod__src { display: inline-flex; align-items: center; gap: .05rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.ix-prod__src .uthumb { width: .26rem; height: .26rem; flex: none; }
+.ix-prod__out { display: inline-flex; align-items: center; gap: .02rem; }
+.ix-prod__out .ix-gear { width: .22rem; height: .22rem; }
+.ix-prod__out b { color: var(--text-hi); }
+.ix-prod__out .coin-glyph { width: .16rem; height: .16rem; fill: var(--gold); }
+.ix-prod__tag { font-size: max(calc(.13 * var(--t)), 12px); color: var(--gold); }
+.ix-prod__none { list-style: none; margin: .02rem 0 .06rem; font-size: max(calc(.14 * var(--t)), 12px); color: var(--text-dim); }
+.ix-prod__line { display: flex; align-items: center; gap: .04rem; }
+.ix-prod__line .ix-prod__row { flex: 1; }
+.ix-prod__when { font-size: max(calc(.13 * var(--t)), 12px); color: var(--text-lo); width: .5rem; flex: none; }
+
+/* ---- shop cards (on the original scard frame) -------------------------------------------------------------------- */
+.ix-shop .scard__name { font-size: max(.18rem, 15px); }
+/* the skill icon sits in the card's top row after the price: the original pins it to the top of the text block, which
+   grows with the trait lines here, so on a card with more lines it stood higher than on its neighbours */
+.ix-shop .scard__top { justify-content: flex-start; gap: .04rem; }
+.ix-shop .scard__top .scard__skill { position: relative; top: auto; right: auto; flex: none; margin-left: auto; }
+.ix-shop .scard__top .scard__pips { margin-left: auto; }
+.ix-shop .scard__top .scard__pips + .scard__skill { margin-left: .04rem; }
+.ix-carry { position: absolute; right: .06rem; top: .42rem; display: flex; flex-direction: column; gap: .02rem; }
+.ix-carry > span { display: inline-flex; align-items: center; gap: .01rem; padding: .01rem .03rem; background: rgba(8, 11, 10, .85); font-size: max(calc(.13 * var(--t)), 12px); color: var(--text-hi); }
+.ix-carry .ix-gear { width: .18rem; height: .18rem; }
+.scard__permit.ix-gear { width: .2rem; height: .2rem; margin-left: auto; }
+.ix-lv { font-size: max(calc(.15 * var(--t)), 13px); color: var(--gold); }
+.ix-shop .scard__itemart .ix-gear { width: .7rem; height: .7rem; }
+
+/* ---- unit equipment chips (follow the renderer) ------------------------------------------------------------------ */
+.ix-badges { position: absolute; inset: 0; pointer-events: none !important; overflow: hidden; }
+.ix-badge {
+  position: absolute; left: 0; top: 0; display: inline-flex; align-items: baseline; gap: .01rem; padding: 0 .05rem; height: max(.24rem, 18px); line-height: max(.24rem, 18px);
+  font-size: max(calc(.14 * var(--t)), 13px); color: var(--text-hi); background: rgba(8, 11, 10, .82); border: 1px solid var(--gold-a20); white-space: nowrap; will-change: transform;
+}
+.ix-badge b { color: var(--gold); }
+.ix-badge small { font-size: max(calc(.13 * var(--t)), 12px); color: var(--text-lo); }
+.ix-badge i { display: inline-block; width: .07rem; height: .07rem; margin-left: .03rem; align-self: center; transform: rotate(45deg); }
+.ix-badge__att { background: var(--ice); }
+.ix-badge__perm { background: var(--gold); }
+
+/* ---- bench overflow ------------------------------------------------------------------------------------------------ */
+.ix-overflow { position: absolute; right: .3rem; top: 1.36rem; display: flex; align-items: center; gap: .06rem; flex-wrap: wrap; max-width: 6rem;
+  padding: .06rem .1rem; background: rgba(8, 11, 10, .85); border: 1px solid var(--line-2); }
+.ix-overflow__label { font-size: max(calc(.14 * var(--t)), 13px); color: var(--text-lo); }
+.ix-overflow__item { display: inline-flex; flex-direction: column; align-items: center; gap: .01rem; background: none; border: 0; color: var(--text-md); cursor: pointer; font-size: max(calc(.13 * var(--t)), 12px); }
+.ix-overflow__item .uthumb { width: .4rem; height: .4rem; }
+
+/* ---- detail card (detail.js): the original .dpanel frame, its blocks in tabs; the card itself never scrolls ---------- */
+.ix-dpanel { width: min(4.9rem, 46vw); top: 1.02rem; }
+.ix-dpanel.is-shop { bottom: 3.78rem; }
+.ix-dpanel__body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: .1rem; padding: .16rem .18rem .14rem; }
+.ix-dpanel__head { position: relative; flex: none; }
+.ix-dpanel__head .dhead__art { width: 1rem; height: 1.36rem; }
+.ix-dpanel__head .dhead__name { font-size: calc(.28 * var(--t)); }
+.ix-dchips { margin-top: .02rem; }
+.ix-dchips .dbond { cursor: default; }
+.ix-dchips__lv { display: inline-flex; align-items: baseline; gap: .04rem; font-size: max(calc(.14 * var(--t)), 12px); color: var(--text-lo); }
+.ix-dchips__lv b { font-size: max(calc(.2 * var(--t)), 15px); color: var(--gold); }
+.ix-dtabs { flex: none; display: flex; gap: .04rem; border-bottom: 1px solid var(--line-2); }
+.ix-dtabs__tab { display: inline-flex; align-items: center; gap: .05rem; padding: .05rem .14rem; font: inherit; font-size: max(calc(.16 * var(--t)), 14px); color: var(--text-lo);
+  background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; }
+.ix-dtabs__tab.is-on { color: var(--mint-400); border-bottom-color: var(--mint-500); }
+.ix-dtabs__tab .num { font-size: max(calc(.13 * var(--t)), 12px); color: var(--gold); }
+/* one tab's blocks; laid out to fit — only a very short screen lets this part (never the card) scroll */
+.ix-dpanel__pane { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: .12rem; overflow: hidden auto; scrollbar-width: thin; }
+.ix-dpanel__actions { flex: none; display: flex; flex-wrap: wrap; gap: .06rem; padding-top: .08rem; border-top: 1px solid var(--line); }
+.ix-dpanel__actions:empty { display: none; }
+.ix-dpanel__hint { flex: 1 0 100%; font-size: calc(.13 * var(--t)); color: var(--gold, #ffd45a); }
+.ix-dtrait .dgarrison__head { display: flex; align-items: center; gap: .1rem; }
+.ix-dchoice { display: flex; flex-wrap: wrap; gap: .06rem; }
+.ix-dchoice__opt { padding: 0; background: none; border: 0; cursor: pointer; }
+.ix-dchoice__opt:disabled { cursor: default; }
+.ix-dchoice .lo-sicon, .ix-dchoice .lo-mglyph { width: .42rem; height: .42rem; }
+.ix-dchoice__opt:not(.is-on):not(:disabled):hover { filter: brightness(1.2); }
+.ix-dmodule { display: flex; flex-direction: column; gap: .08rem; }
+.ix-dgear__head { display: flex; align-items: baseline; justify-content: space-between; gap: .08rem; }
+.ix-dgear__tiles { display: flex; flex-wrap: wrap; gap: .05rem; }
+.ix-dgear__tile { position: relative; display: inline-flex; align-items: center; gap: .03rem; height: .38rem; padding: 0 .06rem; font: inherit;
+  background: rgba(8, 11, 10, .82); border: 1px solid var(--line-2); color: var(--text-hi); cursor: pointer; }
+.ix-dgear__tile.is-on { border-color: var(--mint-400); }
+.ix-dgear__tile .ix-gear { width: .28rem; height: .28rem; }
+.ix-dgear__tile small { font-size: max(calc(.12 * var(--t)), 11px); color: var(--gold); }
+.ix-dgear__permit { width: .08rem; height: .08rem; background: var(--gold); }
+.ix-dgear__text { display: flex; flex-wrap: wrap; align-items: baseline; gap: .02rem .08rem; padding: .06rem .08rem; font-size: max(calc(.15 * var(--t)), 13px); line-height: 1.55;
+  background: var(--bg-1); border: 1px solid var(--line); }
+.ix-dgear__text > b { color: var(--text-hi); }
+.ix-dgear__att { display: flex; flex-wrap: wrap; gap: .04rem .1rem; font-size: max(calc(.14 * var(--t)), 12px); }
+.ix-dgear__att > b { color: var(--text-lo); font-weight: 500; }
+.ix-dgearhead { display: flex; gap: .12rem; align-items: center; }
+.ix-dgearhead > .ix-gear { width: .6rem; height: .6rem; }
+.ix-detail__text { margin: .06rem 0; }
+.ix-traittext p { margin: .04rem 0; color: var(--text-dim); }
+.ix-traittext p.is-on { color: var(--text-md); }
+.ix-traittext b { margin-right: .06rem; font-weight: 500; color: var(--text-lo); }
+
+/* ---- inventory / inheritance modals -------------------------------------------------------------------------------- */
+.ix-inv__target { display: flex; align-items: center; gap: .1rem; flex-wrap: wrap; margin-bottom: .1rem; font-size: max(calc(.16 * var(--t)), 14px); }
+.ix-inv select, .ix-inherit select { min-width: 3rem; padding: .05rem .08rem; font: inherit; font-size: max(calc(.16 * var(--t)), 14px); color: var(--text-hi); background: var(--bg-2); border: 1px solid var(--line-2); }
+.ix-inv__count { margin-left: auto; color: var(--text-lo); }
+.ix-inv__body { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .2rem; align-items: start; }
+.ix-inv__grid { display: grid; grid-template-columns: repeat(5, .86rem); grid-auto-rows: .86rem; gap: .06rem; }
+.ix-inv__cell { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .01rem; padding: .04rem;
+  font: inherit; background: var(--bg-2); border: 1px solid var(--line-2); color: var(--text-md); cursor: pointer; min-width: 0; }
+.ix-inv__cell.is-empty { background: none; border-style: dashed; border-color: var(--line); cursor: default; }
+.ix-inv__cell.is-on { border-color: var(--mint-400); box-shadow: 0 0 0 1px var(--mint-500); }
+.ix-inv__cell.is-elite { border-color: var(--gold-a20); }
+.ix-inv__cell .ix-gear, .ix-inv__cell .ix-gear--item .uthumb { width: .46rem; height: .46rem; }
+.ix-inv__cell b { position: absolute; right: .04rem; top: .02rem; font-size: max(calc(.13 * var(--t)), 11px); color: var(--text-hi); }
+.ix-inv__cell small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: max(calc(.12 * var(--t)), 10px); color: var(--text-lo); }
+.ix-inv__sel { display: flex; flex-direction: column; gap: .08rem; min-width: 0; }
+.ix-inv__head { display: flex; align-items: center; gap: .1rem; }
+.ix-inv__head > .ix-gear { width: .5rem; height: .5rem; }
+.ix-inv__desc { margin: 0; font-size: max(calc(.15 * var(--t)), 13px); line-height: 1.55; color: var(--text-md); }
+.ix-inv__text b { color: var(--text-hi); font-size: max(calc(.17 * var(--t)), 14px); }
+.ix-inv__text b em { margin-left: .04rem; font-style: normal; font-size: max(calc(.13 * var(--t)), 12px); color: var(--gold); }
+.ix-inv__text > span { margin-left: .08rem; color: var(--gold); font-size: max(calc(.14 * var(--t)), 13px); }
+.ix-inv__text p { margin: .02rem 0 0; font-size: max(calc(.14 * var(--t)), 13px); color: var(--text-lo); }
+.ix-inv__act { display: flex; flex-wrap: wrap; gap: .06rem; align-items: center; }
+.ix-qty { display: inline-flex; align-items: center; gap: .04rem; }
+.ix-qty button { min-width: .3rem; height: .3rem; font-size: max(calc(.15 * var(--t)), 13px); background: var(--bg-2); border: 1px solid var(--line-2); color: var(--text-md); cursor: pointer; }
+.ix-qty b { min-width: .3rem; text-align: center; color: var(--text-hi); }
+.ix-inherit__role { display: flex; flex-wrap: wrap; gap: .08rem; margin-bottom: .1rem; }
+.ix-cmp { display: grid; grid-template-columns: 1fr 1fr; gap: .16rem; margin: .1rem 0; }
+.ix-cmp__col { padding: .1rem .12rem; background: var(--bg-2); border: 1px solid var(--line); font-size: max(calc(.15 * var(--t)), 13px); }
+.ix-cmp__col h4 { margin: 0 0 .06rem; color: var(--text-hi); }
+.ix-cmp__row { display: grid; grid-template-columns: 1fr auto auto auto; gap: .08rem; align-items: baseline; }
+.ix-cmp__row b { color: var(--text-hi); }
+.ix-inherit__foot { display: flex; justify-content: flex-end; margin-top: .1rem; }
+.ix-pick { margin: .08rem 0; padding: .06rem .1rem; border: 1px solid var(--line-2); font-size: max(calc(.15 * var(--t)), 13px); }
+.ix-pick legend { color: var(--gold); padding: 0 .04rem; }
+.ix-pick label { display: block; margin: .03rem 0; cursor: pointer; }
+
+/* ---- offers and result overlays ---------------------------------------------------------------------------------- */
+.ix-offer, .ix-result { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: rgba(4, 7, 6, .62); padding: .3rem; }
+.ix-offer__box, .ix-result__box { width: min(10.4rem, 96vw); max-height: 92%; overflow: auto; padding: .2rem .26rem; background: linear-gradient(170deg, #17231d, #0b100e);
+  border: 1px solid var(--mint-700); color: var(--text-md); box-shadow: 0 .2rem .6rem rgba(0, 0, 0, .55); }
+.ix-offer__box header, .ix-result__box header { margin-bottom: .12rem; }
+.ix-offer__box h2, .ix-result__box h2 { margin: .02rem 0; font-size: calc(.3 * var(--t)); color: var(--text-hi); }
+.ix-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(2.6rem, 1fr)); gap: .14rem; margin: .08rem 0 .12rem; }
+.ix-choices--pieces { grid-template-columns: repeat(auto-fill, minmax(1.5rem, 1fr)); gap: .08rem; }
+.ix-choice { display: flex; flex-direction: column; gap: .06rem; padding: .14rem .16rem; text-align: left; background: rgba(20, 30, 25, .95); border: 1px solid var(--line-2);
+  color: var(--text-md); cursor: pointer; font-size: max(calc(.15 * var(--t)), 13px); line-height: 1.55; transition: border-color var(--t-fast); }
+.ix-choice b { font-size: calc(.2 * var(--t)); color: var(--text-hi); }
+.ix-choice p { margin: 0; color: var(--text-md); }
+.ix-choice:hover:not(:disabled), .ix-choice.is-on { border-color: var(--mint-500); }
+.ix-choice--op { position: relative; padding-top: .1rem; }
+.ix-choice__art { width: 100%; height: 1.6rem; object-fit: cover; object-position: top; }
+.ix-choice__head { display: flex; align-items: center; gap: .06rem; }
+.ix-choice--piece { flex-direction: row; align-items: center; padding: .06rem .08rem; }
+.ix-choice--piece b { font-size: max(calc(.15 * var(--t)), 13px); }
+.ix-choice--piece .uthumb { width: .4rem; height: .4rem; flex: none; }
+.ix-choice__permit.ix-gear { width: .2rem; height: .2rem; }
+.ix-inherit__by { display: flex; align-items: center; gap: .06rem; margin: .06rem 0; color: var(--text-md); }
+.ix-inherit__by .ix-gear { width: .24rem; height: .24rem; }
+.ix-inherit__by b { color: var(--gold); }
+.ix-dmg { list-style: none; margin: .06rem 0 .14rem; padding: 0; }
+.ix-dmg li { display: grid; grid-template-columns: 1.4rem 1fr .8rem auto; gap: .1rem; align-items: center; padding: .03rem 0; font-size: max(calc(.15 * var(--t)), 13px); }
+.ix-dmg__bar { height: .1rem; background: var(--bg-3); }
+.ix-dmg__bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--mint-600), var(--mint-400)); }
+.ix-dmg b { text-align: right; color: var(--text-hi); }
+.ix-dmg small { color: var(--text-lo); }
+.ix-result__box footer, .ix-offer__box footer { display: flex; justify-content: flex-end; }
+
+/* ---- battle controls ---------------------------------------------------------------------------------------------- */
+.ix-battlebar { position: absolute; right: .3rem; top: 1.4rem; display: flex; gap: .06rem; align-items: center; }
+
+/* ---- phones (css/devices.css breakpoints) ------------------------------------------------------------------------ */
+@media (max-height: 520px) {
+  .ix-prod { width: 1.9rem; }
+  .ix-dpanel { width: min(4.4rem, 52vw); }
+  .ix-start__modes { grid-template-columns: repeat(3, minmax(0, 3.1rem)); }
+}
+
+/* ---- top bar: round of the drill's length ---------------------------------------------------------------------- */
+.ix-top .roundbox__num { display: flex; align-items: baseline; gap: .02rem; }
+.ix-top .roundbox__num small { font-size: max(.17rem, 14px); color: #4b5651; }
+.ix-usepick { display: flex; flex-wrap: wrap; align-items: center; gap: .05rem; margin-top: .06rem; padding: .06rem; background: var(--bg-1); border: 1px solid var(--line); }
+.ix-inv__act select { min-width: 1.2rem; }
+.ix-linkbtn { display: inline-flex; align-items: center; gap: .04rem; margin-top: .06rem; padding: .02rem .08rem; font-size: max(calc(.14 * var(--t)), 12px); background: none; border: 1px solid var(--line-2); color: var(--text-lo); cursor: pointer; }
+.ix-linkbtn .icon { width: .14rem; height: .14rem; }
+.ix-linkbtn:hover { color: var(--mint-400); border-color: var(--mint-700); }
+.ix-penbtn { height: .44rem; padding: 0 .12rem; font-size: max(calc(.16 * var(--t)), 14px); background: rgba(8, 11, 10, .85); border: 1px solid var(--orange); color: var(--orange-hi); cursor: pointer; }
+.ix-penbtn b { margin-left: .04rem; color: var(--text-hi); }
+.ix-penbtn.is-on { border-color: var(--mint-500); color: var(--mint-400); }
+
+/* ---- game text: moments, terms and their notes (public/js/independent/text.js) --------------------------------- */
+.ix-when { color: var(--mint-400); white-space: nowrap; }
+.ix-text .rt-vup { color: var(--gold); font-family: var(--font-num); }
+.ix-text .rt-term { cursor: help; }
+.ix-tip { display: block; max-width: 3.2rem; font-size: max(calc(.14 * var(--t)), 13px); line-height: 1.55; text-align: left; }
+.ix-tip b { margin-right: .06rem; color: var(--text-hi); }
+.ix-tip em { margin-right: .06rem; font-style: normal; color: var(--gold); }
+.ix-tip > span { display: block; color: var(--text-md); }
+.ix-notes { list-style: none; margin: .06rem 0 0; padding: .06rem .08rem; background: rgba(255, 255, 255, .03); border-left: 2px solid var(--mint-800); }
+.ix-notes li { display: flex; gap: .06rem; align-items: flex-start; margin: .03rem 0; font-size: max(calc(.14 * var(--t)), 12px); line-height: 1.5; color: var(--text-lo); }
+.ix-notes li > .ix-gear { width: .2rem; height: .2rem; margin-top: .01rem; }
+.ix-notes b { margin-right: .05rem; color: var(--text-md); font-weight: 500; }
+.ix-notes em { margin-right: .05rem; font-style: normal; color: var(--gold); }
+.ix-notes__mark { width: .2rem; text-align: center; color: var(--mint-400); flex: none; }
+.ix-choice .ix-notes { margin-top: auto; }
+.ix-choice .ix-notes b { font-size: inherit; }
+
+/* larger text: a shop card's trait line wraps (the card body grows over the portrait) instead of being cut */
+.scard .ix-trait__rule { white-space: normal; flex-wrap: wrap; row-gap: 0; }
+.ix-prod__when { width: auto; white-space: nowrap; }
+.ix-prod { width: max(2.4rem, 210px); }
+
+/* ---- short landscape phones (1rem = 40 px) ----------------------------------------------------------------------- */
+/* The pixel floors above keep desktop text readable; inside the original's fixed rem frames (the shop cards, the
+   detail card's tab row) they would double the text on a phone and push the name and portrait out of the card. There
+   these spots keep the original's proportions with a smaller floor. */
+@media (max-height: 460px) {
+  .ix-shop .scard__name { font-size: max(.19rem, 11px); }
+  /* a 62 px card: the trait line keeps its outputs (gear icon × count) on one line; the timing words and conditions
+     are in the detail card a tap opens */
+  .ix-shop .scard .ix-trait { flex-wrap: nowrap; overflow: hidden; font-size: 10px; gap: 0 .04rem; }
+  .ix-shop .scard :is(.ix-trait__when, .ix-trait__arrow, .ix-trait__cond, .ix-trait__word) { display: none; }
+  .ix-shop .scard .ix-trait__out b { font-size: 10px; }
+  .ix-shop .scard .ix-trait__out .ix-gear { width: 12px; height: 12px; }
+  .ix-dtabs__tab { padding: .03rem .08rem; font-size: 12px; white-space: nowrap; }
+  .ix-dtabs__tab .num { font-size: 10px; }
+  .ix-dchips__lv { font-size: 11px; }
+  .ix-dchips__lv b { font-size: 12px; }
+  .ix-dgear__text, .ix-dgear__att { font-size: 11px; }
+  /* the result / 战报 box fits the short screen without scrolling */
+  .ix-result__box { padding: .12rem .2rem; }
+  .ix-result__box header { margin-bottom: .04rem; }
+  .ix-result__box footer { padding-bottom: 10px; }
+  /* choice overlays (晋升奖励, 免费招募, 特供): shorter portraits and smaller notes so three cards fit the screen */
+  .ix-offer__box { padding: .12rem .2rem; }
+  .ix-choices { margin: .04rem 0 .06rem; gap: .1rem; }
+  .ix-choice { padding: .08rem .1rem; gap: .03rem; font-size: 12px; line-height: 1.4; }
+  .ix-choice__art { height: 1.1rem; }
+  .ix-choice .ix-notes li { font-size: 10px; line-height: 1.35; margin: .01rem 0; }
+  .ix-result__box .ix-dmg { margin-bottom: .06rem; }
+  .ix-dmg { display: grid; grid-template-columns: 1fr 1fr; column-gap: .3rem; }
+  .ix-dmg li { padding: 0; grid-template-columns: 1.2rem 1fr .7rem auto; }
+  /* 34 px stock cells: the icon fills the cell, the name is on the right once the cell is chosen */
+  .ix-inv__cell small { display: none; }
+  .ix-inv__cell .ix-gear { width: 82%; height: 82%; }
+  .ix-inv__cell .ix-gear .uthumb { width: 100%; height: 100%; }
+  .ix-inv__cell b { font-size: 10px; }
+}
+
+/* ---- end of the match (the original RESULT screen, css/screens/result.css) ---------------------------------------- */
+.ix-final { z-index: 30; }
+.ix-final__head { grid-template-columns: minmax(0, 1fr) auto; }
+.ix-final__foot { gap: .16rem; flex-wrap: wrap; }
+.ix-final__foot .btn { min-width: 2.4rem; }
+/* the board stays dimly visible behind it; without the local settle art the backdrop is the plain dark */
+.ix-final { background: rgba(6, 9, 8, .94); }
+
+/* ---- effects column (the original .gm__effects): under the bench overflow strip ------------------------------------ */
+.ix-effects { top: 2.1rem; }
+.ix-effects .effect .ix-gear { width: 72%; height: 72%; }
+
+/* 产出 and 战报 side by side above the production column */
+.ix-prod__tabs { display: flex; gap: .04rem; }
+
+/* ---- 圈选元素 (picker.js): the outline follows the pointer and never takes it ---------------------------------------- */
+.ix-picker { position: fixed; z-index: 9999; pointer-events: none; outline: 2px solid #ff4d6d; background: rgba(255, 77, 109, .08); }
+.ix-picker__label { position: absolute; left: -2px; bottom: 100%; max-width: 60vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 1px 5px; font: 12px/1.4 ui-monospace, Consolas, monospace; color: #fff; background: #ff4d6d; }
+.ix-picker__btn.is-on { color: #ff4d6d; border-color: #ff4d6d; }
+html.is-picking, html.is-picking * { cursor: crosshair !important; }
+
+/* ---- readable sizes (user 10-07 item 5: 「什么谢拉格，医师什么的，还有攻击防御什么的属性文字，小的太离谱了」) ----------
+   The original scales every size with the screen, which leaves 5–6 px text on a phone and 10 px stat names on a
+   desktop. On this page the detail card and the shop card keep pixel floors. */
+.ix-dpanel .dhead__class { font-size: max(calc(.15 * var(--t)), 14px); }
+.ix-dpanel .dhead__prof, .ix-dpanel .dhead__sub { width: max(.24rem, 22px); height: max(.24rem, 22px); }
+.ix-dpanel .dhead__pos, .ix-dpanel .dhead__en { font-size: max(calc(.12 * var(--t)), 12px); }
+.ix-dpanel .dbond__name, .ix-dpanel .dhead__info .dbonds--top .dbond { font-size: max(calc(.14 * var(--t)), 13px); }
+.ix-dpanel .dbond__icon, .ix-dpanel .dhead__info .dbond__icon { width: max(.24rem, 20px); height: max(.24rem, 20px); }
+.ix-dpanel .dstat__k { font-size: max(calc(.12 * var(--t)), 12px); }
+.ix-dpanel .dstat__v { font-size: max(calc(.17 * var(--t)), 16px); }
+.ix-dpanel .dstat small, .ix-dpanel .dsp, .ix-dpanel .dsp__num, .ix-dpanel .dskill__slot, .ix-dpanel .dgarrison__type { font-size: max(calc(.12 * var(--t)), 12px); }
+.ix-dpanel .dskill__name { font-size: max(calc(.19 * var(--t)), 15px); }
+.ix-dpanel .dtrait, .ix-dpanel .dtalent, .ix-dpanel .dgarrison__text, .ix-dpanel .dtalent b { font-size: max(calc(.14 * var(--t)), 13px); }
+.ix-dpanel__stats { flex: none; }
+.ix-shop .scard__name { font-size: max(.2rem, 15px); }
+.ix-shop .scard__bond { font-size: max(.14rem, 13px); }
+.ix-shop .scard__bond .bglyph, .ix-shop .scard__bond img { width: max(.18rem, 16px); height: max(.18rem, 16px); }
+@media (max-height: 460px) {
+  .ix-shop .scard__name { font-size: 13px; }
+  .ix-shop .scard__bond { font-size: 11px; }
+  .ix-dpanel .dhead__en { display: none; }
+  /* a phone: the detail card takes most of the screen (over the board and the shop bar) so the bigger text fits */
+  .ix-dpanel.dpanel--right { top: 6px; bottom: 6px; right: 6px; max-height: none; }
+  .ix-dpanel .dhead__art { height: 76px; }
+}
+.ix-dpanel__link { display: none; }
+/* the card's own texts, notes and buttons get the same floors (trait lines, skill and talent texts, 库存 / 出售) */
+.ix-dpanel .ix-traittext p, .ix-dpanel .ix-notes li, .ix-dpanel .ix-note, .ix-dpanel__pane p, .ix-dpanel__pane li { font-size: max(calc(.14 * var(--t)), 13px); }
+.ix-dpanel .ix-traittext b { font-size: max(calc(.13 * var(--t)), 12px); }
+.ix-dpanel__actions .btn { min-height: max(.34rem, 30px); padding: 0 max(.12rem, 12px); font-size: max(calc(.14 * var(--t)), 13px); }
+.ix-dpanel .dpanel__close { width: max(.36rem, 30px); height: max(.36rem, 30px); }
+.ix-dpanel .ix-dtrait .dgarrison__k { font-size: max(calc(.14 * var(--t)), 13px); }
+/* operator card layout (detail.js OperatorCard): one column by default; on a wide, tall enough screen head + stats on
+   the left and the switching tabs on the right, so a tab gets the card's full height */
+.ix-dop { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: .1rem; }
+.ix-dop__main, .ix-dop__side { display: contents; }
+@media (min-width: 800px) {
+  .ix-dpanel.dpanel--right { width: min(max(8.2rem, 680px), 86vw); }
+  .ix-dop { flex-direction: row; gap: .18rem; }
+  .ix-dop__main { display: flex; flex-direction: column; gap: .1rem; width: max(3.7rem, 250px); flex: none; }
+  /* stats in two columns, the range under them */
+  .ix-dop__main .dstats-wrap { flex-direction: column; align-items: stretch; }
+  .ix-dop__main .dstats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ix-dop__main .drange { flex-direction: row; justify-content: flex-start; }
+  .ix-dop__side { display: flex; flex-direction: column; gap: .1rem; flex: 1; min-width: 0; min-height: 0; }
+}
+.ix-dpanel .dsec__title { font-size: max(calc(.15 * var(--t)), 13px); }
+.ix-dpanel .micro { font-size: max(calc(.1 * var(--t)), 10px); }
+.ix-dpanel .dtext, .ix-dpanel .rt { font-size: max(calc(.14 * var(--t)), 13px); }
+.ix-dpanel .ix-dgear b, .ix-dpanel .ix-dgear__tile b { font-size: max(calc(.13 * var(--t)), 12px); }
+@media (max-height: 460px) { .ix-dpanel .dhead__art { height: 60px; } }
+
+/* 产出记录: each section folds on its heading (user 10-07 item 5) */
+.ix-prod__h { margin: .02rem 0; }
+.ix-prod__fold { display: flex; align-items: center; gap: .04rem; width: 100%; padding: .02rem 0; background: none; border: 0; cursor: pointer;
+  font: inherit; font-size: max(calc(.14 * var(--t)), 13px); color: var(--mint-400); text-align: left; }
+.ix-prod__fold .icon { width: max(.14rem, 12px); height: max(.14rem, 12px); flex: none; transition: transform .15s; }
+.ix-prod__fold.is-open .icon { transform: rotate(90deg); }
+.ix-prod__fold:hover { color: var(--text-hi); }
+.ix-prod__note { margin-left: auto; font-size: max(calc(.12 * var(--t)), 12px); color: var(--text-lo); }
+.ix-prod__note.is-hurt { color: var(--danger, #e05a4f); }
+
+/* Workshop layout: selected operator on the left; stock and compact ledger on the right. */
+.ix-game .gtop__right { position: relative; flex-direction: row; align-items: flex-start; gap: max(.08rem, 6px); }
+.ix-game .gtop__right .ix-prod { position: relative; left: auto; top: auto; width: auto; max-height: none; }
+.ix-prod__tabs { align-items: center; }
+.ix-prod__toggle { min-height: max(.34rem, 28px); white-space: nowrap; }
+.ix-game .ix-prod__body { position: absolute; right: 0; top: calc(100% + 6px); width: min(360px, 65vw); max-height: calc(100dvh - 160px);
+  overflow: auto; z-index: 12; background: rgba(15, 19, 22, .98); }
+.ix-strip { left: auto; right: max(.24rem, 12px); top: 1.22rem; bottom: 3.85rem; width: max(2.56rem, 200px);
+  flex-direction: column; gap: max(.06rem, 4px); }
+.ix-strip__head { flex-direction: row; min-height: max(.35rem, 28px); justify-content: space-between; padding: .04rem .09rem; font-size: max(calc(.16 * var(--t)), 13px); }
+.ix-strip__head .ix-warn { margin: 0; }
+.ix-strip__tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: max(.04rem, 3px); overflow: auto; min-height: 0; }
+.ix-strip__tiles .ix-strip__slot { position: relative; display: grid; place-items: center; height: auto; aspect-ratio: 1; min-width: 0; padding: .04rem; }
+.ix-strip__slot .ix-gear { width: 82%; height: 82%; }
+.ix-strip__slot b { position: absolute; right: 3px; bottom: 1px; font-size: max(calc(.14 * var(--t)), 12px); text-shadow: 0 1px 3px #000, 0 0 4px #000; }
+.ix-strip__slot.is-empty { border-style: dashed; background: rgba(8, 11, 10, .35); cursor: default; }
+.ix-gear--item .uthumb { width: 100%; height: 100%; }
+.ix-gear--drawn { background: radial-gradient(circle at 40% 30%, #3b535e, #182a32); color: #a8e5ed; border: 1px solid #527783; border-radius: 4px; padding: 0; }
+.ix-gear--drawn svg { width: 80%; height: 80%; }
+.ix-notes li > .ix-gear { width: max(.32rem, 24px); height: max(.32rem, 24px); }
+.ix-gear--whistle, .ix-gear--forge, .ix-gear--anvil { color: #f8ce79; background: radial-gradient(circle at 40% 30%, #59452c, #292319); border-color: #96764c; }
+.ix-gear--blade, .ix-gear--gauntlet { color: #f3aaa1; background: radial-gradient(circle at 40% 30%, #583e43, #2e2028); border-color: #926068; }
+.ix-gear--medicine, .ix-gear--feather { color: #a9e9b8; background: radial-gradient(circle at 40% 30%, #395644, #1d3027); border-color: #60866c; }
+.ix-gear--tag, .ix-gear--chest { color: #e4c4ff; background: radial-gradient(circle at 40% 30%, #51415c, #2b2235); border-color: #87669a; }
+.ix-dpanel.dpanel--right { left: max(.24rem, 12px); right: auto; top: 1.12rem; width: min(760px, 58vw); max-height: none;
+  animation-name: panel-in; }
+.ix-dpanel.dpanel--right.is-shop { bottom: 3.72rem; }
+.ix-dpanel__head .dhead__art { width: 1.15rem; height: 1.55rem; }
+.ix-dpanel .dhead__name { font-size: max(calc(.32 * var(--t)), 24px); }
+.ix-dpanel .dtext, .ix-dpanel .rt, .ix-dpanel__pane p, .ix-dpanel .ix-traittext p { font-size: max(calc(.16 * var(--t)), 14px); line-height: 1.65; }
+.ix-dgear__tile { height: max(.52rem, 40px); }
+.ix-dgear__tile .ix-gear { width: max(.4rem, 30px); height: max(.4rem, 30px); }
+.ix-dgearhead > .ix-gear, .ix-inv__head > .ix-gear { width: max(.84rem, 60px); height: max(.84rem, 60px); }
+.ix-inv__cell .ix-gear, .ix-inv__cell .ix-gear--item .uthumb { width: .62rem; height: .62rem; }
+.ix-game :is(p, li, h3, span, b, small, .ix-inv__desc), .ix-inv :is(p, li, span, b, small) { user-select: text; }
+.ix-strip__slot { user-select: none; }
+@media (max-height: 460px) {
+  .ix-strip { width: 148px; top: 53px; bottom: 150px; right: 8px; }
+  .ix-strip__head { min-height: 24px; font-size: 12px; }
+  .ix-strip__head .ix-warn { font-size: 10px; }
+  .ix-strip__slot b { font-size: 10px; }
+  .ix-dpanel.dpanel--right { top: 53px; bottom: 10px; left: 8px; width: min(460px, calc(100vw - 180px)); }
+  .ix-dpanel.dpanel--right.is-shop { bottom: 10px; }
+  .ix-dop__main { width: 42%; min-width: 0; min-height: 0; overflow: auto; scrollbar-width: thin; }
+  .ix-dpanel__body { padding: 10px; gap: 6px; }
+  .ix-dpanel .dhead__name { font-size: 20px; }
+  .ix-dpanel .dtext, .ix-dpanel .rt, .ix-dpanel__pane p, .ix-dpanel .ix-traittext p { font-size: 12px; }
+  .ix-dpanel .dstat__v { font-size: 13px; }
+  .ix-dpanel .dstat__k { font-size: 11px; }
+  .ix-game .ix-prod__body { max-height: calc(100dvh - 75px); }
+  .ix-prod__tabs { gap: 3px; }
+  .ix-prod__toggle { padding: 3px 5px; min-height: 25px; font-size: 11px; }
+  .ix-inv__cell .ix-gear { width: 82%; height: 82%; }
+}

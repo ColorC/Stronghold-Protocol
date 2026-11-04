@@ -1,0 +1,2645 @@
+{
+  "schema": "assault-card-coverage/v1",
+  "group": "assault",
+  "count": 46,
+  "implementation": "partial-strict",
+  "cards": [
+    {
+      "charId": "char_127_estell",
+      "fixedSkill": {
+        "id": "skchr_estell_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "heal",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "heal",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-nearby-real-enemy-death-heal",
+          "testPath": "test/assault/cards-assault.test.mjs#Estelle passive heals once for each real nearby enemy death and ignores distant deaths"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_estell",
+          "unlockStar": 3,
+          "effectHandling": "implemented-real-hit-count-heal-and-buff-duration",
+          "codePath": "server/sim/content/assault/cards/assault.js#builder"
+        }
+      ]
+    },
+    {
+      "charId": "char_337_utage",
+      "fixedSkill": {
+        "id": "skchr_utage_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "haste",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "spGain",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-low-hp-credited-enemy-death-only",
+          "testPath": "test/assault/cards-assault.test.mjs#Utage low-HP kill passive grants compiled SP per real credited enemy death"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_utage",
+          "unlockStar": 3,
+          "effectHandling": "implemented-real-low-hp-damage-and-sp-refund",
+          "codePath": "server/sim/content/assault/cards/assault.js#builder"
+        }
+      ]
+    },
+    {
+      "charId": "char_491_humus",
+      "fixedSkill": {
+        "id": "skchr_humus_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "heal",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "heal",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-real-multi-target-attack-trigger-and-rank-heal",
+          "testPath": "test/assault/cards-assault.test.mjs#Humus passive heals once per real multi-target normal attack"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_humus",
+          "unlockStar": 3,
+          "effectHandling": "implemented-real-shield-and-defense",
+          "codePath": "server/sim/content/assault/cards/assault.js#runBuff"
+        }
+      ]
+    },
+    {
+      "charId": "char_237_gravel",
+      "fixedSkill": {
+        "id": "skchr_gravel_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "targeting",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "addBuff",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-real-redeployment-only-defense-buff",
+          "testPath": "test/assault/cards-assault.test.mjs#Gravel deployment passive ignores first deployment and applies its defense buff on a true redeployment"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_gravel",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：再部署后的防御增益延长至15秒，且鼠群屏障衰减结束后回复10%最大生命。；四星加强：本效果随角色四星身体放大，无额外模块机制。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_308_swire",
+      "fixedSkill": {
+        "id": "skchr_swire_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "addBuff",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-and-battle-tested",
+          "testPath": "test/assault/cards-assault.test.mjs#Swire aura follows real allied melee movement into and out of its eight-neighbor area"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_swire",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：协同作战影响范围扩大至周围8格且友军增益额外+5%，自身施放时回复1点技力。；四星加强：本效果随角色四星身体放大，无额外模块机制。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_265_sophia",
+      "fixedSkill": {
+        "id": "skchr_sophia_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "damage",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-real-blocked-ally-hit-counter",
+          "testPath": "test/assault/cards-assault.test.mjs#Sophia counters an actual melee hit on a three-block ally"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_sophia",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：反弹对阻挡数≥3目标额外+10%伤害；鞭刃期间自身阻挡数再+1。；四星加强：本效果随角色四星身体放大，无额外模块机制。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_154_morgan",
+      "fixedSkill": {
+        "id": "skchr_morgan_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "addBuff",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-and-battle-tested",
+          "testPath": "test/assault/cards-assault.test.mjs#Morgan low-health passive grants rank-scaled attack and applies target-local DEF ignore only below 40%"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_morgan",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：无畏招架自损比例降至60%，屏障额外+10%最大生命。；四星加强：本效果随角色四星身体放大，无额外模块机制。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_155_tiger",
+      "fixedSkill": {
+        "id": "skchr_tiger_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "heal",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "addBuff",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented: native dodge event predicate plus one-hit mutable damage hook",
+          "test": "test/assault/cards-assault.test.mjs :: Tiger arms its compiled bonus only on an actual physical attack dodge and spends it once"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_tiger",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：闪避成功后下一次裂魂伤害+15%；裂魂法术伤害的吸血提高至35%。；四星加强：本效果随角色四星身体放大，无额外模块机制。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_140_whitew",
+      "fixedSkill": {
+        "id": "skchr_whitew_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "applyStatus",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-real-pushCollision-source-target-kind-cause-and-per-target-per-second-cap",
+          "testPath": "test/assault/cards-assault.test.mjs#Forcer skill stuns only actual push contacts and its passive extends successful wall and enemy collisions"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_whitew",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：对已沉默目标造成伤害+15%；狼魂施放时若命中至少2名目标回复1点技力。；四星加强：本效果随角色四星身体放大，无额外模块机制。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_294_ayer",
+      "fixedSkill": {
+        "id": "skchr_ayer_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "damage",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-real-blocked-ally-hit-counter",
+          "testPath": "test/assault/cards-assault.test.mjs#Ayer passive adds real damage when a nearby ally attacks an enemy they block"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_ayer",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：对友方阻挡目标的法术伤害+15%；光环范围内每有一名友军，浮游刃伤害额外+3%（最多+15%）。；四星加强：本效果随角色四星身体放大，无额外模块机制。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_143_ghost",
+      "fixedSkill": {
+        "id": "skchr_ghost_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "heal",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-real-first-low-health-hit-per-battle",
+          "testPath": "test/assault/cards-assault.test.mjs#Ghost low-health passive heals once on the first real hit below its threshold"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_ghost",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：不死期间额外获得10%每秒最大生命回复；结束晕眩时间-1秒。；四星加强：本效果随角色四星身体放大，无额外模块机制。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_356_broca",
+      "fixedSkill": {
+        "id": "skchr_broca_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "addBuff",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-and-battle-tested",
+          "testPath": "test/assault/cards-assault.test.mjs#Broca two-block passive turns on and off with the live blocker set"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_broca",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：高压电流每命中一名敌人自身攻防增益额外+3%；法术伤害对停顿目标+10%。；四星加强：本效果随角色四星身体放大，无额外模块机制。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_4155_talr",
+      "fixedSkill": {
+        "id": "skchr_talr_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "spCost",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "growth",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-real-paid-deployment-dp-growth-with-cap",
+          "testPath": "test/assault/cards-assault.test.mjs#Talr growth counts only real DP paid for deployments and caps at its compiled limit"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_talr",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：缝线缠身施放费用-1（最低1）；被束缚目标移速额外-30%。；四星加强：本效果随角色四星身体放大，无额外模块机制。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_173_slchan",
+      "fixedSkill": {
+        "id": "skchr_slchan_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "move",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "addBuff",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-live-unblocked-aura-with-block-and-clear",
+          "testPath": "test/assault/cards-assault.test.mjs#Slchan unblocked passive tracks live block count and returns after the block is cleared"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_slchan",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：束缚链拖拽数+1；被拖拽且撞到其他敌人的目标额外晕眩1秒。；四星加强：本效果随角色四星身体放大，无额外模块机制。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_4036_forcer",
+      "fixedSkill": {
+        "id": "skchr_forcer_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "move",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "applyStatus",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-source-collision-only-stun-extension",
+          "testPath": "test/assault/cards-assault.test.mjs#Forcer skill stuns only actual push contacts and its passive extends successful wall and enemy collisions"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_forcer",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：推击力度+1；被推到高台的目标额外受到见行者攻击力50%的物理伤害。；四星加强：本效果随角色四星身体放大，无额外模块机制。",
+          "codePath": "server/sim/content/assault/cards/assault.js#execute",
+          "status": "implemented-from-swept-highland-contact",
+          "testPath": "test/assault/cards-assault.test.mjs#Forcer skill stuns only actual push contacts and its passive extends successful wall and enemy collisions"
+        }
+      ]
+    },
+    {
+      "charId": "char_451_robin",
+      "fixedSkill": {
+        "id": "skchr_robin_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "device",
+            "codePath": "server/sim/content/assault/cards/assault.js#executeDevice",
+            "implementation": "typed-runtime"
+          },
+          {
+            "index": 1,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#executeDevice",
+            "implementation": "typed-runtime"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "applyStatus",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-real-trap-contact-bind",
+          "testPath": "test/assault/cards-assault.test.mjs#four-star Robin places a real trap device that damages and pushes its first contact"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_robin",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：夹子触发伤害+10%；每次夹子触发返还0.5点技力（小数技力）。；四星加强：本效果随角色四星身体放大，无额外模块机制。",
+          "codePath": "server/sim/content/assault/cards/assault.js#executeDevice+installPassives",
+          "status": "typed-runtime"
+        }
+      ],
+      "sourceTemplateSemantics": {
+        "tokens": [
+          "token_10013_robin_mine"
+        ],
+        "role": "Talent-owned trap stock; fixed skill currently deploys a typed inline trap effect, native stock/limit accounting remains partial",
+        "testPath": "test/assault/cards-assault.test.mjs#four-star Robin places a real trap device that damages and pushes its first contact"
+      }
+    },
+    {
+      "charId": "char_4016_kazema",
+      "fixedSkill": {
+        "id": "skchr_kazema_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "summon",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "damage",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-owner-bound-shadow-spawn-arts-radius",
+          "testPath": "test/assault/cards-assault.test.mjs#Kazema shadow spawn deals its compiled arts burst around the actual summon tile"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_kazema",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：替身出现爆发伤害+15%；替身存在期间自身攻速+10。；四星加强：本效果随角色四星身体放大，无额外模块机制。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_4151_tinman",
+      "fixedSkill": {
+        "id": "skchr_tinman_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "device",
+            "codePath": "server/sim/content/assault/cards/assault.js#executeDevice",
+            "implementation": "typed-runtime"
+          },
+          {
+            "index": 1,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#executeDevice",
+            "implementation": "typed-runtime"
+          },
+          {
+            "index": 2,
+            "action": "heal",
+            "codePath": "server/sim/content/assault/cards/assault.js#executeDevice",
+            "implementation": "typed-runtime"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "modePassive:0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "addBuff",
+          "codePath": "server/sim/content/assault/cards/assault.js#executeDevice",
+          "status": "implemented-real-field-dot"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_tinman",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：炼金单元持续时间+3秒，且对范围内的敌人额外降低10%攻击力。；四星加强：本效果随角色四星身体放大，无额外模块机制。",
+          "codePath": "server/sim/content/assault/cards/assault.js#executeDevice+installPassives",
+          "status": "typed-runtime"
+        }
+      ]
+    },
+    {
+      "charId": "char_4191_tippi",
+      "fixedSkill": {
+        "id": "skchr_tippi_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "addBuff",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-single-dodge-and-counter-after-real-damage",
+          "testPath": "test/assault/cards-assault.test.mjs#Tippi arms one real dodge and physical counter after taking an attack"
+        }
+      ],
+      "modules": []
+    },
+    {
+      "charId": "char_1028_texas2",
+      "fixedSkill": {
+        "id": "skchr_texas2_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "heal",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-and-battle-tested",
+          "testPath": "test/assault/cards-assault.test.mjs#Texas rewritten talent grants cast buff and once-per-entry first-kill heal with rain extension"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_texas2",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：剑雨持续期间每秒目标数+1；四星加强：落地两段对已晕眩目标额外+20%伤害。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_003_texas2",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：技能施放后攻击力增益+5%；四星加强：每次部署首次击杀额外按相同规则补剑雨2秒（25%×8秒），与基础4秒合计6秒，仅一次。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_1033_swire2",
+      "fixedSkill": {
+        "id": "skchr_swire2_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "device",
+            "codePath": "server/sim/content/assault/cards/assault.js#executeDevice",
+            "implementation": "typed-runtime"
+          },
+          {
+            "index": 1,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#executeDevice",
+            "implementation": "typed-runtime"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "growth",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-growth-on-actual-gold-spend",
+          "testPath": "test/assault/cards-assault.test.mjs#three-star Swire Alter module funds one extra champagne bomb coin when the skill opens"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_swire2",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：开启技能时额外获得1枚金币；四星加强：香槟炸弹触发伤害+10%。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_003_swire2",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：炸弹在场3秒后的第二段伤害+15%；四星加强：破财消灾消耗序列降为4/8点。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_004_swire2",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：金币叠加上限+1；四星加强：每消耗1枚金币额外+0.5%攻击。",
+          "codePath": "pending:assault.js"
+        }
+      ],
+      "sourceTemplateSemantics": {
+        "tokens": [
+          "token_10031_swire2_gdtrap"
+        ],
+        "role": "skill override form for S2; not a separately deployed summon",
+        "testPath": "test/assault/cards-assault.test.mjs#four-star Swire Alter pays one real coin for a champagne bomb, then applies contact and delayed damage"
+      }
+    },
+    {
+      "charId": "char_1041_angel2",
+      "fixedSkill": {
+        "id": "skchr_angel2_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "ammo",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute+installPassives",
+            "implementation": "typed-runtime"
+          },
+          {
+            "index": 1,
+            "action": "targeting",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute",
+            "implementation": "typed-runtime"
+          },
+          {
+            "index": 2,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#runDamage",
+            "implementation": "typed-runtime"
+          },
+          {
+            "index": 3,
+            "action": "redeploy",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute",
+            "implementation": "typed-runtime"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "none",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "none",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "heal",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-per-ammo-heal-and-ranked-consumer-range-bomb",
+          "testPath": "test/assault/cards-assault.test.mjs#Angel2 ammo uses the shared Laterano pool, spends fired bullets on dodge, and preserves ammo on cancellation"
+        },
+        {
+          "index": 1,
+          "action": "spGain",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-capped-empty-ammo-sp-gain",
+          "testPath": "test/assault/cards-assault.test.mjs#Angel2 ammo uses the shared Laterano pool, spends fired bullets on dodge, and preserves ammo on cancellation"
+        },
+        {
+          "index": 2,
+          "action": "addBuff",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-one-shot-next-splash-after-successful-target-delivery",
+          "testPath": "test/assault/cards-assault.test.mjs#Angel2 ammo uses the shared Laterano pool, spends fired bullets on dodge, and preserves ammo on cancellation"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_angel2",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：弹药上限+10；投送队友后该队友获得1层护盾（最大生命10%）。；四星加强：本效果随角色四星身体放大，无额外模块机制。",
+          "codePath": "server/sim/content/assault/cards/assault.js#execute:ammo",
+          "status": "implemented-real-battle"
+        }
+      ],
+      "sourceTemplateSemantics": {
+        "tokens": [
+          "token_10056_angel2_target"
+        ],
+        "role": "S3 target-coordinate helper; targeting and redeploy are resolved against the selected ally UID"
+      },
+      "ammoSemantics": "Ammo is consumed once per emitted attack bullet; physical dodge still spends the fired bullet, beforeAttack cancellation to no targets spends none. Shared capacity and reload use the registered live counter."
+    },
+    {
+      "charId": "char_474_glady",
+      "fixedSkill": {
+        "id": "skchr_glady_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "move",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "spGain",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented: verified native pull return > 0, cause-aware SP enqueue, per-second cap",
+          "test": "test/assault/cards-assault.test.mjs :: Gladiia gains the compiled per-second SP only after a real skill pull moves an enemy"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_glady",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：龙卷持续时间+2秒；四星加强：被拖拽到中心的敌人额外受到攻击力50%的法术伤害。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_003_glady",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：龙卷半径+0.3格；四星加强：拖拽回技力每秒上限提高至2次。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_437_mizuki",
+      "fixedSkill": {
+        "id": "skchr_mizuki_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "damage",
+          "codePath": "server/sim/content/assault/cards/assault.js#triggerMizukiMultiHit",
+          "status": "implemented-and-battle-tested",
+          "testPath": "test/assault/cards-assault.test.mjs#Mizuki multi-target passive adds one causal arts hit only to the lowest-HP target"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_mizuki",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：镜花水月目标数+1；四星加强：命中少于3个时改为回复等量生命（不触发自损）。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_003_mizuki",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：创伤性癔症额外法术+5%；四星加强：反移情触发阈值提升至60%。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_004_mizuki",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：镜花水月范围+0.5格；四星加强：附加晕眩时长+0.3秒。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_1023_ghost2",
+      "fixedSkill": {
+        "id": "skchr_ghost2_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "summon",
+          "codePath": "server/sim/content/assault/cards/assault.js#summonGhostDecoy",
+          "status": "implemented-and-battle-tested",
+          "testPath": "test/assault/cards-assault.test.mjs#Phantom death passive leaves a timed real decoy that slows and damages a nearby enemy"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_ghost2",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：替身持续时间+5秒；四星加强：重压期间每命中一名敌人回复自身2%最大生命。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_003_ghost2",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：重压群伤+10%；四星加强：替身减速+10%。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_004_ghost2",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：深海猎人生命加成+5%；四星加强：替身每2秒额外结算一次灼烧。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_4048_doroth",
+      "fixedSkill": {
+        "id": "skchr_doroth_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "device",
+            "codePath": "server/sim/content/assault/cards/assault.js#executeDevice",
+            "implementation": "typed-runtime"
+          },
+          {
+            "index": 1,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#executeDevice",
+            "implementation": "typed-runtime"
+          },
+          {
+            "index": 2,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#executeDevice",
+            "implementation": "typed-runtime"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "modePassive:0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "growth",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-trigger-growth-on-real-device-contact",
+          "testPath": "test/assault/cards-assault.test.mjs#four-star Dorothy resonance device triggers area arts damage and persistent trigger growth"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_doroth",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：装置触发伤害+10%；四星加强：成长层数上限提高至15层。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_003_doroth",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：装置触发停顿+1秒；四星加强：延迟其他装置的时间+1秒。",
+          "codePath": "pending:assault.js"
+        }
+      ],
+      "sourceTemplateSemantics": {
+        "tokens": [
+          "token_10025_doroth_recttp"
+        ],
+        "role": "Talent-owned resonance trap stock; fixed skill currently deploys typed inline devices, source stock/limit accounting remains partial",
+        "testPath": "test/assault/cards-assault.test.mjs#four-star Dorothy resonance device triggers area arts damage and persistent trigger growth"
+      }
+    },
+    {
+      "charId": "char_1039_thorn2",
+      "fixedSkill": {
+        "id": "skchr_thorn2_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "device",
+            "codePath": "server/sim/content/assault/cards/assault.js#executeDevice",
+            "implementation": "typed-runtime"
+          },
+          {
+            "index": 1,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#executeDevice",
+            "implementation": "typed-runtime"
+          },
+          {
+            "index": 2,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#executeDevice",
+            "implementation": "typed-runtime"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "addBuff",
+          "codePath": "server/sim/content/assault/cards/assault.js#executeDevice",
+          "status": "implemented-real-field-dot"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_thorn2",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：炼金单元影响范围+0.5格；达到最大减益后敌人额外-10%防御。；四星加强：本效果随角色四星身体放大，无额外模块机制。",
+          "codePath": "server/sim/content/assault/cards/assault.js#executeDevice+installPassives",
+          "status": "typed-runtime"
+        }
+      ]
+    },
+    {
+      "charId": "char_264_f12yin",
+      "fixedSkill": {
+        "id": "skchr_f12yin_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "move",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "modePassive:0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "addBuff",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-strong-body-and-hit-confirmed-punch",
+          "testPath": "test/assault/cards-assault.test.mjs#F12yin keeps the strong-body DEF and dodge talent and applies giant-punch damage only on a successful roll"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_f12yin",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：震地碎岩击命中至少3名敌人时退返1点技力；四星加强：重拳减攻时长+2秒。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_003_f12yin",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：强壮肉体物理闪避+5%；四星加强：巨力重拳触发概率+5%。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_2024_chyue",
+      "fixedSkill": {
+        "id": "skchr_chyue_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "growth",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "spGain",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-skill-kill-once-after-cast",
+          "testPath": "test/assault/cards-assault.test.mjs#Chongyue restores compiled SP once when one instant skill cast kills multiple enemies"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_chyue",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：进入增强形态所需次数降至4次；四星加强：追加伤害对止戈标记目标+15%。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_003_chyue",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：止戈触发概率+3%；四星加强：技能击杀回技力+1。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_4037_demetr",
+      "fixedSkill": {
+        "id": "skchr_demetr_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "move",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "none",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "addBuff",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented: pre-hit per-target threshold and DEF-ignore modifier",
+          "test": "test/assault/cards-assault.test.mjs :: Demetri ignores defense only against the actually hit target below the compiled HP threshold"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_demetr",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：清算突进不占用部署位；削防叠满后对目标追加一次攻击力60%的物理伤害。；四星加强：本效果随角色四星身体放大，无额外模块机制。",
+          "codePath": "pending:assault.js"
+        }
+      ],
+      "sourceTemplateSemantics": {
+        "tokens": [
+          "token_10065_demetr_dmtpos"
+        ],
+        "role": "S3 override marker/form; no summon entry in compiled body"
+      }
+    },
+    {
+      "charId": "char_172_svrash",
+      "fixedSkill": {
+        "id": "skchr_svrash_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "nativeMechanism",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-team-formation-aura-and-redeploy-time-modifier",
+          "testPath": "test/assault/cards-assault.test.mjs#four-star Silverash with the selected advanced module installs leader and anti-stealth state in a real Battle"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_svrash",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：真银斩目标数+1；施放时若命中至少3个目标，防御惩罚降低至-50%。；四星加强：本效果随角色四星身体放大，无额外模块机制。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_4082_qiubai",
+      "fixedSkill": {
+        "id": "skchr_qiubai_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "growth",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "modePassive:0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "applyStatus",
+          "codePath": "server/sim/content/assault/cards/assault.js#triggerQiuBaiRoot",
+          "status": "implemented-and-battle-tested",
+          "testPath": "test/assault/cards-assault.test.mjs#Qiubai normal-attack bind honors its chance and skips already slowed or bound targets"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_qiubai",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：问雪额外攻击目标+1；四星加强：对受控目标的额外法术伤害+15%。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_003_qiubai",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：入隙额外伤害+5%；四星加强：落英束缚时长+0.5秒。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_4145_ulpia",
+      "fixedSkill": {
+        "id": "skchr_ulpia_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 3,
+            "action": "move",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "none",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "heal",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-heal-on-actual-damage",
+          "testPath": "test/assault/cards-assault.test.mjs#Ulpia heals by the compiled amount after each actual damage event"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_ulpia",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：受击回血+20点；四星加强：生命低于50%时回血提升比例提高至60%。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_003_ulpia",
+          "unlockStar": 3,
+          "effectHandling": "R3/R4 native Abyssal Hunter owner-kill growth: +140/+150 HP and +35/+38 ATK per own kill, cap nine; other Abyssal Hunters receive native 55%/60%; owner gains block +1 at nine stacks; blocked-enemy damage ×1.1.",
+          "codePath": "server/sim/content/assault/cards/assault-modules.js#installUlpia003",
+          "testPath": "test/assault/assault-modules.test.mjs#Ulpia CRU-Y R3/R4 consumes native white stats and native Abyssal kill growth with a nine-stack cap"
+        }
+      ],
+      "sourceTemplateSemantics": {
+        "tokens": [
+          "token_10039_ulpia_block"
+        ],
+        "role": "S3 anchor-position marker; a live blocking marker reserves the exact original tile during relocation and is removed on return",
+        "testPath": "test/assault/cards-assault.test.mjs#Ulpia S3 reserves its original tile during the anchor dash and returns to that exact tile"
+      }
+    },
+    {
+      "charId": "char_4058_pepe",
+      "fixedSkill": {
+        "id": "skchr_pepe_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "growth",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "spGain",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-per-kill-sp-after-cast-capped-by-rank",
+          "testPath": "test/assault/cards-assault.test.mjs#Pepe banks skill-kill SP to the compiled per-cast cap and grants it after the cast resolves"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_pepe",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：攻击叠层上限+1；四星加强：主目标晕眩时长+0.3秒。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_003_pepe",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：每层攻击增益+3%；四星加强：击倒敌人时额外获得1点技力（计入上限）。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_4116_blkkgt",
+      "fixedSkill": {
+        "id": "skchr_blkkgt_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "move",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "applyStatus",
+          "codePath": "server/sim/content/assault/cards/assault.js#triggerBlitzTremble",
+          "status": "implemented-and-battle-tested",
+          "testPath": "test/assault/cards-assault.test.mjs#Blitz tremble applies on the compiled chance and does not refresh after a failed roll"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_blkkgt",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：战栗目标被无视防御比例+5%；四星加强：归于宁静段数+2。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_003_blkkgt",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：斩击命中至少3名敌人时退返1点技力；四星加强：结尾拖拽力度+1级（提升一档）。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_1026_gvial2",
+      "fixedSkill": {
+        "id": "skchr_gvial2_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "nativeMechanism",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute+installPassives",
+            "implementation": "typed-runtime"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "addBuff",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-live-block-count-attack-defense",
+          "testPath": "test/assault/cards-assault.test.mjs#Gavial Alter block passive follows one-to-three live blockers and removes its buff when unblocked"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_gvial2",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：延迟伤害的延后比例+10%；四星加强：技能期间攻击力额外+10%。",
+          "codePath": "server/sim/content/assault/cards/assault.js#executeDevice+installPassives",
+          "status": "typed-runtime"
+        },
+        {
+          "id": "uniequip_003_gvial2",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：阻挡数上限+1；四星加强：每多阻挡一个敌人的增伤额外+1%。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_004_gvial2",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：勇冠三军高血攻击额外+3%；四星加强：技能结束后清空50%未结算延迟伤害。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_350_surtr",
+      "fixedSkill": {
+        "id": "skchr_surtr_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "heal",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "nativeMechanism",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-pre-hp-lethal-interception"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_surtr",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：熔火无视法抗+5；四星加强：黄昏生命流失达到上限的时间延长至90秒。",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives-and-execute",
+          "status": "implemented-real-battle"
+        },
+        {
+          "id": "uniequip_003_surtr",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：余烬濒死期间攻击力+20%；四星加强：强制退场后返还20点技力。",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-real-battle"
+        }
+      ]
+    },
+    {
+      "charId": "char_1019_siege2",
+      "fixedSkill": {
+        "id": "skchr_siege2_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "summon",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "applyStatus",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-real-positive-first-damage-once-per-enemy",
+          "testPath": "test/assault/cards-assault.test.mjs#Siege Alter applies the first-hit tremble once per enemy and independently to a second enemy"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_siege2",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：召唤物“黄金盟誓”持续+5秒；四星加强：真伤期间攻击力额外+10%。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_003_siege2",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：诸王范围减伤+5%；四星加强：范围内每名友军攻击增伤+1%。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_188_helage",
+      "fixedSkill": {
+        "id": "skchr_helage_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "haste",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "heal",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-live-unblocked-regen-stops-on-block",
+          "testPath": "test/assault/cards-assault.test.mjs#Helage regenerates while unblocked and stops while holding a real blocker"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_helage",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：满月目标数+1；四星加强：低血攻速额外+10。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_003_helage",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：未阻挡回血+20/秒；四星加强：坚忍达到最大加成所需损失生命降低10%。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_1014_nearl2",
+      "fixedSkill": {
+        "id": "skchr_nearl2_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "summon",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 3,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "damage",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-deployment-true-damage-stun-and-kazimierz-extra-hit",
+          "testPath": "test/assault/cards-assault.test.mjs#Nearl Alter deployment burst uses four-neighbour true damage, stun, and a prior Kazimierz deploy adds one hit"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_nearl2",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：耀阳出现真伤+10%；四星加强：耀阳持续时间+5秒。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_003_nearl2",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：卡西米尔追加伤害+10%；四星加强：卡西米尔追加伤害翻倍（×2），仅一次。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_1032_excu2",
+      "fixedSkill": {
+        "id": "skchr_excu2_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "ammo",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute+installPassives",
+            "implementation": "typed-runtime"
+          },
+          {
+            "index": 1,
+            "action": "growth",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "addBuff",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-bullet-probability-extra-attack-and-skill-end-reset",
+          "testPath": "test/assault/cards-assault.test.mjs#Exusiai Alter ammo adds the compiled extra-attack chance per real bullet and resets it at skill end"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_excu2",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：弹药上限+2；四星加强：结束时追加伤害的目标数上限+2。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_003_excu2",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：每弹攻击叠加上限+5；四星加强：特性回复生命倍率额外+1。",
+          "codePath": "pending:assault.js"
+        }
+      ],
+      "ammoSemantics": "Ammo is consumed once per emitted attack bullet, independent of whether the target later dodges or takes HP damage; shared capacity and reload use the registered live counter."
+    },
+    {
+      "charId": "char_4010_etlchi",
+      "fixedSkill": {
+        "id": "skchr_etlchi_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "summon",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "none",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "nativeMechanism",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented: native damage listener uses causal queue for host HP transfer",
+          "test": "test/assault/cards-assault.test.mjs :: four-star Eltlchi summons the native enemy entity as host-scaled candles and transfers candle hits"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_etlchi",
+          "unlockStar": 3,
+          "effectHandling": "implemented-real-native-entity-and-battle",
+          "codePath": "server/sim/content/assault/cards/assault.js#summonEtlchiCandles+installPassives"
+        },
+        {
+          "id": "uniequip_003_etlchi",
+          "unlockStar": 3,
+          "effectHandling": "implemented-real-native-entity-and-battle",
+          "codePath": "server/sim/content/assault/cards/assault.js#summonEtlchiCandles+installPassives"
+        }
+      ]
+    },
+    {
+      "charId": "char_4064_mlynar",
+      "fixedSkill": {
+        "id": "skchr_mlynar_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "assaultTalent:native_talent_0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "modePassive:0",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "damage",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented: RT damageTaken target-side Kazimierz watch; sibling target-keyed reflections",
+          "test": "test/assault/cards-assault.test.mjs :: Mlynar reflects separate sibling hits on Kazimierz allies without recursive reflection"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_mlynar",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：卡西米尔附带真伤+3%；四星加强：特性倍率不再因击杀下降（下降幅度0）。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_263_skadi",
+      "fixedSkill": {
+        "id": "skchr_skadi_3",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "addBuff",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        },
+        {
+          "binding": "assaultTalent:native_talent_1",
+          "owner": "typedAssaultTalent",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "addBuff",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-team-formation-abyssal-aura",
+          "testPath": "test/assault/cards-assault.test.mjs#four-star Skadi advanced module reduces redeploy time and raises the Abyssal aura"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_skadi",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：涌潮悲歌持续时间+10秒；四星加强：生命上限增益额外+10%。",
+          "codePath": "pending:assault.js"
+        },
+        {
+          "id": "uniequip_003_skadi",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：再部署时间再-5秒；四星加强：深海掠食者攻击加成+3%。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_1001_amiya2",
+      "fixedSkill": {
+        "id": "skchr_amiya2_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "nativeMechanism",
+            "codePath": "server/sim/content/assault/cards/assault.js#castAmiyaGuard",
+            "implementation": "typed-runtime"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "addBuff",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-team-aura-with-post-cast-double-window",
+          "testPath": "test/assault/cards-assault.test.mjs#four-star guard Amiya executes twelve real hits and the last damage event is true damage"
+        },
+        {
+          "index": 1,
+          "action": "addBuff",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-real-skill-kill-stack-and-remaining-true-damage",
+          "testPath": "test/assault/cards-assault.test.mjs#guard Amiya switches the remaining slash damage to true after an actual skill kill"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_amiya2",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：获得模组追加特性“未阻挡敌人时攻击速度+8”，青色怒火攻防光环提升至+8%（覆盖基础档）；四星加强：光环提升至+9%，且技能末击真实伤害系数额外×1.1。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    },
+    {
+      "charId": "char_1037_amiya3",
+      "fixedSkill": {
+        "id": "skchr_amiya3_2",
+        "typedKey": "body.fixedSkill.effects",
+        "effects": [
+          {
+            "index": 0,
+            "action": "damage",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 1,
+            "action": "applyStatus",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          },
+          {
+            "index": 2,
+            "action": "heal",
+            "codePath": "server/sim/content/assault/cards/assault.js#execute"
+          }
+        ]
+      },
+      "talentBindings": [
+        {
+          "binding": "modePassive:0",
+          "owner": "modePassive",
+          "singleBinding": true,
+          "codePath": "body.talentBindings"
+        }
+      ],
+      "modePassives": [
+        {
+          "index": 0,
+          "action": "addBuff",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-team-max-hp-aura-and-skill-regen",
+          "testPath": "test/assault/cards-assault.test.mjs#four-star medic Amiya resolves native arts, attack/move slow, and her in-battle team aura"
+        },
+        {
+          "index": 1,
+          "action": "addBuff",
+          "codePath": "server/sim/content/assault/cards/assault.js#installPassives",
+          "status": "implemented-per-real-skill-hit-stack-and-true-damage",
+          "testPath": "test/assault/cards-assault.test.mjs#four-star medic Amiya resolves native arts, attack/move slow, and her in-battle team aura"
+        }
+      ],
+      "modules": [
+        {
+          "id": "uniequip_002_amiya3",
+          "unlockStar": 3,
+          "effectHandling": "三星解锁：咒愈师治疗系数由0.5提升至0.6，诚挚期许最大生命提升至+9%、技能后每秒回复提升至3%；四星加强：诚挚期许最大生命提升至+10%、技能后每秒回复提升至3.5%，且技能减速持续时间+1秒。",
+          "codePath": "pending:assault.js"
+        }
+      ]
+    }
+  ],
+  "tokenKits": [
+    {
+      "tokenId": "token_10022_kazema_shadow",
+      "codePath": "server/sim/content/assault/cards/assault-tokens.js#silentTokenKit",
+      "status": "compiled native token with no native skill"
+    },
+    {
+      "tokenId": "token_10040_siege2_vlion",
+      "codePath": "server/sim/content/assault/cards/assault-tokens.js#silentTokenKit",
+      "status": "compiled native token with no native skill"
+    },
+    {
+      "tokenId": "token_10019_nearl2_sword",
+      "codePath": "server/sim/content/assault/cards/assault-tokens.js#radiantSunKit",
+      "status": "partial strict KIT: true damage and stun on attack"
+    }
+  ]
+}

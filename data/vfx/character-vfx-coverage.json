@@ -1,0 +1,67 @@
+{
+  "schema": 1,
+  "purpose": "Action-slot coverage for the extracted Rosmontis and Degenbrecher battle VFX. Every named upstream slot must be rendered, procedurally translated, or explicitly marked unresolved.",
+  "evidence": {
+    "skillsTypetree": ".omni/tmp/character-art-20261005/original-ab/battle-prefabs-[uc]skills.typetree.json",
+    "projectilesTypetree": ".omni/tmp/vfx-verify-20261007/projectile-prefabs.json",
+    "rosmonEffectsBundle": ".omni/tmp/vfx-raw-20261007/ab/battle/prefabs/effects/rosmon.ab",
+    "blkkgtEffectsBundle": ".omni/tmp/vfx-raw-20261007/ab/battle/prefabs/effects/blkkgt.ab",
+    "blkkgtEffectsDump": ".omni/tmp/vfx-raw-20261007/blkkgt-effects.json",
+    "runtimeCode": "public/js/render/fxRecipes.js",
+    "playerCode": "public/js/render/originalVfx.js"
+  },
+  "rules": {
+    "eventSlots": ["cast", "targetStart", "reached", "hit", "end"],
+    "bindingStates": ["translated", "mesh", "procedural", "unresolved"],
+    "required": "A slot is covered only when its prefab is listed under one event slot and has a bindingState. unresolved is a visible failure, never an implicit omission.",
+    "coordinate": "world combat positions are integer [row,col] tile centres for ground/range effects; moving interpolation is reserved for character/bone effects.",
+    "packedAtlas": "atlas cell is [colour|coverage]; logical anchor and width use the colour-half cell, not the packed texture width."
+  },
+  "operators": {
+    "char_391_rosmon": {
+      "normal": {
+        "A": {"cast": ["rosmon_attack_A_start", "rosmon_attack_A_start_02"], "targetStart": ["rosmon_attack_A_hit_01"], "reached": ["rosmon_attack_A_range"], "hit": ["rosmon_attack_A_hit_02"]},
+        "B": {"cast": ["rosmon_attack_B_start", "rosmon_attack_A_start_02"], "targetStart": ["rosmon_attack_B_hit_01"], "reached": ["rosmon_attack_A_range"], "hit": ["rosmon_attack_A_hit_02"]}
+      },
+      "skills": {
+        "skchr_rosmon_1": {"cast": ["rosmon_skill_01_A_start", "rosmon_skill_01_A_start_02"], "targetStart": ["rosmon_skill_01_A_hit_01"], "reached": ["rosmon_skill_01_A_range"], "hit": ["rosmon_skill_01_A_hit_02"]},
+        "skchr_rosmon_2": {"cast": ["rosmon_skill_02_start"], "targetStart": ["rosmon_skill_02_range"], "reached": ["rosmon_skill_02_range_02"], "hit": ["rosmon_attack_A_hit_02"]},
+        "skchr_rosmon_3": {"cast": ["rosmon_skill_03_start_02"], "targetStart": ["rosmon_skill_03_B_hit_01", "rosmon_skill_03_B_hit_01_stone"], "reached": ["rosmon_skill_03_range"], "hit": ["rosmon_attack_A_hit_02"]}
+      },
+      "binding": {"cast": "owner root, facing follows the operator", "targetStart": "target root, no source-face mirror", "reached": "target root at projectile reach", "hit": "target root at damage event", "sourceFaceVector": false}
+    },
+    "char_4116_blkkgt": {
+      "normal": {
+        "cast": ["blkkgt_attack_start_01"],
+        "hit": ["blkkgt_attack_hit_1", "blkkgt_attack_hit_2"]
+      },
+      "skills": {
+        "skchr_blkkgt_1": {"cast": ["blkkgt_skill_01_start_01", "blkkgt_skill_01_start_02", "blkkgt_skill_01_start_03"], "hit": ["blkkgt_skill_01_hit_01", "blkkgt_skill_01_hit_02"], "action": {"anim": "Skill_1", "waitForAttackEvent": true, "additionalTimes": 1, "hitGroups": 2, "castEvent": [2, 3]}},
+        "skchr_blkkgt_2": {"cast": ["blkkgt_skill_02_start_01", "blkkgt_skill_02_start_02", "blkkgt_skill_02_start_03", "blkkgt_skill_02_start_04_v", "blkkgt_skill_02_start_04_h", "blkkgt_skill_02_start_05", "blkkgt_skill_02_start_06"], "hit": ["blkkgt_skill_02_hit_1"], "action": {"anim": "Skill_2", "downAnim": "Skill_Down_2", "waitForAttackEvent": true, "directionType3": ["blkkgt_skill_02_start_04_v", "blkkgt_skill_02_start_04_h", "blkkgt_skill_02_start_04_v", "blkkgt_skill_02_start_04_h"], "castEvent": [2, 3]}},
+        "skchr_blkkgt_3": {
+          "begin": ["blkkgt_skill_03_start_01", "blkkgt_skill_03_start_02"],
+          "loop": ["blkkgt_skill_03_hit_1"],
+          "end": ["blkkgt_skill_03_end", "blkkgt_skill_03_start_03", "blkkgt_skill_03_start_04", "blkkgt_skill_03_hit_2"]
+        }
+      },
+      "rawPrefabSemantics": {
+        "blkkgt_skill_03_start_01": {"spawnLocation": 5, "anchor": "tile", "bindingState": "translated"},
+        "blkkgt_skill_03_start_02": {"spawnLocation": 5, "children": ["fixed", "ground", "range_line", "five local particle children"], "rangeGrid": [[2, 0], [1, -1], [1, 0], [1, 1], [0, -2], [0, -1], [0, 0], [0, 1], [0, 2], [-1, -1], [-1, 0], [-1, 1], [-2, 0]], "rangeLineRenderMode": "Mesh", "shader": "Torappu custom vertex stream", "anchor": "tile", "bindingState": "translated", "meshChildState": "mesh", "meshExport": "public/assets/vfx/blkkgt/blkkgt_skill_03_start_02/mesh.json"},
+        "blkkgt_skill_03_hit_1": {"spawnLocation": 2, "holdByOwner": 1, "anchor": "target root", "bindingState": "translated"},
+        "blkkgt_skill_03_end": {"spawnLocation": 5, "meshChildren": ["light", "dark", "edge", "smoke_line"], "anchor": "tile", "bindingState": "mesh", "meshExport": "public/assets/vfx/blkkgt/blkkgt_skill_03_end/mesh.json", "reason": "Unity Mesh particle renderers are rebuilt from exported vertices, UVs, materials and tile-relative transforms"},
+        "blkkgt_skill_03_start_03": {"spawnLocation": 8, "holdByOwner": 1, "mountPointType": 5, "anchor": "F_R_Handweapon", "bindingState": "translated"},
+        "blkkgt_skill_03_start_04": {"spawnLocation": 11, "holdByOwner": 1, "mountPointType": 9, "anchor": "F_L_Handweapon", "bindingState": "translated"},
+        "blkkgt_skill_03_hit_2": {"spawnLocation": 2, "holdByOwner": 0, "anchor": "target root", "bindingState": "translated"},
+        "blkkgt_skill_02_start_01": {"spawnLocation": 8, "holdByOwner": 1, "anchor": "owner root", "bindingState": "translated"},
+        "blkkgt_skill_02_start_02": {"spawnLocation": 9, "holdByOwner": 1, "anchor": "owner root", "bindingState": "translated"},
+        "blkkgt_skill_02_start_03": {"spawnLocation": 10, "holdByOwner": 1, "anchor": "owner root", "bindingState": "translated"},
+        "blkkgt_skill_02_start_04_h": {"rotateType": 1, "spawnLocation": 1, "holdByOwner": 1, "anchor": "owner root", "bindingState": "translated"},
+        "blkkgt_skill_02_start_04_v": {"rotateType": 1, "spawnLocation": 1, "holdByOwner": 1, "anchor": "owner root", "bindingState": "translated"},
+        "blkkgt_skill_02_start_05": {"rotateType": 2, "spawnLocation": 5, "holdByOwner": 0, "anchor": "tile", "bindingState": "translated", "children": ["rotation_z", "sharp", "sharp_dark", "speedline", "flow_ground_1", "flow_ground_2", "ptc"]},
+        "blkkgt_skill_02_start_06": {"spawnLocation": 11, "holdByOwner": 1, "anchor": "owner root", "bindingState": "translated"},
+        "blkkgt_skill_02_hit_1": {"rotateType": 1, "spawnLocation": 2, "holdByOwner": 0, "anchor": "target root", "bindingState": "translated", "children": ["ray_1", "ray_2", "glow", "dark", "ray", "ray_dark", "star", "ptc"]}
+      },
+      "animationEvidence": {"normal": {"anim": "Attack", "hitCount": 2, "hitTimes": [0.4, 0.667]}, "skchr_blkkgt_1": {"anim": "Skill_1", "hitCount": 2, "hitTimes": [0.467, 0.533]}, "skchr_blkkgt_2": {"anim": "Skill_2", "hitCount": 8, "hitTimes": [0.333, 0.5, 0.667, 0.833, 1, 1.167, 1.333, 1.5]}, "loop": "Skill_3_Loop", "loopHitCount": 10, "loopHitInterval": 0.333, "finisher": "Skill_3_End"}
+    }
+  }
+}

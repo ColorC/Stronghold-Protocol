@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>进击 · 游玩回放与批注</title>
+  <link rel="icon" href="./icons/app.svg" type="image/svg+xml" sizes="any">
+  <style>
+    :root{color-scheme:dark;--bg:#07111f;--panel:#0b1a2d;--line:#24415e;--text:#e9f3ff;--muted:#8fa9c2;--accent:#52d4ff;--ok:#66e3a4;--warn:#ffd166}
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -20%,#163653 0,var(--bg) 44%);color:var(--text);font-family:Inter,"Segoe UI","PingFang SC",sans-serif}
+    body{padding:18px}
+    button,input,textarea{font:inherit}
+    .shell{width:min(1680px,100%);margin:0 auto;display:grid;gap:12px}
+    .head,.controls,.links,.comments,.composer{border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 92%,transparent);border-radius:12px}
+    .head{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:13px 16px}
+    h1{font-size:18px;margin:0 0 3px}
+    .head p,.links{font-size:13px;color:var(--muted)}
+    .head p{margin:0}
+    .player{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#000;aspect-ratio:16/9;box-shadow:0 20px 55px #0008}
+    .player iframe{display:block;width:100%;height:100%;border:0;background:#000}
+    /* 圈选时盖在 iframe 上的提示条(不拦事件, 圈选靠 iframe 内部监听) */
+    .pickhint{position:absolute;left:0;right:0;top:0;display:none;pointer-events:none;padding:7px 12px;background:#0b1a2dd9;border-bottom:1px solid var(--accent);font-size:12px;color:var(--accent)}
+    .player.picking{outline:2px solid var(--accent);outline-offset:-2px}
+    .player.picking .pickhint{display:block}
+    .controls{display:grid;grid-template-columns:auto auto minmax(140px,1fr) auto auto;align-items:center;gap:12px;padding:10px 12px}
+    button,.source-link{border:1px solid #315774;border-radius:8px;background:#102944;color:var(--text);padding:7px 11px;text-decoration:none;cursor:pointer}
+    button:hover,.source-link:hover{border-color:var(--accent)}
+    button[aria-pressed=true]{border-color:var(--accent);background:#123a56;color:#fff}
+    button:disabled{opacity:.45;cursor:default}
+    .clock{font:700 12px/1 ui-monospace,SFMono-Regular,Consolas,monospace;color:#c9e8ff;white-space:nowrap}
+    /* 进度条上打评论刻线: marks 层与 range 同宽, 不拦鼠标 */
+    .seekwrap{position:relative;display:flex;align-items:center}
+    .seekwrap input[type=range]{width:100%;accent-color:var(--accent)}
+    .marks{position:absolute;left:0;right:0;bottom:2px;height:7px;pointer-events:none}
+    .marks i{position:absolute;top:0;width:2px;height:7px;background:var(--warn);border-radius:1px;transform:translateX(-1px)}
+    .marks i.done{background:var(--ok);opacity:.55}
+    .status{font-size:12px;color:var(--muted);white-space:nowrap}
+    .status.ready{color:var(--ok)}
+    .status.picking{color:var(--accent)}
+    .status.err{color:#ff9d9d}
+    /* 评论写入面板: 锚点(秒+元素)先摆明, 再写正文 —— 存下来的东西必须和你看到的一致 */
+    .composer{display:none;gap:9px;padding:11px 12px}
+    /* 评论写入面板: 浮在被圈中的那个元素旁边(不是页面底部)——评论说的是那个东西,
+       输入框就该长在那个东西边上。position:fixed + 视口内夹取, 见 placeComposer()。 */
+    .composer{position:fixed;z-index:40;display:none;gap:9px;padding:11px 12px;
+      width:min(560px,calc(100vw - 20px));box-shadow:0 18px 46px #000a;
+      background:color-mix(in srgb,var(--panel) 97%,transparent)}
+    .composer[data-open=true]{display:grid}
+    /* 锁定框: composer 打开期间把"评论对着哪个元素"一直标出来。iframe 内的 hover 高亮
+       在点击那一刻就清掉了, 没有这个框就只能靠记忆。 */
+    .lockbox{position:fixed;z-index:39;display:none;pointer-events:none;
+      border:2px solid var(--warn);border-radius:3px;box-shadow:0 0 0 9999px #0006}
+    .lockbox[data-open=true]{display:block}
+    .lockbox[data-highlight=true]{box-shadow:0 0 0 2px #ffd16688}
+    .composer .anchorline{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font:600 12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:#c9e8ff}
+    .composer .anchorline code{background:#0d2237;border:1px solid #27496b;border-radius:6px;padding:2px 6px;color:#bfe4ff;font-weight:400;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .composer textarea{min-height:64px;resize:vertical;border:1px solid #315774;border-radius:8px;background:#0a1e33;color:var(--text);padding:8px 10px}
+    .composer .row{display:flex;gap:8px;align-items:center}
+    .comments{padding:9px 12px;display:grid;gap:8px;font-size:13px}
+    .comments .chead{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px}
+    .comments .chead .grow{flex:1}
+    .clist{display:grid;gap:6px;max-height:320px;overflow:auto}
+    .citem{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:start;border:1px solid #24415e;border-radius:9px;padding:7px 9px;background:#0a1e33}
+    .citem[data-resolved=true]{opacity:.55}
+    .citem .at{display:inline-block;border:1px solid #315774;border-radius:6px;background:#102944;color:#c9e8ff;text-decoration:none;font:700 11px/1 ui-monospace,SFMono-Regular,Consolas,monospace;padding:5px 7px;cursor:pointer}
+    .citem .at:hover{border-color:var(--accent)}
+    .citem .body{display:grid;gap:3px;min-width:0}
+    .citem .txt{white-space:pre-wrap;word-break:break-word}
+    .citem .meta{font:400 11px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .citem .ops{display:flex;gap:5px}
+    .citem .ops button{padding:4px 7px;font-size:11px}
+    .cempty{color:var(--muted);font-size:12px}
+    .links{display:flex;justify-content:flex-end;align-items:center;gap:12px;padding:9px 12px}
+    @media(max-width:760px){
+      body{padding:8px}.head{align-items:flex-start}
+      .controls{grid-template-columns:auto 1fr}.controls .seekwrap{grid-column:1/-1}.status{text-align:right}
+      .links{align-items:flex-start;flex-direction:column}
+    }
+      /* film mode: the page is only the replay, full window, no review chrome */
+    html.film body{padding:0;overflow:hidden;background:#000}
+    html.film .head,html.film .controls,html.film .comments,html.film .links{display:none}
+    html.film .shell{width:100vw;gap:0}
+    html.film .player{border:0;border-radius:0;box-shadow:none;width:100vw;height:100vh;aspect-ratio:auto}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="head">
+      <div><h1 id="title">进击 · 游玩回放</h1><p>暂停后圈选画面，可为这一刻添加评论。</p></div>
+    </header>
+    <section class="player" id="stage" data-testid="replay-review-player">
+      <iframe id="film" title="游玩回放画面" src="about:blank" allow="autoplay"></iframe>
+      <div class="pickhint" id="pickhint">已暂停 · 点击画面区域添加评论（Esc 取消）</div>
+    </section>
+    <section class="controls" aria-label="回放控制">
+      <button id="toggle" type="button">播放</button>
+      <span id="clock" class="clock">00:00 / --:--</span>
+      <span class="seekwrap">
+        <input id="seek" type="range" min="0" max="1" step=".01" value="0" aria-label="时间定位">
+        <span class="marks" id="marks" aria-hidden="true"></span>
+      </span>
+      <button id="pick" type="button" aria-pressed="false" data-testid="review-comment-pick" hidden>圈选画面</button>
+      <span id="status" class="status">正在载入回放…</span>
+    </section>
+    <section class="comments" id="comments" aria-label="回放评论" hidden>
+      <div class="chead">
+        <strong id="commentsCount">评论 0</strong>
+        <span class="grow"></span>
+        <label style="display:flex;gap:5px;align-items:center;cursor:pointer">
+          <input type="checkbox" id="showResolved"> 显示已处理
+        </label>
+      </div>
+      <div class="clist" id="clist" data-testid="review-comment-list"></div>
+      <div class="cempty" id="cempty">还没有评论。暂停后圈选画面即可添加。</div>
+    </section>
+    <section class="links">
+      <a id="sourceLink" class="source-link" href="#" target="_blank" rel="noopener">全屏打开</a>
+    </section>
+  </main>
+  <!-- 浮层: 锁定框贴在被圈元素上, 评论框贴在它旁边(placeComposer 负责视口内夹取) -->
+  <div class="lockbox" id="lockbox" data-open="false" aria-hidden="true"></div>
+  <section class="composer" id="composer" data-open="false" aria-label="新建评论">
+    <div class="anchorline">
+      <span id="composerAt">00:00</span>
+      <code id="composerEl">—</code>
+    </div>
+    <textarea id="composerText" placeholder="这一秒、这个元素，问题是什么？" data-testid="review-comment-text"></textarea>
+    <div class="row">
+      <button id="composerSave" type="button" data-testid="review-comment-save">保存评论</button>
+      <button id="composerCancel" type="button">取消</button>
+      <span class="status" id="composerHint"></span>
+    </div>
+  </section>
+  <script type="module" src="js/assault/review.js"></script>
+</body>
+</html>

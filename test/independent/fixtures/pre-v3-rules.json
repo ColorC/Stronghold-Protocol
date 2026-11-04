@@ -1,0 +1,4265 @@
+{
+ "chess_char_1_01_a": {
+  "name": "隐现",
+  "normal": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "passive",
+     "behavior": "badgeThresholdStat",
+     "params": {
+      "badgeIds": [
+       "agility"
+      ],
+      "every": 5,
+      "stats": {
+       "attackSpeedFlat": 1
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "passive",
+     "behavior": "badgeThresholdStat",
+     "params": {
+      "badgeIds": [
+       "agility"
+      ],
+      "every": 5,
+      "stats": {
+       "attackSpeedFlat": 2
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_1_01_b"
+ },
+ "chess_char_1_04_a": {
+  "name": "深巡",
+  "normal": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "hit",
+     "behavior": "conditionalDamage",
+     "params": {
+      "targetTag": "seaMonster",
+      "multiplier": 1.5,
+      "condition": "targetHasTag"
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "hit",
+     "behavior": "conditionalDamage",
+     "params": {
+      "targetTag": "seaMonster",
+      "multiplier": 2,
+      "condition": "targetHasTag"
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_1_04_b"
+ },
+ "chess_char_1_06_a": {
+  "name": "刺玫",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "prepEnd",
+     "behavior": "conditionalGrant",
+     "params": {
+      "outputs": [
+       {
+        "id": "vitality",
+        "normal": 1,
+        "elite": 2
+       }
+      ],
+      "requiresFactionOnField": "维多利亚"
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "prepEnd",
+     "behavior": "conditionalGrant",
+     "params": {
+      "outputs": [
+       {
+        "id": "vitality",
+        "normal": 1,
+        "elite": 2
+       }
+      ],
+      "requiresFactionOnField": "维多利亚"
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_1_06_b"
+ },
+ "chess_char_1_07_a": {
+  "name": "普罗旺斯",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "freeRefresh",
+     "params": {
+      "normal": 1,
+      "elite": 2,
+      "quantity": 1
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "freeRefresh",
+     "params": {
+      "normal": 1,
+      "elite": 2,
+      "quantity": 2
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_1_07_b"
+ },
+ "chess_char_1_09_a": {
+  "name": "跃跃",
+  "normal": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "hit",
+     "behavior": "conditionalDamage",
+     "params": {
+      "targetTag": "drone",
+      "multiplier": 1.5,
+      "condition": "targetHasTag"
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "hit",
+     "behavior": "conditionalDamage",
+     "params": {
+      "targetTag": "drone",
+      "multiplier": 2,
+      "condition": "targetHasTag"
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_1_09_b"
+ },
+ "chess_char_1_10_a": {
+  "name": "古米",
+  "normal": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "passive",
+     "behavior": "staticStats",
+     "params": {
+      "stats": {
+       "spRecoveryPerSecond": 0.15
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "passive",
+     "behavior": "staticStats",
+     "params": {
+      "stats": {
+       "spRecoveryPerSecond": 0.3
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_1_10_b"
+ },
+ "chess_char_1_12_a": {
+  "name": "艾丝黛尔",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "precision",
+        "normal": 1,
+        "elite": 2
+       },
+       {
+        "id": "independent:近战训练记录仪",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "precision",
+        "normal": 1,
+        "elite": 2
+       },
+       {
+        "id": "independent:近战训练记录仪",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_1_12_b"
+ },
+ "chess_char_1_13_a": {
+  "name": "波登可",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "prepEnd",
+     "behavior": "forgeDominantFaction",
+     "params": {
+      "normal": 1,
+      "elite": 2,
+      "fallback": "professionRecipe",
+      "worksFromBench": true,
+      "quantity": 1
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "prepEnd",
+     "behavior": "forgeDominantFaction",
+     "params": {
+      "normal": 1,
+      "elite": 2,
+      "fallback": "professionRecipe",
+      "worksFromBench": true,
+      "quantity": 2
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_1_13_b"
+ },
+ "chess_char_1_17_a": {
+  "name": "深靛",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "assault",
+        "normal": 1,
+        "elite": 2
+       },
+       {
+        "id": "chess_item_1_05_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "assault",
+        "normal": 1,
+        "elite": 2
+       },
+       {
+        "id": "chess_item_1_05_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_1_17_b"
+ },
+ "chess_char_1_18_a": {
+  "name": "宴",
+  "normal": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "hit",
+     "behavior": "weakDamage",
+     "params": {
+      "enabled": true
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "hit",
+     "behavior": "weakDamage",
+     "params": {
+      "enabled": true
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_1_18_b"
+ },
+ "chess_char_1_19_a": {
+  "name": "野鬃",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "agility",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "agility",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_1_19_b"
+ },
+ "chess_char_2_01_a": {
+  "name": "送葬人",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "independent:拉特兰调速器",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "kill",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "kill",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "agility",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": 1,
+      "filter": {
+       "actor": "self",
+       "targetSide": "enemy"
+      },
+      "firstOnly": true
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "independent:拉特兰调速器",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "kill",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "kill",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "agility",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 1,
+      "filter": {
+       "actor": "self",
+       "targetSide": "enemy"
+      },
+      "firstOnly": true
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_2_01_b"
+ },
+ "chess_char_2_02_a": {
+  "name": "赫默",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_4_11_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    },
+    {
+     "trigger": "roundStart",
+     "behavior": "diversityGrant",
+     "params": {
+      "by": "profession",
+      "id": "vitality",
+      "normal": 1,
+      "elite": 2,
+      "quantity": 1
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_4_11_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    },
+    {
+     "trigger": "roundStart",
+     "behavior": "diversityGrant",
+     "params": {
+      "by": "profession",
+      "id": "vitality",
+      "normal": 1,
+      "elite": 2,
+      "quantity": 2
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_2_02_b"
+ },
+ "chess_char_2_04_a": {
+  "name": "小满",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_3_04_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    },
+    {
+     "trigger": "prepEnd",
+     "behavior": "forgePerGainedChess",
+     "params": {
+      "id": "precision",
+      "normal": 1,
+      "elite": 2,
+      "capNormal": 6,
+      "capElite": 12,
+      "quantity": 1
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_3_04_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    },
+    {
+     "trigger": "prepEnd",
+     "behavior": "forgePerGainedChess",
+     "params": {
+      "id": "precision",
+      "normal": 1,
+      "elite": 2,
+      "capNormal": 6,
+      "capElite": 12,
+      "quantity": 2
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_2_04_b"
+ },
+ "chess_char_2_06_a": {
+  "name": "莎草",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_2_04_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "skillStart",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "skillStart",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "recovery",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": 1,
+      "filter": {
+       "actor": "self"
+      },
+      "firstOnly": true
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_2_04_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "skillStart",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "skillStart",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "recovery",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 1,
+      "filter": {
+       "actor": "self"
+      },
+      "firstOnly": true
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_2_06_b"
+ },
+ "chess_char_2_07_a": {
+  "name": "幽灵鲨",
+  "normal": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "death",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "death",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "vitality",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": 1,
+      "filter": {
+       "actor": "self"
+      },
+      "firstOnly": true
+     }
+    },
+    {
+     "trigger": "death",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "death",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "unyielding",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": 1,
+      "filter": {
+       "actor": "self"
+      },
+      "firstOnly": true
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "death",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "death",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "vitality",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 1,
+      "filter": {
+       "actor": "self"
+      },
+      "firstOnly": true
+     }
+    },
+    {
+     "trigger": "death",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "death",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "unyielding",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 1,
+      "filter": {
+       "actor": "self"
+      },
+      "firstOnly": true
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_2_07_b"
+ },
+ "chess_char_2_09_a": {
+  "name": "休谟斯",
+  "normal": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "kill",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "kill",
+      "counterEvery": 2,
+      "outputs": [
+       {
+        "id": "precision",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": null,
+      "filter": {
+       "actor": "self",
+       "targetSide": "enemy"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "kill",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "kill",
+      "counterEvery": 2,
+      "outputs": [
+       {
+        "id": "precision",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": null,
+      "filter": {
+       "actor": "self",
+       "targetSide": "enemy"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_2_09_b"
+ },
+ "chess_char_2_10_a": {
+  "name": "洛洛",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "randomEquipment",
+     "params": {
+      "poolId": "pool_equip_rockr",
+      "normal": 1,
+      "elite": 2,
+      "quantity": 1
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "randomEquipment",
+     "params": {
+      "poolId": "pool_equip_rockr",
+      "normal": 1,
+      "elite": 2,
+      "quantity": 2
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_2_10_b"
+ },
+ "chess_char_2_12_a": {
+  "name": "砾",
+  "normal": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "death",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "death",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "defense",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": null,
+      "filter": {
+       "actor": "team"
+      }
+     }
+    },
+    {
+     "trigger": "death",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "death",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "solitary",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": null,
+      "filter": {
+       "actor": "team"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "death",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "death",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "defense",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": null,
+      "filter": {
+       "actor": "team"
+      }
+     }
+    },
+    {
+     "trigger": "death",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "death",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "solitary",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": null,
+      "filter": {
+       "actor": "team"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_2_12_b"
+ },
+ "chess_char_2_14_a": {
+  "name": "调香师",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "prepEnd",
+     "behavior": "forgeDominantFaction",
+     "params": {
+      "normal": 2,
+      "elite": 4,
+      "fallback": "professionRecipe",
+      "worksFromBench": true,
+      "quantity": 2
+     }
+    },
+    {
+     "trigger": "prepEnd",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "harmony",
+        "normal": 2,
+        "elite": 4
+       }
+      ],
+      "worksFromBench": true
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "prepEnd",
+     "behavior": "forgeDominantFaction",
+     "params": {
+      "normal": 2,
+      "elite": 4,
+      "fallback": "professionRecipe",
+      "worksFromBench": true,
+      "quantity": 4
+     }
+    },
+    {
+     "trigger": "prepEnd",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "harmony",
+        "normal": 2,
+        "elite": 4
+       }
+      ],
+      "worksFromBench": true
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_2_14_b"
+ },
+ "chess_char_2_16_a": {
+  "name": "拉普兰德",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "refresh",
+     "behavior": "attachShopBadgeFirstRefresh",
+     "params": {
+      "id": "assault",
+      "normal": 1,
+      "elite": 2,
+      "firstOnly": true,
+      "worksFromBench": true,
+      "quantity": 1
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "refresh",
+     "behavior": "attachShopBadgeFirstRefresh",
+     "params": {
+      "id": "assault",
+      "normal": 1,
+      "elite": 2,
+      "firstOnly": true,
+      "worksFromBench": true,
+      "quantity": 2
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_2_16_b"
+ },
+ "chess_char_2_17_a": {
+  "name": "折桠",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_3_06_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    },
+    {
+     "trigger": "prepEnd",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "defense",
+        "normal": 2,
+        "elite": 4
+       }
+      ]
+     }
+    },
+    {
+     "trigger": "selling",
+     "behavior": "sellTransfer",
+     "params": {}
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_3_06_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    },
+    {
+     "trigger": "prepEnd",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "defense",
+        "normal": 2,
+        "elite": 4
+       }
+      ]
+     }
+    },
+    {
+     "trigger": "selling",
+     "behavior": "sellTransfer",
+     "params": {}
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_2_17_b"
+ },
+ "chess_char_2_18_a": {
+  "name": "灰毫",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "forgeDominantFaction",
+     "params": {
+      "normal": 1,
+      "elite": 2,
+      "quantity": 1
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "forgeDominantFaction",
+     "params": {
+      "normal": 1,
+      "elite": 2,
+      "quantity": 2
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_2_18_b"
+ },
+ "chess_char_3_01_a": {
+  "name": "能天使",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "deferredFunds",
+     "params": {
+      "normal": 1,
+      "elite": 2,
+      "totalBonus": {
+       "counter": "refreshes",
+       "per": 8,
+       "step": 1
+      },
+      "quantity": 1
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "deferredFunds",
+     "params": {
+      "normal": 1,
+      "elite": 2,
+      "totalBonus": {
+       "counter": "refreshes",
+       "per": 8,
+       "step": 1
+      },
+      "quantity": 2
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_3_01_b"
+ },
+ "chess_char_3_02_a": {
+  "name": "断崖",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "prepEnd",
+     "behavior": "forgeAdjacent",
+     "params": {
+      "id": "recovery",
+      "normal": 1,
+      "elite": 2,
+      "direction": "behind",
+      "targets": [
+       "self",
+       "ally"
+      ],
+      "capNormal": 2,
+      "capElite": 4,
+      "quantity": 1
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "prepEnd",
+     "behavior": "forgeAdjacent",
+     "params": {
+      "id": "recovery",
+      "normal": 1,
+      "elite": 2,
+      "direction": "behind",
+      "targets": [
+       "self",
+       "ally"
+      ],
+      "capNormal": 2,
+      "capElite": 4,
+      "quantity": 2
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_3_02_b"
+ },
+ "chess_char_3_03_a": {
+  "name": "诗怀雅",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_1_03_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    },
+    {
+     "trigger": "prepEnd",
+     "behavior": "diversityGrant",
+     "params": {
+      "by": "faction",
+      "id": "precision",
+      "normal": 1,
+      "elite": 2,
+      "quantity": 1
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_1_03_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    },
+    {
+     "trigger": "prepEnd",
+     "behavior": "diversityGrant",
+     "params": {
+      "by": "faction",
+      "id": "precision",
+      "normal": 1,
+      "elite": 2,
+      "quantity": 2
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_3_03_b"
+ },
+ "chess_char_3_05_a": {
+  "name": "斯卡蒂",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_3_07_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "kill",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "kill",
+      "counterEvery": 2,
+      "outputs": [
+       {
+        "id": "vitality",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": 4,
+      "filter": {
+       "actor": "self",
+       "targetSide": "enemy"
+      }
+     }
+    },
+    {
+     "trigger": "kill",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "kill",
+      "counterEvery": 2,
+      "outputs": [
+       {
+        "id": "mastery",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": 4,
+      "filter": {
+       "actor": "self",
+       "targetSide": "enemy"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_3_07_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "kill",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "kill",
+      "counterEvery": 2,
+      "outputs": [
+       {
+        "id": "vitality",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 8,
+      "filter": {
+       "actor": "self",
+       "targetSide": "enemy"
+      }
+     }
+    },
+    {
+     "trigger": "kill",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "kill",
+      "counterEvery": 2,
+      "outputs": [
+       {
+        "id": "mastery",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 8,
+      "filter": {
+       "actor": "self",
+       "targetSide": "enemy"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_3_05_b"
+ },
+ "chess_char_3_09_a": {
+  "name": "海霓",
+  "normal": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "kill",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "kill",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "assault",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": 1,
+      "filter": {
+       "actor": "self",
+       "targetSide": "any"
+      },
+      "firstOnly": true
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "kill",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "kill",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "assault",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 1,
+      "filter": {
+       "actor": "self",
+       "targetSide": "any"
+      },
+      "firstOnly": true
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_3_09_b"
+ },
+ "chess_char_3_11_a": {
+  "name": "雪猎",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "agility",
+        "normal": 2,
+        "elite": 4
+       },
+       {
+        "id": "chess_item_3_02_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "agility",
+        "normal": 2,
+        "elite": 4
+       },
+       {
+        "id": "chess_item_3_02_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_3_11_b"
+ },
+ "chess_char_3_12_a": {
+  "name": "瑕光",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_5_09_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "deploy",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "deploy",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "vitality",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": 3,
+      "filter": {
+       "actor": "self"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_5_09_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "deploy",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "deploy",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "vitality",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 6,
+      "filter": {
+       "actor": "self"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_3_12_b"
+ },
+ "chess_char_3_16_a": {
+  "name": "蛇屠箱",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "prepEnd",
+     "behavior": "forgeRowCount",
+     "params": {
+      "id": "defense",
+      "normal": 1,
+      "elite": 2,
+      "capNormal": 4,
+      "capElite": 8,
+      "quantity": 1
+     }
+    },
+    {
+     "trigger": "prepEnd",
+     "behavior": "forgeRowCount",
+     "params": {
+      "id": "coordination",
+      "normal": 1,
+      "elite": 2,
+      "capNormal": 4,
+      "capElite": 8,
+      "quantity": 1
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "prepEnd",
+     "behavior": "forgeRowCount",
+     "params": {
+      "id": "defense",
+      "normal": 1,
+      "elite": 2,
+      "capNormal": 4,
+      "capElite": 8,
+      "quantity": 2
+     }
+    },
+    {
+     "trigger": "prepEnd",
+     "behavior": "forgeRowCount",
+     "params": {
+      "id": "coordination",
+      "normal": 1,
+      "elite": 2,
+      "capNormal": 4,
+      "capElite": 8,
+      "quantity": 2
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_3_16_b"
+ },
+ "chess_char_3_17_a": {
+  "name": "流星",
+  "normal": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "passive",
+     "behavior": "staticStats",
+     "params": {
+      "stats": {
+       "attackPercent": 0.25,
+       "maxHpPercent": 0.25
+      }
+     }
+    },
+    {
+     "trigger": "hit",
+     "behavior": "weakDamage",
+     "params": {
+      "enabled": true
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "passive",
+     "behavior": "staticStats",
+     "params": {
+      "stats": {
+       "attackPercent": 0.5,
+       "maxHpPercent": 0.5
+      }
+     }
+    },
+    {
+     "trigger": "hit",
+     "behavior": "weakDamage",
+     "params": {
+      "enabled": true
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_3_17_b"
+ },
+ "chess_char_3_18_a": {
+  "name": "忍冬",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "precision",
+        "normal": 2,
+        "elite": 4
+       },
+       {
+        "id": "agility",
+        "normal": 1,
+        "elite": 2
+       },
+       {
+        "id": "chess_item_3_01_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "precision",
+        "normal": 2,
+        "elite": 4
+       },
+       {
+        "id": "agility",
+        "normal": 1,
+        "elite": 2
+       },
+       {
+        "id": "chess_item_3_01_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_3_18_b"
+ },
+ "chess_char_3_19_a": {
+  "name": "伺夜",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_3_11_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "kill",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "kill",
+      "counterEvery": 6,
+      "outputs": [
+       {
+        "id": "assault",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": null,
+      "filter": {
+       "actor": "team",
+       "targetSide": "enemy"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_3_11_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "kill",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "kill",
+      "counterEvery": 6,
+      "outputs": [
+       {
+        "id": "assault",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": null,
+      "filter": {
+       "actor": "team",
+       "targetSide": "enemy"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_3_19_b"
+ },
+ "chess_char_3_21_a": {
+  "name": "空弦",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "roundStart",
+     "behavior": "forgeAdjacent",
+     "params": {
+      "id": "agility",
+      "normal": 1,
+      "elite": 2,
+      "direction": "front",
+      "targets": [
+       "self",
+       "ally"
+      ],
+      "capNormal": 2,
+      "capElite": 4,
+      "quantity": 1
+     }
+    },
+    {
+     "trigger": "roundStart",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "miracle",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "roundStart",
+     "behavior": "forgeAdjacent",
+     "params": {
+      "id": "agility",
+      "normal": 1,
+      "elite": 2,
+      "direction": "front",
+      "targets": [
+       "self",
+       "ally"
+      ],
+      "capNormal": 2,
+      "capElite": 4,
+      "quantity": 2
+     }
+    },
+    {
+     "trigger": "roundStart",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "miracle",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_3_21_b"
+ },
+ "chess_char_4_01_a": {
+  "name": "信仰搅拌机",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_4_02_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "passive",
+     "behavior": "badgeThresholdStat",
+     "params": {
+      "badgeIds": [
+       "vitality",
+       "defense"
+      ],
+      "every": 5,
+      "stats": {
+       "defensePercent": 0.02
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_4_02_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "passive",
+     "behavior": "badgeThresholdStat",
+     "params": {
+      "badgeIds": [
+       "vitality",
+       "defense"
+      ],
+      "every": 5,
+      "stats": {
+       "defensePercent": 0.04
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_4_01_b"
+ },
+ "chess_char_4_02_a": {
+  "name": "莫斯提马",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_4_08_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "ammoUsed",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "ammoUsed",
+      "counterEvery": 6,
+      "outputs": [
+       {
+        "id": "recovery",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": 6,
+      "filter": {
+       "actor": "adjacentAllies",
+       "ammoOnly": true
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_4_08_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "ammoUsed",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "ammoUsed",
+      "counterEvery": 6,
+      "outputs": [
+       {
+        "id": "recovery",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 12,
+      "filter": {
+       "actor": "adjacentAllies",
+       "ammoOnly": true
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_4_02_b"
+ },
+ "chess_char_4_06_a": {
+  "name": "寒芒克洛丝",
+  "normal": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "skillStart",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "skillStart",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "precision",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": 4,
+      "filter": {
+       "actor": "adjacentAllies",
+       "excludeSelf": true,
+       "direction": "front"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "skillStart",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "skillStart",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "precision",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 8,
+      "filter": {
+       "actor": "adjacentAllies",
+       "excludeSelf": true,
+       "direction": "front"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_4_06_b"
+ },
+ "chess_char_4_10_a": {
+  "name": "阿罗玛",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "prepEnd",
+     "behavior": "shopCarry",
+     "params": {
+      "id": "assault",
+      "normal": 1,
+      "elite": 2,
+      "max": {
+       "normal": 4,
+       "elite": 8
+      },
+      "quantity": 1
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "prepEnd",
+     "behavior": "shopCarry",
+     "params": {
+      "id": "assault",
+      "normal": 1,
+      "elite": 2,
+      "max": {
+       "normal": 4,
+       "elite": 8
+      },
+      "quantity": 2
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_4_10_b"
+ },
+ "chess_char_4_13_a": {
+  "name": "灵知",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "assault",
+        "normal": 2,
+        "elite": 4
+       },
+       {
+        "id": "chess_item_3_08_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "assault",
+        "normal": 2,
+        "elite": 4
+       },
+       {
+        "id": "chess_item_3_08_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_4_13_b"
+ },
+ "chess_char_4_14_a": {
+  "name": "莱恩哈特",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "prepEnd",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "precision",
+        "normal": 2,
+        "elite": 4
+       },
+       {
+        "id": "arcane",
+        "normal": 2,
+        "elite": 4
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "prepEnd",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "precision",
+        "normal": 2,
+        "elite": 4
+       },
+       {
+        "id": "arcane",
+        "normal": 2,
+        "elite": 4
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_4_14_b"
+ },
+ "chess_char_4_19_a": {
+  "name": "焰尾",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "randomChessOffer",
+     "params": {
+      "normal": 1,
+      "elite": 2,
+      "poolId": "pool_char_pinus",
+      "quantity": 1
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "randomChessOffer",
+     "params": {
+      "normal": 1,
+      "elite": 2,
+      "poolId": "pool_char_pinus",
+      "quantity": 2
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_4_19_b"
+ },
+ "chess_char_4_20_a": {
+  "name": "远牙",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_4_07_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "deploy",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "deploy",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "agility",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": 6,
+      "filter": {
+       "actor": "sameRowRightmost"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_4_07_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "deploy",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "deploy",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "agility",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 12,
+      "filter": {
+       "actor": "sameRowRightmost"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_4_20_b"
+ },
+ "chess_char_4_22_a": {
+  "name": "银灰",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_4_03_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "statusApplied",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "statusApplied",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "assault",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": 4,
+      "filter": {
+       "targetSide": "enemy",
+       "status": "frozen",
+       "entered": true,
+       "range": "attacker"
+      },
+      "probability": 0.5
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_4_03_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "statusApplied",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "statusApplied",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "assault",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 8,
+      "filter": {
+       "targetSide": "enemy",
+       "status": "frozen",
+       "entered": true,
+       "range": "attacker"
+      },
+      "probability": 0.5
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_4_22_b"
+ },
+ "chess_char_4_23_a": {
+  "name": "百炼嘉维尔",
+  "normal": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "skillStart",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "skillStart",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "vitality",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 6,
+      "filter": {
+       "actor": "self"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "skillStart",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "skillStart",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "vitality",
+        "quantity": 4
+       }
+      ],
+      "maxPerBattle": 12,
+      "filter": {
+       "actor": "self"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_4_23_b"
+ },
+ "chess_char_4_26_a": {
+  "name": "华法琳",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_4_06_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "skillStart",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "skillStart",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "vitality",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": 4,
+      "filter": {
+       "actor": "adjacentAllies",
+       "direction": "front"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_4_06_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "skillStart",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "skillStart",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "vitality",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 8,
+      "filter": {
+       "actor": "adjacentAllies",
+       "direction": "front"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_4_26_b"
+ },
+ "chess_char_5_02_a": {
+  "name": "缇缇",
+  "normal": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "statusApplied",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "statusApplied",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "recovery",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": 6,
+      "filter": {
+       "targetSide": "any",
+       "status": [
+        "sleep",
+        "stun"
+       ],
+       "entered": true,
+       "range": "attacker"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "statusApplied",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "statusApplied",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "recovery",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 12,
+      "filter": {
+       "targetSide": "any",
+       "status": [
+        "sleep",
+        "stun"
+       ],
+       "entered": true,
+       "range": "attacker"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_5_02_b"
+ },
+ "chess_char_5_03_a": {
+  "name": "烛煌",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "precision",
+        "normal": 2,
+        "elite": 4
+       },
+       {
+        "id": "vitality",
+        "normal": 2,
+        "elite": 4
+       },
+       {
+        "id": "chess_item_6_05_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    },
+    {
+     "trigger": "prepEnd",
+     "behavior": "perEliteGrant",
+     "params": {
+      "id": "precision",
+      "normal": 2,
+      "elite": 4,
+      "quantity": 2
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "precision",
+        "normal": 2,
+        "elite": 4
+       },
+       {
+        "id": "vitality",
+        "normal": 2,
+        "elite": 4
+       },
+       {
+        "id": "chess_item_6_05_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    },
+    {
+     "trigger": "prepEnd",
+     "behavior": "perEliteGrant",
+     "params": {
+      "id": "precision",
+      "normal": 2,
+      "elite": 4,
+      "quantity": 4
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_5_03_b"
+ },
+ "chess_char_5_06_a": {
+  "name": "隐德来希",
+  "normal": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "passive",
+     "behavior": "badgeThresholdStat",
+     "params": {
+      "badgeIds": [
+       "precision",
+       "agility",
+       "vitality",
+       "defense",
+       "assault",
+       "recovery",
+       "arcane",
+       "foresight",
+       "miracle",
+       "investor",
+       "unyielding",
+       "harmony",
+       "coordination",
+       "solitary",
+       "mastery"
+      ],
+      "every": 5,
+      "stats": {
+       "attackPercent": 0.01,
+       "maxHpPercent": 0.01
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "passive",
+     "behavior": "badgeThresholdStat",
+     "params": {
+      "badgeIds": [
+       "precision",
+       "agility",
+       "vitality",
+       "defense",
+       "assault",
+       "recovery",
+       "arcane",
+       "foresight",
+       "miracle",
+       "investor",
+       "unyielding",
+       "harmony",
+       "coordination",
+       "solitary",
+       "mastery"
+      ],
+      "every": 5,
+      "stats": {
+       "attackPercent": 0.02,
+       "maxHpPercent": 0.02
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_5_06_b"
+ },
+ "chess_char_5_07_a": {
+  "name": "史尔特尔",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_4_12_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "deploy",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "deploy",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "precision",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 6,
+      "filter": {
+       "actor": "self"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_4_12_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "deploy",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "deploy",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "precision",
+        "quantity": 4
+       }
+      ],
+      "maxPerBattle": 12,
+      "filter": {
+       "actor": "self"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_5_07_b"
+ },
+ "chess_char_5_08_a": {
+  "name": "号角",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_4_10_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    },
+    {
+     "trigger": "prepEnd",
+     "behavior": "forgeDominantFactionTierCount",
+     "params": {
+      "id": "defense",
+      "normal": 1,
+      "elite": 2,
+      "capNormal": 6,
+      "capElite": 12,
+      "quantity": 1
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_4_10_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    },
+    {
+     "trigger": "prepEnd",
+     "behavior": "forgeDominantFactionTierCount",
+     "params": {
+      "id": "defense",
+      "normal": 1,
+      "elite": 2,
+      "capNormal": 6,
+      "capElite": 12,
+      "quantity": 2
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_5_08_b"
+ },
+ "chess_char_5_13_a": {
+  "name": "归溟幽灵鲨",
+  "normal": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "death",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "death",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "vitality",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": 4,
+      "filter": {
+       "actor": "self"
+      },
+      "firstOnly": true
+     }
+    },
+    {
+     "trigger": "dollSwap",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "dollSwap",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "vitality",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": 4,
+      "filter": {
+       "actor": "self"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "death",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "death",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "vitality",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 8,
+      "filter": {
+       "actor": "self"
+      },
+      "firstOnly": true
+     }
+    },
+    {
+     "trigger": "dollSwap",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "dollSwap",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "vitality",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 8,
+      "filter": {
+       "actor": "self"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_5_13_b"
+ },
+ "chess_char_5_14_a": {
+  "name": "凛御银灰",
+  "normal": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "statusApplied",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "statusApplied",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "assault",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": 6,
+      "filter": {
+       "observer": "frontAlly",
+       "observerTag": "谢拉格",
+       "targetSide": "enemy",
+       "status": "frozen",
+       "entered": true,
+       "range": "observer"
+      },
+      "probability": 0.6
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "statusApplied",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "statusApplied",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "assault",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 12,
+      "filter": {
+       "observer": "frontAlly",
+       "observerTag": "谢拉格",
+       "targetSide": "enemy",
+       "status": "frozen",
+       "entered": true,
+       "range": "observer"
+      },
+      "probability": 0.6
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_5_14_b"
+ },
+ "chess_char_5_17_a": {
+  "name": "山",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "prepEnd",
+     "behavior": "devourShop",
+     "params": {
+      "id": "vitality",
+      "normal": 1,
+      "elite": 2,
+      "quantity": 1
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "prepEnd",
+     "behavior": "devourShop",
+     "params": {
+      "id": "vitality",
+      "normal": 1,
+      "elite": 2,
+      "quantity": 2
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_5_17_b"
+ },
+ "chess_char_5_19_a": {
+  "name": "玛恩纳",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_6_10_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "deploy",
+     "behavior": "deployWindowStats",
+     "params": {
+      "badgeIds": [
+       "precision",
+       "agility",
+       "vitality",
+       "defense",
+       "assault",
+       "recovery",
+       "arcane",
+       "foresight",
+       "miracle",
+       "investor",
+       "unyielding",
+       "harmony",
+       "coordination",
+       "solitary",
+       "mastery"
+      ],
+      "every": 5,
+      "stats": {
+       "attackFlat": 10,
+       "maxHpFlat": 50
+      },
+      "durationSeconds": 100
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_6_10_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "deploy",
+     "behavior": "deployWindowStats",
+     "params": {
+      "badgeIds": [
+       "precision",
+       "agility",
+       "vitality",
+       "defense",
+       "assault",
+       "recovery",
+       "arcane",
+       "foresight",
+       "miracle",
+       "investor",
+       "unyielding",
+       "harmony",
+       "coordination",
+       "solitary",
+       "mastery"
+      ],
+      "every": 5,
+      "stats": {
+       "attackFlat": 20,
+       "maxHpFlat": 100
+      },
+      "durationSeconds": 100
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_5_19_b"
+ },
+ "chess_char_5_21_a": {
+  "name": "寒檀",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "roundStart",
+     "behavior": "escalatingGrant",
+     "params": {
+      "id": "recovery",
+      "start": {
+       "normal": 1,
+       "elite": 2
+      },
+      "max": {
+       "normal": 16,
+       "elite": 32
+      }
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "roundStart",
+     "behavior": "escalatingGrant",
+     "params": {
+      "id": "recovery",
+      "start": {
+       "normal": 1,
+       "elite": 2
+      },
+      "max": {
+       "normal": 16,
+       "elite": 32
+      }
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_5_21_b"
+ },
+ "chess_char_5_22_a": {
+  "name": "妮芙",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "prepEnd",
+     "behavior": "forgeBenchPairs",
+     "params": {
+      "id": "agility",
+      "normal": 1,
+      "elite": 2,
+      "pairSize": 2,
+      "capNormal": 4,
+      "capElite": 8,
+      "quantity": 1
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "prepEnd",
+     "behavior": "forgeBenchPairs",
+     "params": {
+      "id": "agility",
+      "normal": 1,
+      "elite": 2,
+      "pairSize": 2,
+      "capNormal": 4,
+      "capElite": 8,
+      "quantity": 2
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_5_22_b"
+ },
+ "chess_char_5_23_a": {
+  "name": "录武官",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "precision",
+        "normal": 3,
+        "elite": 6
+       },
+       {
+        "id": "vitality",
+        "normal": 1,
+        "elite": 2
+       },
+       {
+        "id": "chess_item_6_03_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "precision",
+        "normal": 3,
+        "elite": 6
+       },
+       {
+        "id": "vitality",
+        "normal": 1,
+        "elite": 2
+       },
+       {
+        "id": "chess_item_6_03_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_5_23_b"
+ },
+ "chess_char_6_04_a": {
+  "name": "浊心斯卡蒂",
+  "normal": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "passive",
+     "behavior": "badgeThresholdStat",
+     "params": {
+      "badgeIds": [
+       "precision",
+       "agility",
+       "vitality",
+       "defense",
+       "assault",
+       "recovery",
+       "arcane",
+       "foresight",
+       "miracle",
+       "investor",
+       "unyielding",
+       "harmony",
+       "coordination",
+       "solitary",
+       "mastery"
+      ],
+      "every": 10,
+      "stats": {
+       "hpRecoveryPerSecond": 50,
+       "spRecoveryPerSecond": 0.15
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "passive",
+     "behavior": "badgeThresholdStat",
+     "params": {
+      "badgeIds": [
+       "precision",
+       "agility",
+       "vitality",
+       "defense",
+       "assault",
+       "recovery",
+       "arcane",
+       "foresight",
+       "miracle",
+       "investor",
+       "unyielding",
+       "harmony",
+       "coordination",
+       "solitary",
+       "mastery"
+      ],
+      "every": 10,
+      "stats": {
+       "hpRecoveryPerSecond": 100,
+       "spRecoveryPerSecond": 0.3
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_6_04_b"
+ },
+ "chess_char_6_06_a": {
+  "name": "佩佩",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "independent:增压臂铠",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    },
+    {
+     "trigger": "roundStart",
+     "behavior": "randomSupply",
+     "params": {
+      "normal": 1,
+      "elite": 2,
+      "poolId": "pool_equip_pepe",
+      "quantity": 1
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "independent:增压臂铠",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    },
+    {
+     "trigger": "roundStart",
+     "behavior": "randomSupply",
+     "params": {
+      "normal": 1,
+      "elite": 2,
+      "poolId": "pool_equip_pepe",
+      "quantity": 2
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_6_06_b"
+ },
+ "chess_char_6_08_a": {
+  "name": "焰影苇草",
+  "normal": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "passive",
+     "behavior": "badgeThresholdStat",
+     "params": {
+      "badgeIds": [
+       "agility"
+      ],
+      "every": 5,
+      "stats": {
+       "attackSpeedFlat": 1
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "passive",
+     "behavior": "badgeThresholdStat",
+     "params": {
+      "badgeIds": [
+       "agility"
+      ],
+      "every": 5,
+      "stats": {
+       "attackSpeedFlat": 2
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_6_08_b"
+ },
+ "chess_char_6_12_a": {
+  "name": "迷迭香",
+  "normal": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "passive",
+     "behavior": "staticStats",
+     "params": {
+      "stats": {
+       "attackPercent": 0.2,
+       "maxHpPercent": 0.2
+      }
+     }
+    },
+    {
+     "trigger": "passive",
+     "behavior": "badgeThresholdStat",
+     "params": {
+      "badgeIds": [
+       "precision",
+       "agility",
+       "vitality",
+       "defense",
+       "assault",
+       "recovery",
+       "arcane",
+       "foresight",
+       "miracle",
+       "investor",
+       "unyielding",
+       "harmony",
+       "coordination",
+       "solitary",
+       "mastery"
+      ],
+      "every": 5,
+      "stats": {
+       "attackPercent": 0.01,
+       "maxHpPercent": 0.01
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "passive",
+     "behavior": "staticStats",
+     "params": {
+      "stats": {
+       "attackPercent": 0.4,
+       "maxHpPercent": 0.4
+      }
+     }
+    },
+    {
+     "trigger": "passive",
+     "behavior": "badgeThresholdStat",
+     "params": {
+      "badgeIds": [
+       "precision",
+       "agility",
+       "vitality",
+       "defense",
+       "assault",
+       "recovery",
+       "arcane",
+       "foresight",
+       "miracle",
+       "investor",
+       "unyielding",
+       "harmony",
+       "coordination",
+       "solitary",
+       "mastery"
+      ],
+      "every": 5,
+      "stats": {
+       "attackPercent": 0.02,
+       "maxHpPercent": 0.02
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_6_12_b"
+ },
+ "chess_char_6_14_a": {
+  "name": "流明",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "independent:医疗部稳态仪",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    },
+    {
+     "trigger": "prepEnd",
+     "behavior": "forgeBenchCount",
+     "params": {
+      "id": "vitality",
+      "normal": 1,
+      "elite": 2,
+      "capNormal": 6,
+      "capElite": 12,
+      "quantity": 1
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "independent:医疗部稳态仪",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    },
+    {
+     "trigger": "prepEnd",
+     "behavior": "forgeBenchCount",
+     "params": {
+      "id": "vitality",
+      "normal": 1,
+      "elite": 2,
+      "capNormal": 6,
+      "capElite": 12,
+      "quantity": 2
+     }
+    }
+   ],
+   "combat": [],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_6_14_b"
+ },
+ "chess_char_6_15_a": {
+  "name": "仇白",
+  "normal": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "hit",
+     "behavior": "conditionalDamage",
+     "params": {
+      "targetTag": null,
+      "multiplier": 1,
+      "condition": "boundOrSluggish",
+      "badgeIds": [
+       "precision",
+       "assault"
+      ],
+      "every": 5,
+      "bonusPercent": 0.01
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [],
+   "combat": [
+    {
+     "trigger": "hit",
+     "behavior": "conditionalDamage",
+     "params": {
+      "targetTag": null,
+      "multiplier": 1,
+      "condition": "boundOrSluggish",
+      "badgeIds": [
+       "precision",
+       "assault"
+      ],
+      "every": 5,
+      "bonusPercent": 0.02
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_6_15_b"
+ },
+ "chess_char_6_17_a": {
+  "name": "耀骑士临光",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_6_01_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "battleStart",
+     "behavior": "startDerivedStats",
+     "params": {
+      "badgeIds": [
+       "agility"
+      ],
+      "every": 5,
+      "actors": [
+       "self",
+       "frontAlly"
+      ],
+      "attackSpeedFlat": 1,
+      "redeployTimeReduction": 0.015,
+      "maxRedeployTimeReduction": 0.3
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_6_01_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "battleStart",
+     "behavior": "startDerivedStats",
+     "params": {
+      "badgeIds": [
+       "agility"
+      ],
+      "every": 5,
+      "actors": [
+       "self",
+       "frontAlly"
+      ],
+      "attackSpeedFlat": 2,
+      "redeployTimeReduction": 0.03,
+      "maxRedeployTimeReduction": 0.3
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_6_17_b"
+ },
+ "chess_char_6_18_a": {
+  "name": "荒芜拉普兰德",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_6_11_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "kill",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "kill",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "assault",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": 6,
+      "filter": {
+       "actor": "self",
+       "targetSide": "enemy"
+      },
+      "perEnemyOnce": false
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "chess_item_6_11_e_a",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "kill",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "kill",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "assault",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": 12,
+      "filter": {
+       "actor": "team",
+       "targetSide": "enemy",
+       "tag": "叙拉古"
+      },
+      "perEnemyOnce": true
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_6_18_b"
+ },
+ "chess_char_6_19_a": {
+  "name": "锏",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "agility",
+        "normal": 3,
+        "elite": 6
+       }
+      ]
+     }
+    },
+    {
+     "trigger": "bought",
+     "behavior": "buyGear",
+     "params": {
+      "id": "agility",
+      "start": {
+       "normal": 1,
+       "elite": 2
+      },
+      "step": {
+       "normal": 1,
+       "elite": 2
+      },
+      "max": {
+       "normal": 5,
+       "elite": 10
+      }
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "deploy",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "deploy",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "agility",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 6,
+      "filter": {
+       "actor": "self"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "agility",
+        "normal": 3,
+        "elite": 6
+       }
+      ]
+     }
+    },
+    {
+     "trigger": "bought",
+     "behavior": "buyGear",
+     "params": {
+      "id": "agility",
+      "start": {
+       "normal": 1,
+       "elite": 2
+      },
+      "step": {
+       "normal": 1,
+       "elite": 2
+      },
+      "max": {
+       "normal": 5,
+       "elite": 10
+      }
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "deploy",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "deploy",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "agility",
+        "quantity": 4
+       }
+      ],
+      "maxPerBattle": 12,
+      "filter": {
+       "actor": "self"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_6_19_b"
+ },
+ "chess_char_6_20_a": {
+  "name": "纯烬艾雅法拉",
+  "normal": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "independent:医疗部蓄能电容",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "skillStart",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "skillStart",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "vitality",
+        "quantity": 1
+       }
+      ],
+      "maxPerBattle": 4,
+      "filter": {
+       "actor": "self"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "elite": {
+   "prep": [
+    {
+     "trigger": "gain",
+     "behavior": "grantEquipment",
+     "params": {
+      "outputs": [
+       {
+        "id": "independent:医疗部蓄能电容",
+        "normal": 1,
+        "elite": 2
+       }
+      ]
+     }
+    }
+   ],
+   "combat": [
+    {
+     "trigger": "skillStart",
+     "behavior": "eventProduction",
+     "params": {
+      "counterEvent": "skillStart",
+      "counterEvery": 1,
+      "outputs": [
+       {
+        "id": "vitality",
+        "quantity": 2
+       }
+      ],
+      "maxPerBattle": 8,
+      "filter": {
+       "actor": "self"
+      }
+     }
+    }
+   ],
+   "unsupported": []
+  },
+  "eliteChessId": "chess_char_6_20_b"
+ }
+}

@@ -1,0 +1,3036 @@
+{
+  "schema": "assault-coverage-ranged-elite/v1",
+  "status": "partial",
+  "cards": [
+    "char_430_fartth",
+    "char_4193_lemuen",
+    "char_391_rosmon",
+    "char_1035_wisdel",
+    "char_4117_ray",
+    "char_213_mostma",
+    "char_4027_heyak",
+    "char_4133_logos",
+    "char_2015_dusk",
+    "char_472_pasngr",
+    "char_426_billro",
+    "char_1046_sbell2",
+    "char_1038_whitw2",
+    "char_4146_nymph",
+    "char_1040_blaze2",
+    "char_206_gnosis",
+    "char_291_aglina",
+    "char_358_lisa",
+    "char_1047_halo2",
+    "char_1012_skadi2",
+    "char_4134_cetsyr",
+    "char_4202_haruka",
+    "char_2023_ling",
+    "char_4072_ironmn",
+    "char_245_cello"
+  ],
+  "tokens": [
+    "token_10012_rosmon_shield",
+    "token_10035_wisdel_wward",
+    "token_10034_ray_sndbst",
+    "token_10015_dusk_drgn",
+    "token_10017_skadi2_dedant",
+    "token_10020_ling_soul3",
+    "token_10027_ironmn_pile2",
+    "token_10020_ling_soul1",
+    "token_10020_ling_soul2",
+    "token_10027_ironmn_pile1",
+    "token_10027_ironmn_pile3"
+  ],
+  "cardCoverage": [
+    {
+      "charId": "char_430_fartth",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "modePassive:0",
+        "assaultTalent:char_430_fartth.talent1"
+      ]
+    },
+    {
+      "charId": "char_4193_lemuen",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "modePassive:0",
+        "assaultTalent:char_4193_lemuen.talent1"
+      ]
+    },
+    {
+      "charId": "char_391_rosmon",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "assaultTalent:char_391_rosmon.talent0",
+        "modePassive:0"
+      ]
+    },
+    {
+      "charId": "char_1035_wisdel",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "modePassive:0",
+        "assaultTalent:wisdel_soul_shadow"
+      ],
+      "ammoPool": {
+        "status": "unused-source",
+        "source": "compiled native S3 ammo is not used by the ranged instant-SP fixedSkill"
+      }
+    },
+    {
+      "charId": "char_4117_ray",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "modePassive:0",
+        "assaultTalent:char_4117_ray.talent1"
+      ],
+      "ammoPool": {
+        "status": "implemented",
+        "counter": "unit.trait.ammo",
+        "baseCapacity": 8,
+        "reload": "one round per native attack-cycle interval",
+        "events": "net ammoUsed/reloaded only"
+      }
+    },
+    {
+      "charId": "char_213_mostma",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "modePassive:0",
+        "assaultTalent:char_213_mostma.talent1"
+      ]
+    },
+    {
+      "charId": "char_4027_heyak",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "assaultTalent:char_4027_heyak.talent0",
+        "modePassive:0"
+      ]
+    },
+    {
+      "charId": "char_4133_logos",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "assaultTalent:char_4133_logos.talent0",
+        "modePassive:0"
+      ]
+    },
+    {
+      "charId": "char_2015_dusk",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "modePassive:0",
+        "assaultTalent:char_2015_dusk.talent1"
+      ]
+    },
+    {
+      "charId": "char_472_pasngr",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "modePassive:0",
+        "assaultTalent:char_472_pasngr.talent1"
+      ]
+    },
+    {
+      "charId": "char_426_billro",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "assaultTalent:char_426_billro.talent0",
+        "modePassive:0"
+      ]
+    },
+    {
+      "charId": "char_1046_sbell2",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "modePassive:0",
+        "assaultTalent:char_1046_sbell2.talent1"
+      ]
+    },
+    {
+      "charId": "char_1038_whitw2",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "modePassive:0",
+        "modePassive:1",
+        "none",
+        "none"
+      ]
+    },
+    {
+      "charId": "char_4146_nymph",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "modePassive:0",
+        "modePassive:1"
+      ]
+    },
+    {
+      "charId": "char_1040_blaze2",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "modePassive:0",
+        "assaultTalent:char_1040_blaze2.talent1",
+        "none",
+        "none"
+      ]
+    },
+    {
+      "charId": "char_206_gnosis",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "modePassive:0",
+        "assaultTalent:char_206_gnosis.talent1"
+      ]
+    },
+    {
+      "charId": "char_291_aglina",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "modePassive:0",
+        "modePassive:1"
+      ]
+    },
+    {
+      "charId": "char_358_lisa",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "modePassive:0",
+        "modePassive:1"
+      ]
+    },
+    {
+      "charId": "char_1047_halo2",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "modePassive:0",
+        "modePassive:1"
+      ]
+    },
+    {
+      "charId": "char_1012_skadi2",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "assaultTalent:char_1012_skadi2.talent0",
+        "modePassive:0"
+      ]
+    },
+    {
+      "charId": "char_4134_cetsyr",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "modePassive:0",
+        "assaultTalent:char_4134_cetsyr.talent1"
+      ]
+    },
+    {
+      "charId": "char_4202_haruka",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "modePassive:0",
+        "assaultTalent:char_4202_haruka.talent1"
+      ]
+    },
+    {
+      "charId": "char_2023_ling",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "assaultTalent:ling_carry_cap",
+        "modePassive:0"
+      ]
+    },
+    {
+      "charId": "char_4072_ironmn",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "modePassive:0",
+        "assaultTalent:char_4072_ironmn.talent1"
+      ]
+    },
+    {
+      "charId": "char_245_cello",
+      "status": "complete",
+      "fixedEffects": [],
+      "modePassives": [],
+      "talents": [
+        "modePassive:0",
+        "modePassive:1"
+      ]
+    }
+  ],
+  "modules": [
+    {
+      "charId": "char_430_fartth",
+      "advancedModuleId": "uniequip_002_fartth",
+      "status": "complete",
+      "handler": "rangedElite:char_430_fartth",
+      "effectHandling": "三星解锁：光羽箭倍率+15%，范围外倍率+0.1；四星加强：倍率+15%、范围外+0.1且凝神触发时间缩短至8秒。",
+      "supersededBy": [
+        "assault_mod_char_430_fartth_0",
+        "assault_mod_char_430_fartth_1"
+      ]
+    },
+    {
+      "charId": "char_430_fartth",
+      "advancedModuleId": "uniequip_003_fartth",
+      "status": "complete",
+      "handler": "rangedElite:char_430_fartth",
+      "effectHandling": "三星解锁：凝神增伤+5%；四星加强：凝神+5%且10秒未受击时额外无视目标30%防御。",
+      "supersededBy": [
+        "assault_mod_char_430_fartth_0",
+        "assault_mod_char_430_fartth_1"
+      ]
+    },
+    {
+      "charId": "char_4193_lemuen",
+      "advancedModuleId": "uniequip_002_lemuen",
+      "status": "complete",
+      "handler": "rangedElite:char_4193_lemuen",
+      "effectHandling": "三星解锁：轰炸倍率+15%，锁定目标上限+1；四星加强：倍率+15%、锁定+1且通缉伤害倍率+0.1。",
+      "supersededBy": [
+        "assault_mod_char_4193_lemuen_0",
+        "assault_mod_char_4193_lemuen_1"
+      ]
+    },
+    {
+      "charId": "char_391_rosmon",
+      "advancedModuleId": "uniequip_002_rosmon",
+      "status": "complete",
+      "handler": "rangedElite:char_391_rosmon",
+      "effectHandling": "三星及四星解锁：同次施放法术附伤倍率+0.15攻击力；不改变余震、范围或召唤装备。",
+      "supersededBy": [
+        "assault_mod_char_391_rosmon_0",
+        "assault_mod_char_391_rosmon_1"
+      ]
+    },
+    {
+      "charId": "char_391_rosmon",
+      "advancedModuleId": "uniequip_003_rosmon",
+      "status": "complete",
+      "handler": "rangedElite:char_391_rosmon",
+      "effectHandling": "三星解锁：无视防御额外+40，余震晕眩概率+10%；四星加强：无视防御+40、晕眩概率+10%且余震伤害提升至60%。",
+      "supersededBy": [
+        "assault_mod_char_391_rosmon_0",
+        "assault_mod_char_391_rosmon_1"
+      ]
+    },
+    {
+      "charId": "char_1035_wisdel",
+      "advancedModuleId": "uniequip_002_wisdel",
+      "status": "complete",
+      "handler": "rangedElite:char_1035_wisdel",
+      "effectHandling": "三星解锁：本次施放余震次数+1、每次余震伤害+0.15攻击倍率；四星保留上述效果，并使残影爆炸概率+5%。",
+      "supersededBy": [
+        "assault_mod_char_1035_wisdel_0",
+        "assault_mod_char_1035_wisdel_1"
+      ]
+    },
+    {
+      "charId": "char_4117_ray",
+      "advancedModuleId": "uniequip_002_ray",
+      "status": "complete",
+      "handler": "rangedElite:char_4117_ray",
+      "effectHandling": "本次命中束缚1秒并召唤沙地兽；其原持续20/22/25/28秒延长至25/27/30/33秒，四星区域物理伤害额外提高3%。",
+      "supersededBy": [
+        "assault_mod_char_4117_ray_0",
+        "assault_mod_char_4117_ray_1"
+      ]
+    },
+    {
+      "charId": "char_4117_ray",
+      "advancedModuleId": "uniequip_003_ray",
+      "status": "complete",
+      "handler": "rangedElite:char_4117_ray",
+      "effectHandling": "三星解锁：入神每层攻击+2%，上限+1；四星加强：每层+2%、上限+1且满层时攻速+15。",
+      "supersededBy": [
+        "assault_mod_char_4117_ray_0",
+        "assault_mod_char_4117_ray_1"
+      ]
+    },
+    {
+      "charId": "char_213_mostma",
+      "advancedModuleId": "uniequip_002_mostma",
+      "status": "complete",
+      "handler": "rangedElite:char_213_mostma",
+      "effectHandling": "三星解锁：晕眩持续+1秒，时滞场每秒伤害+15%；四星加强：晕眩+1秒、伤害+15%且时滞场持续+1秒。",
+      "supersededBy": [
+        "assault_mod_char_213_mostma_0",
+        "assault_mod_char_213_mostma_1"
+      ]
+    },
+    {
+      "charId": "char_213_mostma",
+      "advancedModuleId": "uniequip_003_mostma",
+      "status": "complete",
+      "handler": "rangedElite:char_213_mostma",
+      "effectHandling": "三星解锁：术师回技光环+0.1/秒，范围内减速加深至-20%；四星加强：光环+0.1/秒、减速-20%且光环范围扩大1格。",
+      "supersededBy": [
+        "assault_mod_char_213_mostma_0",
+        "assault_mod_char_213_mostma_1"
+      ]
+    },
+    {
+      "charId": "char_4027_heyak",
+      "advancedModuleId": "uniequip_002_heyak",
+      "status": "complete",
+      "handler": "rangedElite:char_4027_heyak",
+      "effectHandling": "本次伤害倍率+0.3，若只命中一名敌人则本次浮空+0.3秒；四星本次目标上限由2名提高至3名。",
+      "supersededBy": [
+        "assault_mod_char_4027_heyak_0",
+        "assault_mod_char_4027_heyak_1"
+      ]
+    },
+    {
+      "charId": "char_4027_heyak",
+      "advancedModuleId": "uniequip_003_heyak",
+      "status": "complete",
+      "handler": "rangedElite:char_4027_heyak",
+      "effectHandling": "三星解锁：失重触发生命阈值提升至90%，额外浮空+0.3秒；四星加强：阈值90%、浮空+0.3秒且失重目标受到伤害+10%。",
+      "supersededBy": [
+        "assault_mod_char_4027_heyak_0",
+        "assault_mod_char_4027_heyak_1"
+      ]
+    },
+    {
+      "charId": "char_4027_heyak",
+      "advancedModuleId": "uniequip_004_heyak",
+      "status": "complete",
+      "handler": "rangedElite:char_4027_heyak",
+      "effectHandling": "三星解锁：对空增伤+10%，空中目标沉默+1秒；四星加强：对空+10%、沉默+1秒且对空攻击额外无视20法抗。",
+      "supersededBy": [
+        "assault_mod_char_4027_heyak_0",
+        "assault_mod_char_4027_heyak_1"
+      ]
+    },
+    {
+      "charId": "char_4133_logos",
+      "advancedModuleId": "uniequip_002_logos",
+      "status": "complete",
+      "handler": "rangedElite:char_4133_logos",
+      "effectHandling": "三星解锁：多目标上限+1，视阈减速持续+1秒；四星加强：目标+1、持续+1秒且剜魂法伤加成+50。",
+      "supersededBy": [
+        "assault_mod_char_4133_logos_0",
+        "assault_mod_char_4133_logos_1"
+      ]
+    },
+    {
+      "charId": "char_4133_logos",
+      "advancedModuleId": "uniequip_003_logos",
+      "status": "complete",
+      "handler": "rangedElite:char_4133_logos",
+      "effectHandling": "三星解锁：语汇演化概率+10%，额外伤害+10%；四星加强：概率+10%、伤害+10%且额外攻击改为命中至多2个随机目标。",
+      "supersededBy": [
+        "assault_mod_char_4133_logos_0",
+        "assault_mod_char_4133_logos_1"
+      ]
+    },
+    {
+      "charId": "char_2015_dusk",
+      "advancedModuleId": "uniequip_002_dusk",
+      "status": "complete",
+      "handler": "rangedElite:char_2015_dusk",
+      "effectHandling": "本次写意胜形伤害倍率+0.15；首次普通攻击召唤的小自在持续+5秒，四星首次召唤数量为2。",
+      "supersededBy": [
+        "assault_mod_char_2015_dusk_0",
+        "assault_mod_char_2015_dusk_1"
+      ]
+    },
+    {
+      "charId": "char_2015_dusk",
+      "advancedModuleId": "uniequip_003_dusk",
+      "status": "complete",
+      "handler": "rangedElite:char_2015_dusk",
+      "effectHandling": "三星解锁：化境每层+0.5%，上限+3；四星加强：每层+0.5%、上限+3且满层时法术伤害+10%。",
+      "supersededBy": [
+        "assault_mod_char_2015_dusk_0",
+        "assault_mod_char_2015_dusk_1"
+      ]
+    },
+    {
+      "charId": "char_2015_dusk",
+      "advancedModuleId": "uniequip_004_dusk",
+      "status": "complete",
+      "handler": "rangedElite:char_2015_dusk",
+      "effectHandling": "三星解锁：小自在攻击力+15%且死亡时对周围八邻造成一次范围法术伤害；四星加强：攻击+15%、死亡爆炸伤害+15%且持续+5秒。",
+      "supersededBy": [
+        "assault_mod_char_2015_dusk_0",
+        "assault_mod_char_2015_dusk_1"
+      ]
+    },
+    {
+      "charId": "char_472_pasngr",
+      "advancedModuleId": "uniequip_002_pasngr",
+      "status": "complete",
+      "handler": "rangedElite:char_472_pasngr",
+      "effectHandling": "三星解锁：雷暴每跳倍率+15%，连锁目标+1；四星加强：倍率+15%、连锁+1且雷暴持续+1秒。",
+      "supersededBy": [
+        "assault_mod_char_472_pasngr_0",
+        "assault_mod_char_472_pasngr_1"
+      ]
+    },
+    {
+      "charId": "char_472_pasngr",
+      "advancedModuleId": "uniequip_003_pasngr",
+      "status": "complete",
+      "handler": "rangedElite:char_472_pasngr",
+      "effectHandling": "三星解锁：高生命增伤+5%，持续+1秒；四星加强：增伤+5%、持续+1秒且四邻无敌人加攻+2%。",
+      "supersededBy": [
+        "assault_mod_char_472_pasngr_0",
+        "assault_mod_char_472_pasngr_1"
+      ]
+    },
+    {
+      "charId": "char_472_pasngr",
+      "advancedModuleId": "uniequip_004_pasngr",
+      "status": "complete",
+      "handler": "rangedElite:char_472_pasngr",
+      "effectHandling": "三星解锁：连锁跳跃伤害衰减由15%降至10%；四星加强：衰减降至10%且连锁目标+1。",
+      "supersededBy": [
+        "assault_mod_char_472_pasngr_0",
+        "assault_mod_char_472_pasngr_1"
+      ]
+    },
+    {
+      "charId": "char_426_billro",
+      "advancedModuleId": "uniequip_002_billro",
+      "status": "complete",
+      "handler": "rangedElite:char_426_billro",
+      "effectHandling": "三星解锁：回血比例+10%，停顿深度+0.1；四星加强：回血+10%、停顿+0.1且防御加成+15%。",
+      "supersededBy": [
+        "assault_mod_char_426_billro_0",
+        "assault_mod_char_426_billro_1"
+      ]
+    },
+    {
+      "charId": "char_426_billro",
+      "advancedModuleId": "uniequip_003_billro",
+      "status": "complete",
+      "handler": "rangedElite:char_426_billro",
+      "effectHandling": "三星解锁：超上限回技+0.2/秒；四星加强：超上限回技+0.2/秒且超上限时受到伤害-10%。",
+      "supersededBy": [
+        "assault_mod_char_426_billro_0",
+        "assault_mod_char_426_billro_1"
+      ]
+    },
+    {
+      "charId": "char_1046_sbell2",
+      "advancedModuleId": "uniequip_002_sbell2",
+      "status": "complete",
+      "handler": "rangedElite:char_1046_sbell2",
+      "effectHandling": "三星解锁：积雪上限+1层、同次施放寒冷+0.5秒；四星加强：积雪上限+1层、寒冷+0.5秒且本次推力等级+1，不施加持续吸引。",
+      "supersededBy": [
+        "assault_mod_char_1046_sbell2_0",
+        "assault_mod_char_1046_sbell2_1"
+      ]
+    },
+    {
+      "charId": "char_1038_whitw2",
+      "advancedModuleId": "uniequip_002_whitw2",
+      "status": "complete",
+      "handler": "rangedElite:char_1038_whitw2",
+      "effectHandling": "三星解锁：本次施放狼影数量+1、恐惧持续+0.5秒；四星另使每次法术伤害倍率+0.15。每只狼影至多命中2名敌人；没有追踪窗口或后续持续伤害。",
+      "supersededBy": [
+        "assault_mod_char_1038_whitw2_0",
+        "assault_mod_char_1038_whitw2_1"
+      ]
+    },
+    {
+      "charId": "char_4146_nymph",
+      "advancedModuleId": "uniequip_002_nymph",
+      "status": "complete",
+      "handler": "rangedElite:char_4146_nymph",
+      "effectHandling": "三星解锁：震爆倍率+15%，凋亡比例+3%；四星加强：倍率+15%、凋亡+3%且积存上限+1。",
+      "supersededBy": [
+        "assault_mod_char_4146_nymph_0",
+        "assault_mod_char_4146_nymph_1"
+      ]
+    },
+    {
+      "charId": "char_4146_nymph",
+      "advancedModuleId": "uniequip_003_nymph",
+      "status": "complete",
+      "handler": "rangedElite:char_4146_nymph",
+      "effectHandling": "三星解锁：失魂每秒元素伤害+5%，持续上限+1秒；四星加强：元素伤害+5%、持续+1秒且爆发期间敌人法抗-10。",
+      "supersededBy": [
+        "assault_mod_char_4146_nymph_0",
+        "assault_mod_char_4146_nymph_1"
+      ]
+    },
+    {
+      "charId": "char_1040_blaze2",
+      "advancedModuleId": "uniequip_002_blaze2",
+      "status": "complete",
+      "handler": "rangedElite:char_1040_blaze2",
+      "effectHandling": "本次授予友方的灼燃支援持续+3秒且元素伤害比例+0.3；四星支援每次灼燃伤害再提高10%。",
+      "supersededBy": [
+        "assault_mod_char_1040_blaze2_0",
+        "assault_mod_char_1040_blaze2_1"
+      ]
+    },
+    {
+      "charId": "char_1040_blaze2",
+      "advancedModuleId": "uniequip_003_blaze2",
+      "status": "complete",
+      "handler": "rangedElite:char_1040_blaze2",
+      "effectHandling": "三星解锁：倒地回血速度+1%/秒，复活晕眩+1秒；四星加强：回血+1%/秒、晕眩+1秒且复活时获得20%攻击加成持续10秒。",
+      "supersededBy": [
+        "assault_mod_char_1040_blaze2_0",
+        "assault_mod_char_1040_blaze2_1"
+      ]
+    },
+    {
+      "charId": "char_206_gnosis",
+      "advancedModuleId": "uniequip_002_gnosis",
+      "status": "complete",
+      "handler": "rangedElite:char_206_gnosis",
+      "effectHandling": "三星解锁：零度爆发寒冷持续+0.5秒，追加寒层+1层；四星加强：寒冷+0.5秒、追加+1层且对冻结目标伤害+15%。",
+      "supersededBy": [
+        "assault_mod_char_206_gnosis_0",
+        "assault_mod_char_206_gnosis_1"
+      ]
+    },
+    {
+      "charId": "char_206_gnosis",
+      "advancedModuleId": "uniequip_003_gnosis",
+      "status": "complete",
+      "handler": "rangedElite:char_206_gnosis",
+      "effectHandling": "三星解锁：寒冷脆弱+3%，冻结脆弱倍率提升至2.2倍；四星加强：脆弱+3%、倍率2.2且范围扩大1格。",
+      "supersededBy": [
+        "assault_mod_char_206_gnosis_0",
+        "assault_mod_char_206_gnosis_1"
+      ]
+    },
+    {
+      "charId": "char_206_gnosis",
+      "advancedModuleId": "uniequip_004_gnosis",
+      "status": "complete",
+      "handler": "rangedElite:char_206_gnosis",
+      "effectHandling": "三星解锁：前方友军每次冰控攻击加成+1%；四星加强：每次+1%且前方一格改为前方横排全体友军。",
+      "supersededBy": [
+        "assault_mod_char_206_gnosis_0",
+        "assault_mod_char_206_gnosis_1"
+      ]
+    },
+    {
+      "charId": "char_291_aglina",
+      "advancedModuleId": "uniequip_002_aglina",
+      "status": "complete",
+      "handler": "rangedElite:char_291_aglina",
+      "effectHandling": "三星解锁：失重持续+2秒，多目标伤害+15%；四星加强：失重+2秒、伤害+15%且目标上限+1。",
+      "supersededBy": [
+        "assault_mod_char_291_aglina_0",
+        "assault_mod_char_291_aglina_1"
+      ]
+    },
+    {
+      "charId": "char_291_aglina",
+      "advancedModuleId": "uniequip_003_aglina",
+      "status": "complete",
+      "handler": "rangedElite:char_291_aglina",
+      "effectHandling": "三星解锁：全场攻速+2；四星加强：攻速+2且技能间隙回血+10/秒。",
+      "supersededBy": [
+        "assault_mod_char_291_aglina_0",
+        "assault_mod_char_291_aglina_1"
+      ]
+    },
+    {
+      "charId": "char_291_aglina",
+      "advancedModuleId": "uniequip_004_aglina",
+      "status": "complete",
+      "handler": "rangedElite:char_291_aglina",
+      "effectHandling": "三星解锁：对失重目标伤害+15%；四星加强：对失重目标+15%且失重敌人被攻击时短暂停顿0.5秒。",
+      "supersededBy": [
+        "assault_mod_char_291_aglina_0",
+        "assault_mod_char_291_aglina_1"
+      ]
+    },
+    {
+      "charId": "char_358_lisa",
+      "advancedModuleId": "uniequip_002_lisa",
+      "status": "complete",
+      "handler": "rangedElite:char_358_lisa",
+      "effectHandling": "三星解锁：领域持续+2秒，每秒治疗+3%；四星加强：领域+2秒、治疗+3%且领域范围再扩大1格。",
+      "supersededBy": [
+        "assault_mod_char_358_lisa_0",
+        "assault_mod_char_358_lisa_1"
+      ]
+    },
+    {
+      "charId": "char_358_lisa",
+      "advancedModuleId": "uniequip_003_lisa",
+      "status": "complete",
+      "handler": "rangedElite:char_358_lisa",
+      "effectHandling": "三星解锁：停顿脆弱+3%，辅助回技+0.1/秒；四星加强：脆弱+3%、回技+0.1/秒且停顿深度+0.1。",
+      "supersededBy": [
+        "assault_mod_char_358_lisa_0",
+        "assault_mod_char_358_lisa_1"
+      ]
+    },
+    {
+      "charId": "char_1047_halo2",
+      "advancedModuleId": "uniequip_002_halo2",
+      "status": "complete",
+      "handler": "rangedElite:char_1047_halo2",
+      "effectHandling": "三星解锁：本次锚点邻域目标上限+1、法伤倍率+0.03；四星保留这两项并使成功停顿的攻速叠层上限+3。",
+      "supersededBy": [
+        "assault_mod_char_1047_halo2_0",
+        "assault_mod_char_1047_halo2_1"
+      ]
+    },
+    {
+      "charId": "char_1012_skadi2",
+      "advancedModuleId": "uniequip_002_skadi2",
+      "status": "complete",
+      "handler": "rangedElite:char_1012_skadi2",
+      "effectHandling": "三星解锁：领域持续+3秒，每秒真伤+5%；四星加强：持续+3秒、真伤+5%且鼓舞+10%。",
+      "supersededBy": [
+        "assault_mod_char_1012_skadi2_0",
+        "assault_mod_char_1012_skadi2_1"
+      ]
+    },
+    {
+      "charId": "char_1012_skadi2",
+      "advancedModuleId": "uniequip_003_skadi2",
+      "status": "complete",
+      "handler": "rangedElite:char_1012_skadi2",
+      "effectHandling": "三星解锁：海嗣持续+5秒，捕食习性加成+3%；四星加强：海嗣+5秒、加成+3%且海嗣攻击范围内敌人受伤+10%。",
+      "supersededBy": [
+        "assault_mod_char_1012_skadi2_0",
+        "assault_mod_char_1012_skadi2_1"
+      ]
+    },
+    {
+      "charId": "char_4134_cetsyr",
+      "advancedModuleId": "uniequip_002_cetsyr",
+      "status": "complete",
+      "handler": "rangedElite:char_4134_cetsyr",
+      "effectHandling": "三星解锁：外扩持续+3秒，微尘撞击倍率+0.3；四星加强：持续+3秒、撞击+0.3且微尘上限+2。",
+      "supersededBy": [
+        "assault_mod_char_4134_cetsyr_0",
+        "assault_mod_char_4134_cetsyr_1"
+      ]
+    },
+    {
+      "charId": "char_4202_haruka",
+      "advancedModuleId": "uniequip_002_haruka",
+      "status": "complete",
+      "handler": "rangedElite:char_4202_haruka",
+      "effectHandling": "三星解锁：浮泡庇护+5%，游鳞反击每秒伤害+5%；四星加强：庇护+5%、反击+5%且破泡治疗提升至35%攻击力。",
+      "supersededBy": [
+        "assault_mod_char_4202_haruka_0",
+        "assault_mod_char_4202_haruka_1"
+      ]
+    },
+    {
+      "charId": "char_2023_ling",
+      "advancedModuleId": "uniequip_002_ling",
+      "status": "complete",
+      "handler": "rangedElite:char_2023_ling",
+      "effectHandling": "三星解锁：召唤物携带上限+1，大龙属性倍率提升至2.0；四星加强：携带+1、大龙2.0倍且合并后范围伤害+0.05。",
+      "supersededBy": [
+        "assault_mod_char_2023_ling_0",
+        "assault_mod_char_2023_ling_1"
+      ]
+    },
+    {
+      "charId": "char_4072_ironmn",
+      "advancedModuleId": "uniequip_002_ironmn",
+      "status": "complete",
+      "handler": "rangedElite:char_4072_ironmn",
+      "effectHandling": "三星解锁：本次物理倍率+0.15并额外授予1点技力；四星加强：本次物理倍率+0.15，且本次装置修复比例再+0.10。",
+      "supersededBy": [
+        "assault_mod_char_4072_ironmn_0",
+        "assault_mod_char_4072_ironmn_1"
+      ]
+    },
+    {
+      "charId": "char_4072_ironmn",
+      "advancedModuleId": "uniequip_003_ironmn",
+      "status": "complete",
+      "handler": "rangedElite:char_4072_ironmn",
+      "effectHandling": "三星解锁：装置场上上限+1，损毁回收率由70%升至80%；四星加强：保留上述效果且仅在实际回收grant成功时额外回复1点技力。",
+      "supersededBy": [
+        "assault_mod_char_4072_ironmn_0",
+        "assault_mod_char_4072_ironmn_1"
+      ]
+    },
+    {
+      "charId": "char_245_cello",
+      "advancedModuleId": "uniequip_002_cello",
+      "status": "complete",
+      "handler": "rangedElite:char_245_cello",
+      "effectHandling": "三星解锁：技能凋亡比例+5%，积存上限+1；四星加强：凋亡+5%、积存+1且范围每秒凋亡+2%。",
+      "supersededBy": [
+        "assault_mod_char_245_cello_0",
+        "assault_mod_char_245_cello_1"
+      ]
+    },
+    {
+      "charId": "char_245_cello",
+      "advancedModuleId": "uniequip_003_cello",
+      "status": "complete",
+      "handler": "rangedElite:char_245_cello",
+      "effectHandling": "三星解锁：凋亡增幅+5%；四星加强：增幅+5%且范围凋亡停顿延长至0.3秒。",
+      "supersededBy": [
+        "assault_mod_char_245_cello_0",
+        "assault_mod_char_245_cello_1"
+      ]
+    }
+  ],
+  "moduleAudit": [
+    {
+      "charId": "char_430_fartth",
+      "moduleId": "uniequip_002_fartth",
+      "effectHandling": "三星解锁：光羽箭倍率+15%，范围外倍率+0.1；四星加强：倍率+15%、范围外+0.1且凝神触发时间缩短至8秒。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Fartooth module compares feather-arrow scale, out-of-range multiplier, and four-star focus delay",
+        "effects": [
+          {
+            "effect": "光羽箭倍率+0.15",
+            "status": "complete",
+            "testName": "Fartooth module compares feather-arrow scale, out-of-range multiplier, and four-star focus delay"
+          },
+          {
+            "effect": "范围外倍率+0.1",
+            "status": "complete",
+            "testName": "Fartooth module compares feather-arrow scale, out-of-range multiplier, and four-star focus delay"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Fartooth module compares feather-arrow scale, out-of-range multiplier, and four-star focus delay",
+        "effects": [
+          {
+            "effect": "光羽箭倍率+0.15",
+            "status": "complete",
+            "testName": "Fartooth module compares feather-arrow scale, out-of-range multiplier, and four-star focus delay"
+          },
+          {
+            "effect": "范围外倍率+0.1",
+            "status": "complete",
+            "testName": "Fartooth module compares feather-arrow scale, out-of-range multiplier, and four-star focus delay"
+          },
+          {
+            "effect": "凝神触发缩短至8秒",
+            "status": "complete",
+            "testName": "Fartooth module compares feather-arrow scale, out-of-range multiplier, and four-star focus delay"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_430_fartth_0",
+        "assault_mod_char_430_fartth_1"
+      ]
+    },
+    {
+      "charId": "char_430_fartth",
+      "moduleId": "uniequip_003_fartth",
+      "effectHandling": "三星解锁：凝神增伤+5%；四星加强：凝神+5%且10秒未受击时额外无视目标30%防御。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Fartooth focus module compares source attack bonus and four-star DEF ignore only after the quiet interval",
+        "effects": [
+          {
+            "effect": "凝神攻击倍率+0.05",
+            "status": "complete",
+            "testName": "Fartooth focus module compares source attack bonus and four-star DEF ignore only after the quiet interval"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Fartooth focus module compares source attack bonus and four-star DEF ignore only after the quiet interval",
+        "effects": [
+          {
+            "effect": "凝神攻击倍率+0.05",
+            "status": "complete",
+            "testName": "Fartooth focus module compares source attack bonus and four-star DEF ignore only after the quiet interval"
+          },
+          {
+            "effect": "安静10秒时无视目标30%防御",
+            "status": "complete",
+            "testName": "Fartooth focus module compares source attack bonus and four-star DEF ignore only after the quiet interval"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_430_fartth_0",
+        "assault_mod_char_430_fartth_1"
+      ]
+    },
+    {
+      "charId": "char_4193_lemuen",
+      "moduleId": "uniequip_002_lemuen",
+      "effectHandling": "三星解锁：轰炸倍率+15%，锁定目标上限+1；四星加强：倍率+15%、锁定+1且通缉伤害倍率+0.1。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Lemuen module compares bombing scale, lock count, and four-star wanted multiplier to its baseline",
+        "effects": [
+          {
+            "effect": "轰炸倍率+0.15",
+            "status": "complete",
+            "testName": "Lemuen module compares bombing scale, lock count, and four-star wanted multiplier to its baseline"
+          },
+          {
+            "effect": "锁定目标上限+1",
+            "status": "complete",
+            "testName": "Lemuen module compares bombing scale, lock count, and four-star wanted multiplier to its baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Lemuen module compares bombing scale, lock count, and four-star wanted multiplier to its baseline",
+        "effects": [
+          {
+            "effect": "轰炸倍率+0.15",
+            "status": "complete",
+            "testName": "Lemuen module compares bombing scale, lock count, and four-star wanted multiplier to its baseline"
+          },
+          {
+            "effect": "锁定目标上限+1",
+            "status": "complete",
+            "testName": "Lemuen module compares bombing scale, lock count, and four-star wanted multiplier to its baseline"
+          },
+          {
+            "effect": "通缉目标伤害倍率额外+0.1",
+            "status": "complete",
+            "testName": "Lemuen module compares bombing scale, lock count, and four-star wanted multiplier to its baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4193_lemuen_0",
+        "assault_mod_char_4193_lemuen_1"
+      ]
+    },
+    {
+      "charId": "char_391_rosmon",
+      "moduleId": "uniequip_002_rosmon",
+      "effectHandling": "三星及四星解锁：同次施放法术附伤倍率+0.15攻击力；不改变余震、范围或召唤装备。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Rosmontis module compares the real blocked impact, summon cap, and four-star landing stun",
+        "effects": [
+          {
+            "effect": "阻挡冲击倍率+0.15",
+            "status": "complete",
+            "testName": "Rosmontis module compares the real blocked impact, summon cap, and four-star landing stun"
+          },
+          {
+            "effect": "装备上限+1",
+            "status": "complete",
+            "testName": "Rosmontis module compares the real blocked impact, summon cap, and four-star landing stun"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Rosmontis module compares the real blocked impact, summon cap, and four-star landing stun",
+        "effects": [
+          {
+            "effect": "阻挡冲击倍率+0.15",
+            "status": "complete",
+            "testName": "Rosmontis module compares the real blocked impact, summon cap, and four-star landing stun"
+          },
+          {
+            "effect": "装备上限+1",
+            "status": "complete",
+            "testName": "Rosmontis module compares the real blocked impact, summon cap, and four-star landing stun"
+          },
+          {
+            "effect": "四星装备落地晕眩+0.5秒",
+            "status": "complete",
+            "testName": "Rosmontis module compares the real blocked impact, summon cap, and four-star landing stun"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_391_rosmon_0",
+        "assault_mod_char_391_rosmon_1"
+      ]
+    },
+    {
+      "charId": "char_391_rosmon",
+      "moduleId": "uniequip_003_rosmon",
+      "effectHandling": "三星解锁：无视防御额外+40，余震晕眩概率+10%；四星加强：无视防御+40、晕眩概率+10%且余震伤害提升至60%。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Rosmontis aftershock module compares DEF reduction, stun chance, and star-four damage scale",
+        "effects": [
+          {
+            "effect": "余震额外无视防御+40",
+            "status": "complete",
+            "testName": "Rosmontis aftershock module compares DEF reduction, stun chance, and star-four damage scale"
+          },
+          {
+            "effect": "余震晕眩概率+10%",
+            "status": "complete",
+            "testName": "Rosmontis aftershock module compares DEF reduction, stun chance, and star-four damage scale"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Rosmontis aftershock module compares DEF reduction, stun chance, and star-four damage scale",
+        "effects": [
+          {
+            "effect": "余震额外无视防御+40",
+            "status": "complete",
+            "testName": "Rosmontis aftershock module compares DEF reduction, stun chance, and star-four damage scale"
+          },
+          {
+            "effect": "余震晕眩概率+10%",
+            "status": "complete",
+            "testName": "Rosmontis aftershock module compares DEF reduction, stun chance, and star-four damage scale"
+          },
+          {
+            "effect": "余震倍率提升至0.6",
+            "status": "complete",
+            "testName": "Rosmontis aftershock module compares DEF reduction, stun chance, and star-four damage scale"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_391_rosmon_0",
+        "assault_mod_char_391_rosmon_1"
+      ]
+    },
+    {
+      "charId": "char_1035_wisdel",
+      "moduleId": "uniequip_002_wisdel",
+      "effectHandling": "三星解锁：本次施放余震次数+1、每次余震伤害+0.15攻击倍率；四星保留上述效果，并使残影爆炸概率+5%。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Wisadel advanced stars compare impact, remnant stock, and star-four proc chance to source baselines",
+        "reason": "actual Battle impact amounts, ledger caps and deterministic probability boundary compared with the same-star baseline",
+        "effects": [
+          {
+            "effect": "skill impact +0.15 over rank baseline",
+            "status": "complete",
+            "testName": "Wisadel advanced stars compare impact, remnant stock, and star-four proc chance to source baselines"
+          },
+          {
+            "effect": "owned soul stock cap +1",
+            "status": "complete",
+            "testName": "Wisadel advanced stars compare impact, remnant stock, and star-four proc chance to source baselines"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Wisadel advanced stars compare impact, remnant stock, and star-four proc chance to source baselines",
+        "reason": "actual Battle impact amounts, ledger caps and deterministic probability boundary compared with the same-star baseline",
+        "effects": [
+          {
+            "effect": "skill impact +0.30 cumulative over rank baseline",
+            "status": "complete",
+            "testName": "Wisadel advanced stars compare impact, remnant stock, and star-four proc chance to source baselines"
+          },
+          {
+            "effect": "owned soul stock cap +1",
+            "status": "complete",
+            "testName": "Wisadel advanced stars compare impact, remnant stock, and star-four proc chance to source baselines"
+          },
+          {
+            "effect": "remnant detonation chance +0.05",
+            "status": "complete",
+            "testName": "Wisadel advanced stars compare impact, remnant stock, and star-four proc chance to source baselines"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_1035_wisdel_0",
+        "assault_mod_char_1035_wisdel_1"
+      ]
+    },
+    {
+      "charId": "char_4117_ray",
+      "moduleId": "uniequip_002_ray",
+      "effectHandling": "本次命中束缚1秒并召唤沙地兽；其原持续20/22/25/28秒延长至25/27/30/33秒，四星区域物理伤害额外提高3%。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Ray advanced modules compare beast duration, bind time, and scouting vulnerability against rank baselines",
+        "reason": "source summon duration, target bind and live scout debuff are compared at each advanced star against rank baselines",
+        "effects": [
+          {
+            "effect": "sandbeast duration +5s",
+            "status": "complete",
+            "testName": "Ray advanced modules compare beast duration, bind time, and scouting vulnerability against rank baselines"
+          },
+          {
+            "effect": "skill bind duration +1s",
+            "status": "complete",
+            "testName": "Ray advanced modules compare beast duration, bind time, and scouting vulnerability against rank baselines"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Ray advanced modules compare beast duration, bind time, and scouting vulnerability against rank baselines",
+        "reason": "source summon duration, target bind and live scout debuff are compared at each advanced star against rank baselines",
+        "effects": [
+          {
+            "effect": "sandbeast duration +10s",
+            "status": "complete",
+            "testName": "Ray advanced modules compare beast duration, bind time, and scouting vulnerability against rank baselines"
+          },
+          {
+            "effect": "skill bind duration +2s",
+            "status": "complete",
+            "testName": "Ray advanced modules compare beast duration, bind time, and scouting vulnerability against rank baselines"
+          },
+          {
+            "effect": "scouting damage-taken vulnerability +0.03",
+            "status": "complete",
+            "testName": "Ray advanced modules compare beast duration, bind time, and scouting vulnerability against rank baselines"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4117_ray_0",
+        "assault_mod_char_4117_ray_1"
+      ]
+    },
+    {
+      "charId": "char_4117_ray",
+      "moduleId": "uniequip_003_ray",
+      "effectHandling": "三星解锁：入神每层攻击+2%，上限+1；四星加强：每层+2%、上限+1且满层时攻速+15。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Ray focus module compares per-stack attack, stack cap, and star-four full-stack ASPD",
+        "effects": [
+          {
+            "effect": "每层攻击+2%",
+            "status": "complete",
+            "testName": "Ray focus module compares per-stack attack, stack cap, and star-four full-stack ASPD"
+          },
+          {
+            "effect": "上限+1",
+            "status": "complete",
+            "testName": "Ray focus module compares per-stack attack, stack cap, and star-four full-stack ASPD"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Ray focus module compares per-stack attack, stack cap, and star-four full-stack ASPD",
+        "effects": [
+          {
+            "effect": "每层攻击+2%",
+            "status": "complete",
+            "testName": "Ray focus module compares per-stack attack, stack cap, and star-four full-stack ASPD"
+          },
+          {
+            "effect": "上限+1",
+            "status": "complete",
+            "testName": "Ray focus module compares per-stack attack, stack cap, and star-four full-stack ASPD"
+          },
+          {
+            "effect": "满层攻速+15",
+            "status": "complete",
+            "testName": "Ray focus module compares per-stack attack, stack cap, and star-four full-stack ASPD"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4117_ray_0",
+        "assault_mod_char_4117_ray_1"
+      ]
+    },
+    {
+      "charId": "char_213_mostma",
+      "moduleId": "uniequip_002_mostma",
+      "effectHandling": "三星解锁：晕眩持续+1秒，时滞场每秒伤害+15%；四星加强：晕眩+1秒、伤害+15%且时滞场持续+1秒。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Mostima module compares stun duration, per-second field damage, and four-star field lifetime",
+        "effects": [
+          {
+            "effect": "晕眩持续+1秒",
+            "status": "complete",
+            "testName": "Mostima module compares stun duration, per-second field damage, and four-star field lifetime"
+          },
+          {
+            "effect": "时滞场每秒伤害倍率+0.15",
+            "status": "complete",
+            "testName": "Mostima module compares stun duration, per-second field damage, and four-star field lifetime"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Mostima module compares stun duration, per-second field damage, and four-star field lifetime",
+        "effects": [
+          {
+            "effect": "晕眩持续+1秒",
+            "status": "complete",
+            "testName": "Mostima module compares stun duration, per-second field damage, and four-star field lifetime"
+          },
+          {
+            "effect": "时滞场每秒伤害倍率+0.15",
+            "status": "complete",
+            "testName": "Mostima module compares stun duration, per-second field damage, and four-star field lifetime"
+          },
+          {
+            "effect": "时滞场持续+1秒",
+            "status": "complete",
+            "testName": "Mostima module compares stun duration, per-second field damage, and four-star field lifetime"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_213_mostma_0",
+        "assault_mod_char_213_mostma_1"
+      ]
+    },
+    {
+      "charId": "char_213_mostma",
+      "moduleId": "uniequip_003_mostma",
+      "effectHandling": "三星解锁：术师回技光环+0.1/秒，范围内减速加深至-20%；四星加强：光环+0.1/秒、减速-20%且光环范围扩大1格。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Mostima aura module compares caster recovery, source slow value, and four-star range extension",
+        "effects": [
+          {
+            "effect": "术师自然回技+0.1/秒",
+            "status": "complete",
+            "testName": "Mostima aura module compares caster recovery, source slow value, and four-star range extension"
+          },
+          {
+            "effect": "减速加深至20%",
+            "status": "complete",
+            "testName": "Mostima aura module compares caster recovery, source slow value, and four-star range extension"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Mostima aura module compares caster recovery, source slow value, and four-star range extension",
+        "effects": [
+          {
+            "effect": "术师自然回技+0.1/秒",
+            "status": "complete",
+            "testName": "Mostima aura module compares caster recovery, source slow value, and four-star range extension"
+          },
+          {
+            "effect": "减速加深至20%",
+            "status": "complete",
+            "testName": "Mostima aura module compares caster recovery, source slow value, and four-star range extension"
+          },
+          {
+            "effect": "攻击范围扩大1格",
+            "status": "complete",
+            "testName": "Mostima aura module compares caster recovery, source slow value, and four-star range extension"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_213_mostma_0",
+        "assault_mod_char_213_mostma_1"
+      ]
+    },
+    {
+      "charId": "char_4027_heyak",
+      "moduleId": "uniequip_002_heyak",
+      "effectHandling": "本次伤害倍率+0.3，若只命中一名敌人则本次浮空+0.3秒；四星本次目标上限由2名提高至3名。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Heyak wind module compares maximum scale, levitation time, and its four-star shorter line",
+        "effects": [
+          {
+            "effect": "最大倍率+0.3",
+            "status": "complete",
+            "testName": "Heyak wind module compares maximum scale, levitation time, and its four-star shorter line"
+          },
+          {
+            "effect": "浮空持续+0.3秒",
+            "status": "complete",
+            "testName": "Heyak wind module compares maximum scale, levitation time, and its four-star shorter line"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Heyak wind module compares maximum scale, levitation time, and its four-star shorter line",
+        "effects": [
+          {
+            "effect": "最大倍率+0.3",
+            "status": "complete",
+            "testName": "Heyak wind module compares maximum scale, levitation time, and its four-star shorter line"
+          },
+          {
+            "effect": "浮空持续+0.3秒",
+            "status": "complete",
+            "testName": "Heyak wind module compares maximum scale, levitation time, and its four-star shorter line"
+          },
+          {
+            "effect": "最大距离缩短至2格",
+            "status": "complete",
+            "testName": "Heyak wind module compares maximum scale, levitation time, and its four-star shorter line"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4027_heyak_0",
+        "assault_mod_char_4027_heyak_1"
+      ]
+    },
+    {
+      "charId": "char_4027_heyak",
+      "moduleId": "uniequip_003_heyak",
+      "effectHandling": "三星解锁：失重触发生命阈值提升至90%，额外浮空+0.3秒；四星加强：阈值90%、浮空+0.3秒且失重目标受到伤害+10%。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Heyak weightless module compares the 90% gate, added levitation time, and star-four damage",
+        "effects": [
+          {
+            "effect": "失重触发生命阈值90%",
+            "status": "complete",
+            "testName": "Heyak weightless module compares the 90% gate, added levitation time, and star-four damage"
+          },
+          {
+            "effect": "额外浮空+0.3秒",
+            "status": "complete",
+            "testName": "Heyak weightless module compares the 90% gate, added levitation time, and star-four damage"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Heyak weightless module compares the 90% gate, added levitation time, and star-four damage",
+        "effects": [
+          {
+            "effect": "失重触发生命阈值90%",
+            "status": "complete",
+            "testName": "Heyak weightless module compares the 90% gate, added levitation time, and star-four damage"
+          },
+          {
+            "effect": "额外浮空+0.3秒",
+            "status": "complete",
+            "testName": "Heyak weightless module compares the 90% gate, added levitation time, and star-four damage"
+          },
+          {
+            "effect": "失重目标伤害+10%",
+            "status": "complete",
+            "testName": "Heyak weightless module compares the 90% gate, added levitation time, and star-four damage"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4027_heyak_0",
+        "assault_mod_char_4027_heyak_1"
+      ]
+    },
+    {
+      "charId": "char_4027_heyak",
+      "moduleId": "uniequip_004_heyak",
+      "effectHandling": "三星解锁：对空增伤+10%，空中目标沉默+1秒；四星加强：对空+10%、沉默+1秒且对空攻击额外无视20法抗。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Heyak anti-air module compares damage, silence, and four-star RES ignore in Battle",
+        "effects": [
+          {
+            "effect": "对空增伤+10%",
+            "status": "complete",
+            "testName": "Heyak anti-air module compares damage, silence, and four-star RES ignore in Battle"
+          },
+          {
+            "effect": "空中目标沉默+1秒",
+            "status": "complete",
+            "testName": "Heyak anti-air module compares damage, silence, and four-star RES ignore in Battle"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Heyak anti-air module compares damage, silence, and four-star RES ignore in Battle",
+        "effects": [
+          {
+            "effect": "对空增伤+10%",
+            "status": "complete",
+            "testName": "Heyak anti-air module compares damage, silence, and four-star RES ignore in Battle"
+          },
+          {
+            "effect": "空中目标沉默+1秒",
+            "status": "complete",
+            "testName": "Heyak anti-air module compares damage, silence, and four-star RES ignore in Battle"
+          },
+          {
+            "effect": "对空攻击无视20%法抗",
+            "status": "complete",
+            "testName": "Heyak anti-air module compares damage, silence, and four-star RES ignore in Battle"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4027_heyak_0",
+        "assault_mod_char_4027_heyak_1"
+      ]
+    },
+    {
+      "charId": "char_4133_logos",
+      "moduleId": "uniequip_002_logos",
+      "effectHandling": "三星解锁：多目标上限+1，视阈减速持续+1秒；四星加强：目标+1、持续+1秒且剜魂法伤加成+50。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Logos advanced star-three/four module compares target cap and slow duration to rank baselines",
+        "effects": [
+          {
+            "effect": "多目标上限+1",
+            "status": "complete",
+            "testName": "Logos advanced star-three/four module compares target cap and slow duration to rank baselines"
+          },
+          {
+            "effect": "视阈减速持续+1秒",
+            "status": "complete",
+            "testName": "Logos advanced star-three/four module compares target cap and slow duration to rank baselines"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Logos advanced star-three/four module compares target cap and slow duration to rank baselines; Logos module adds soul-rend arts damage only at star four",
+        "effects": [
+          {
+            "effect": "目标上限+1",
+            "status": "complete",
+            "testName": "Logos advanced star-three/four module compares target cap and slow duration to rank baselines"
+          },
+          {
+            "effect": "视阈减速持续+1秒",
+            "status": "complete",
+            "testName": "Logos advanced star-three/four module compares target cap and slow duration to rank baselines"
+          },
+          {
+            "effect": "剜魂法伤加成+50",
+            "status": "complete",
+            "testName": "Logos module adds soul-rend arts damage only at star four"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4133_logos_0",
+        "assault_mod_char_4133_logos_1"
+      ]
+    },
+    {
+      "charId": "char_4133_logos",
+      "moduleId": "uniequip_003_logos",
+      "effectHandling": "三星解锁：语汇演化概率+10%，额外伤害+10%；四星加强：概率+10%、伤害+10%且额外攻击改为命中至多2个随机目标。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Logos lexicon module compares proc threshold, damage scale, and two-target cap by star",
+        "effects": [
+          {
+            "effect": "语汇演化概率+10%",
+            "status": "complete",
+            "testName": "Logos lexicon module compares proc threshold, damage scale, and two-target cap by star"
+          },
+          {
+            "effect": "语汇演化伤害倍率+10%",
+            "status": "complete",
+            "testName": "Logos lexicon module compares proc threshold, damage scale, and two-target cap by star"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Logos lexicon module compares proc threshold, damage scale, and two-target cap by star",
+        "effects": [
+          {
+            "effect": "语汇演化概率+10%",
+            "status": "complete",
+            "testName": "Logos lexicon module compares proc threshold, damage scale, and two-target cap by star"
+          },
+          {
+            "effect": "语汇演化伤害倍率+10%",
+            "status": "complete",
+            "testName": "Logos lexicon module compares proc threshold, damage scale, and two-target cap by star"
+          },
+          {
+            "effect": "额外攻击目标数至多2个",
+            "status": "complete",
+            "testName": "Logos lexicon module compares proc threshold, damage scale, and two-target cap by star"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4133_logos_0",
+        "assault_mod_char_4133_logos_1"
+      ]
+    },
+    {
+      "charId": "char_2015_dusk",
+      "moduleId": "uniequip_002_dusk",
+      "effectHandling": "本次写意胜形伤害倍率+0.15；首次普通攻击召唤的小自在持续+5秒，四星首次召唤数量为2。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Dusk module compares skill scale, real summon lifetime, and star-four summon count",
+        "effects": [
+          {
+            "effect": "技能倍率+0.15",
+            "status": "complete",
+            "testName": "Dusk module compares skill scale, real summon lifetime, and star-four summon count"
+          },
+          {
+            "effect": "小自在持续+5秒",
+            "status": "complete",
+            "testName": "Dusk module compares skill scale, real summon lifetime, and star-four summon count"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Dusk module compares skill scale, real summon lifetime, and star-four summon count",
+        "effects": [
+          {
+            "effect": "技能倍率+0.15",
+            "status": "complete",
+            "testName": "Dusk module compares skill scale, real summon lifetime, and star-four summon count"
+          },
+          {
+            "effect": "小自在持续+5秒",
+            "status": "complete",
+            "testName": "Dusk module compares skill scale, real summon lifetime, and star-four summon count"
+          },
+          {
+            "effect": "召唤数量+1",
+            "status": "complete",
+            "testName": "Dusk module compares skill scale, real summon lifetime, and star-four summon count"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_2015_dusk_0",
+        "assault_mod_char_2015_dusk_1"
+      ]
+    },
+    {
+      "charId": "char_2015_dusk",
+      "moduleId": "uniequip_003_dusk",
+      "effectHandling": "三星解锁：化境每层+0.5%，上限+3；四星加强：每层+0.5%、上限+3且满层时法术伤害+10%。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Dusk mastery module compares kill-stack attack and cap, with four-star full-stack arts damage",
+        "reason": "real kill-trigger stacks compare module and no-module caps, per-stack attack, and star-four full-stack skill damage",
+        "effects": [
+          {
+            "effect": "化境每层+0.5%，上限+3",
+            "status": "complete",
+            "testName": "Dusk mastery module compares kill-stack attack and cap, with four-star full-stack arts damage"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Dusk mastery module compares kill-stack attack and cap, with four-star full-stack arts damage",
+        "reason": "real kill-trigger stacks compare module and no-module caps, per-stack attack, and star-four full-stack skill damage",
+        "effects": [
+          {
+            "effect": "每层+0.5%、上限+3且满层时法术伤害+10%。",
+            "status": "complete",
+            "testName": "Dusk mastery module compares kill-stack attack and cap, with four-star full-stack arts damage"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_2015_dusk_0",
+        "assault_mod_char_2015_dusk_1"
+      ]
+    },
+    {
+      "charId": "char_2015_dusk",
+      "moduleId": "uniequip_004_dusk",
+      "effectHandling": "三星解锁：小自在攻击力+15%且死亡时对周围八邻造成一次范围法术伤害；四星加强：攻击+15%、死亡爆炸伤害+15%且持续+5秒。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Dusk limited module compares token attack and real adjacent death burst at both ranks",
+        "reason": "real deployed token buff, source duration and adjacent death damage compare against baseline at both module ranks",
+        "effects": [
+          {
+            "effect": "小自在攻击力+15%且死亡时对周围八邻造成一次范围法术伤害",
+            "status": "complete",
+            "testName": "Dusk limited module compares token attack and real adjacent death burst at both ranks"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Dusk limited module compares token attack and real adjacent death burst at both ranks",
+        "reason": "real deployed token buff, source duration and adjacent death damage compare against baseline at both module ranks",
+        "effects": [
+          {
+            "effect": "攻击+15%、死亡爆炸伤害+15%且持续+5秒。",
+            "status": "complete",
+            "testName": "Dusk limited module compares token attack and real adjacent death burst at both ranks"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_2015_dusk_0",
+        "assault_mod_char_2015_dusk_1"
+      ]
+    },
+    {
+      "charId": "char_472_pasngr",
+      "moduleId": "uniequip_002_pasngr",
+      "effectHandling": "三星解锁：雷暴每跳倍率+15%，连锁目标+1；四星加强：倍率+15%、连锁+1且雷暴持续+1秒。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Passenger storm module compares per-hop scale, target cap, and four-star field lifetime to baseline",
+        "reason": "real storm cast compares first-hop damage and target count against baseline, with the extra second only at star4",
+        "effects": [
+          {
+            "effect": "每跳倍率+0.15",
+            "status": "complete",
+            "testName": "Passenger storm module compares per-hop scale, target cap, and four-star field lifetime to baseline"
+          },
+          {
+            "effect": "连锁目标+1",
+            "status": "complete",
+            "testName": "Passenger storm module compares per-hop scale, target cap, and four-star field lifetime to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Passenger storm module compares per-hop scale, target cap, and four-star field lifetime to baseline",
+        "reason": "real storm cast compares first-hop damage and target count against baseline, with the extra second only at star4",
+        "effects": [
+          {
+            "effect": "每跳倍率+0.15",
+            "status": "complete",
+            "testName": "Passenger storm module compares per-hop scale, target cap, and four-star field lifetime to baseline"
+          },
+          {
+            "effect": "连锁目标+1",
+            "status": "complete",
+            "testName": "Passenger storm module compares per-hop scale, target cap, and four-star field lifetime to baseline"
+          },
+          {
+            "effect": "雷暴持续+1秒",
+            "status": "complete",
+            "testName": "Passenger storm module compares per-hop scale, target cap, and four-star field lifetime to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_472_pasngr_0",
+        "assault_mod_char_472_pasngr_1"
+      ]
+    },
+    {
+      "charId": "char_472_pasngr",
+      "moduleId": "uniequip_003_pasngr",
+      "effectHandling": "三星解锁：高生命增伤+5%，持续+1秒；四星加强：增伤+5%、持续+1秒且四邻无敌人加攻+2%。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Passenger analysis module compares marked-hit damage, mark duration, and four-star empty-adjacency attack to baseline",
+        "reason": "real ordinary attacks compare the actual hit multiplier and retained mark expiry against the no-module Battle; empty-neighbor attack remains baseline",
+        "effects": [
+          {
+            "effect": "高生命增伤+5%，持续+1秒",
+            "status": "complete",
+            "testName": "Passenger analysis module compares marked-hit damage, mark duration, and four-star empty-adjacency attack to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Passenger analysis module compares marked-hit damage, mark duration, and four-star empty-adjacency attack to baseline",
+        "reason": "real ordinary attacks compare marked hit multiplier and expiry; live empty-neighbor timer compares attack buff to baseline and clears when an adjacent enemy enters",
+        "effects": [
+          {
+            "effect": "高生命增伤+5%，持续+1秒",
+            "status": "complete",
+            "testName": "Passenger analysis module compares marked-hit damage, mark duration, and four-star empty-adjacency attack to baseline"
+          },
+          {
+            "effect": "四邻无敌人加攻+2%",
+            "status": "complete",
+            "testName": "Passenger analysis module compares marked-hit damage, mark duration, and four-star empty-adjacency attack to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_472_pasngr_0",
+        "assault_mod_char_472_pasngr_1"
+      ]
+    },
+    {
+      "charId": "char_472_pasngr",
+      "moduleId": "uniequip_004_pasngr",
+      "effectHandling": "三星解锁：连锁跳跃伤害衰减由15%降至10%；四星加强：衰减降至10%且连锁目标+1。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Passenger chain module compares real per-hop damage and four-star target cap to baseline",
+        "reason": "real storm-hit amounts compare each hop to unmodified baseline under 10% attenuation; four-star real cast adds exactly one target",
+        "effects": [
+          {
+            "effect": "连锁跳跃伤害衰减由15%降至10%",
+            "status": "complete",
+            "testName": "Passenger chain module compares real per-hop damage and four-star target cap to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Passenger chain module compares real per-hop damage and four-star target cap to baseline",
+        "reason": "real storm-hit amounts compare each hop to unmodified baseline under 10% attenuation; four-star real cast adds exactly one target",
+        "effects": [
+          {
+            "effect": "衰减降至10%且连锁目标+1。",
+            "status": "complete",
+            "testName": "Passenger chain module compares real per-hop damage and four-star target cap to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_472_pasngr_0",
+        "assault_mod_char_472_pasngr_1"
+      ]
+    },
+    {
+      "charId": "char_426_billro",
+      "moduleId": "uniequip_002_billro",
+      "effectHandling": "三星解锁：回血比例+10%，停顿深度+0.1；四星加强：回血+10%、停顿+0.1且防御加成+15%。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Billro healing module compares self-heal, slow depth, and four-star defense to baseline",
+        "reason": "live instant casts compare actual healing and slow amount against baseline; defense stat is exact and gated to star4",
+        "effects": [
+          {
+            "effect": "回血比例+0.1",
+            "status": "complete",
+            "testName": "Billro healing module compares self-heal, slow depth, and four-star defense to baseline"
+          },
+          {
+            "effect": "停顿深度+0.1",
+            "status": "complete",
+            "testName": "Billro healing module compares self-heal, slow depth, and four-star defense to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Billro healing module compares self-heal, slow depth, and four-star defense to baseline",
+        "reason": "live instant casts compare actual healing and slow amount against baseline; defense stat is exact and gated to star4",
+        "effects": [
+          {
+            "effect": "回血比例+0.1",
+            "status": "complete",
+            "testName": "Billro healing module compares self-heal, slow depth, and four-star defense to baseline"
+          },
+          {
+            "effect": "停顿深度+0.1",
+            "status": "complete",
+            "testName": "Billro healing module compares self-heal, slow depth, and four-star defense to baseline"
+          },
+          {
+            "effect": "防御加成+0.15",
+            "status": "complete",
+            "testName": "Billro healing module compares self-heal, slow depth, and four-star defense to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_426_billro_0",
+        "assault_mod_char_426_billro_1"
+      ]
+    },
+    {
+      "charId": "char_426_billro",
+      "moduleId": "uniequip_003_billro",
+      "effectHandling": "三星解锁：超上限回技+0.2/秒；四星加强：超上限回技+0.2/秒且超上限时受到伤害-10%。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Billro overcap module compares passive recovery and four-star damage reduction against baseline",
+        "reason": "the actual registered overcap timer is invoked above and at the SP cap against no-module values; star-four reduction is independently asserted",
+        "effects": [
+          {
+            "effect": "超上限回技+0.2/秒",
+            "status": "complete",
+            "testName": "Billro overcap module compares passive recovery and four-star damage reduction against baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Billro overcap module compares passive recovery and four-star damage reduction against baseline",
+        "reason": "the actual registered overcap timer is invoked above and at the SP cap against no-module values; star-four reduction is independently asserted",
+        "effects": [
+          {
+            "effect": "超上限回技+0.2/秒且超上限时受到伤害-10%。",
+            "status": "complete",
+            "testName": "Billro overcap module compares passive recovery and four-star damage reduction against baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_426_billro_0",
+        "assault_mod_char_426_billro_1"
+      ]
+    },
+    {
+      "charId": "char_1046_sbell2",
+      "moduleId": "uniequip_002_sbell2",
+      "effectHandling": "三星解锁：积雪上限+1层、同次施放寒冷+0.5秒；四星加强：积雪上限+1层、寒冷+0.5秒且本次推力等级+1，不施加持续吸引。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Sbell module compares snow cap, cold duration, and four-star attraction duration to baseline",
+        "reason": "real cast compares snow layer cap and cold timer against baseline; attraction duration is rank-specific and checked at both stars",
+        "effects": [
+          {
+            "effect": "积雪上限+1层，寒冷持续+0.5秒",
+            "status": "complete",
+            "testName": "Sbell module compares snow cap, cold duration, and four-star attraction duration to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Sbell module compares snow cap, cold duration, and four-star attraction duration to baseline",
+        "reason": "real cast compares snow layer cap and cold timer against baseline; attraction duration is rank-specific and checked at both stars",
+        "effects": [
+          {
+            "effect": "上限+1层、寒冷+0.5秒且吸引持续+1秒。",
+            "status": "complete",
+            "testName": "Sbell module compares snow cap, cold duration, and four-star attraction duration to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_1046_sbell2_0",
+        "assault_mod_char_1046_sbell2_1"
+      ]
+    },
+    {
+      "charId": "char_1038_whitw2",
+      "moduleId": "uniequip_002_whitw2",
+      "effectHandling": "三星解锁：本次施放狼影数量+1、恐惧持续+0.5秒；四星另使每次法术伤害倍率+0.15。每只狼影至多命中2名敌人；没有追踪窗口或后续持续伤害。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "every assigned card and every translated ADVANCED module deploys and resolves through a real Battle",
+        "reason": "real field tick damage, per-target fear duration, and count compare against the no-module Battle at this star",
+        "effects": [
+          {
+            "effect": "wolfCountBonus=1",
+            "status": "complete",
+            "testName": "Lappland shadow module compares instant wolf count, fear, damage, and four-second slow against rank baseline"
+          },
+          {
+            "effect": "fearDurationBonus=0.5",
+            "status": "complete",
+            "testName": "Lappland shadow module compares instant wolf count, fear, damage, and four-second slow against rank baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "every assigned card and every translated ADVANCED module deploys and resolves through a real Battle",
+        "reason": "real field tick damage, per-target fear duration, and count compare against the no-module Battle at this star",
+        "effects": [
+          {
+            "effect": "wolfCountBonus=1",
+            "status": "complete",
+            "testName": "Lappland shadow module compares instant wolf count, fear, damage, and four-second slow against rank baseline"
+          },
+          {
+            "effect": "fearDurationBonus=0.5",
+            "status": "complete",
+            "testName": "Lappland shadow module compares instant wolf count, fear, damage, and four-second slow against rank baseline"
+          },
+          {
+            "effect": "fourStarArtsScaleBonus=0.15",
+            "status": "complete",
+            "testName": "Lappland shadow module compares instant wolf count, fear, damage, and four-second slow against rank baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_1038_whitw2_0",
+        "assault_mod_char_1038_whitw2_1"
+      ]
+    },
+    {
+      "charId": "char_4146_nymph",
+      "moduleId": "uniequip_002_nymph",
+      "effectHandling": "三星解锁：震爆倍率+15%，凋亡比例+3%；四星加强：倍率+15%、凋亡+3%且积存上限+1。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Nymph burst module compares instant damage, apoptosis ratio, and star-four stack cap to baseline",
+        "reason": "real fixed-skill amounts compare selected/base ratios; repeated burst events prove the exact stack cap and rank gate",
+        "effects": [
+          {
+            "effect": "震爆倍率+0.15",
+            "status": "complete",
+            "testName": "Nymph burst module compares instant damage, apoptosis ratio, and star-four stack cap to baseline"
+          },
+          {
+            "effect": "凋亡比例+0.03",
+            "status": "complete",
+            "testName": "Nymph burst module compares instant damage, apoptosis ratio, and star-four stack cap to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Nymph burst module compares instant damage, apoptosis ratio, and star-four stack cap to baseline",
+        "reason": "real fixed-skill amounts compare selected/base ratios; repeated burst events prove the exact stack cap and rank gate",
+        "effects": [
+          {
+            "effect": "震爆倍率+0.15",
+            "status": "complete",
+            "testName": "Nymph burst module compares instant damage, apoptosis ratio, and star-four stack cap to baseline"
+          },
+          {
+            "effect": "凋亡比例+0.03",
+            "status": "complete",
+            "testName": "Nymph burst module compares instant damage, apoptosis ratio, and star-four stack cap to baseline"
+          },
+          {
+            "effect": "积存上限+1",
+            "status": "complete",
+            "testName": "Nymph burst module compares instant damage, apoptosis ratio, and star-four stack cap to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4146_nymph_0",
+        "assault_mod_char_4146_nymph_1"
+      ]
+    },
+    {
+      "charId": "char_4146_nymph",
+      "moduleId": "uniequip_003_nymph",
+      "effectHandling": "三星解锁：失魂每秒元素伤害+5%，持续上限+1秒；四星加强：元素伤害+5%、持续+1秒且爆发期间敌人法抗-10。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Nymph module compares each burst-period tick and four-star resistance reduction to baseline",
+        "reason": "live event-installed periodic timer compares exact baseline/module elemental tick and duration cap; star-four RES rider is checked against baseline",
+        "effects": [
+          {
+            "effect": "爆发期间每秒元素伤害+0.05",
+            "status": "complete",
+            "testName": "Nymph module compares each burst-period tick and four-star resistance reduction to baseline"
+          },
+          {
+            "effect": "持续上限+1秒",
+            "status": "complete",
+            "testName": "Nymph module compares each burst-period tick and four-star resistance reduction to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Nymph module compares each burst-period tick and four-star resistance reduction to baseline",
+        "reason": "live event-installed periodic timer compares exact baseline/module elemental tick and duration cap; star-four RES rider is checked against baseline",
+        "effects": [
+          {
+            "effect": "爆发期间每秒元素伤害+0.05",
+            "status": "complete",
+            "testName": "Nymph module compares each burst-period tick and four-star resistance reduction to baseline"
+          },
+          {
+            "effect": "持续上限+1秒",
+            "status": "complete",
+            "testName": "Nymph module compares each burst-period tick and four-star resistance reduction to baseline"
+          },
+          {
+            "effect": "爆发期间敌人法抗-10",
+            "status": "complete",
+            "testName": "Nymph module compares each burst-period tick and four-star resistance reduction to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4146_nymph_0",
+        "assault_mod_char_4146_nymph_1"
+      ]
+    },
+    {
+      "charId": "char_1040_blaze2",
+      "moduleId": "uniequip_002_blaze2",
+      "effectHandling": "本次授予友方的灼燃支援持续+3秒且元素伤害比例+0.3；四星支援每次灼燃伤害再提高10%。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Blaze module compares burn-burst elemental damage against no-module at both stars; Blaze burn-field module compares field lifetime and four-star periodic damage scale",
+        "reason": "actual Battle burn burst compares elemental damage to baseline; actual field timer and periodic hits compare lifetime and rank-gated damage scale",
+        "effects": [
+          {
+            "effect": "灼烧地段持续+3秒",
+            "status": "complete",
+            "testName": "Blaze burn-field module compares field lifetime and four-star periodic damage scale"
+          },
+          {
+            "effect": "爆发元素伤害+0.3倍",
+            "status": "complete",
+            "testName": "Blaze module compares burn-burst elemental damage against no-module at both stars"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Blaze module compares burn-burst elemental damage against no-module at both stars; Blaze burn-field module compares field lifetime and four-star periodic damage scale",
+        "reason": "actual Battle burn burst compares elemental damage to baseline; actual field timer and periodic hits compare lifetime and rank-gated damage scale",
+        "effects": [
+          {
+            "effect": "灼烧地段持续+3秒",
+            "status": "complete",
+            "testName": "Blaze burn-field module compares field lifetime and four-star periodic damage scale"
+          },
+          {
+            "effect": "爆发元素伤害+0.3倍",
+            "status": "complete",
+            "testName": "Blaze module compares burn-burst elemental damage against no-module at both stars"
+          },
+          {
+            "effect": "地段每秒伤害+10%",
+            "status": "complete",
+            "testName": "Blaze burn-field module compares field lifetime and four-star periodic damage scale"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_1040_blaze2_0",
+        "assault_mod_char_1040_blaze2_1"
+      ]
+    },
+    {
+      "charId": "char_1040_blaze2",
+      "moduleId": "uniequip_003_blaze2",
+      "effectHandling": "三星解锁：倒地回血速度+1%/秒，复活晕眩+1秒；四星加强：回血+1%/秒、晕眩+1秒且复活时获得20%攻击加成持续10秒。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Blaze resurrection module compares recovery pace, stun duration, and four-star attack buff to baseline",
+        "reason": "real lethal interception and revive timer compare recovery per second, actual stun, and star-four attack buff against baseline",
+        "effects": [
+          {
+            "effect": "倒地回血速度+1%/秒，复活晕眩+1秒",
+            "status": "complete",
+            "testName": "Blaze resurrection module compares recovery pace, stun duration, and four-star attack buff to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Blaze resurrection module compares recovery pace, stun duration, and four-star attack buff to baseline",
+        "reason": "real lethal interception and revive timer compare recovery per second, actual stun, and star-four attack buff against baseline",
+        "effects": [
+          {
+            "effect": "回血+1%/秒、晕眩+1秒且复活时获得20%攻击加成持续10秒。",
+            "status": "complete",
+            "testName": "Blaze resurrection module compares recovery pace, stun duration, and four-star attack buff to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_1040_blaze2_0",
+        "assault_mod_char_1040_blaze2_1"
+      ]
+    },
+    {
+      "charId": "char_206_gnosis",
+      "moduleId": "uniequip_002_gnosis",
+      "effectHandling": "三星解锁：零度爆发寒冷持续+0.5秒，追加寒层+1层；四星加强：寒冷+0.5秒、追加+1层且对冻结目标伤害+15%。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Gnosis zero-degree module compares cold refresh, added cold layers, and star-four frozen damage",
+        "reason": "real frozen-target cast compares translated cold timer and number of successful extra layers; damage rider is asserted star4 only",
+        "effects": [
+          {
+            "effect": "寒冷持续+0.5秒",
+            "status": "complete",
+            "testName": "Gnosis zero-degree module compares cold refresh, added cold layers, and star-four frozen damage"
+          },
+          {
+            "effect": "追加寒层+1",
+            "status": "complete",
+            "testName": "Gnosis zero-degree module compares cold refresh, added cold layers, and star-four frozen damage"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Gnosis zero-degree module compares cold refresh, added cold layers, and star-four frozen damage",
+        "reason": "real frozen-target cast compares translated cold timer and number of successful extra layers; damage rider is asserted star4 only",
+        "effects": [
+          {
+            "effect": "寒冷持续+0.5秒",
+            "status": "complete",
+            "testName": "Gnosis zero-degree module compares cold refresh, added cold layers, and star-four frozen damage"
+          },
+          {
+            "effect": "追加寒层+1",
+            "status": "complete",
+            "testName": "Gnosis zero-degree module compares cold refresh, added cold layers, and star-four frozen damage"
+          },
+          {
+            "effect": "冻结目标伤害+15%",
+            "status": "complete",
+            "testName": "Gnosis zero-degree module compares cold refresh, added cold layers, and star-four frozen damage"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_206_gnosis_0",
+        "assault_mod_char_206_gnosis_1"
+      ]
+    },
+    {
+      "charId": "char_206_gnosis",
+      "moduleId": "uniequip_003_gnosis",
+      "effectHandling": "三星解锁：寒冷脆弱+3%，冻结脆弱倍率提升至2.2倍；四星加强：脆弱+3%、倍率2.2且范围扩大1格。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Gnosis fragile module compares cold/frozen vulnerability and star-four expanded aura range",
+        "reason": "real attack/status timer compares cold and freeze vulnerability against baseline; star-four-only adjacent-tile range extension is tested with a cold enemy outside base range",
+        "effects": [
+          {
+            "effect": "寒冷脆弱+0.03",
+            "status": "complete",
+            "testName": "Gnosis fragile module compares cold/frozen vulnerability and star-four expanded aura range"
+          },
+          {
+            "effect": "冻结脆弱倍率2.2",
+            "status": "complete",
+            "testName": "Gnosis fragile module compares cold/frozen vulnerability and star-four expanded aura range"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Gnosis fragile module compares cold/frozen vulnerability and star-four expanded aura range",
+        "reason": "real attack/status timer compares cold and freeze vulnerability against baseline; star-four-only adjacent-tile range extension is tested with a cold enemy outside base range",
+        "effects": [
+          {
+            "effect": "寒冷脆弱+0.03",
+            "status": "complete",
+            "testName": "Gnosis fragile module compares cold/frozen vulnerability and star-four expanded aura range"
+          },
+          {
+            "effect": "冻结脆弱倍率2.2",
+            "status": "complete",
+            "testName": "Gnosis fragile module compares cold/frozen vulnerability and star-four expanded aura range"
+          },
+          {
+            "effect": "范围扩大1格",
+            "status": "complete",
+            "testName": "Gnosis fragile module compares cold/frozen vulnerability and star-four expanded aura range"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_206_gnosis_0",
+        "assault_mod_char_206_gnosis_1"
+      ]
+    },
+    {
+      "charId": "char_206_gnosis",
+      "moduleId": "uniequip_004_gnosis",
+      "effectHandling": "三星解锁：前方友军每次冰控攻击加成+1%；四星加强：每次+1%且前方一格改为前方横排全体友军。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Gnosis ice-control module accumulates every successful application and expands allies only at star four",
+        "reason": "real successful cold application and refresh accumulate one ATK increment per event; deployed allies verify adjacent baseline versus star-four forward row",
+        "effects": [
+          {
+            "effect": "每次冰控攻击加成+1%",
+            "status": "complete",
+            "testName": "Gnosis ice-control module accumulates every successful application and expands allies only at star four"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Gnosis ice-control module accumulates every successful application and expands allies only at star four",
+        "reason": "real successful cold application and refresh accumulate one ATK increment per event; deployed allies verify adjacent baseline versus star-four forward row",
+        "effects": [
+          {
+            "effect": "每次冰控攻击加成+1%",
+            "status": "complete",
+            "testName": "Gnosis ice-control module accumulates every successful application and expands allies only at star four"
+          },
+          {
+            "effect": "目标从前方一格扩至前方横排全体",
+            "status": "complete",
+            "testName": "Gnosis ice-control module accumulates every successful application and expands allies only at star four"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_206_gnosis_0",
+        "assault_mod_char_206_gnosis_1"
+      ]
+    },
+    {
+      "charId": "char_291_aglina",
+      "moduleId": "uniequip_002_aglina",
+      "effectHandling": "三星解锁：失重持续+2秒，多目标伤害+15%；四星加强：失重+2秒、伤害+15%且目标上限+1。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Aglina gravity module compares global levitation duration, multi-target damage, and four-star target cap",
+        "reason": "real skill levitation duration and damage compare against baseline; star four adds exactly one target",
+        "effects": [
+          {
+            "effect": "失重持续+2秒",
+            "status": "complete",
+            "testName": "Aglina gravity module compares global levitation duration, multi-target damage, and four-star target cap"
+          },
+          {
+            "effect": "多目标伤害+15%",
+            "status": "complete",
+            "testName": "Aglina gravity module compares global levitation duration, multi-target damage, and four-star target cap"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Aglina gravity module compares global levitation duration, multi-target damage, and four-star target cap",
+        "reason": "real skill levitation duration and damage compare against baseline; star four adds exactly one target",
+        "effects": [
+          {
+            "effect": "失重持续+2秒",
+            "status": "complete",
+            "testName": "Aglina gravity module compares global levitation duration, multi-target damage, and four-star target cap"
+          },
+          {
+            "effect": "多目标伤害+15%",
+            "status": "complete",
+            "testName": "Aglina gravity module compares global levitation duration, multi-target damage, and four-star target cap"
+          },
+          {
+            "effect": "目标上限+1",
+            "status": "complete",
+            "testName": "Aglina gravity module compares global levitation duration, multi-target damage, and four-star target cap"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_291_aglina_0",
+        "assault_mod_char_291_aglina_1"
+      ]
+    },
+    {
+      "charId": "char_291_aglina",
+      "moduleId": "uniequip_003_aglina",
+      "effectHandling": "三星解锁：全场攻速+2；四星加强：攻速+2且技能间隙回血+10/秒。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Aglina aura module compares global attack speed and four-star-only downtime healing to baseline",
+        "reason": "live global aura ASPD and downtime healing compare to no-module Battle; four-star healing rate is isolated",
+        "effects": [
+          {
+            "effect": "全场攻速+2",
+            "status": "complete",
+            "testName": "Aglina aura module compares global attack speed and four-star-only downtime healing to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Aglina aura module compares global attack speed and four-star-only downtime healing to baseline",
+        "reason": "live global aura ASPD and downtime healing compare to no-module Battle; four-star healing rate is isolated",
+        "effects": [
+          {
+            "effect": "全场攻速+2",
+            "status": "complete",
+            "testName": "Aglina aura module compares global attack speed and four-star-only downtime healing to baseline"
+          },
+          {
+            "effect": "技能间隙回血+10/秒",
+            "status": "complete",
+            "testName": "Aglina aura module compares global attack speed and four-star-only downtime healing to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_291_aglina_0",
+        "assault_mod_char_291_aglina_1"
+      ]
+    },
+    {
+      "charId": "char_291_aglina",
+      "moduleId": "uniequip_004_aglina",
+      "effectHandling": "三星解锁：对失重目标伤害+15%；四星加强：对失重目标+15%且失重敌人被攻击时短暂停顿0.5秒。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Aglina levitation module compares damage bonus and four-star pause against baseline",
+        "reason": "actual pre-levitated target damage compares against baseline; only star four applies the source pause duration",
+        "effects": [
+          {
+            "effect": "对失重目标伤害+15%",
+            "status": "complete",
+            "testName": "Aglina levitation module compares damage bonus and four-star pause against baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Aglina levitation module compares damage bonus and four-star pause against baseline",
+        "reason": "actual pre-levitated target damage compares against baseline; only star four applies the source pause duration",
+        "effects": [
+          {
+            "effect": "对失重目标伤害+15%",
+            "status": "complete",
+            "testName": "Aglina levitation module compares damage bonus and four-star pause against baseline"
+          },
+          {
+            "effect": "失重敌人受击停顿0.5秒",
+            "status": "complete",
+            "testName": "Aglina levitation module compares damage bonus and four-star pause against baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_291_aglina_0",
+        "assault_mod_char_291_aglina_1"
+      ]
+    },
+    {
+      "charId": "char_358_lisa",
+      "moduleId": "uniequip_002_lisa",
+      "effectHandling": "三星解锁：领域持续+2秒，每秒治疗+3%；四星加强：领域+2秒、治疗+3%且领域范围再扩大1格。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Lisa field module compares live healing, field lifetime, and four-star extended ally range against baseline",
+        "reason": "actual field lifetime and per-tick healing compare to baseline; star-four recipient enumeration reaches a real ally one tile beyond the base range",
+        "effects": [
+          {
+            "effect": "领域持续+2秒",
+            "status": "complete",
+            "testName": "Lisa field module compares live healing, field lifetime, and four-star extended ally range against baseline"
+          },
+          {
+            "effect": "每秒治疗+3%",
+            "status": "complete",
+            "testName": "Lisa field module compares live healing, field lifetime, and four-star extended ally range against baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Lisa field module compares live healing, field lifetime, and four-star extended ally range against baseline",
+        "reason": "actual field lifetime and per-tick healing compare to baseline; star-four recipient enumeration reaches a real ally one tile beyond the base range",
+        "effects": [
+          {
+            "effect": "领域持续+2秒",
+            "status": "complete",
+            "testName": "Lisa field module compares live healing, field lifetime, and four-star extended ally range against baseline"
+          },
+          {
+            "effect": "每秒治疗+3%",
+            "status": "complete",
+            "testName": "Lisa field module compares live healing, field lifetime, and four-star extended ally range against baseline"
+          },
+          {
+            "effect": "领域范围再扩大1格",
+            "status": "complete",
+            "testName": "Lisa field module compares live healing, field lifetime, and four-star extended ally range against baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_358_lisa_0",
+        "assault_mod_char_358_lisa_1"
+      ]
+    },
+    {
+      "charId": "char_358_lisa",
+      "moduleId": "uniequip_003_lisa",
+      "effectHandling": "三星解锁：停顿脆弱+3%，辅助回技+0.1/秒；四星加强：脆弱+3%、回技+0.1/秒且停顿深度+0.1。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Lisa fragile module compares stop depth, fragile vulnerability, and support SP aura at both stars",
+        "effects": [
+          {
+            "effect": "停顿脆弱+3%，辅助回技+0.1/秒",
+            "status": "complete",
+            "testName": "Lisa fragile module compares stop depth, fragile vulnerability, and support SP aura at both stars"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Lisa fragile module compares stop depth, fragile vulnerability, and support SP aura at both stars",
+        "effects": [
+          {
+            "effect": "脆弱+3%、回技+0.1/秒且停顿深度+0.1。",
+            "status": "complete",
+            "testName": "Lisa fragile module compares stop depth, fragile vulnerability, and support SP aura at both stars"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_358_lisa_0",
+        "assault_mod_char_358_lisa_1"
+      ]
+    },
+    {
+      "charId": "char_1047_halo2",
+      "moduleId": "uniequip_002_halo2",
+      "effectHandling": "三星解锁：本次锚点邻域目标上限+1、法伤倍率+0.03；四星保留这两项并使成功停顿的攻速叠层上限+3。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Halo module improves same-cast anchor splash damage, target cap, and star-four control-stack cap",
+        "effects": [
+          {
+            "effect": "splashTargetBonus=1",
+            "status": "complete",
+            "testName": "Halo module improves same-cast anchor splash damage, target cap, and star-four control-stack cap"
+          },
+          {
+            "effect": "splashAtkScaleBonus=0.03",
+            "status": "complete",
+            "testName": "Halo module improves same-cast anchor splash damage, target cap, and star-four control-stack cap"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Halo module improves same-cast anchor splash damage, target cap, and star-four control-stack cap",
+        "effects": [
+          {
+            "effect": "splashTargetBonus=1",
+            "status": "complete",
+            "testName": "Halo module improves same-cast anchor splash damage, target cap, and star-four control-stack cap"
+          },
+          {
+            "effect": "splashAtkScaleBonus=0.03",
+            "status": "complete",
+            "testName": "Halo module improves same-cast anchor splash damage, target cap, and star-four control-stack cap"
+          },
+          {
+            "effect": "fourStarControlStackCapBonus=3",
+            "status": "complete",
+            "testName": "Halo module improves same-cast anchor splash damage, target cap, and star-four control-stack cap"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_1047_halo2_0",
+        "assault_mod_char_1047_halo2_1"
+      ]
+    },
+    {
+      "charId": "char_1012_skadi2",
+      "moduleId": "uniequip_002_skadi2",
+      "effectHandling": "三星解锁：领域持续+3秒，每秒真伤+5%；四星加强：持续+3秒、真伤+5%且鼓舞+10%。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Skadi tide module compares field duration, true-damage tick, and four-star-only inspire to baseline",
+        "reason": "real timed field compares duration and scaled true-damage tick to same-star baseline; actual self/ally inspire checks the star-four gate",
+        "effects": [
+          {
+            "effect": "领域持续+3秒",
+            "status": "complete",
+            "testName": "Skadi tide module compares field duration, true-damage tick, and four-star-only inspire to baseline"
+          },
+          {
+            "effect": "每秒真伤+5%",
+            "status": "complete",
+            "testName": "Skadi tide module compares field duration, true-damage tick, and four-star-only inspire to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Skadi tide module compares field duration, true-damage tick, and four-star-only inspire to baseline",
+        "reason": "real timed field compares duration and scaled true-damage tick to same-star baseline; actual self/ally inspire checks the star-four gate",
+        "effects": [
+          {
+            "effect": "领域持续+3秒",
+            "status": "complete",
+            "testName": "Skadi tide module compares field duration, true-damage tick, and four-star-only inspire to baseline"
+          },
+          {
+            "effect": "每秒真伤+5%",
+            "status": "complete",
+            "testName": "Skadi tide module compares field duration, true-damage tick, and four-star-only inspire to baseline"
+          },
+          {
+            "effect": "鼓舞+10%",
+            "status": "complete",
+            "testName": "Skadi tide module compares field duration, true-damage tick, and four-star-only inspire to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_1012_skadi2_0",
+        "assault_mod_char_1012_skadi2_1"
+      ]
+    },
+    {
+      "charId": "char_1012_skadi2",
+      "moduleId": "uniequip_003_skadi2",
+      "effectHandling": "三星解锁：海嗣持续+5秒，捕食习性加成+3%；四星加强：海嗣+5秒、加成+3%且海嗣攻击范围内敌人受伤+10%。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Skadi seaborn module compares owner aura, real summon lifetime, and four-star in-range vulnerability",
+        "reason": "real owner aura attack gain, summon source lifetime, and source-token range-gated incoming damage multiplier are compared to baseline",
+        "effects": [
+          {
+            "effect": "海嗣持续+5秒",
+            "status": "complete",
+            "testName": "Skadi seaborn module compares owner aura, real summon lifetime, and four-star in-range vulnerability"
+          },
+          {
+            "effect": "捕食习性加成+3%",
+            "status": "complete",
+            "testName": "Skadi seaborn module compares owner aura, real summon lifetime, and four-star in-range vulnerability"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Skadi seaborn module compares owner aura, real summon lifetime, and four-star in-range vulnerability",
+        "reason": "real owner aura attack gain, summon source lifetime, and source-token range-gated incoming damage multiplier are compared to baseline",
+        "effects": [
+          {
+            "effect": "海嗣持续+5秒",
+            "status": "complete",
+            "testName": "Skadi seaborn module compares owner aura, real summon lifetime, and four-star in-range vulnerability"
+          },
+          {
+            "effect": "捕食习性加成+3%",
+            "status": "complete",
+            "testName": "Skadi seaborn module compares owner aura, real summon lifetime, and four-star in-range vulnerability"
+          },
+          {
+            "effect": "海嗣攻击范围内敌人受伤+10%",
+            "status": "complete",
+            "testName": "Skadi seaborn module compares owner aura, real summon lifetime, and four-star in-range vulnerability"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_1012_skadi2_0",
+        "assault_mod_char_1012_skadi2_1"
+      ]
+    },
+    {
+      "charId": "char_4134_cetsyr",
+      "moduleId": "uniequip_002_cetsyr",
+      "effectHandling": "三星解锁：外扩持续+3秒，微尘撞击倍率+0.3；四星加强：持续+3秒、撞击+0.3且微尘上限+2。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Cetsyr dust module compares source capacity, hit scale, field duration, and four-star storage against baseline",
+        "reason": "real activated field compares hit amount, source storage ceiling, and elapsed field lifetime against the no-module Battle",
+        "effects": [
+          {
+            "effect": "外扩持续+3秒",
+            "status": "complete",
+            "testName": "Cetsyr dust module compares source capacity, hit scale, field duration, and four-star storage against baseline"
+          },
+          {
+            "effect": "微尘撞击倍率+0.3",
+            "status": "complete",
+            "testName": "Cetsyr dust module compares source capacity, hit scale, field duration, and four-star storage against baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Cetsyr dust module compares source capacity, hit scale, field duration, and four-star storage against baseline",
+        "reason": "real activated field compares hit amount, source storage ceiling, and elapsed field lifetime against the no-module Battle",
+        "effects": [
+          {
+            "effect": "外扩持续+3秒",
+            "status": "complete",
+            "testName": "Cetsyr dust module compares source capacity, hit scale, field duration, and four-star storage against baseline"
+          },
+          {
+            "effect": "微尘撞击倍率+0.3",
+            "status": "complete",
+            "testName": "Cetsyr dust module compares source capacity, hit scale, field duration, and four-star storage against baseline"
+          },
+          {
+            "effect": "微尘上限+2",
+            "status": "complete",
+            "testName": "Cetsyr dust module compares source capacity, hit scale, field duration, and four-star storage against baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4134_cetsyr_0",
+        "assault_mod_char_4134_cetsyr_1"
+      ]
+    },
+    {
+      "charId": "char_4202_haruka",
+      "moduleId": "uniequip_002_haruka",
+      "effectHandling": "三星解锁：浮泡庇护+5%，游鳞反击每秒伤害+5%；四星加强：庇护+5%、反击+5%且破泡治疗提升至35%攻击力。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Haruka module compares both real bubble reductions, counter damage, and star-four bubble-break healing",
+        "effects": [
+          {
+            "effect": "浮泡庇护+5%，游鳞反击每秒伤害+5%",
+            "status": "complete",
+            "testName": "Haruka module compares both real bubble reductions, counter damage, and star-four bubble-break healing"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Haruka module compares both real bubble reductions, counter damage, and star-four bubble-break healing",
+        "effects": [
+          {
+            "effect": "庇护+5%、反击+5%且破泡治疗提升至35%攻击力。",
+            "status": "complete",
+            "testName": "Haruka module compares both real bubble reductions, counter damage, and star-four bubble-break healing"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4202_haruka_0",
+        "assault_mod_char_4202_haruka_1"
+      ]
+    },
+    {
+      "charId": "char_2023_ling",
+      "moduleId": "uniequip_002_ling",
+      "effectHandling": "三星解锁：召唤物携带上限+1，大龙属性倍率提升至2.0；四星加强：携带+1、大龙2.0倍且合并后范围伤害+0.05。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Ling S2 resolves its same-cast Arts bind, source stock, and half-health summon return",
+        "reason": "real baseline/module fusion, carry cap and fused periodic damage are checked against rank source values",
+        "effects": [
+          {
+            "effect": "summon carrying cap +1",
+            "status": "complete",
+            "testName": "Ling S2 resolves its same-cast Arts bind, source stock, and half-health summon return"
+          },
+          {
+            "effect": "derived dragon stats use 2.0x once",
+            "status": "complete",
+            "testName": "Ling S2 resolves its same-cast Arts bind, source stock, and half-health summon return"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Ling S2 resolves its same-cast Arts bind, source stock, and half-health summon return",
+        "reason": "real baseline/module fusion, carry cap and fused periodic damage are checked against rank source values",
+        "effects": [
+          {
+            "effect": "summon carrying cap +1",
+            "status": "complete",
+            "testName": "Ling S2 resolves its same-cast Arts bind, source stock, and half-health summon return"
+          },
+          {
+            "effect": "derived dragon stats use 2.0x once",
+            "status": "complete",
+            "testName": "Ling S2 resolves its same-cast Arts bind, source stock, and half-health summon return"
+          },
+          {
+            "effect": "fused periodic area damage +0.05 scale",
+            "status": "complete",
+            "testName": "Ling S2 resolves its same-cast Arts bind, source stock, and half-health summon return"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_2023_ling_0",
+        "assault_mod_char_2023_ling_1"
+      ]
+    },
+    {
+      "charId": "char_4072_ironmn",
+      "moduleId": "uniequip_002_ironmn",
+      "effectHandling": "三星解锁：本次物理倍率+0.15并额外授予1点技力；四星加强：本次物理倍率+0.15，且本次装置修复比例再+0.10。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Whiteiron crawler module adds same-cast damage and grant, plus star-four device repair",
+        "effects": [
+          {
+            "effect": "instantSpGrantBonus=1",
+            "status": "complete",
+            "testName": "Whiteiron crawler module adds same-cast damage and grant, plus star-four device repair"
+          },
+          {
+            "effect": "instantPhysicalScaleBonus=0.15",
+            "status": "complete",
+            "testName": "Whiteiron crawler module adds same-cast damage and grant, plus star-four device repair"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Whiteiron crawler module adds same-cast damage and grant, plus star-four device repair",
+        "effects": [
+          {
+            "effect": "instantSpGrantBonus=1",
+            "status": "complete",
+            "testName": "Whiteiron crawler module adds same-cast damage and grant, plus star-four device repair"
+          },
+          {
+            "effect": "instantPhysicalScaleBonus=0.15",
+            "status": "complete",
+            "testName": "Whiteiron crawler module adds same-cast damage and grant, plus star-four device repair"
+          },
+          {
+            "effect": "fourStarDeviceRepairRatioBonus=0.1",
+            "status": "complete",
+            "testName": "Whiteiron crawler module adds same-cast damage and grant, plus star-four device repair"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4072_ironmn_0",
+        "assault_mod_char_4072_ironmn_1"
+      ]
+    },
+    {
+      "charId": "char_4072_ironmn",
+      "moduleId": "uniequip_003_ironmn",
+      "effectHandling": "三星解锁：装置场上上限+1，损毁回收率由70%升至80%；四星加强：保留上述效果且仅在实际回收grant成功时额外回复1点技力。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Whiteiron economy module adds to retained 70% recycle talent and grants star-four recycle SP",
+        "effects": [
+          {
+            "effect": "fieldCapBonus=1",
+            "status": "complete",
+            "testName": "Whiteiron economy module adds to retained 70% recycle talent and grants star-four recycle SP"
+          },
+          {
+            "effect": "recycleChanceBonus=0.1",
+            "status": "complete",
+            "testName": "Whiteiron economy module adds to retained 70% recycle talent and grants star-four recycle SP"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Whiteiron economy module adds to retained 70% recycle talent and grants star-four recycle SP",
+        "effects": [
+          {
+            "effect": "fieldCapBonus=1",
+            "status": "complete",
+            "testName": "Whiteiron economy module adds to retained 70% recycle talent and grants star-four recycle SP"
+          },
+          {
+            "effect": "recycleChanceBonus=0.1",
+            "status": "complete",
+            "testName": "Whiteiron economy module adds to retained 70% recycle talent and grants star-four recycle SP"
+          },
+          {
+            "effect": "fourStarRecycleSp=1",
+            "status": "complete",
+            "testName": "Whiteiron economy module adds to retained 70% recycle talent and grants star-four recycle SP"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4072_ironmn_0",
+        "assault_mod_char_4072_ironmn_1"
+      ]
+    },
+    {
+      "charId": "char_245_cello",
+      "moduleId": "uniequip_002_cello",
+      "effectHandling": "三星解锁：技能凋亡比例+5%，积存上限+1；四星加强：凋亡+5%、积存+1且范围每秒凋亡+2%。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Cello apoptosis module compares real skill decay, charge capacity, and four-star field decay to baseline",
+        "effects": [
+          {
+            "effect": "技能凋亡比例+5%，积存上限+1",
+            "status": "complete",
+            "testName": "Cello apoptosis module compares real skill decay, charge capacity, and four-star field decay to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Cello apoptosis module compares real skill decay, charge capacity, and four-star field decay to baseline",
+        "effects": [
+          {
+            "effect": "凋亡+5%、积存+1且范围每秒凋亡+2%。",
+            "status": "complete",
+            "testName": "Cello apoptosis module compares real skill decay, charge capacity, and four-star field decay to baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_245_cello_0",
+        "assault_mod_char_245_cello_1"
+      ]
+    },
+    {
+      "charId": "char_245_cello",
+      "moduleId": "uniequip_003_cello",
+      "effectHandling": "三星解锁：凋亡增幅+5%；四星加强：增幅+5%且范围凋亡停顿延长至0.3秒。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Cello amplification module compares actual elemental vulnerability and four-star sluggish time",
+        "effects": [
+          {
+            "effect": "凋亡增幅+5%",
+            "status": "complete",
+            "testName": "Cello amplification module compares actual elemental vulnerability and four-star sluggish time"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-elite.test.mjs",
+        "testName": "Cello amplification module compares actual elemental vulnerability and four-star sluggish time",
+        "effects": [
+          {
+            "effect": "增幅+5%且范围凋亡停顿延长至0.3秒。",
+            "status": "complete",
+            "testName": "Cello amplification module compares actual elemental vulnerability and four-star sluggish time"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_245_cello_0",
+        "assault_mod_char_245_cello_1"
+      ]
+    }
+  ],
+  "inventorySourceRevision": "59cefd35d625e31a8642f391e057b2c74866da86",
+  "inventoryScope": "Current compiled parameter inventory and existing named test declarations; test execution and current effect acceptance come from the gameplay validation receipt. Historical module subeffect labels are not new execution proof."
+}
