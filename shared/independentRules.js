@@ -1,23 +1,10 @@
 // Shared, data-based eligibility. Descriptions are display text and never execution rules.
 import { loadoutRecord } from './loadoutRecord.js';
-import { levelBodyStats } from './independentGrowth.js';
-
-// Catalog data, not mutable save metadata, defines whether a deployed entity
-// consumes an operator slot. TOKEN profession narrows Darkmoon support entries
-// to summon bodies; prize-support operators remain ordinary operators.
-export function deploymentSlots(piece, catalog) {
-  const operator = catalog?.operators?.[piece?.chessId];
-  if (!operator) return piece?.kind === 'token' ? 0 : 1;
-  return operator?.darkmoonSupport === true && operator?.profession === 'TOKEN' ? 0 : 1;
-}
-
-export function countDeploymentSlots(pieces, catalog) {
-  return (pieces || []).reduce((total, piece) => total + (piece?.row != null && piece?.col != null ? deploymentSlots(piece, catalog) : 0), 0);
-}
+import { N_ } from './i18n.js';
 
 export const TAVERN_FACTIONS = Object.freeze({
-  yanShip:'炎', victoriaShip:'维多利亚', lateranoShip:'拉特兰', egirShip:'阿戈尔',
-  kjeragShip:'谢拉格', sargonShip:'萨尔贡', siracusaShip:'叙拉古', kazimierzShip:'卡西米尔',
+  yanShip:N_('炎'), victoriaShip:N_('维多利亚'), lateranoShip:N_('拉特兰'), egirShip:N_('阿戈尔'),
+  kjeragShip:N_('谢拉格'), sargonShip:N_('萨尔贡'), siracusaShip:N_('叙拉古'), kazimierzShip:N_('卡西米尔'),
 });
 
 export function nativeRecord(piece, catalog) {
@@ -35,7 +22,6 @@ export function nativeFactions(piece, catalog) {
 
 export function tavernFactions(piece, catalog) {
   const out=new Set(nativeFactions(piece,catalog));
-  if(catalog?.config?.factionIdentityEquipment===false)return [...out];
   const proxyEligible = new Set(Array.isArray(catalog?.config?.tavernFactions) ? catalog.config.tavernFactions : Object.values(TAVERN_FACTIONS));
   // Workshop faction equivalence satisfies recipes, while native identity still governs handovers.
   if(catalog?.operators?.[piece?.chessId]?.tavernFactionProxy==='ALL')for(const faction of proxyEligible)out.add(faction);
@@ -96,7 +82,7 @@ export function inheritanceQualification(donor, receiver, catalog) {
 
 export function nativeBodyStats(piece, catalog) {
   const raw=nativeRecord(piece,catalog);
-  const stats=levelBodyStats(piece,catalog,raw);
+  const stats={...(loadoutRecord(raw,piece)?.stats || raw?.stats || {})};
   if(piece?.bodyPenaltyApplied) {
     const penalty=catalog?.config?.bodyPenalty || {};
     stats.atk=Math.floor((stats.atk||0)*(penalty.baseAttackRatio ?? 0.8));

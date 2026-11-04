@@ -2,12 +2,12 @@
 // Conventions of the tier-6 kits: ../shared/tier6.js; kit contract and rules: ../README.md.
 
 import { canTargetEnemy } from '../../../targeting.js';
-import { applyDamageIncrease } from '../../../../../shared/damageIncrease.js';
 import {
   num, bv, tbb, moduleBb, live, opsOf, ANY, onDefaultSkill, selectedSkill, skillGridOf, AROUND8, onElementHit,
   elementDmg, aura,
 } from '../shared/tier6.js';
 import { holdProtect, byEnemyAttack } from '../shared/tier1.js';
+import { applyDamageIncrease } from '../../../../../shared/damageIncrease.js';
 
 /**
  * "传送至自身位置": a ground enemy that can reach `unit`'s tile on the ground grid is moved onto it (unblocked, its

@@ -23,6 +23,11 @@ export class BattleLifecycle {
     const seq0 = this._deploySeq;
     const lists = this.players.map((ps) => ps.units.filter((u) => u.kind === 'op' || u.kind === 'token').slice().sort((a, b) =>
       (ps.mirror ? b.homeC - a.homeC : a.homeC - b.homeC) || b.homeR - a.homeR || a.id - b.id));
+    if (this.assaultStrict && this.assaultDeployAnchors?.size) for (let index = 0; index < lists.length; index++) {
+      const area = this.assaultDeploymentArea(this.players[index].playerId);
+      const ranks = new Map(area.filter((entry) => entry.kind === 'operator').map((entry, rank) => [entry.unit, rank]));
+      lists[index].sort((a, b) => (ranks.get(a) ?? Infinity) - (ranks.get(b) ?? Infinity));
+    }
     // a summon piece flagged `deferDeploy` by content (one its owner's loadout does not make — 赫默 on S1 with a drone
     // piece —, or a skill's summon when shared/constants.js SKILL_SUMMON_START_DEPLOY is off: content/tokens.js
     // dockSkillSummons) stays off the field, its tile reserved (isReservedTile), until content deploys it
@@ -50,6 +55,15 @@ export class BattleLifecycle {
       }
     }
     this.emit('battleStart', {});
+    // 联防 restores the previous phase's state after all opening effects have established the new stats. In
+    // particular, Egir rebuilds devour attributes without charging carried targets for its opening damage again.
+    // Keep fractional HP: a legal survivor below 1% (or below 1 HP after max-HP changes) must not be healed by carry.
+    if (this.kind === 'unite') for (const u of this.allyUnits) {
+      const cs = u.carry;
+      if (!cs || cs.down || !u.alive || !u.deployed || u.deploySeq <= seq0) continue;
+      if (u.kind === 'op' && Number.isFinite(cs.hpPct) && cs.hpPct > 0) u.hp = u.s.maxHp * Math.min(1, cs.hpPct);
+      if (Number.isFinite(cs.sp) && u.skill) u.skill.setSpTotal(cs.sp);
+    }
     // redeploy-time effects that start with the battle (机变 征召 "所有干员的再部署时间-50%", added by a battleStart
     // handler) cover the operators forced out above too: their timer is re-read with them, as a later knock-out's is
     for (const u of this.allyUnits) {
@@ -69,7 +83,15 @@ export class BattleLifecycle {
       this._phase('scheduled', () => this._runScheduled());
       this._phase('spawns', () => this._processSpawns());
       this._phase('dp', () => {
-        for (const ps of this.players) ps.dp = Math.min(this.flags.dpMax, ps.dp + this.flags.dpPerSec * dt);
+        for (const ps of this.players) {
+          if (this.assaultStrict) this.addDp(ps.playerId, this.flags.dpPerSec * dt, 'natural');
+          else {
+            const previous = ps.dp;
+            ps.dp = Math.min(this.flags.dpMax, ps.dp + this.flags.dpPerSec * dt);
+            const gained = ps.dp - previous;
+            if (gained > 0 && this._hooks.dpGained) this.emit('dpGained', { playerId: ps.playerId, amount: gained, source: 'natural' });
+          }
+        }
       });
       this._phase('buffs', () => this._tickBuffs(dt));
       this._phase('enemies', () => {
@@ -91,8 +113,10 @@ export class BattleLifecycle {
           const u = list[i];
           if (!u.alive || !u.deployed) continue;
           try {
+            if (this.assaultRuntime) this.assaultRuntime.flush();
             if (u.skill) u.skill.tick(dt);
-            if (u.alive && u.kind !== 'device') updateAlly(this, u, dt);
+            if (u.alive && (u.kind !== 'device' || u.mem?.assaultCombatDevice === true)) updateAlly(this, u, dt);
+            if (this.assaultRuntime) this.assaultRuntime.flush();
           } catch (err) { this._internalError('updateAlly', err); }
         }
       });
@@ -134,12 +158,18 @@ export class BattleLifecycle {
 
   _phase(name, fn) {
     if (this.finished || this._endReq) return;
-    try { fn(); } catch (e) { this._internalError(name, e); }
+    try {
+      fn();
+      if (this.assaultRuntime) this.assaultRuntime.flush();
+    } catch (e) { this._internalError(name, e); }
   }
 
   _checkEnd() {
     if (this.finished) return;
-    if (this.sharedBoss && this.sharedBoss.hp <= 0) { this._finish('cleared'); return; }
+    if (this.sharedBoss && this.sharedBoss.hp <= 0
+      && (!this.assaultStrict || (!this._pending.length && !this.enemies.some((enemy) => enemy.alive) && !this._hasPendingEnemySchedules()))) {
+      this._finish('cleared'); return;
+    }
     // A boss / hidden field with a shared pool ends only when the pool is empty or the match forces an end (DESIGN
     // §5.5) — never merely because it emptied: the h07_04 pair leader (official route: no wait) can walk into the
     // objective, and the field then idles while another field may still empty the pool or the overtime drain ends it.
@@ -162,7 +192,7 @@ export class BattleLifecycle {
     // neutral (`mem.noLeak`: 隐德来希's 心烛, which follows its original) is never a leak — it is in no spawn schedule, so
     // a client result listing it would be rejected (fields.js validateClientResult 'leak key').
     for (const e of this.enemies) {
-      if (!e.alive || e.isBoss || e.mem.noLeak) continue;
+      if (!e.alive || (e.isBoss && !this.assaultStrict) || e.mem.noLeak) continue;
       this._recordLeak(e, true);
     }
     this.unspawned = [];

@@ -23,7 +23,6 @@ export function uiUrl(m, key) {
  * @param {any} chess chess.json record (or { assets: { avatar } })
  */
 export function chessAvatarUrl(m, chess) {
-  if (chess?.darkmoonSupport) return tokenAvatarUrl(m, chess.assets?.avatar);
   const chars = obj(obj(m)?.chars);
   const id = str(chess?.assets?.avatar) || str(chess?.charId);
   if (!chars || !id) return null;
@@ -40,7 +39,6 @@ export function chessAvatarUrl(m, chess) {
  * @param {any} chess
  */
 export function chessPortraitUrl(m, chess) {
-  if (chess?.darkmoonSupport) return tokenAvatarUrl(m, chess.assets?.avatar);
   const chars = obj(obj(m)?.chars);
   const id = str(chess?.assets?.portrait);
   if (!chars) return null;
@@ -61,6 +59,7 @@ export function chessPortraitUrl(m, chess) {
 
 /** Skill icon of a chess record (manifest `skills[iconId]`, else the empty skill sprite). */
 export function skillIconUrl(m, chess) {
+  if (chess?.assets?.resonancePresentationIcon === 'support') return uiUrl(m, 'garrisonTypeIcon/icon_support');
   const skills = obj(obj(m)?.skills);
   const id = str(chess?.assets?.skillIcon) || str(chess?.skill?.iconId) || str(chess?.skill?.skillId);
   if (skills && id && skills[id]) return str(skills[id]);

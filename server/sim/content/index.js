@@ -29,6 +29,7 @@
 import { genericKit, genericTalents } from './generic.js';
 import { withUnitLoadouts } from '../simdata.js';
 import { isPotential } from '../../../shared/potential.js';
+import { buildAssaultKit, installAssaultContent } from './assault/index.js';
 
 // Content files are loaded with guarded dynamic imports: a module that fails to load (syntax error, throwing
 // top-level code, missing file) is logged and replaced by an empty module instead of breaking the server.
@@ -42,18 +43,15 @@ async function safeImport(path) {
 }
 
 const KIT_REGISTRY = await safeImport('./kits/index.js');
-const NEW_NATIVE_KITS = await safeImport('./newnativekits.js');
-const NATIVE_FACTION_KITS = await safeImport('./nativeVictoriaKazimierzSiracusa.js');
 const DOMAIN_NAMES = ['tokens', 'devices', 'enemies', 'bosses', 'bonds', 'garrisons', 'items', 'bands', 'choices'];
 const DOMAINS = await Promise.all(DOMAIN_NAMES.map((n) => safeImport(`./${n}.js`)));
 const tokens = DOMAINS[0];
 
-const workshopNativeKits = { ...NEW_NATIVE_KITS?.default, ...NATIVE_FACTION_KITS?.default };
-for (const key of Object.keys(workshopNativeKits)) {
-  const charId = key.replace(/^chess_native_/, '');
-  if (KIT_REGISTRY.OPERATOR_KITS?.[charId]) workshopNativeKits[key] = KIT_REGISTRY.OPERATOR_KITS[charId];
-}
-export const KITS = Object.freeze({ ...workshopNativeKits, ...KIT_REGISTRY.KITS });
+/**
+ * Merged kit registry: baseChessId → (bb, chess, def) => Kit, then the 补位 stand-in kits: stand-in charId → builder
+ * (kits/index.js; each kit file is loaded guarded too)
+ */
+export const KITS = KIT_REGISTRY.KITS ?? Object.freeze({});
 
 /** Domain modules in install order: tokens, devices, enemies, bosses, bonds, garrisons, items, bands, choices. */
 export const MODULES = Object.freeze(DOMAIN_NAMES.map((n, i) => [n, DOMAINS[i]]));
@@ -100,6 +98,7 @@ function fallbackKit(bb, raw, def) {
 
 /** Resolve the Kit of an ally unit. Never throws (falls back to the generic kit). */
 export function setupUnitKit(battle, unit, mode = 'full') {
+  if (mode === 'assault') return buildAssaultKit(battle, unit);
   try { syncUnitLoadout(battle, unit); } catch (e) { battle._handlerError?.('loadout', unit, e); }
   if (mode === 'none') return {};
   const def = unit.def || {};
@@ -110,15 +109,14 @@ export function setupUnitKit(battle, unit, mode = 'full') {
     if (typeof tk === 'function') {
       try { const k = tk(bb, raw, def); if (k) return k; } catch (e) { battle._handlerError(`tokenKit:${def.id}`, unit, e); }
     }
-    const fallback = def.skill ? genericKit(bb, raw, def) : {};
-    // Native summons whose behaviour is managed by the owner still participate in data-defined deployment limits.
-    if (battle.data.rawToken?.(def.id)) fallback.fromTokens = true;
-    return fallback;
+    return def.skill ? genericKit(bb, raw, def) : {};
   }
   if (unit.kind !== 'op') return {};
   const injected = battle.opts && battle.opts.kits;
-  if ((mode === 'full' || mode === 'independent') || injected) {
-    const f = kitOf(def, injected) ?? ((mode === 'full' || mode === 'independent') ? kitOf(def, KITS) : undefined);
+if (mode === 'full' || mode === 'independent' || injected) {
+    // kitOf: a stand-in's and a 自选 piece's kit is keyed by its charId and nothing else; any other def accepts the
+    // baseId (`…_a`), the exact id and the suffix-less id (DESIGN §5.6's example, data/SIM.md)
+    const f = kitOf(def, injected) ?? (mode === 'full' || mode === 'independent' ? kitOf(def, KITS) : undefined);
     if (typeof f === 'function') {
       try {
         const k = f(bb, raw, def);
@@ -196,8 +194,7 @@ export function syncUnitLoadout(battle, unit) {
     const owner = unit.ownerUnit;
     syncUnitLoadout(battle, owner);
     if (!owner.def || !owner.def.loadout) return;
-    const ownerChessId = owner.def.raw?.darkmoonNativeChessId ?? owner.def.id;
-    const want = battle.data.getToken(unit.def.id, ownerChessId, owner.def.loadout, unit.nativeOwnerGrowth ?? owner.nativeGrowthStatus ?? null);
+    const want = battle.data.getToken(unit.def.id, owner.def.id, owner.def.loadout);
     if (want && want !== unit.def && want.id === unit.def.id) swapDef(unit, want);
   }
 }
@@ -250,12 +247,33 @@ export function skillSpecSource(def, kits = KITS) {
 
 /**
  * Install kits for every ally unit and (mode 'full') every domain module. Mode 'independent' retains full KITS and
- * token kits plus native token, device, enemy and boss domains; its extra mechanics arrive via extraContent. First, a Battle constructed without the spec
+ * token kits but installs no original-domain modules; its battle mechanisms arrive via extraContent. First, a Battle constructed without the spec
  * path (server-run fields, bot rehearsals, tests) gets the same per-battle loadout data view createBattleFromSpec uses
  * (simdata withUnitLoadouts over its players' inputs), so summons spawned during the battle (`getToken(id, owner)`)
  * and every other id-only lookup resolve the owner's selected skill / module there too (DESIGN §16).
  */
 export function installContent(battle, { mode = 'full', extra = null } = {}) {
+  if (mode === 'assault') {
+    const assault = battle.opts.assault;
+    if (!assault || typeof assault !== 'object' || assault.strict !== true) throw new Error('content: assault requires opts.assault.strict=true');
+    if (!assault.kits || typeof assault.kits !== 'object') throw new Error('content: assault requires a complete caller-provided kit registry');
+    if (assault.install != null && typeof assault.install !== 'function') throw new Error('content: assault.install must be a function');
+    if (extra != null && (!Array.isArray(extra) || extra.length)) throw new Error('content: assault does not accept legacy extraContent');
+    battle.stage = { ...battle.stage, devices: (battle.stage.devices || []).filter((device) => {
+      const key = String(device.key ?? '').toLowerCase();
+      return !key.includes('coldwind') && !key.includes('cold_wind') && !key.includes('turret');
+    }) };
+    installAssaultContent(battle);
+    // 'devices' too: the stage's tile / trap mechanics (活性源石, 沼泽, 烟雾, 深水, 气流, crates) are part of every
+    // assault field (docs/assault-mode/design.md §地图: 属于格子、机关或敌人机制的效果保留) — the covenant-reward
+    // devices (coldWind, turret) stay filtered out above.
+    for (const name of ['devices', 'enemies', 'bosses']) {
+      const mod = DOMAINS[DOMAIN_NAMES.indexOf(name)];
+      if (typeof mod.install === 'function') mod.install(battle);
+    }
+    for (const unit of battle.allyUnits) if (!unit.kit) battle._setupUnit(unit);
+    return;
+  }
   try {
     const view = withUnitLoadouts(battle.data, (battle.players || []).map((p) => p && p.input));
     if (view && view !== battle.data) battle.data = view;
@@ -264,9 +282,8 @@ export function installContent(battle, { mode = 'full', extra = null } = {}) {
     if (u.kit) continue;
     try { battle._setupUnit(u); } catch (e) { battle._handlerError('setupUnit', u, e); }
   }
-  if (mode === 'full' || mode === 'independent') {
+  if (mode === 'full') {
     for (const [name, mod] of MODULES) {
-      if (mode === 'independent' && !['tokens', 'devices', 'enemies', 'bosses'].includes(name)) continue;
       if (typeof mod.install !== 'function') continue;
       try { mod.install(battle); } catch (e) { battle._handlerError(`content:${name}`, null, e); }
     }

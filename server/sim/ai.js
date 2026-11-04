@@ -101,6 +101,13 @@ export function updateAlly(b, u, dt) {
   // (a 秘术师's `canAttack` is its own target rule: false = no valid target — 深靛's bound enemies, 维伊's marked ones)
   if (prof.canAttack && !prof.canAttack(b, u)) { if (prof.storeEnergy) { u.trait.hadTarget = false; storeEnergy(b, u, prof); } return; }
   let targets = acquireTargets(b, u, prof);
+  // A DEFAULT charged heal can replace this attack with an eligible ally even when no enemy exists.
+  // Run after cooldown/control checks so silence, disarm and the exact attack cadence still apply (#406).
+  if (!targets.length && sk?.triggerAllies && sk.onAboutToAttack()) {
+    prof = effectiveProfile(u);
+    if (prof.noAttack || !u.alive) return;
+    targets = acquireTargets(b, u, prof);
+  }
   if (!targets.length) { u.trait.hadTarget = false; storeEnergy(b, u, prof); return; }
   u.trait.hadTarget = true;
   if (sk && sk.onAboutToAttack()) {
@@ -164,6 +171,16 @@ export function acquireTargets(b, u, prof) {
   if (u.blocking.length) for (const e of b.blockedTargets(u, prof)) if (!cands.includes(e)) cands.push(e);
   // an ally target (Battle.setAllyTarget: 白铁's 铁钳号·原型机, an enemy-camp summon with 嘲讽等级 −2) after every enemy
   const extra = b._allyTargets && b._allyTargets.size ? b.allyTargetsInKeys(u.rangeKeys, u) : null;
+  // Fortress has an extra melee tile even against enemies it cannot block (PRTS branch / 号角). Its ordinary
+  // ranged targets still take priority; this does not fill the other tiles in its ranged blind spot.
+  if (prof.fortress && !cands.length && !extra?.length) {
+    const here = [u.tileR * COLS + u.tileC];
+    const near = b.enemiesInKeys(here, u, prof);
+    if (!near.length && b._allyTargets?.size) near.push(...b.allyTargetsInKeys(here, u));
+    prof._fortressMelee = near.length > 0;
+    sortEnemyTargets(b, u, near, prof.priority);
+    return near.slice(0, 1);
+  }
   if (extra && extra.length) {
     if (prof.allInRange) return cands.concat(extra);
     sortEnemyTargets(b, u, cands, prof.priority);
@@ -203,6 +220,9 @@ export function performAttack(b, u, prof, targets, opts = null) {
   u.lastAttackAt = b.time;
   u.stats.attacks++;
   const attackId = ++b._attackSeq; // every damage instance of this attack (all targets, splash, chain) carries it
+  if (b.assaultStrict && b._hooks.assaultAttackStarted) b.emit('assaultAttackStarted', {
+    attacker: u, targets, isSkill, attackId, noAmmo: !!opts?.noAmmo,
+  });
   const isHeal = !!(prof.heal && prof.dmgType === 'heal');
   // 首次接敌 (official voice type ENCOUNTER_ENEMY, ≥ 3 s between two such lines): one event the first time a unit
   // attacks an enemy, whatever the attack is — the client answers with that operator's 行动开始 line (audio.js voice).
@@ -216,9 +236,11 @@ export function performAttack(b, u, prof, targets, opts = null) {
   const energy = !isHeal && prof.releaseEnergy ? prof.releaseEnergy(b, u) : 0;
   for (let i = 0; i < targets.length; i++) {
     const t = targets[i];
-    // Preserve enriched frame protocol metadata while carrying upstream first-hit energy and ally-boomerang behavior.
+// ['atk', src, tgt, projKind, attackId, isSkill 1|0] (shared/protocol.js EV): the renderer's FX registry keys on them
     b._ev(['atk', u.id, t.id, vis, attackId, isSkill ? 1 : 0]);
-    const info = { isSkill, index: i, attackId, energy: i === 0 ? energy : 0 };
+    // Freeze ammo-skill provenance at attack launch so impact-time ammo depletion cannot erase it.
+    const info = { isSkill, index: i, attackId, fortressMelee: !!prof._fortressMelee, energy: i === 0 ? energy : 0,
+      tags: u.skill?.active && u.skill.kind === 'ammo' ? ['ammoSkill'] : [] };
     if (isHeal) { doHeal(b, u, prof, t, info); continue; }
     const foe = t.side === 'enemy' || b.isAllyTarget(t);
     if (ranged && foe && prof.projectile === 'boomerang') {
@@ -232,7 +254,8 @@ export function performAttack(b, u, prof, targets, opts = null) {
       resolveHit(b, u, prof, t, info, t.x, t.y);
     }
   }
-  if (b._hooks.attack) b.emit('attack', { attacker: u, targets, isSkill });
+  if (b._hooks.attack) b.emit('attack', { attacker: u, targets, isSkill,
+    ...(b.assaultStrict ? { attackId, noAmmo: !!opts?.noAmmo } : null) });
   if (u.skill) u.skill.onAttackPerformed(targets, isSkill, !!(opts && opts.noAmmo));
   if (prof.afterAttack) b._safe(() => prof.afterAttack(b, u, targets), 'profile.afterAttack', u);
 }
@@ -301,13 +324,29 @@ export function resolveHit(b, u, prof, target, info, x, y) {
   if (target && target.alive) {
     let mulT = skillMul;
     if (prof.dmgMul) { const m = typeof prof.dmgMul === 'function' ? prof.dmgMul(b, u, target) : prof.dmgMul; if (Number.isFinite(m)) mulT *= m; }
+    const funnelMul = prof.funnelMul ? prof.funnelMul(b, u, target) : 1;
+    // Unreleased drones are additional damage on the caster's attack (PRTS 驭械术师), including a skill that only
+    // buffs or retargets that attack. `info.isSkill` is set for every attack or targeting override, so it must not
+    // decide this. `funnelBodyHits === 0` is the drone-only opt-out (the ramp stays inside the hits, no body).
+    // A volley shares one talent roll and attackId; extra drones never duplicate the body.
+    // [ASSUMED] Body instances precede additions at the existing projectile impact; a multi-hit volley keeps one ramp.
+    const attachedFunnel = !!prof.funnelMul && prof.funnelBodyHits !== 0;
+    if (!attachedFunnel) mulT *= funnelMul;
     const hits = prof.hitsFn ? prof.hitsFn(b, u, info) : Math.max(1, prof.hits || 1);
     // `hitDmgMul` (professions.js header): each instance's 伤害倍率 — the DamageInfo `mul`, after DEF / RES — and only the
     // first instance may give 受击回复 (砾's two 50 % hits, PRTS 砾 特性备注)
     const split = Number.isFinite(prof.hitDmgMul) && prof.hitDmgMul > 0 ? prof.hitDmgMul : null;
     let dealtMain = 0;
+    if (attachedFunnel && info.index === 0) {
+      const bodyHits = Math.max(1, prof.funnelBodyHits > 0 ? prof.funnelBodyHits : 1);
+      for (let h = 0; h < bodyHits && target.alive; h++) {
+        dealtMain += b.dealDamage(u, target, { amount: atk * scale * mulT, type: baseType,
+          isAttack: true, isSkill: info.isSkill, tags: prof.tags || [], attackId });
+      }
+    }
     for (let h = 0; h < hits && target.alive; h++) {
-      const d = { amount: atk * scale * mulT, type: baseType, isAttack: true, isSkill: info.isSkill, tags: prof.tags || [], attackId };
+      const d = { amount: atk * scale * mulT * (attachedFunnel ? funnelMul : 1), type: baseType,
+        isAttack: !attachedFunnel, isSkill: info.isSkill, tags: attachedFunnel ? [...(prof.tags || []), 'addition', 'funnel', ...(info.tags || [])] : [...(prof.tags || []), ...(info.tags || [])], attackId };
       if (split != null) { d.mul = split; if (h > 0) d.noSp = true; }
       dealtMain += b.dealDamage(u, target, d);
     }
@@ -317,7 +356,7 @@ export function resolveHit(b, u, prof, target, info, x, y) {
     x = target.x; y = target.y;
   }
   // splash: a 中点判定 radius around the target's position — a huge enemy counts by its 判定中心 (Battle.enemiesInRadius)
-  if (prof.splashRadius > 0) {
+  if (prof.splashRadius > 0 && (!info.fortressMelee || prof.fortressMeleeSplash)) {
     const r = prof.splashRadius;
     const sc = prof.splashScale ?? 1;
     for (const e of b.foesInRadius(x, y, r, true)) {
@@ -325,7 +364,7 @@ export function resolveHit(b, u, prof, target, info, x, y) {
       if (prof.groundOnly && e.isFlying) continue;
       if (!prof.canHitFly && e.isFlying && !prof.splashHitsFly) continue;
       if (e.s.flags.untargetable) continue;
-      const d = b.dealDamage(u, e, { amount: atk * scale * sc * skillMul, type: baseType, isAttack: true, isSplash: true, isSkill: info.isSkill, attackId });
+      const d = b.dealDamage(u, e, { amount: atk * scale * sc * skillMul, type: baseType, isAttack: true, isSplash: true, isSkill: info.isSkill, tags: [...(prof.tags || []), ...(info.tags || [])], attackId });
       dealtTotal += d;
       if (each) each(e, d, 'splash');
     }
@@ -345,7 +384,7 @@ export function resolveHit(b, u, prof, target, info, x, y) {
       if (!best) break;
       hit.add(best.id);
       b._ev(['atk', prev.id, best.id, 'chain', attackId, info.isSkill ? 1 : 0]);
-      const d = b.dealDamage(u, best, { amount: atk * scale * skillMul * powi(1 - (prof.chain.falloff ?? 0.15), k), type: baseType, isAttack: true, isSkill: info.isSkill, tags: ['chain'], attackId });
+      const d = b.dealDamage(u, best, { amount: atk * scale * skillMul * powi(1 - (prof.chain.falloff ?? 0.15), k), type: baseType, isAttack: true, isSkill: info.isSkill, tags: ['chain', ...(info.tags || [])], attackId });
       dealtTotal += d;
       if (prof.chain.sluggish && best.alive) b.applyStatus(best, 'sluggish', { duration: prof.chain.sluggish, source: u });
       if (each) each(best, d, 'chain');
@@ -402,6 +441,7 @@ function doHeal(b, u, prof, t, info) {
       const best = chainHealNext(b, u, prev, seen);
       if (!best) break;
       seen.add(best.id);
+      // ['atk', src, tgt, projKind, attackId, isSkill 1|0] (shared/protocol.js EV): a heal chain — no damage instance
       b._ev(['atk', prev.id, best.id, 'chainHeal', info.attackId ?? 0, info.isSkill ? 1 : 0]);
       b.heal(u, best, amount * powi(1 - (h.falloff ?? 0.25), k));
       prev = best;
@@ -900,6 +940,8 @@ function enemyAttack(b, e, prevCd) {
   // — the 'atk' event (kind `e.profile.shot`, drawn by the content's own fx), cooldown, pause, the 'attack' hook — and
   // the content's 'attack' handler deals its damage
   const deferred = !!(e.profile && e.profile.deferHit);
+  // A lethal strike may immediately redeploy its target. Post-attack effects still belong to the struck deployment.
+  const targetDeployments = new Map(targets.map((t) => [t, t.deploySeq]));
   for (const t of targets) {
     b._ev(['atk', e.id, t.id, deferred ? (e.profile.shot || 'none') : rangedShot ? 'enemy' : 'none', attackId, 0]);
     if (deferred) continue;
@@ -913,7 +955,7 @@ function enemyAttack(b, e, prevCd) {
       b.addProjectile({ from: e, target: t, speed: PROJECTILE_SPEEDS.enemy, visual: 'enemy', source: e, onHit: (c) => hit(c.target, true) });
     } else hit(t);
   }
-  if (b._hooks.attack) b.emit('attack', { attacker: e, targets, isSkill: false, attackId });
+  if (b._hooks.attack) b.emit('attack', { attacker: e, targets, targetDeployments, isSkill: false, ...(b.assaultStrict ? { attackId } : null) });
   e.atkCd = e.s.interval;
   // stands for the rest of its attack clip (attackStand; the wind-up was stood before the strike) — every enemy, blocked
   // or not: PRTS 状态机, an enemy's ATTACK / COMBAT state "攻击结束后回退到MOVE状态" and checks only 异常状态 every frame

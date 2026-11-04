@@ -37,9 +37,9 @@
 //   'meltdown', 'soul', 'sleepGuard', 'weightless'; engine kinds used: 'dodge'.
 
 import { bodyInKeys } from '../../../body.js';
-import { applyDamageIncrease } from '../../../../../shared/damageIncrease.js';
 import { absoluteRangeKeys, sortEnemyTargets } from '../../../targeting.js';
 import { hypot } from '../../../detmath.js';
+import { applyDamageIncrease } from '../../../../../shared/damageIncrease.js';
 
 // ---- text-only constants (the official blackboards carry no key for these) --------------------------------------
 /** 华法琳 S1 "只当目标生命值不满一半时才会触发"; 塞雷娅 S1 "血量小于等于一半"; 山 module "生命值高于50%时". */

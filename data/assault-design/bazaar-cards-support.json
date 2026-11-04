@@ -1,0 +1,8549 @@
+{
+ "schema": "assault-bazaar-cards/v1",
+ "family": "support",
+ "operators": [
+  {
+   "id": "char_240_wyvern",
+   "name": "香草",
+   "typeLabel": "先锋 · 尖兵 · 哥伦比亚 · 黑钢国际",
+   "profession": "PIONEER",
+   "branch": "尖兵",
+   "nation": "哥伦比亚",
+   "group": "黑钢国际",
+   "team": null,
+   "format": "synergy",
+   "skillName": "冲锋号令·援军",
+   "skillKind": "instant",
+   "sp": [
+    20,
+    17,
+    17,
+    17
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：获得 {a} 费用。",
+     "params": {
+      "a": [
+       2,
+       2,
+       3,
+       3
+      ]
+     },
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "player",
+     "effect": "dp(a)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "冲锋号令·援军：立即获得 {b} 费用，此干员攻击力 +35%，持续 10 秒。持续中可重复发起。 重复施放结算：每次施放立即获得原数值的费用，并攻击1名敌人造成135%物理伤害；攻击+35%的姿态刷新，不累加。",
+     "params": {
+      "b": [
+       3,
+       4,
+       5,
+       6
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self+player",
+     "effect": "dp(b); buff(atkPct=35, t=10)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [],
+     "overlap": "refresh-stance-and-independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "冲锋号令·援军：每次发动，你的其他先锋干员当前再部署时间 -{c} 秒。",
+     "params": {
+      "c": [
+       1,
+       1,
+       1.5,
+       2
+      ]
+     },
+     "trigger": {
+      "event": "skillStart",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies:先锋",
+     "effect": "redeployTimer(-c s)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "redeployTimer"
+     ]
+    },
+    {
+     "kind": "stack",
+     "template": "攻击提升：由你的其他干员获得费用时，本场战斗内此干员攻击力 +{d}%。",
+     "params": {
+      "d": [
+       1,
+       1.5,
+       2,
+       2.5
+      ]
+     },
+     "trigger": {
+      "event": "dpReceived",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(atkPct=+d)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "部署费用",
+     "suppressed": true
+    },
+    {
+     "kind": "growth",
+     "template": "援军：由你的其他干员获得的费用每累计 10 点，此干员攻击力 +{e}%（本局游戏内）。",
+     "params": {
+      "e": [
+       1,
+       1,
+       1.5,
+       2
+      ]
+     },
+     "trigger": {
+      "event": "dpReceived",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "persistGrowth(atkPct=+e per 10dp)",
+     "limit": null,
+     "scope": "run",
+     "newPrimitives": [],
+     "consumeKey": "部署费用",
+     "suppressed": true
+    }
+   ],
+   "modules": [],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_290_vigna",
+   "name": "红豆",
+   "typeLabel": "先锋 · 冲锋手 · 哥伦比亚",
+   "profession": "PIONEER",
+   "branch": "冲锋手",
+   "nation": "哥伦比亚",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "槌音",
+   "skillKind": "instant",
+   "sp": [
+    28,
+    24,
+    24,
+    24
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：此干员接下来 3 次攻击必定触发蛮力穿刺。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "buff(critNext=3)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "槌音：立即进入 {e} 秒：攻击间隔 +0.5 秒，攻击力 +{a}%。持续中可重复发起。 重复施放结算：每次施放立即重击1名敌人，造成330%物理伤害；保留攻击间隔增加的槌音姿态。",
+     "params": {
+      "e": [
+       8,
+       10,
+       12,
+       15
+      ],
+      "a": [
+       120,
+       150,
+       180,
+       200
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "buff(atkPct=a, aspd=-, t=t)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [],
+     "overlap": "refresh-stance-and-independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "蛮力穿刺：攻击时 10% 几率当次攻击力 +110%；技能中 30%。攻击被你的其他干员晕眩或战栗的敌人时，几率改为 {b}%。",
+     "params": {
+      "b": [
+       30,
+       35,
+       40,
+       50
+      ]
+     },
+     "trigger": {
+      "event": "attack",
+      "subject": "enemyByOthers",
+      "condition": "目标处于由其他干员施加的晕眩或战栗"
+     },
+     "target": "self",
+     "effect": "crit(chance=b, atkPct=110)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "晕眩"
+    },
+    {
+     "kind": "talent",
+     "template": "伟大的摇滚：此干员击倒敌人时，获得 1 费用，并为相邻干员充能 1。",
+     "params": {},
+     "trigger": {
+      "event": "kill",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "adjacentAllies",
+     "effect": "dp(1); sp(1)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "stack",
+     "template": "伟大的摇滚：你的其他干员使敌人晕眩或战栗时，本场战斗内此干员攻击力 +{c}%（每 1 秒最多一次）。",
+     "params": {
+      "c": [
+       2,
+       2,
+       3,
+       4
+      ]
+     },
+     "trigger": {
+      "event": "statusApplied:stun|tremble",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(atkPct=+c)",
+     "limit": "每 1 秒最多一次",
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "战栗",
+     "suppressed": true
+    },
+    {
+     "kind": "growth",
+     "template": "蛮力穿刺：你的其他干员击倒精英敌人时，蛮力穿刺的攻击力加成 +{d}%（本局游戏内）。",
+     "params": {
+      "d": [
+       3,
+       3,
+       4,
+       5
+      ]
+     },
+     "trigger": {
+      "event": "eliteKill",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "persistGrowth(critAtkPct=+d)",
+     "limit": null,
+     "scope": "run",
+     "newPrimitives": [
+      "eliteKill"
+     ],
+     "consumeKey": "击倒精英",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_vigna",
+     "name": "伟大的摇滚",
+     "line": {
+      "kind": "module",
+      "template": "伟大的摇滚：攻击生命低于 40% 的敌人时，攻击力提升至 115%。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "buff(atkPct=115, if=target hp<40%)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_151_myrtle",
+   "name": "桃金娘",
+   "typeLabel": "先锋 · 执旗手 · 罗德岛",
+   "profession": "PIONEER",
+   "branch": "执旗手",
+   "nation": "罗德岛",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "治愈之翼",
+   "skillKind": "instant",
+   "sp": [
+    27,
+    26,
+    25,
+    24
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：获得 {a} 费用，你的先锋干员回复 10% 最大生命。",
+     "params": {
+      "a": [
+       2,
+       3,
+       3,
+       4
+      ]
+     },
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "player+allies:先锋",
+     "effect": "dp(a); heal(pctMaxHp=10)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "治愈之翼：立即获得{r0}部署费用，并治疗周围3名干员200%攻击力的生命。",
+     "params": {
+      "b": [
+       8,
+       10,
+       12,
+       14
+      ],
+      "r0": [
+       8,
+       10,
+       12,
+       14
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "player+allies(around)",
+     "effect": "resolvedSkill",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "overlap": "independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "治愈之翼：此干员施放技能后，你的其他干员中再部署计时剩余最短的 1 名立即再部署。",
+     "params": {},
+     "trigger": {
+      "event": "skillStart",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "otherAllies(shortestRedeployTimer)",
+     "effect": "redeploy(1)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "浮光跃金：你的其他先锋干员施放技能时，治疗其 {c}% 攻击力，并获得 1 费用（每 3 秒最多一次）。",
+     "params": {
+      "c": [
+       60,
+       70,
+       80,
+       90
+      ]
+     },
+     "trigger": {
+      "event": "skillStart",
+      "subject": "allies:先锋",
+      "condition": null
+     },
+     "target": "trigger source",
+     "effect": "heal(scale=c); dp(1)",
+     "limit": "每 3 秒最多一次",
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "施放技能"
+    },
+    {
+     "kind": "talent",
+     "template": "浮光跃金：在场时，你的先锋干员每秒回复25生命。",
+     "params": {
+      "d": [
+       3,
+       4,
+       5,
+       6
+      ]
+     },
+     "trigger": {
+      "event": "aura",
+      "subject": "allAllies"
+     },
+     "target": "allies:先锋",
+     "effect": "regen(vanguard,25)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "施放技能",
+     "suppressed": false,
+     "growthSuppressed": false
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_myrtle",
+     "name": "“私人收藏”",
+     "line": {
+      "kind": "module",
+      "template": "“私人收藏”：首次施放后自身阻挡-1、身前1名干员阻挡+1（本场，不重复增加）；你的先锋干员每秒回复33生命。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(skillBlock=0, frontAllyBlock=+1); aura(allies:先锋 regen=33)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_181_flower",
+   "name": "调香师",
+   "typeLabel": "医疗 · 群愈师 · 罗德岛",
+   "profession": "MEDIC",
+   "branch": "群愈师",
+   "nation": "罗德岛",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "精调",
+   "skillKind": "instant",
+   "sp": [
+    60,
+    60,
+    60,
+    60
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：治疗你的全体干员 {a}% 攻击力。",
+     "params": {
+      "a": [
+       80,
+       100,
+       120,
+       150
+      ]
+     },
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(all)",
+     "effect": "heal(scale=a)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "精调：立即进入 {c} 秒：攻击速度 -50，攻击力 +250%。持续中可重复发起。 重复施放结算：每次施放立即治疗范围内所有干员300%攻击力的生命；精调按原数值强化治疗和薰衣草，不叠加。",
+     "params": {
+      "c": [
+       8,
+       10,
+       12,
+       15
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "buff(aspd=-50, atkPct=250, t=t)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [],
+     "overlap": "refresh-stance-and-independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "熏衣香：在场时，你的全体干员每秒回复 {b}% 攻击力的生命。你的其他干员再部署时，其周围 8 格干员回复 60% 攻击力。",
+     "params": {
+      "b": [
+       4,
+       4.5,
+       5,
+       5.5
+      ]
+     },
+     "trigger": {
+      "event": "redeploy",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "allies(around trigger, 8)",
+     "effect": "heal(scale=60)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "再部署"
+    },
+    {
+     "kind": "stack",
+     "template": "熏衣香：你的其他干员施放技能时，本场战斗内熏衣香治疗量 +4%。",
+     "params": {},
+     "trigger": {
+      "event": "skillStart",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(auraHealPct=+4)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "施放技能",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_flower",
+     "name": "“爱琴之吻”",
+     "line": {
+      "kind": "module",
+      "template": "“爱琴之吻”：普通治疗同时恢复 4 名干员。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(healTargets=4)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_385_finlpp",
+   "name": "清流",
+   "typeLabel": "医疗 · 疗养师 · 炎",
+   "profession": "MEDIC",
+   "branch": "疗养师",
+   "nation": "炎",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "治愈水波",
+   "skillKind": "instant",
+   "sp": [
+    24,
+    20,
+    20,
+    20
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    80,
+    80,
+    80,
+    80
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：攻击范围内的干员获得 4 秒抵抗。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(range)",
+     "effect": "status(resist, t=4)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "治愈水波：立即治疗攻击范围内全部干员 {a}% 攻击力。",
+     "params": {
+      "a": [
+       200,
+       260,
+       320,
+       350
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(range)",
+     "effect": "heal(scale=a)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "快速愈合：治疗目标后使其获得 4 秒抵抗；被治疗的其他干员充能 1（每名干员每 6 秒最多一次）。",
+     "params": {},
+     "trigger": {
+      "event": "heal",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "healed otherAllies",
+     "effect": "status(resist, t=4); sp(1)",
+     "limit": "每名干员每 6 秒最多一次",
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "stack",
+     "template": "快速愈合：你的其他干员施放技能时，本场战斗内治愈水波治疗量 +5%。",
+     "params": {},
+     "trigger": {
+      "event": "skillStart",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(skillHealPct=+5)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "施放技能",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_finlpp",
+     "name": "“江河之韵”",
+     "line": {
+      "kind": "module",
+      "template": "“江河之韵”：技能治疗效果 +20%。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(skillHealPct=+20)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_199_yak",
+   "name": "角峰",
+   "typeLabel": "重装 · 铁卫 · 谢拉格 · 喀兰贸易",
+   "profession": "TANK",
+   "branch": "铁卫",
+   "nation": "谢拉格",
+   "group": "喀兰贸易",
+   "team": null,
+   "format": "synergy",
+   "skillName": "抗寒体质",
+   "skillKind": "instant",
+   "sp": [
+    32,
+    28,
+    28,
+    28
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：周围 4 格的敌人寒冷 2 秒。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemies(around4)",
+     "effect": "status(cold, t=2)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "抗寒体质：立即发动 {a} 秒：生命上限 +50%，防御力 +30%，法术抗性 +100。持续中可重复发起。 重复施放结算：每次施放立即回复20%最大生命；保留生命、防御与法抗的抗寒姿态，不累加。",
+     "params": {
+      "a": [
+       8,
+       10,
+       12,
+       15
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "buff(hpPct=50, defPct=30, res=100, t=t)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [],
+     "overlap": "refresh-stance-and-independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "雪原卫士：法术抗性 +15。你的其他干员使敌人寒冷或冻结时，此干员充能 1（每 2 秒最多一次）。",
+     "params": {},
+     "trigger": {
+      "event": "statusApplied:cold|freeze",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "sp(1)",
+     "limit": "每 2 秒最多一次",
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "寒冷"
+    },
+    {
+     "kind": "stack",
+     "template": "雪原卫士：你的其他谢拉格干员施放技能时，本场战斗内此干员防御力 +3%。",
+     "params": {},
+     "trigger": {
+      "event": "skillStart",
+      "subject": "allies:谢拉格",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(defPct=+3)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "施放技能",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_yak",
+     "name": "父亲的袍子",
+     "line": {
+      "kind": "module",
+      "template": "父亲的袍子：阻挡数 +1。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "buff(block=+1)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_150_snakek",
+   "name": "蛇屠箱",
+   "typeLabel": "重装 · 铁卫 · 哥伦比亚",
+   "profession": "TANK",
+   "branch": "铁卫",
+   "nation": "哥伦比亚",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "壳状防御",
+   "skillKind": "instant",
+   "sp": [
+    40,
+    34,
+    34,
+    34
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：获得最大生命 {a}% 的护盾。",
+     "params": {
+      "a": [
+       20,
+       25,
+       30,
+       35
+      ]
+     },
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "shield(pctMaxHp=a)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "壳状防御：立即发动 {d} 秒：停止攻击，阻挡数 +1，防御力 +130%，每秒回复 3% 最大生命。持续中可重复发起。 重复施放结算：每次施放立即回复20%最大生命；保留停止攻击、阻挡+1、防御与自愈的壳状防御，不累加。",
+     "params": {
+      "d": [
+       8,
+       10,
+       12,
+       15
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "buff(block=+1, defPct=130, regenPct=3, t=t)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [],
+     "overlap": "refresh-stance-and-independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "防御专精：防御力 +12%；此干员阻挡敌人时，相邻干员防御力 +{b}%，持续 5 秒。",
+     "params": {
+      "b": [
+       6,
+       9,
+       12,
+       16
+      ]
+     },
+     "trigger": {
+      "event": "blocked",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "adjacentAllies",
+     "effect": "buff(defPct=b, t=5)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "growth",
+     "template": "防御专精：你的其他干员阻挡一名新敌人时，此干员防御力 +{c}%（本局游戏内）。",
+     "params": {
+      "c": [
+       0.3,
+       0.4,
+       0.5,
+       0.6
+      ]
+     },
+     "trigger": {
+      "event": "blocked",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "persistGrowth(defPct=+c)",
+     "limit": null,
+     "scope": "run",
+     "newPrimitives": [],
+     "consumeKey": "被阻挡",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_snakek",
+     "name": "超强棒球套装",
+     "line": {
+      "kind": "module",
+      "template": "超强棒球套装：阻挡敌人时防御力 +20%。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "buff(defPct=20, if=blocking)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_381_bubble",
+   "name": "泡泡",
+   "typeLabel": "重装 · 铁卫 · 萨尔贡",
+   "profession": "TANK",
+   "branch": "铁卫",
+   "nation": "萨尔贡",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "“挨打”",
+   "skillKind": "instant",
+   "sp": [
+    45,
+    40,
+    40,
+    40
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：周围敌人更容易攻击此干员，持续 5 秒。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "taunt(t=5)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "taunt"
+     ]
+    },
+    {
+     "kind": "skill",
+     "template": "“挨打”：立即发动 {b} 秒：停止攻击，防御力 +120%，更容易受到攻击；每次受到攻击对攻击者造成 50% 防御力的物理伤害。持续中可重复发起。 重复施放结算：每次施放立即对周围敌人造成150%物理伤害，并回复10%最大生命；反击姿态刷新。",
+     "params": {
+      "b": [
+       8,
+       10,
+       12,
+       15
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "buff(defPct=120, t=t); taunt; thorns(defScale=50)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [
+      "taunt"
+     ],
+     "overlap": "refresh-stance-and-independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "尖刺盾：敌人攻击此干员后，攻击力 -8%，并战栗 2 秒，持续 5 秒。",
+     "params": {},
+     "trigger": {
+      "event": "damageTaken",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "attacker",
+     "effect": "debuff(atkPct=-8, t=5); status(tremble, t=2)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "stack",
+     "template": "尖刺盾：你的其他干员使敌人战栗时，本场战斗内此干员防御力 +{a}%。",
+     "params": {
+      "a": [
+       2,
+       2,
+       3,
+       3
+      ]
+     },
+     "trigger": {
+      "event": "statusApplied:tremble",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(defPct=+a)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "战栗",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_bubble",
+     "name": "泡泡闪光必杀剑",
+     "line": {
+      "kind": "module",
+      "template": "泡泡闪光必杀剑：阻挡敌人时防御力 +20%；尖刺盾的攻击力降低改为 12%。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "buff(defPct=20, if=blocking); mod(spikeAtk=-12)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_196_sunbr",
+   "name": "古米",
+   "typeLabel": "重装 · 守护者 · 乌萨斯 · 乌萨斯学生自治团",
+   "profession": "TANK",
+   "branch": "守护者",
+   "nation": "乌萨斯",
+   "group": null,
+   "team": "乌萨斯学生自治团",
+   "format": "synergy",
+   "skillName": "备用军粮",
+   "skillKind": "instant",
+   "sp": [
+    5,
+    4,
+    4,
+    4
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：治疗生命最低的 2 名干员 100% 攻击力。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(lowestHp, 2)",
+     "effect": "heal(scale=100)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "备用军粮：下次攻击治疗周围 {d} 名干员 {a}% 攻击力。可储存 3 次。",
+     "params": {
+      "d": [
+       1,
+       1,
+       2,
+       2
+      ],
+      "a": [
+       130,
+       155,
+       180,
+       210
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(around, n)",
+     "effect": "heal(scale=a)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "备用军粮：被此干员治疗的其他干员防御力 +{b}%，持续 5 秒。",
+     "params": {
+      "b": [
+       8,
+       10,
+       12,
+       15
+      ]
+     },
+     "trigger": {
+      "event": "heal",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "healed otherAllies",
+     "effect": "buff(defPct=b, t=5)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "平底锅专精：攻击时 18% 几率当次攻击力提升至 200%，并晕眩敌人 1 秒。",
+     "params": {},
+     "trigger": {
+      "event": "static",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "proc(18%, atkPct=200, status(stun, t=1))",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "growth",
+     "template": "平底锅专精：你的其他干员使敌人晕眩时，此干员攻击力 +{c}%（本局游戏内，每 2 秒最多一次）。",
+     "params": {
+      "c": [
+       0.3,
+       0.4,
+       0.5,
+       0.6
+      ]
+     },
+     "trigger": {
+      "event": "statusApplied:stun",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "persistGrowth(atkPct=+c)",
+     "limit": "每 2 秒最多一次",
+     "scope": "run",
+     "newPrimitives": [],
+     "consumeKey": "晕眩",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_sunbr",
+     "name": "蜜糖馅饼礼包",
+     "line": {
+      "kind": "module",
+      "template": "蜜糖馅饼礼包：治疗生命低于 50% 的干员时，治疗量 +15%。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(healPct=+15, if=target hp<50%)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_128_plosis",
+   "name": "白面鸮",
+   "typeLabel": "医疗 · 群愈师 · 哥伦比亚 · 莱茵生命",
+   "profession": "MEDIC",
+   "branch": "群愈师",
+   "nation": "哥伦比亚",
+   "group": "莱茵生命",
+   "team": null,
+   "format": "synergy",
+   "skillName": "脑啡肽",
+   "skillKind": "instant",
+   "sp": [
+    100,
+    80,
+    80,
+    80
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：为你的其他干员充能 {a}。",
+     "params": {
+      "a": [
+       1,
+       1,
+       2,
+       2
+      ]
+     },
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "otherAllies",
+     "effect": "sp(a)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "脑啡肽：立即治疗生命比例最低的2名干员{r0}%攻击力的生命，并为其他干员各充能{r1}。",
+     "params": {
+      "c": [
+       10,
+       12,
+       14,
+       15
+      ],
+      "r0": [
+       180,
+       210,
+       240,
+       270
+      ],
+      "r1": [
+       1,
+       1.5,
+       2,
+       2.5
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "resolvedSkill",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "overlap": "independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "技力光环：在场时，你的其他干员技力自然回复速度 +{b}/秒（同类效果取最高）。",
+     "params": {
+      "b": [
+       0.3,
+       0.3,
+       0.4,
+       0.5
+      ]
+     },
+     "trigger": {
+      "event": "aura",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "otherAllies",
+     "effect": "buff(spRegen=+b)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "stack",
+     "template": "技力光环：你的其他干员再部署时，本场战斗内技力光环 +0.02/秒。",
+     "params": {},
+     "trigger": {
+      "event": "redeploy",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(auraSpRegen=+0.02)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "再部署",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_plosis",
+     "name": "医疗环境分析装置",
+     "line": {
+      "kind": "module",
+      "template": "医疗环境分析装置：攻击范围 +1 格；攻击范围内的其他干员技力光环额外 +0.05/秒。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(range+, auraInRange=+0.05)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_4163_rosesa",
+   "name": "瑰盐",
+   "typeLabel": "医疗 · 群愈师 · 伊比利亚",
+   "profession": "MEDIC",
+   "branch": "群愈师",
+   "nation": "伊比利亚",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "上佳的应急药呀",
+   "skillKind": "instant",
+   "sp": [
+    10,
+    8,
+    8,
+    8
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    80,
+    80,
+    80,
+    80
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：攻击范围内的干员受到的治疗 +17%，持续 10 秒。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(range)",
+     "effect": "buff(healTakenPct=17, t=10)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "上佳的应急药呀：下次治疗恢复 {a}% 攻击力。可储存 2 次。",
+     "params": {
+      "a": [
+       165,
+       190,
+       215,
+       240
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "ally(lowestHp)",
+     "effect": "heal(scale=a)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "最好的草药医生：自身攻击力 -5%，攻击范围内的干员受到的治疗效果 +17%。你的其他干员治疗干员时，此干员充能 1（每 2 秒最多一次）。",
+     "params": {},
+     "trigger": {
+      "event": "heal",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "sp(1)",
+     "limit": "每 2 秒最多一次",
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "治疗"
+    },
+    {
+     "kind": "stack",
+     "template": "最好的草药医生：你的其他伊比利亚干员施放技能时，本场战斗内受到治疗效果提升 +3%。",
+     "params": {},
+     "trigger": {
+      "event": "skillStart",
+      "subject": "allies:伊比利亚",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(healTakenAura=+3)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "施放技能",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_rosesa",
+     "name": "多彩盐漠生活",
+     "line": {
+      "kind": "module",
+      "template": "多彩盐漠生活：攻击范围 +1 格；最好的草药医生的受到治疗效果提升改为 22%。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(range+, talentHealTaken=22)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_102_texas",
+   "name": "德克萨斯",
+   "typeLabel": "先锋 · 尖兵 · 龙门 · 企鹅物流",
+   "profession": "PIONEER",
+   "branch": "尖兵",
+   "nation": "炎-龙门",
+   "group": "企鹅物流",
+   "team": null,
+   "format": "synergy",
+   "skillName": "剑雨",
+   "skillKind": "instant",
+   "sp": [
+    40,
+    34,
+    34,
+    34
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：获得 2 费用（战术快递）。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "player",
+     "effect": "dp(2)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "剑雨：立即获得 {a} 费用；对周围所有敌人造成 2 次 {b}% 攻击力的法术伤害，并晕眩 {c} 秒。",
+     "params": {
+      "a": [
+       8,
+       10,
+       11,
+       12
+      ],
+      "b": [
+       135,
+       155,
+       180,
+       200
+      ],
+      "c": [
+       2,
+       2,
+       3,
+       3
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemies(around)",
+     "effect": "dp(a); damage(scale=b, type=arts, hits=2); status(stun, t=c)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "战术快递：你的其他企鹅物流干员部署或再部署时，获得 {d} 费用，此干员充能 2。",
+     "params": {
+      "d": [
+       1,
+       1,
+       2,
+       2
+      ]
+     },
+     "trigger": {
+      "event": "redeploy|deployed",
+      "subject": "allies:企鹅物流",
+      "condition": null
+     },
+     "target": "self+player",
+     "effect": "dp(d); sp(2)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "再部署"
+    },
+    {
+     "kind": "stack",
+     "template": "战术快递：你的其他干员使敌人晕眩时，本场战斗内剑雨伤害 +3%（每 1 秒最多一次）。",
+     "params": {},
+     "trigger": {
+      "event": "statusApplied:stun",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(skillDmgPct=+3)",
+     "limit": "每 1 秒最多一次",
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "晕眩",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_texas",
+     "name": "外勤私人补给包",
+     "line": {
+      "kind": "module",
+      "template": "外勤私人补给包：技能伤害 +15%。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(skillDmgPct=+15)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_349_chiave",
+   "name": "贾维",
+   "typeLabel": "先锋 · 尖兵 · 叙拉古 · 贾维团伙",
+   "profession": "PIONEER",
+   "branch": "尖兵",
+   "nation": "叙拉古",
+   "group": null,
+   "team": "贾维团伙",
+   "format": "synergy",
+   "skillName": "火焰剥离",
+   "skillKind": "instant",
+   "sp": [
+    45,
+    40,
+    40,
+    40
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：在前方召唤 1 个机械爪（召唤物，持续 {a} 秒）。",
+     "params": {
+      "a": [
+       30,
+       35,
+       40,
+       45
+      ]
+     },
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "tile(front)",
+     "effect": "summon(claw, t=a)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "火焰剥离：立即获得 {b} 费用；周围敌人受到 {c}% 攻击力的法术伤害，法术抗性 -20%，持续 8 秒。",
+     "params": {
+      "b": [
+       7,
+       8,
+       9,
+       10
+      ],
+      "c": [
+       280,
+       300,
+       320,
+       350
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemies(around)",
+     "effect": "dp(b); damage(scale=c, type=arts); debuff(resPct=-20, t=8)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "技工专长：你的其他干员的召唤物出现时，该干员当前再部署时间 -2 秒（每 4 秒最多一次）。",
+     "params": {},
+     "trigger": {
+      "event": "summonSpawned",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "trigger owner",
+     "effect": "redeployTimer(-2s)",
+     "limit": "每 4 秒最多一次",
+     "scope": "instant",
+     "newPrimitives": [
+      "redeployTimer"
+     ],
+     "consumeKey": "召唤物"
+    },
+    {
+     "kind": "stack",
+     "template": "技工专长：你的其他干员的召唤物出现时，本场战斗内此干员攻击力与防御力 +{d}%。",
+     "params": {
+      "d": [
+       2,
+       2,
+       3,
+       3
+      ]
+     },
+     "trigger": {
+      "event": "summonSpawned",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(atkPct=+d, defPct=+d)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "召唤物",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_chiave",
+     "name": "自制千斤顶",
+     "line": {
+      "kind": "module",
+      "template": "自制千斤顶：机械爪生命与攻击力 +20%，退场时对周围造成 100% 攻击力的法术伤害。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "ownSummon",
+      "effect": "mod(summonStat=+20%, onExit=damage(100, arts))",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_496_wildmn",
+   "name": "野鬃",
+   "typeLabel": "先锋 · 冲锋手 · 卡西米尔 · 红松骑士团",
+   "profession": "PIONEER",
+   "branch": "冲锋手",
+   "nation": "卡西米尔",
+   "group": "红松骑士团",
+   "team": null,
+   "format": "synergy",
+   "skillName": "骑枪刺击",
+   "skillKind": "passive",
+   "sp": null,
+   "castOnDeploy": true,
+   "redeploySeconds": [
+    80,
+    80,
+    80,
+    80
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：立即发动骑枪刺击。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "castSkill()",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "castSkill"
+     ]
+    },
+    {
+     "kind": "skill",
+     "template": "骑枪刺击：部署或再部署后 30 秒内，攻击速度 +{a}。 重复施放结算：每次部署或再部署立即回复15%最大生命、斩击1名敌人造成200%物理伤害，冲锋姿态刷新。",
+     "params": {
+      "a": [
+       80,
+       100,
+       120,
+       135
+      ]
+     },
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "buff(aspd=a, t=30)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [],
+     "overlap": "refresh-stance-and-independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "一致向前：此干员部署或再部署时，你的近卫干员当前再部署时间 -{b} 秒。",
+     "params": {
+      "b": [
+       1,
+       1.5,
+       2,
+       2
+      ]
+     },
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies:近卫",
+     "effect": "redeployTimer(-b s)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "redeployTimer"
+     ]
+    },
+    {
+     "kind": "stack",
+     "template": "一致向前：你的其他干员再部署时，本场战斗内此干员攻击力 +{c}%。",
+     "params": {
+      "c": [
+       2,
+       2,
+       3,
+       3
+      ]
+     },
+     "trigger": {
+      "event": "redeploy",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(atkPct=+c)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "再部署",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_wildmn",
+     "name": "长枪替补套装",
+     "line": {
+      "kind": "module",
+      "template": "长枪替补套装：此干员再部署时间 -2 秒；击倒敌人后获得 2 费用。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(redeploySec=-2); onKill(dp(2))",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js",
+   "skillSource": "skchr_wildmn_1"
+  },
+  {
+   "id": "char_401_elysm",
+   "name": "极境",
+   "typeLabel": "先锋 · 执旗手 · 罗德岛",
+   "profession": "PIONEER",
+   "branch": "执旗手",
+   "nation": "罗德岛",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "聆听",
+   "skillKind": "instant",
+   "sp": [
+    34,
+    30,
+    30,
+    30
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：你的狙击干员当前再部署时间 -2 秒。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies:狙击",
+     "effect": "redeployTimer(-2s)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "redeployTimer"
+     ]
+    },
+    {
+     "kind": "skill",
+     "template": "聆听：停止攻击，立即获得 {a} 费用；锁定周围 {d} 名敌人：移动速度 -60%，防御力 -35%，隐匿失效，持续 {e} 秒。持续中可重复发起。 重复施放结算：每次施放立即获得原数值的费用并使周围原数量敌人停顿2秒；保留减防、揭隐及狙击支援，不叠加。",
+     "params": {
+      "a": [
+       12,
+       14,
+       16,
+       18
+      ],
+      "d": [
+       4,
+       4,
+       4,
+       5
+      ],
+      "e": [
+       10,
+       12,
+       15,
+       15
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemies(around, n)",
+     "effect": "dp(a, over=8s); debuff(moveSpd=-60%, defPct=-35, reveal, t=t)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [],
+     "overlap": "refresh-stance-and-independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "狙击支援：此干员施放技能时，你的狙击干员攻击速度 +{b}，持续 15 秒。",
+     "params": {
+      "b": [
+       15,
+       18,
+       20,
+       26
+      ]
+     },
+     "trigger": {
+      "event": "skillStart",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies:狙击",
+     "effect": "buff(aspd=b, t=15)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "stack",
+     "template": "狙击支援：你的狙击干员击倒敌人时，本场战斗内狙击支援的攻击速度 +1。",
+     "params": {},
+     "trigger": {
+      "event": "kill",
+      "subject": "allies:狙击",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(auraAspd=+1)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "击倒",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_elysm",
+     "name": "应急通讯指南",
+     "line": {
+      "kind": "module",
+      "template": "应急通讯指南：技能锁定的敌人受到的伤害 +{c}%。",
+      "params": {
+       "c": [
+        null,
+        null,
+        12,
+        12
+       ]
+      },
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(lockedDmgTaken=+c)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_4119_wanqin",
+   "name": "万顷",
+   "typeLabel": "先锋 · 执旗手 · 炎",
+   "profession": "PIONEER",
+   "branch": "执旗手",
+   "nation": "炎",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "应东风",
+   "skillKind": "instant",
+   "sp": [
+    34,
+    30,
+    30,
+    30
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    80,
+    80,
+    80,
+    80
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：周围 8 格的其他干员当前再部署时间 -{a} 秒。",
+     "params": {
+      "a": [
+       1,
+       1,
+       2,
+       2
+      ]
+     },
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(around8, others)",
+     "effect": "redeployTimer(-a s)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "redeployTimer"
+     ]
+    },
+    {
+     "kind": "skill",
+     "template": "应东风：停止攻击，15 秒内逐渐获得 {b} 费用；期间每秒治疗周围干员 25% 攻击力，周围干员攻击速度 +25。持续中可重复发起。 重复施放结算：每次施放立即治疗周围干员150%攻击力的生命；费用、周围治疗与攻速支援照常执行，攻速不叠加。",
+     "params": {
+      "b": [
+       12,
+       14,
+       16,
+       18
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "player+allies(around)",
+     "effect": "dp(b, over=15s); heal(scale=25, perSec); buff(aspd=25)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [],
+     "overlap": "refresh-stance-and-independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "看天时：周围 8 格的干员最大生命 +{c}%；部署方向与此干员相同时改为 +{d}%。",
+     "params": {
+      "c": [
+       6,
+       7,
+       8,
+       10
+      ],
+      "d": [
+       10,
+       11,
+       12,
+       14
+      ]
+     },
+     "trigger": {
+      "event": "aura",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(around8)",
+     "effect": "buff(hpPct=c|d)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "stack",
+     "template": "看天时：你的其他炎干员施放技能时，本场战斗内看天时的生命加成 +1%。",
+     "params": {},
+     "trigger": {
+      "event": "skillStart",
+      "subject": "allies:炎",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(auraHpPct=+1)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "施放技能",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_wanqin",
+     "name": "牵风",
+     "line": {
+      "kind": "module",
+      "template": "牵风：周围 8 格的其他干员再部署时，获得 1 费用。",
+      "params": {},
+      "trigger": {
+       "event": "redeploy",
+       "subject": "adjacentAllies",
+       "condition": "周围 8 格"
+      },
+      "target": "player",
+      "effect": "dp(1)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": [],
+      "consumeKey": "再部署"
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_497_ctable",
+   "name": "晓歌",
+   "typeLabel": "先锋 · 情报官 · 罗德岛",
+   "profession": "PIONEER",
+   "branch": "情报官",
+   "nation": "罗德岛",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "观火",
+   "skillKind": "passive",
+   "sp": null,
+   "castOnDeploy": true,
+   "redeploySeconds": [
+    35,
+    35,
+    35,
+    35
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：立即发动观火。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "castSkill()",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "castSkill"
+     ]
+    },
+    {
+     "kind": "skill",
+     "template": "观火：部署或再部署后 {a} 秒内，攻击力 +{b}%，每次攻击获得 1 费用。 重复施放结算：每次部署或再部署立即获得3部署费用，观火姿态刷新。",
+     "params": {
+      "a": [
+       8,
+       10,
+       12,
+       15
+      ],
+      "b": [
+       60,
+       75,
+       90,
+       100
+      ]
+     },
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "buff(atkPct=b, t=a); onAttack(dp(1))",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [],
+     "overlap": "refresh-stance-and-independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "观火：此干员再部署时，你的其他罗德岛干员当前再部署时间 -{c} 秒。",
+     "params": {
+      "c": [
+       1,
+       1,
+       1.5,
+       2
+      ]
+     },
+     "trigger": {
+      "event": "redeploy",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies:罗德岛",
+     "effect": "redeployTimer(-c s)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "redeployTimer"
+     ]
+    },
+    {
+     "kind": "talent",
+     "template": "万全：未阻挡敌人时攻击速度 +14，阻挡敌人时攻击力 +14%。",
+     "params": {},
+     "trigger": {
+      "event": "static",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "buff(aspd=14|atkPct=14)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "growth",
+     "template": "观火：你的其他干员再部署时，此干员攻击力 +{d}%（本局游戏内）。",
+     "params": {
+      "d": [
+       0.5,
+       0.6,
+       0.8,
+       1
+      ]
+     },
+     "trigger": {
+      "event": "redeploy",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "persistGrowth(atkPct=+d)",
+     "limit": null,
+     "scope": "run",
+     "newPrimitives": [],
+     "consumeKey": "再部署",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_ctable",
+     "name": "“不发声者”",
+     "line": {
+      "kind": "module",
+      "template": "“不发声者”：万全改为未阻挡敌人时攻击速度 +20，阻挡敌人时攻击力 +20%。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(talent aspd=20 | atkPct=20)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js",
+   "skillSource": "skchr_ctable_1"
+  },
+  {
+   "id": "char_4017_puzzle",
+   "name": "谜图",
+   "typeLabel": "先锋 · 情报官 · 维多利亚",
+   "profession": "PIONEER",
+   "branch": "情报官",
+   "nation": "维多利亚",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "关键线索",
+   "skillKind": "instant",
+   "sp": [
+    5,
+    5,
+    5,
+    5
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    35,
+    35,
+    35,
+    35
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：攻击范围内 1 名生命为满的敌人移动速度 -50%，持续 3.5 秒。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemy(range, fullHp)",
+     "effect": "debuff(moveSpd=-50%, t=3.5)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "关键线索：下次攻击造成 {a}% 物理伤害，并获得 3 费用。",
+     "params": {
+      "a": [
+       230,
+       250,
+       270,
+       300
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemy(target)",
+     "effect": "damage(scale=a, type=phys); dp(3)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "序列：攻击命中生命为满的敌人时，攻击力提升至 {b}%，并充能 2。",
+     "params": {
+      "b": [
+       125,
+       125,
+       130,
+       135
+      ]
+     },
+     "trigger": {
+      "event": "attack",
+      "subject": "self",
+      "condition": "目标生命为满"
+     },
+     "target": "self",
+     "effect": "buff(atkPct=b); sp(2)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "selfTrigger": true
+    },
+    {
+     "kind": "talent",
+     "template": "首要任务：你的其他维多利亚干员部署或再部署时，为其充能 {c}。",
+     "params": {
+      "c": [
+       1,
+       1,
+       2,
+       2
+      ]
+     },
+     "trigger": {
+      "event": "redeploy|deployed",
+      "subject": "allies:维多利亚",
+      "condition": null
+     },
+     "target": "trigger source",
+     "effect": "sp(c)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "再部署"
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_puzzle",
+     "name": "首要任务",
+     "line": {
+      "kind": "module",
+      "template": "首要任务：攻击命中生命为满的敌人时，使其移动速度 -50%，持续 3.5 秒。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": "攻击命中生命为满的敌人时"
+      },
+      "target": "enemy(target)",
+      "effect": "debuff(moveSpd=-50%, t=3.5)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_108_silent",
+   "name": "赫默",
+   "typeLabel": "医疗 · 医师 · 哥伦比亚 · 莱茵生命",
+   "profession": "MEDIC",
+   "branch": "医师",
+   "nation": "哥伦比亚",
+   "group": "莱茵生命",
+   "team": null,
+   "format": "synergy",
+   "skillName": "医疗无人机",
+   "skillKind": "instant",
+   "sp": [
+    22,
+    18,
+    18,
+    18
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：投放 1 架医疗无人机（召唤物，持续 10 秒，治疗周围干员）。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "tile(range)",
+     "effect": "summon(drone, t=10)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "医疗无人机：投放医疗无人机，持续 {a} 秒，每次治疗周围干员 {b}% 攻击力。",
+     "params": {
+      "a": [
+       10,
+       12,
+       14,
+       16
+      ],
+      "b": [
+       60,
+       75,
+       90,
+       100
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "tile(range)",
+     "effect": "summon(drone, t=a); heal(scale=b)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "强化注射：你的医疗干员攻击速度 +{d}。你的其他干员的召唤物出现时，你的医疗干员攻击速度再 +{c}，持续 8 秒。",
+     "params": {
+      "d": [
+       14,
+       15,
+       16,
+       16
+      ],
+      "c": [
+       6,
+       9,
+       12,
+       15
+      ]
+     },
+     "trigger": {
+      "event": "summonSpawned",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "allies:医疗",
+     "effect": "buff(aspd=c, t=8)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "召唤物"
+    },
+    {
+     "kind": "stack",
+     "template": "强化注射：你的其他莱茵生命干员施放技能时，本场战斗内强化注射攻击速度 +2。",
+     "params": {},
+     "trigger": {
+      "event": "skillStart",
+      "subject": "allies:莱茵生命",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(auraAspd=+2)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "施放技能",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_silent",
+     "name": "紧急防卫程序",
+     "line": {
+      "kind": "module",
+      "template": "紧急防卫程序：治疗地面干员时治疗量 +15%；无人机消失时对周围敌人造成 150% 攻击力的法术伤害。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "ownSummon",
+      "effect": "mod(healGroundPct=+15); onExit(damage(150, arts))",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_171_bldsk",
+   "name": "华法琳",
+   "typeLabel": "医疗 · 医师 · 罗德岛",
+   "profession": "MEDIC",
+   "branch": "医师",
+   "nation": "罗德岛",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "不稳定血浆",
+   "skillKind": "instant",
+   "sp": [
+    60,
+    50,
+    50,
+    50
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：为攻击范围内 1 名其他干员充能 {a}。",
+     "params": {
+      "a": [
+       2,
+       2,
+       3,
+       3
+      ]
+     },
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "ally(range, others, 1)",
+     "effect": "sp(a)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "不稳定血浆：此干员与攻击范围内 1 名干员攻击力 +{b}%，每秒流失 3% 最大生命，持续 15 秒。 重复施放结算：每次施放立即治疗血浆目标120%攻击力的生命；保留双目标攻击强化与持续失血，强化不累加。",
+     "params": {
+      "b": [
+       60,
+       70,
+       90,
+       100
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self+ally(range, 1)",
+     "effect": "buff(atkPct=b, t=15); loseHp(pctMax=3, perSec)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [
+      "loseHp"
+     ],
+     "overlap": "refresh-stance-and-independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "血液样本回收：攻击范围内的敌人被你的其他干员击倒时，为此干员与范围内 1 名其他干员充能 {c}；精英或领袖敌人再 +2。",
+     "params": {
+      "c": [
+       1,
+       1,
+       2,
+       2
+      ]
+     },
+     "trigger": {
+      "event": "kill",
+      "subject": "enemyByOthers",
+      "condition": "攻击范围内"
+     },
+     "target": "self+ally(range, others, 1)",
+     "effect": "sp(c); sp(+2, if=elite)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "击倒"
+    },
+    {
+     "kind": "stack",
+     "template": "血液样本回收：你的其他干员流失生命时，本场战斗内此干员治疗量 +2%（每 2 秒最多一次）。",
+     "params": {},
+     "trigger": {
+      "event": "loseHp",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(healPct=+2)",
+     "limit": "每 2 秒最多一次",
+     "scope": "battle",
+     "newPrimitives": [
+      "stack",
+      "loseHp"
+     ],
+     "consumeKey": "受到攻击",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_bldsk",
+     "name": "应急储备",
+     "line": {
+      "kind": "module",
+      "template": "应急储备：治疗生命低于 50% 的干员时，治疗量 +15%。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(healPct=+15, if=target hp<50%)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_4196_reckpr",
+   "name": "录武官",
+   "typeLabel": "医疗 · 医师 · 炎",
+   "profession": "MEDIC",
+   "branch": "医师",
+   "nation": "炎",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "触类旁通",
+   "skillKind": "instant",
+   "sp": [
+    8,
+    7,
+    7,
+    7
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：攻击范围内的干员攻击速度 +16，持续 10 秒。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(range)",
+     "effect": "buff(aspd=16, t=10)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "触类旁通：下次治疗恢复 {a}% 攻击力，并额外治疗 1 名干员。可储存 3 次。",
+     "params": {
+      "a": [
+       130,
+       145,
+       155,
+       170
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(2)",
+     "effect": "heal(scale=a, targets=2)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "学成于聚：攻击范围内的其他干员施放技能时，此干员充能 {b}，攻击速度 +16，持续 {c} 秒。",
+     "params": {
+      "b": [
+       1,
+       1,
+       1,
+       2
+      ],
+      "c": [
+       10,
+       10,
+       12,
+       12
+      ]
+     },
+     "trigger": {
+      "event": "skillStart",
+      "subject": "otherAllies",
+      "condition": "攻击范围内"
+     },
+     "target": "self",
+     "effect": "sp(b); buff(aspd=16, t=c)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "施放技能"
+    },
+    {
+     "kind": "stack",
+     "template": "学成于聚：攻击范围内的其他干员施放技能时，本场战斗内此干员治疗量 +{d}%。",
+     "params": {
+      "d": [
+       1.5,
+       2,
+       2.5,
+       3
+      ]
+     },
+     "trigger": {
+      "event": "skillStart",
+      "subject": "otherAllies",
+      "condition": "攻击范围内"
+     },
+     "target": "self",
+     "effect": "stack(healPct=+d)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "施放技能",
+     "suppressed": false
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_reckpr",
+     "name": "未完成的录武簿",
+     "line": {
+      "kind": "module",
+      "template": "未完成的录武簿：学成于聚改为充能 {e}。",
+      "params": {
+       "e": [
+        null,
+        null,
+        2,
+        3
+       ]
+      },
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(talentSp=e)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_4114_harold",
+   "name": "哈洛德",
+   "typeLabel": "医疗 · 行医 · 维多利亚",
+   "profession": "MEDIC",
+   "branch": "行医",
+   "nation": "维多利亚",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "重症优先",
+   "skillKind": "instant",
+   "sp": [
+    35,
+    30,
+    30,
+    30
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    80,
+    80,
+    80,
+    80
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：移除攻击范围内干员 50% 攻击力的元素损伤。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(range)",
+     "effect": "cleanseElement(scale=50)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "重症优先：立即进入 {a} 秒：攻击速度 +100；治疗元素损伤累计超过一半的干员时，回复量提升至 250%。持续中可重复发起。 重复施放结算：每次施放立即治疗范围内生命比例最低的2名干员200%攻击力的生命；急救姿态刷新。",
+     "params": {
+      "a": [
+       8,
+       10,
+       12,
+       15
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "buff(aspd=100, t=a); mod(elementHeal=250% if >half)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [],
+     "overlap": "refresh-stance-and-independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "我即军营：攻击范围内元素损伤累计超过一半的干员，受到的元素损伤 -{b}%。你的其他维多利亚干员部署或再部署时，此干员充能 {c}。",
+     "params": {
+      "b": [
+       15,
+       18,
+       20,
+       21
+      ],
+      "c": [
+       3,
+       4,
+       5,
+       6
+      ]
+     },
+     "trigger": {
+      "event": "redeploy|deployed",
+      "subject": "allies:维多利亚",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "sp(c)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "再部署"
+    },
+    {
+     "kind": "stack",
+     "template": "我即军营：你的其他干员引发元素损伤爆发时，本场战斗内此干员攻击力 +3%。",
+     "params": {},
+     "trigger": {
+      "event": "elementBurst:any",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(atkPct=+3)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "元素爆发",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_harold",
+     "name": "腿部护理套装",
+     "line": {
+      "kind": "module",
+      "template": "腿部护理套装：治疗同时回复 60% 攻击力的元素损伤（可回复未受伤干员的元素损伤）。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(elementHeal=60)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_494_vendla",
+   "name": "刺玫",
+   "typeLabel": "医疗 · 咒愈师 · 维多利亚",
+   "profession": "MEDIC",
+   "branch": "咒愈师",
+   "nation": "维多利亚",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "荆藤庇荫",
+   "skillKind": "instant",
+   "sp": [
+    32,
+    30,
+    30,
+    30
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：攻击范围内生命上限最高的干员获得最大生命 {a}% 的护盾。",
+     "params": {
+      "a": [
+       15,
+       20,
+       25,
+       30
+      ]
+     },
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "ally(range, maxHp)",
+     "effect": "shield(pctMaxHp=a)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "荆藤庇荫：立即进入 {b} 秒：攻击力 +80%；攻击范围内生命上限最高的干员更容易受到攻击，它受到攻击时，此干员对攻击者造成 50% 攻击力的法术伤害并治疗它。持续中可重复发起。 重复施放结算：每次施放立即治疗范围内生命比例最低的2名干员180%攻击力的生命；庇荫姿态刷新。",
+     "params": {
+      "b": [
+       8,
+       10,
+       12,
+       15
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self+ally(maxHp)",
+     "effect": "buff(atkPct=80, t=b); taunt(ally); onAllyHit(damage(50, arts); heal)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [
+      "taunt"
+     ],
+     "overlap": "refresh-stance-and-independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "土壤基肥改良：攻击范围内生命上限最高的干员受到的治疗效果 +{c}%。",
+     "params": {
+      "c": [
+       18,
+       20,
+       22,
+       24
+      ]
+     },
+     "trigger": {
+      "event": "aura",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "ally(range, maxHp)",
+     "effect": "buff(healTakenPct=c)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "stack",
+     "template": "土壤基肥改良：你的其他干员获得护盾或屏障时，本场战斗内土壤基肥改良 +2%（每 2 秒最多一次）。",
+     "params": {},
+     "trigger": {
+      "event": "shieldGained",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(auraHealTaken=+2)",
+     "limit": "每 2 秒最多一次",
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "屏障",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_vendla",
+     "name": "碎片",
+     "line": {
+      "kind": "module",
+      "template": "碎片：攻击造成法术伤害，攻击敌人时为攻击范围内 1 名干员治疗 60% 伤害的生命。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "ally(range, 1)",
+      "effect": "mod(dmgType=arts); onAttack(heal(60% dmg))",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_4139_papyrs",
+   "name": "莎草",
+   "typeLabel": "医疗 · 链愈师 · 萨尔贡",
+   "profession": "MEDIC",
+   "branch": "链愈师",
+   "nation": "萨尔贡",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "巧思乍现",
+   "skillKind": "instant",
+   "sp": [
+    9,
+    8,
+    8,
+    8
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    80,
+    80,
+    80,
+    80
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：攻击范围内的干员获得 22% 攻击力的屏障，持续 8 秒。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(range)",
+     "effect": "barrier(atkScale=22, t=8)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "巧思乍现：下次治疗量提升至 {a}% 攻击力，博览古卷附加的屏障提升至 200%。可储存 2 次。",
+     "params": {
+      "a": [
+       175,
+       180,
+       190,
+       200
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "ally(target)",
+     "effect": "heal(scale=a); barrier(x2)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "博览古卷：治疗会为目标附加 {b}% 攻击力的屏障，持续 8 秒。",
+     "params": {
+      "b": [
+       22,
+       22,
+       24,
+       24
+      ]
+     },
+     "trigger": {
+      "event": "static",
+      "subject": "self",
+      "condition": "治疗时附加（使用效果，不回流循环）"
+     },
+     "target": "healed allies",
+     "effect": "barrier(atkScale=b, t=8)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "博览古卷：你的其他干员的屏障或护盾破裂时，此干员充能 1（每 3 秒最多一次）。",
+     "params": {},
+     "trigger": {
+      "event": "shieldBroken",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "sp(1)",
+     "limit": "每 3 秒最多一次",
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "屏障破裂"
+    },
+    {
+     "kind": "stack",
+     "template": "博览古卷：你的萨尔贡干员施放技能时，本场战斗内博览古卷屏障 +2% 攻击力。",
+     "params": {},
+     "trigger": {
+      "event": "skillStart",
+      "subject": "allies:萨尔贡",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(barrierScale=+2)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "施放技能",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_papyrs",
+     "name": "小小的种子",
+     "line": {
+      "kind": "module",
+      "template": "小小的种子：治疗会在 3 名干员间跳跃，每次跳跃治疗量 -15%。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(chain=3, decay=15%)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_4222_taraxa",
+   "name": "风絮",
+   "typeLabel": "医疗 · 守望者 · 炎",
+   "profession": "MEDIC",
+   "branch": "守望者",
+   "nation": "炎",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "扶风起",
+   "skillKind": "instant",
+   "sp": [
+    40,
+    39,
+    37,
+    35
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：治疗攻击范围内生命最低的 2 名干员 100% 攻击力。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(range, lowestHp, 2)",
+     "effect": "heal(scale=100)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "扶风起：立即起飞 {a} 秒：攻击力 +120%，额外治疗 1 名起飞的干员，治疗目标时对其周围 2 名干员造成 50% 攻击力的治疗。持续中可重复发起。 重复施放结算：每次施放立即治疗范围内生命比例最低的3名干员150%攻击力的生命；起飞姿态刷新。",
+     "params": {
+      "a": [
+       8,
+       10,
+       12,
+       15
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "liftoff(t=a); buff(atkPct=120); mod(extraHeal)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [],
+     "overlap": "refresh-stance-and-independent-payoff"
+    },
+    {
+     "kind": "skill",
+     "template": "扶风起：起飞期间不阻挡地面敌人、不会被地面敌人攻击，可以阻挡空中敌人。",
+     "params": {},
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "liftoff(blockAir=true)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "定风絮：攻击范围内飞行的干员获得 {b}% 庇护，阻挡数 +1。你的其他干员阻挡空中敌人时，此干员充能 2（每 3 秒最多一次）。",
+     "params": {
+      "b": [
+       12,
+       12,
+       13,
+       14
+      ]
+     },
+     "trigger": {
+      "event": "blockedAir",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "sp(2)",
+     "limit": "每 3 秒最多一次",
+     "scope": "instant",
+     "newPrimitives": [
+      "blockedAir"
+     ],
+     "consumeKey": "阻挡空中"
+    },
+    {
+     "kind": "stack",
+     "template": "定风絮：你的其他干员使敌人浮空或失重时，本场战斗内此干员攻击力 +3%。",
+     "params": {},
+     "trigger": {
+      "event": "statusApplied:levitate|weightless",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(atkPct=+3)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "浮空",
+     "suppressed": true
+    }
+   ],
+   "modules": [],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_107_liskam",
+   "name": "雷蛇",
+   "typeLabel": "重装 · 哨戒铁卫 · 哥伦比亚 · 黑钢国际",
+   "profession": "TANK",
+   "branch": "哨戒铁卫",
+   "nation": "哥伦比亚",
+   "group": "黑钢国际",
+   "team": null,
+   "format": "synergy",
+   "skillName": "充能防御",
+   "skillKind": "instant",
+   "sp": [
+    20,
+    20,
+    20,
+    18
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：抵挡下一次伤害。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "block(nextHit)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "充能防御：每次获得1层可抵挡伤害的护盾（可叠加，直到消耗）；防御力 +{a}%，持续8秒，重复刷新防御持续时间。",
+     "params": {
+      "a": [
+       80,
+       85,
+       90,
+       100
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "block(nextHit); buff(defPct=a, t=8)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "战术防御：受到攻击时，为自身与周围 1 格内 1 名其他干员充能 1（每 1 秒最多一次）。",
+     "params": {},
+     "trigger": {
+      "event": "damageTaken",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self+ally(around1, others, 1)",
+     "effect": "sp(1)",
+     "limit": "每 1 秒最多一次",
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "stack",
+     "template": "雷抗：周围 4 格的其他干员施放技能时，本场战斗内此干员防御力 +3%、法术抗性 +1。",
+     "params": {},
+     "trigger": {
+      "event": "skillStart",
+      "subject": "adjacentAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(defPct=+3, res=+1)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "施放技能",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_liskam",
+     "name": "震撼存储",
+     "line": {
+      "kind": "module",
+      "template": "震撼存储：攻击范围内敌人隐匿失效；战术防御有 60% 几率让此干员额外充能 1。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(reveal); mod(talentSpBonus=60%)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_4137_udflow",
+   "name": "深巡",
+   "typeLabel": "重装 · 哨戒铁卫 · 阿戈尔",
+   "profession": "TANK",
+   "branch": "哨戒铁卫",
+   "nation": "阿戈尔",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "行动能力剥夺",
+   "skillKind": "instant",
+   "sp": [
+    36,
+    32,
+    32,
+    32
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    80,
+    80,
+    80,
+    80
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：前方敌人停顿 1 秒。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemies(front line)",
+     "effect": "status(sluggish, t=1)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "行动能力剥夺：立即发射鳍刺，穿过范围内4名敌人，各造成2次{r0}%物理伤害并停顿1秒。",
+     "params": {
+      "a": [
+       8,
+       10,
+       12,
+       15
+      ],
+      "r0": [
+       150,
+       180,
+       210,
+       240
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemies(front line, 4)",
+     "effect": "resolvedSkill",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "overlap": "independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "细胞活性抑制剂：攻击使目标 3 秒内每秒受到 {b} 点法术伤害，并附带 10% 攻击力的神经损伤（对海怪敌人加倍）。",
+     "params": {
+      "b": [
+       60,
+       75,
+       90,
+       100
+      ]
+     },
+     "trigger": {
+      "event": "static",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemy(target)",
+     "effect": "dot(arts=b, t=3); elementDamage(nerve, scale=10)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "elementDamage"
+     ]
+    },
+    {
+     "kind": "stack",
+     "template": "细胞活性抑制剂：你的其他阿戈尔干员击倒敌人时，本场战斗内此干员攻击力 +{c}%。",
+     "params": {
+      "c": [
+       4,
+       5,
+       6,
+       8
+      ]
+     },
+     "trigger": {
+      "event": "kill",
+      "subject": "allies:阿戈尔",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(atkPct=+c)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "击倒",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_udflow",
+     "name": "基于咖啡的神经活性剂",
+     "line": {
+      "kind": "module",
+      "template": "基于咖啡的神经活性剂：攻击范围内敌人隐匿失效。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "enemies(range)",
+      "effect": "reveal",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_4207_branch",
+   "name": "折桠",
+   "typeLabel": "重装 · 不屈者 · 乌萨斯",
+   "profession": "TANK",
+   "branch": "不屈者",
+   "nation": "乌萨斯",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "生存决心",
+   "skillKind": "instant",
+   "sp": [
+    22,
+    18,
+    18,
+    18
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：周围的地面敌人战栗 3 秒。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemies(around, ground)",
+     "effect": "status(tremble, t=3)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "生存决心：立即发动 {a} 秒：周围的地面敌人战栗 5 秒；攻击力 +150%，防御力 +50%，同时攻击阻挡的所有敌人。持续中可重复发起。 重复施放结算：每次施放立即攻击所有阻挡的敌人，造成250%物理伤害；保留周围地面敌人战栗与防御姿态。",
+     "params": {
+      "a": [
+       8,
+       10,
+       12,
+       15
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self+enemies(around, ground)",
+     "effect": "status(tremble, t=5); buff(atkPct=150, defPct=50, hitAllBlocked, t=a)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [],
+     "overlap": "refresh-stance-and-independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "简易包扎：技能结束时恢复 {b}% 最大生命。相邻干员受到攻击时，此干员充能 0.5（每 1 秒最多一次）。",
+     "params": {
+      "b": [
+       60,
+       65,
+       70,
+       80
+      ]
+     },
+     "trigger": {
+      "event": "damageTaken",
+      "subject": "adjacentAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "sp(0.5)",
+     "limit": "每 1 秒最多一次",
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "受到攻击"
+    },
+    {
+     "kind": "stack",
+     "template": "简易包扎：你的其他干员回复任一干员生命时，本场战斗内此干员防御力 +1%（每 2 秒最多一次）。",
+     "params": {},
+     "trigger": {
+      "event": "heal",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(defPct=+1)",
+     "limit": "每 2 秒最多一次",
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "治疗",
+     "suppressed": true
+    },
+    {
+     "kind": "growth",
+     "template": "简易包扎：你的其他干员使敌人战栗或晕眩时，此干员生命上限 +{c}%（本局游戏内，每 2 秒最多一次）。",
+     "params": {
+      "c": [
+       0.5,
+       0.6,
+       0.8,
+       1
+      ]
+     },
+     "trigger": {
+      "event": "statusApplied:tremble|stun",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "persistGrowth(hpPct=+c)",
+     "limit": "每 2 秒最多一次",
+     "scope": "run",
+     "newPrimitives": [],
+     "consumeKey": "战栗",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_branch",
+     "name": "“时间的痕迹”",
+     "line": {
+      "kind": "module",
+      "template": "“时间的痕迹”：本场施放后防御力额外+18%（不重复增加）；每次施放立即恢复80%最大生命。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "buff(defPct=18, during=skill); mod(talentHeal=80%)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_431_ashlok",
+   "name": "灰毫",
+   "typeLabel": "重装 · 要塞 · 卡西米尔 · 红松骑士团",
+   "profession": "TANK",
+   "branch": "要塞",
+   "nation": "卡西米尔",
+   "group": "红松骑士团",
+   "team": null,
+   "format": "synergy",
+   "skillName": "专注轰击",
+   "skillKind": "instant",
+   "sp": [
+    20,
+    18,
+    18,
+    18
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：对攻击范围内 1 名敌人及其周围造成 150% 物理伤害。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemy(range)+splash",
+     "effect": "damage(scale=150, type=phys, splash)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "专注轰击：立即向范围内3名敌人各发射3枚炮弹，每枚造成{r0}%物理伤害。",
+     "params": {
+      "a": [
+       6,
+       8,
+       9,
+       10
+      ],
+      "b": [
+       35,
+       40,
+       50,
+       55
+      ],
+      "r0": [
+       140,
+       160,
+       180,
+       200
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "resolvedSkill",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "overlap": "independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "炮术研习：攻击力 +10%，周身四格都是地面时改为 +18%。",
+     "params": {},
+     "trigger": {
+      "event": "static",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "buff(atkPct=10|18)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "growth",
+     "template": "炮术研习：你的其他卡西米尔干员部署或再部署时，此干员攻击力 +{c}%（本局游戏内）。",
+     "params": {
+      "c": [
+       0.5,
+       0.6,
+       0.8,
+       1
+      ]
+     },
+     "trigger": {
+      "event": "redeploy|deployed",
+      "subject": "allies:卡西米尔",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "persistGrowth(atkPct=+c)",
+     "limit": null,
+     "scope": "run",
+     "newPrimitives": [],
+     "consumeKey": "再部署",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_ashlok",
+     "name": "出门必备套装",
+     "line": {
+      "kind": "module",
+      "template": "出门必备套装：攻击被你的其他干员阻挡的敌人时，攻击力提升至 110%。",
+      "params": {},
+      "trigger": {
+       "event": "attack",
+       "subject": "enemyByOthers",
+       "condition": "目标被其他干员阻挡"
+      },
+      "target": "self",
+      "effect": "buff(atkPct=110)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": [],
+      "consumeKey": "被阻挡"
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_4148_philae",
+   "name": "菲莱",
+   "typeLabel": "重装 · 本源铁卫 · 萨尔贡",
+   "profession": "TANK",
+   "branch": "本源铁卫",
+   "nation": "萨尔贡",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "冥河诅咒",
+   "skillKind": "instant",
+   "sp": [
+    50,
+    49,
+    47,
+    45
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：清除自身的元素损伤，获得最大生命 20% 的屏障。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "cleanseElement(self); barrier(pctMaxHp=20)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "冥河诅咒：立即进入 {a} 秒：停止攻击，生命上限 +50%；受到攻击时对周围地面敌人造成 200% 攻击力的法术伤害，并附带 25% 攻击力的凋亡损伤（每 2 秒最多一次）；期间受到元素损伤则攻击力 +100%。持续中可重复发起。 重复施放结算：每次施放立即对周围地面敌人造成200%法术伤害，并回复10%最大生命；反击姿态刷新。",
+     "params": {
+      "a": [
+       10,
+       12,
+       14,
+       15
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self+enemies(around, ground)",
+     "effect": "buff(hpPct=50, t=a); onHit(damage(200, arts); elementDamage(necrosis, 25))",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [
+      "elementDamage"
+     ],
+     "overlap": "refresh-stance-and-independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "神河谕使：受到的元素损伤 -{b}%；受到凋亡损伤时充能 2。",
+     "params": {
+      "b": [
+       12,
+       14,
+       16,
+       18
+      ]
+     },
+     "trigger": {
+      "event": "damageTaken",
+      "subject": "self",
+      "condition": "受到凋亡损伤"
+     },
+     "target": "self",
+     "effect": "buff(elementTakenPct=-b); sp(2, if=necrosis)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "神河谕使：你的其他干员引发凋亡损伤爆发时，此干员充能 {c}。",
+     "params": {
+      "c": [
+       2,
+       2,
+       3,
+       3
+      ]
+     },
+     "trigger": {
+      "event": "elementBurst:necrosis",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "sp(c)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "凋亡爆发"
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_philae",
+     "name": "被摩挲的日子",
+     "line": {
+      "kind": "module",
+      "template": "被摩挲的日子：阻挡敌人时，自身造成的元素损伤 +15%。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(elementDmgPct=+15, if=blocking)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_112_siege",
+   "name": "推进之王",
+   "typeLabel": "先锋 · 尖兵 · 维多利亚 · 格拉斯哥帮",
+   "profession": "PIONEER",
+   "branch": "尖兵",
+   "nation": "维多利亚",
+   "group": "格拉斯哥帮",
+   "team": null,
+   "format": "synergy",
+   "skillName": "跃空锤",
+   "skillKind": "instant",
+   "sp": [
+    11,
+    10,
+    10,
+    10
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：跃起落地，对周围所有敌人造成 150% 攻击力的物理伤害，并使其浮空 1 秒。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemies(around)",
+     "effect": "damage(scale=150, type=phys); status(levitate, t=1)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "跃空锤：下次攻击对四周所有敌人造成 {a}% 攻击力的物理伤害，并获得 3 费用。可储存 3 次。",
+     "params": {
+      "a": [
+       280,
+       300,
+       320,
+       340
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemies(around)",
+     "effect": "damage(scale=a, type=phys); dp(3)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "粉碎：周围四格内有敌人倒下时，此干员充能 {b}。",
+     "params": {
+      "b": [
+       1,
+       1,
+       2,
+       2
+      ]
+     },
+     "trigger": {
+      "event": "death",
+      "subject": "enemy",
+      "condition": "周围四格内（含此干员击倒）"
+     },
+     "target": "self",
+     "effect": "sp(b)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "selfTrigger": true
+    },
+    {
+     "kind": "talent",
+     "template": "万兽之王：你的其他先锋干员攻击力与防御力 +{c}%。",
+     "params": {
+      "c": [
+       8,
+       10,
+       12,
+       16
+      ]
+     },
+     "trigger": {
+      "event": "aura",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies:先锋(others)",
+     "effect": "buff(atkPct=c, defPct=c)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "grant",
+     "template": "跃空：此干员在场时，你的先锋干员可以阻挡空中敌人。",
+     "params": {},
+     "trigger": {
+      "event": "aura",
+      "subject": "allies:先锋",
+      "condition": null
+     },
+     "target": "allies:先锋 (含自身)",
+     "effect": "grantBlockAir(class=先锋)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "grantBlockAir"
+     ]
+    },
+    {
+     "kind": "growth",
+     "template": "万兽之王：你的其他先锋干员击倒精英敌人时，万兽之王加成 +{d}%（本局游戏内）。",
+     "params": {
+      "d": [
+       1,
+       1,
+       1.5,
+       2
+      ]
+     },
+     "trigger": {
+      "event": "eliteKill",
+      "subject": "allies:先锋",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "persistGrowth(auraPct=+d)",
+     "limit": null,
+     "scope": "run",
+     "newPrimitives": [
+      "eliteKill"
+     ],
+     "consumeKey": "击倒精英",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_siege",
+     "name": "“糖果盒”",
+     "line": null
+    },
+    {
+     "id": "uniequip_003_siege",
+     "name": "“初诺”",
+     "line": {
+      "kind": "module",
+      "template": "“初诺”：粉碎改为充能 3，并为场上另一名先锋干员充能 1。",
+      "params": {},
+      "trigger": {
+       "event": "death",
+       "subject": "enemy",
+       "condition": "粉碎触发时"
+      },
+      "target": "ally:先锋(random other)",
+      "effect": "sp(1)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_222_bpipe",
+   "name": "风笛",
+   "typeLabel": "先锋 · 冲锋手 · 维多利亚",
+   "profession": "PIONEER",
+   "branch": "冲锋手",
+   "nation": "维多利亚",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "高效冲击",
+   "skillKind": "instant",
+   "sp": [
+    5,
+    4,
+    4,
+    4
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：为你的其他先锋干员充能 {a}（军事传统）。",
+     "params": {
+      "a": [
+       2,
+       2,
+       3,
+       3
+      ]
+     },
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies:先锋(others)",
+     "effect": "sp(a)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "高效冲击：下次攻击力提升至 {b}%，并额外攻击一次。可储存 3 次。",
+     "params": {
+      "b": [
+       160,
+       180,
+       200,
+       220
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemy(target)",
+     "effect": "damage(scale=b, hits=2)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "精密填弹：每次攻击 {c}% 几率攻击力提升至 130%，并额外攻击 1 个目标。",
+     "params": {
+      "c": [
+       28,
+       29,
+       30,
+       31
+      ]
+     },
+     "trigger": {
+      "event": "static",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "proc(c, atkPct=130, extraTarget=1)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "军事传统：你的其他先锋干员部署或再部署时，此干员充能 {a}。",
+     "params": {
+      "a": [
+       2,
+       2,
+       3,
+       3
+      ]
+     },
+     "trigger": {
+      "event": "redeploy|deployed",
+      "subject": "allies:先锋",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "sp(a)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "再部署"
+    },
+    {
+     "kind": "stack",
+     "template": "精密填弹：你的其他维多利亚干员施放技能时，本场战斗内此干员攻击力 +2%。",
+     "params": {},
+     "trigger": {
+      "event": "skillStart",
+      "subject": "allies:维多利亚",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(atkPct=+2)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "施放技能",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_bpipe",
+     "name": "破城矛弹夹",
+     "line": {
+      "kind": "module",
+      "template": "破城矛弹夹：击倒敌人后获得 2 费用。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "player",
+      "effect": "onKill(dp(2))",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    },
+    {
+     "id": "uniequip_003_bpipe",
+     "name": "“棍棒与口袋”",
+     "line": null
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_4026_vulpis",
+   "name": "忍冬",
+   "typeLabel": "先锋 · 尖兵 · 叙拉古",
+   "profession": "PIONEER",
+   "branch": "尖兵",
+   "nation": "叙拉古",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "小施惩戒",
+   "skillKind": "instant",
+   "sp": [
+    5,
+    4,
+    4,
+    4
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：获得迷彩，直到首次施放技能。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "buff(camouflage, until=skill)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "小施惩戒：下次攻击额外造成 {a}% 攻击力的法术伤害，并获得 1 费用。可储存 3 次。",
+     "params": {
+      "a": [
+       245,
+       260,
+       275,
+       290
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemy(target)",
+     "effect": "damage(scale=a, type=arts); dp(1)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "追凶：对每名敌人首次造成伤害后 10 秒内，再对其造成伤害时额外造成 30% 攻击力的法术伤害；若目标被你的其他干员晕眩、停顿或束缚，改为 60%。",
+     "params": {},
+     "trigger": {
+      "event": "attack",
+      "subject": "enemyByOthers",
+      "condition": "目标处于由其他干员施加的晕眩 / 停顿 / 束缚"
+     },
+     "target": "self",
+     "effect": "damage(scale=30|60, type=arts)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "束缚"
+    },
+    {
+     "kind": "talent",
+     "template": "蓄势：在场时，费用自然回复速度 +10%；4 秒内未受到伤害时，每秒回复 5% 最大生命。",
+     "params": {},
+     "trigger": {
+      "event": "static",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "player+self",
+     "effect": "buff(dpRegenPct=10); regen(if=no damage 4s)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "stack",
+     "template": "追凶：你的其他叙拉古干员击倒敌人时，本场战斗内追凶伤害 +3% 攻击力。",
+     "params": {},
+     "trigger": {
+      "event": "kill",
+      "subject": "allies:叙拉古",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(talentScale=+3)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "击倒",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_vulpis",
+     "name": "杀手也有假期",
+     "line": {
+      "kind": "module",
+      "template": "杀手也有假期：追凶的额外法术伤害提高到 40% 攻击力（对被其他干员控制的目标为 80%）。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(talentScale=40|80)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    },
+    {
+     "id": "uniequip_003_vulpis",
+     "name": "剑舞",
+     "line": null
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_479_sleach",
+   "name": "琴柳",
+   "typeLabel": "先锋 · 执旗手 · 维多利亚",
+   "profession": "PIONEER",
+   "branch": "执旗手",
+   "nation": "维多利亚",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "光辉旗帜",
+   "skillKind": "instant",
+   "sp": [
+    24,
+    20,
+    20,
+    20
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：在前方放置军旗（不退之旗）：军旗周围 8 格的干员攻击速度 +{a}，敌人攻击速度 -{e}。",
+     "params": {
+      "a": [
+       12,
+       13,
+       14,
+       15
+      ],
+      "e": [
+       12,
+       13,
+       14,
+       15
+      ]
+     },
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "tile(front)",
+     "effect": "flag(aura aspd=+a, enemyAspd=-a)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "光辉旗帜：立即获得 {b} 费用；将军旗掷向周围 2 格内的地面敌人，对周围造成 300% 攻击力的物理伤害并晕眩 {c} 秒；之后 10 秒，军旗周围 8 格的敌人停顿并受到 30% 脆弱。",
+     "params": {
+      "b": [
+       8,
+       9,
+       10,
+       10
+      ],
+      "c": [
+       3,
+       3,
+       3.5,
+       3.5
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemies(flag around)",
+     "effect": "dp(b); damage(scale=300, type=phys); status(stun, t=c); status(sluggish, t=10); debuff(fragile=30, t=10)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "精神感召：此干员部署或再部署时，你的其他维多利亚干员当前再部署时间 -{d} 秒。",
+     "params": {
+      "d": [
+       2,
+       2,
+       3,
+       3
+      ]
+     },
+     "trigger": {
+      "event": "redeploy|deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies:维多利亚(others)",
+     "effect": "redeployTimer(-d s)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "redeployTimer"
+     ]
+    },
+    {
+     "kind": "stack",
+     "template": "不退之旗：军旗周围 8 格的其他干员击倒敌人时，本场战斗内不退之旗攻击速度 +1。",
+     "params": {},
+     "trigger": {
+      "event": "kill",
+      "subject": "adjacentAllies",
+      "condition": "军旗周围 8 格"
+     },
+     "target": "self",
+     "effect": "stack(flagAspd=+1)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "击倒",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_sleach",
+     "name": "牧人的歌",
+     "line": null
+    },
+    {
+     "id": "uniequip_003_sleach",
+     "name": "“友谊万岁”",
+     "line": {
+      "kind": "module",
+      "template": "“友谊万岁”：部署后，下一名部署的干员费用 -2；若该干员为地面干员，部署后获得 2 费用。",
+      "params": {},
+      "trigger": {
+       "event": "deployed",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "nextDeployed",
+      "effect": "costReduce(2); dp(2, if=ground)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_420_flamtl",
+   "name": "焰尾",
+   "typeLabel": "先锋 · 尖兵 · 卡西米尔 · 红松骑士团",
+   "profession": "PIONEER",
+   "branch": "尖兵",
+   "nation": "卡西米尔",
+   "group": "红松骑士团",
+   "team": null,
+   "format": "synergy",
+   "skillName": "“红松林”",
+   "skillKind": "instant",
+   "sp": [
+    40,
+    40,
+    40,
+    40
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：获得 3 费用，闪避下一次物理攻击（迅敏直觉）。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "player+self",
+     "effect": "dp(3); buff(dodgeNext)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "“红松林”：立即获得 {a} 费用；对周围 6 名敌人造成 2 次 {b}% 攻击力的物理伤害并晕眩 0.5 秒；范围内干员获得 50% 物理闪避，持续 10 秒。",
+     "params": {
+      "a": [
+       12,
+       12,
+       12,
+       13
+      ],
+      "b": [
+       210,
+       220,
+       230,
+       240
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemies(around, 6)+allies(around)",
+     "effect": "dp(a); damage(scale=b, hits=2); status(stun, t=0.5); buff(dodge=50, t=10)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "红松骑士团团长：你的卡西米尔干员获得 {c}% 物理闪避。",
+     "params": {
+      "c": [
+       25,
+       26,
+       27,
+       28
+      ]
+     },
+     "trigger": {
+      "event": "aura",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies:卡西米尔",
+     "effect": "buff(dodge=c)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "她们的未来：你的其他卡西米尔干员部署或再部署时，获得 3 费用，此干员充能 {d}。",
+     "params": {
+      "d": [
+       2,
+       2,
+       3,
+       3
+      ]
+     },
+     "trigger": {
+      "event": "redeploy|deployed",
+      "subject": "allies:卡西米尔",
+      "condition": null
+     },
+     "target": "self+player",
+     "effect": "dp(3); sp(d)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "再部署"
+    },
+    {
+     "kind": "stack",
+     "template": "前锋剑术：你的其他干员闪避时，本场战斗内此干员攻击力 +{e}%（每 1 秒最多一次）。",
+     "params": {
+      "e": [
+       1,
+       1,
+       1.5,
+       2
+      ]
+     },
+     "trigger": {
+      "event": "dodge",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(atkPct=+e)",
+     "limit": "每 1 秒最多一次",
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "闪避",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_flamtl",
+     "name": "红松的起点",
+     "line": {
+      "kind": "module",
+      "template": "红松的起点：触发闪避后，下次攻击攻击力提升至 120%，变为二连击并攻击所有阻挡的敌人。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": "此干员闪避后（使用效果，不回流循环）"
+      },
+      "target": "self",
+      "effect": "buff(nextAttack atkPct=120, hits=2, hitAllBlocked)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    },
+    {
+     "id": "uniequip_003_flamtl",
+     "name": "她们的未来",
+     "line": null
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_427_vigil",
+   "name": "伺夜",
+   "typeLabel": "先锋 · 战术家 · 叙拉古",
+   "profession": "PIONEER",
+   "branch": "战术家",
+   "nation": "叙拉古",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "领袖的呼唤",
+   "skillKind": "instant",
+   "sp": [
+    24,
+    21,
+    21,
+    21
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：在战术点召唤由 2 只狼影构成的狼群（召唤物，可阻挡），此后每 {a} 秒增加 1 只（至多 3 只）。",
+     "params": {
+      "a": [
+       30,
+       27,
+       25,
+       23
+      ]
+     },
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "tile(tactical)",
+     "effect": "summon(wolfPack, n=2, grow every a s, max=3)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "领袖的呼唤：立即获得 {b} 费用，狼群增加 1 只狼影。",
+     "params": {
+      "b": [
+       5,
+       6,
+       6,
+       7
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "player+ownSummon",
+     "effect": "dp(b); summon(wolf, +1)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "狼群天性：被狼群阻挡的敌人，此干员与狼群对其攻击无视 {c} 防御力。",
+     "params": {
+      "c": [
+       100,
+       150,
+       200,
+       225
+      ]
+     },
+     "trigger": {
+      "event": "static",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self+ownSummon",
+     "effect": "buff(defIgnore=c, vs=blockedByPack)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "狼群领袖：此干员的狼影倒下时，你的其他叙拉古干员充能 1。",
+     "params": {},
+     "trigger": {
+      "event": "summonDied",
+      "subject": "self",
+      "condition": "由此干员的召唤物（狼影）倒下"
+     },
+     "target": "allies:叙拉古(others)",
+     "effect": "sp(1)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "growth",
+     "template": "狼群领袖：你的其他叙拉古干员击倒敌人时，狼影攻击力 +{d}%（本局游戏内）。",
+     "params": {
+      "d": [
+       0.5,
+       0.6,
+       0.8,
+       1
+      ]
+     },
+     "trigger": {
+      "event": "kill",
+      "subject": "allies:叙拉古",
+      "condition": null
+     },
+     "target": "ownSummon",
+     "effect": "persistGrowth(summonAtkPct=+d)",
+     "limit": null,
+     "scope": "run",
+     "newPrimitives": [],
+     "consumeKey": "击倒",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_vigil",
+     "name": "叙拉古式入门礼",
+     "line": null
+    },
+    {
+     "id": "uniequip_003_vigil",
+     "name": "时光不再",
+     "line": {
+      "kind": "module",
+      "template": "时光不再：狼影全灭时，立即召唤 2 只狼影（每场战斗首次）。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": "狼影全灭时；每场首次"
+      },
+      "target": "ownSummon",
+      "effect": "summon(wolf, n=2)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_249_mlyss",
+   "name": "缪尔赛思",
+   "typeLabel": "先锋 · 战术家 · 哥伦比亚 · 莱茵生命",
+   "profession": "PIONEER",
+   "branch": "战术家",
+   "nation": "哥伦比亚",
+   "group": "莱茵生命",
+   "team": null,
+   "format": "synergy",
+   "skillName": "浅层非熵适应",
+   "skillKind": "instant",
+   "sp": [
+    39,
+    35,
+    35,
+    35
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：召唤流形（召唤物），复制待部署区攻击力最高的干员。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "tile(range)",
+     "effect": "summon(manifold, copy=bench.maxAtk)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "replicate"
+     ]
+    },
+    {
+     "kind": "skill",
+     "template": "浅层非熵适应：立即获得 {a} 费用；15 秒内此干员与流形攻击力 +50%；近战流形每 2 秒把周围 8 格敌人小力度拖向自己并晕眩阻挡的敌人，远程流形攻击附带 1.5 秒束缚。持续中可重复发起。",
+     "params": {
+      "a": [
+       10,
+       12,
+       14,
+       15
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self+ownSummon",
+     "effect": "dp(a); buff(atkPct=50, t=15); pull(small, every 2s); status(stun|bind)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "净水即生命：你的其他干员再部署时，流形改为复制该干员并立即刷新（每 8 秒最多一次）。",
+     "params": {},
+     "trigger": {
+      "event": "redeploy",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "ownSummon",
+     "effect": "summon(manifold, copy=trigger source, refresh)",
+     "limit": "每 8 秒最多一次",
+     "scope": "instant",
+     "newPrimitives": [
+      "replicate"
+     ],
+     "consumeKey": "再部署"
+    },
+    {
+     "kind": "talent",
+     "template": "开源节流：你的莱茵生命干员部署费用 -2。",
+     "params": {},
+     "trigger": {
+      "event": "static",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies:莱茵生命",
+     "effect": "costReduce(2)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "stack",
+     "template": "净水即生命：你的其他莱茵生命干员施放技能时，本场战斗内流形攻击力 +3%。",
+     "params": {},
+     "trigger": {
+      "event": "skillStart",
+      "subject": "allies:莱茵生命",
+      "condition": null
+     },
+     "target": "ownSummon",
+     "effect": "stack(summonAtkPct=+3)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "施放技能",
+     "suppressed": false
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_mlyss",
+     "name": "梳妆流形",
+     "line": null
+    },
+    {
+     "id": "uniequip_003_mlyss",
+     "name": "落叶四季",
+     "line": {
+      "kind": "module",
+      "template": "落叶四季：流形复制莱茵生命干员时，该干员部署或再部署时充能 10。",
+      "params": {},
+      "trigger": {
+       "event": "redeploy|deployed",
+       "subject": "allies:莱茵生命",
+       "condition": "该干员是流形当前复制的对象"
+      },
+      "target": "trigger source",
+      "effect": "sp(10)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": [],
+      "consumeKey": "再部署"
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_1045_svash2",
+   "name": "凛御银灰",
+   "typeLabel": "先锋 · 策士 · 谢拉格",
+   "profession": "PIONEER",
+   "branch": "策士",
+   "nation": "谢拉格",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "御敌的锋锐",
+   "skillKind": "instant",
+   "sp": [
+    17,
+    17,
+    17,
+    17
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时（开放性开局）：你的其他干员中再部署计时剩余最长的 1 名，当前再部署时间 -20%，并充能 4。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "otherAllies(longestRedeployTimer)",
+     "effect": "redeployTimer(-20%); sp(4)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "redeployTimer"
+     ]
+    },
+    {
+     "kind": "skill",
+     "template": "御敌的锋锐：对原技能范围内至多6名敌人造成 {a}% 物理伤害，寒冷6秒并揭露隐匿。可储存2次。",
+     "params": {
+      "a": [
+       200,
+       300,
+       350,
+       380
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemies(front, 6)",
+     "effect": "damage(scale=a, type=phys); status(cold, t=6); reveal",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "每次施放，你的其他谢拉格干员当前再部署时间 -{b} 秒；其他干员各自获得1次协击，最多各存2次，部署后1.1秒开始、每0.5秒释放1次，使用各自的攻击力、位置和朝向及御敌的锋锐原范围。",
+     "params": {
+      "b": [
+       2,
+       2,
+       3,
+       3
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies:谢拉格(others)+otherAllies",
+     "effect": "redeployTimer(-b s); onNextDeploy(castEcho, max=2)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "redeployTimer"
+     ]
+    },
+    {
+     "kind": "talent",
+     "template": "开放性开局：你的其他干员再部署时，加速此干员 {c} 秒。",
+     "params": {
+      "c": [
+       2,
+       2,
+       2.5,
+       3
+      ]
+     },
+     "trigger": {
+      "event": "redeploy",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "haste(t=c)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "再部署"
+    },
+    {
+     "kind": "talent",
+     "template": "雪境先驱：你的谢拉格干员免疫冻结，防御力 +{d}，每秒回复 {e}% 最大生命；此干员在场 15 秒后，防御与回复翻倍。",
+     "params": {
+      "d": [
+       80,
+       90,
+       100,
+       100
+      ],
+      "e": [
+       2,
+       2,
+       2.5,
+       2.5
+      ]
+     },
+     "trigger": {
+      "event": "aura",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies:谢拉格",
+     "effect": "buff(freezeImmune, def=d, regenPct=e; x2 after 15s)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "grant",
+     "template": "雪境先驱：此干员在场 15 秒后，你的谢拉格干员可以阻挡空中敌人。",
+     "params": {},
+     "trigger": {
+      "event": "aura",
+      "subject": "allies:谢拉格",
+      "condition": "此干员在场 15 秒后"
+     },
+     "target": "allies:谢拉格 (含自身)",
+     "effect": "grantBlockAir(class=谢拉格, after=15s)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "grantBlockAir"
+     ]
+    }
+   ],
+   "modules": [],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_4087_ines",
+   "name": "伊内丝",
+   "typeLabel": "先锋 · 情报官 · 巴别塔",
+   "profession": "PIONEER",
+   "branch": "情报官",
+   "nation": null,
+   "group": "巴别塔",
+   "team": null,
+   "format": "synergy",
+   "skillName": "独影归途",
+   "skillKind": "passive",
+   "sp": null,
+   "castOnDeploy": true,
+   "redeploySeconds": [
+    35,
+    35,
+    35,
+    35
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：立即发动独影归途。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "castSkill()",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "castSkill"
+     ]
+    },
+    {
+     "kind": "skill",
+     "template": "独影归途：部署或再部署后 16 秒内，攻击力 +{a}%；先收回场上的影哨，对沿线最多 6 名敌人造成 200% 攻击力的物理伤害，再在原位放下新影哨；期间每对一名敌人造成伤害获得 1 费用。",
+     "params": {
+      "a": [
+       100,
+       120,
+       140,
+       160
+      ]
+     },
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self+enemies(line, 6)",
+     "effect": "buff(atkPct=a, t=16); recallSentry(damage=200, phys); placeSentry; onHit(dp(1))",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [
+      "sentry"
+     ]
+    },
+    {
+     "kind": "talent",
+     "template": "影哨：攻击范围内敌人隐匿失效、移动速度 -30%，影哨处同样生效。每次收回影哨，你的其他干员当前再部署时间 -{b} 秒（每 6 秒最多一次）。",
+     "params": {
+      "b": [
+       1,
+       1,
+       1.5,
+       2
+      ]
+     },
+     "trigger": {
+      "event": "redeploy",
+      "subject": "self",
+      "condition": "收回影哨时"
+     },
+     "target": "otherAllies",
+     "effect": "redeployTimer(-b s)",
+     "limit": "每 6 秒最多一次",
+     "scope": "instant",
+     "newPrimitives": [
+      "redeployTimer",
+      "sentry"
+     ]
+    },
+    {
+     "kind": "talent",
+     "template": "影织：对每名敌人首次造成伤害后，使其束缚 {c} 秒，并偷取其 {d} 攻击力（持续到目标被击倒或此干员离场）。",
+     "params": {
+      "c": [
+       3,
+       4,
+       5,
+       5
+      ],
+      "d": [
+       60,
+       80,
+       100,
+       110
+      ]
+     },
+     "trigger": {
+      "event": "static",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemy(firstHit)",
+     "effect": "status(bind, t=c); stealAtk(d)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "growth",
+     "template": "影织：被此干员偷取过攻击力的敌人被你的其他干员击倒时，此干员攻击力 +{e}（本局游戏内）。",
+     "params": {
+      "e": [
+       2,
+       3,
+       4,
+       5
+      ]
+     },
+     "trigger": {
+      "event": "kill",
+      "subject": "enemyByOthers",
+      "condition": "目标被此干员偷取过攻击力"
+     },
+     "target": "self",
+     "effect": "persistGrowth(atk=+e)",
+     "limit": null,
+     "scope": "run",
+     "newPrimitives": [],
+     "consumeKey": "击倒",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_ines",
+     "name": "角部“护理”套组",
+     "line": {
+      "kind": "module",
+      "template": "角部“护理”套组：影织改为束缚 5 秒、偷取 120 攻击力。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(talent bind=5, steal=120)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js",
+   "skillSource": "skchr_ines_3"
+  },
+  {
+   "id": "char_4042_lumen",
+   "name": "流明",
+   "typeLabel": "医疗 · 疗养师 · 伊比利亚",
+   "profession": "MEDIC",
+   "branch": "疗养师",
+   "nation": "伊比利亚",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "沛霖",
+   "skillKind": "instant",
+   "sp": [
+    16,
+    13,
+    13,
+    13
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    80,
+    80,
+    80,
+    80
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：解除攻击范围内干员的异常状态，并治疗 80% 攻击力。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(range)",
+     "effect": "cleanse; heal(scale=80)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "沛霖：立即治疗攻击范围内 {c} 名干员 {a}% 攻击力，并解除其异常状态。",
+     "params": {
+      "c": [
+       2,
+       2,
+       3,
+       3
+      ],
+      "a": [
+       200,
+       230,
+       260,
+       300
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(range, n)",
+     "effect": "heal(scale=a); cleanse",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "凡人之愿：治疗的目标获得 4 秒抵抗；目标生命高于 75% 时改为 6 秒。",
+     "params": {},
+     "trigger": {
+      "event": "static",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "healed allies",
+     "effect": "status(resist, t=4|6)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "应急处理：攻击范围内的干员受到异常状态时，立即治疗其 {b}% 攻击力（每 {c} 秒最多一次）。",
+     "params": {
+      "b": [
+       80,
+       90,
+       100,
+       110
+      ],
+      "c": [
+       10,
+       9,
+       8,
+       8
+      ]
+     },
+     "trigger": {
+      "event": "statusApplied:anyOnAlly",
+      "subject": "enemy",
+      "condition": null
+     },
+     "target": "ally(trigger)",
+     "effect": "heal(scale=b)",
+     "limit": "每 10/9/8/8 秒最多一次",
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "stack",
+     "template": "“幸运”：你的其他伊比利亚干员施放技能时，本场战斗内此干员治疗量 +3%。",
+     "params": {},
+     "trigger": {
+      "event": "skillStart",
+      "subject": "allies:伊比利亚",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(healPct=+3)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "施放技能",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_lumen",
+     "name": "纯铜单筒望远镜",
+     "line": {
+      "kind": "module",
+      "template": "纯铜单筒望远镜：技能每解除 1 个异常状态，为被解除的干员充能 2（每场战斗前 5 次）。",
+      "params": {},
+      "trigger": {
+       "event": "skillStart",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "cleansed otherAllies",
+      "effect": "sp(2)",
+      "limit": "每场战斗前 5 次",
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    },
+    {
+     "id": "uniequip_003_lumen",
+     "name": "“幸运”",
+     "line": null
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_1016_agoat2",
+   "name": "纯烬艾雅法拉",
+   "typeLabel": "医疗 · 行医 · 莱塔尼亚",
+   "profession": "MEDIC",
+   "branch": "行医",
+   "nation": "莱塔尼亚",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "云霭荫佑",
+   "skillKind": "instant",
+   "sp": [
+    18,
+    20,
+    22,
+    24
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：攻击范围内的干员回复 100% 攻击力的元素损伤。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(range)",
+     "effect": "cleanseElement(scale=100)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "云霭荫佑：立即治疗攻击范围内所有干员 {a}% 攻击力，并生成持续 {b} 秒的损伤屏障，为范围内干员吸收 900% 攻击力的元素损伤。",
+     "params": {
+      "a": [
+       150,
+       180,
+       210,
+       250
+      ],
+      "b": [
+       14,
+       16,
+       18,
+       20
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(range)",
+     "effect": "heal(scale=a); barrier(element, atkScale=900, t=b)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "氤氲：普通治疗使目标每秒额外受到 10% 治疗量的治疗与元素损伤回复，持续 6 秒（最多 3 层）。",
+     "params": {},
+     "trigger": {
+      "event": "static",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "healed allies",
+     "effect": "hot(10%, t=6, max=3)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "火山灰疗愈：攻击范围内的干员生命上限 +{d}%，受到的元素损伤 -12%。你的其他干员引发元素损伤爆发时，此干员充能 {c}。",
+     "params": {
+      "d": [
+       8,
+       9,
+       10,
+       10
+      ],
+      "c": [
+       1,
+       1,
+       1.5,
+       2
+      ]
+     },
+     "trigger": {
+      "event": "elementBurst:any",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "sp(c)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "元素爆发"
+    },
+    {
+     "kind": "stack",
+     "template": "火山灰疗愈：你的其他干员引发元素损伤爆发时，本场战斗内火山灰疗愈的生命上限加成 +1%。",
+     "params": {},
+     "trigger": {
+      "event": "elementBurst:any",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "allies(range)",
+     "effect": "stack(auraHpPct=+1)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "元素爆发",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_agoat2",
+     "name": "想要留住的声音",
+     "line": null
+    },
+    {
+     "id": "uniequip_003_agoat2",
+     "name": "想要留下的生命",
+     "line": {
+      "kind": "module",
+      "template": "想要留下的生命：攻击范围内有受到元素损伤的干员时，攻击速度 +8；氤氲改为每秒 13%、持续 8 秒。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "buff(aspd=8, if=ally has element damage); mod(hot=13%, t=8)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_1020_reed2",
+   "name": "焰影苇草",
+   "typeLabel": "医疗 · 咒愈师 · 维多利亚 · 塔拉",
+   "profession": "MEDIC",
+   "branch": "咒愈师",
+   "nation": "维多利亚",
+   "group": "塔拉",
+   "team": null,
+   "format": "synergy",
+   "skillName": "枯荣共息",
+   "skillKind": "instant",
+   "sp": [
+    20,
+    22,
+    25,
+    27
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：攻击范围内 1 名敌人受到灼痕：攻击力 -22%、32% 法术脆弱，持续 6 秒。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemy(range, 1)",
+     "effect": "debuff(atkPct=-22, artsFragile=32, t=6)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "枯荣共息：优先使 2 名地面干员获得三颗火球，20 秒内每 1.5 秒对 1 名敌人造成 {a}% 攻击力的法术伤害，附带 20% 攻击力的灼燃损伤，并按伤害治疗该干员。 重复施放新增独立火球组，各组分别持续20秒、造成伤害和治疗。",
+     "params": {
+      "a": [
+       190,
+       200,
+       220,
+       240
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(ground, 2)",
+     "effect": "orbs(n=3, t=20, every=1.5s, damage(scale=a, arts); elementDamage(burn, 20); healOwner)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [
+      "elementDamage"
+     ]
+    },
+    {
+     "kind": "talent",
+     "template": "灼痕：造成伤害时 30% 几率施加灼痕：攻击力 -{b}%、法术脆弱 {c}%，持续 6 秒。",
+     "params": {
+      "b": [
+       15,
+       18,
+       20,
+       22
+      ],
+      "c": [
+       20,
+       25,
+       30,
+       34
+      ]
+     },
+     "trigger": {
+      "event": "static",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemy(target)",
+     "effect": "proc(30%, debuff(atkPct=-b, artsFragile=c, t=6))",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "映耀：治疗其他干员时，此干员同时享受 {d}% 治疗量。",
+     "params": {
+      "d": [
+       55,
+       60,
+       60,
+       65
+      ]
+     },
+     "trigger": {
+      "event": "static",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "mod(selfShareHeal=d)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "stack",
+     "template": "灼痕：你的其他干员引发灼燃损伤爆发时，本场战斗内火球伤害 +4%。",
+     "params": {},
+     "trigger": {
+      "event": "elementBurst:burn",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(orbDmgPct=+4)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "灼燃爆发",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_reed2",
+     "name": "“赠予红龙的花冠”",
+     "line": {
+      "kind": "module",
+      "template": "“赠予红龙的花冠”：攻击造成法术伤害，攻击敌人时为攻击范围内 1 名干员治疗 60% 伤害的生命。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(dmgType=arts); onAttack(heal(60% dmg))",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    },
+    {
+     "id": "uniequip_003_reed2",
+     "name": "“独属自己的一隅”",
+     "line": null
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_4056_titi",
+   "name": "缇缇",
+   "typeLabel": "医疗 · 咒愈师 · 萨尔贡",
+   "profession": "MEDIC",
+   "branch": "咒愈师",
+   "nation": "萨尔贡",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "旧日绽放",
+   "skillKind": "instant",
+   "sp": [
+    40,
+    39,
+    38,
+    37
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：攻击范围内 1 名敌人沉睡 3 秒。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemy(range, 1)",
+     "effect": "status(sleep, t=3)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "旧日绽放：立即进入 {a} 秒：攻击力 +180%，同时攻击 2 名敌人，攻击非沉睡目标时使其沉睡 5 秒；期间任一敌人醒来或在沉睡中被击倒时，受到 {b}% 攻击力的法术伤害，并使周围 1 名其他敌人沉睡 5 秒。持续中可重复发起。 重复施放结算：每次施放立即对3名敌人各造成150%法术伤害并沉睡5秒；绽放姿态刷新。",
+     "params": {
+      "a": [
+       10,
+       12,
+       14,
+       15
+      ],
+      "b": [
+       280,
+       300,
+       320,
+       350
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemies(2)",
+     "effect": "buff(atkPct=180, t=a); status(sleep, t=5); onWake(damage(scale=b, arts); chainSleep)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [],
+     "overlap": "refresh-stance-and-independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "凝固的时光：可以攻击沉睡的敌人；攻击被你的其他干员束缚、晕眩、冻结或停顿的敌人时，额外造成 {c}% 攻击力的法术伤害；在场时沉睡中的敌人每秒受到 {d}% 攻击力的法术伤害。",
+     "params": {
+      "c": [
+       16,
+       20,
+       25,
+       31
+      ],
+      "d": [
+       32,
+       35,
+       38,
+       42
+      ]
+     },
+     "trigger": {
+      "event": "attack",
+      "subject": "enemyByOthers",
+      "condition": "目标处于由其他干员施加的束缚 / 晕眩 / 冻结 / 停顿"
+     },
+     "target": "self",
+     "effect": "damage(scale=c, arts); auraDot(sleeping, scale=d)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "束缚"
+    },
+    {
+     "kind": "talent",
+     "template": "凝固的时光：你的其他干员使敌人沉睡时，此干员充能 {e}。",
+     "params": {
+      "e": [
+       2,
+       2,
+       3,
+       3
+      ]
+     },
+     "trigger": {
+      "event": "statusApplied:sleep",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "sp(e)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "沉睡"
+    },
+    {
+     "kind": "stack",
+     "template": "勇气的报偿：你的其他萨尔贡干员施放技能时，本场战斗内此干员攻击速度 +2。",
+     "params": {},
+     "trigger": {
+      "event": "skillStart",
+      "subject": "allies:萨尔贡",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(aspd=+2)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "施放技能",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_titi",
+     "name": "远方的礼物",
+     "line": {
+      "kind": "module",
+      "template": "远方的礼物：攻击造成法术伤害，攻击敌人时为攻击范围内 1 名干员治疗 60% 伤害的生命。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(dmgType=arts); onAttack(heal(60% dmg))",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_4179_monstr",
+   "name": "Mon3tr",
+   "typeLabel": "医疗 · 链愈师 · 罗德岛",
+   "profession": "MEDIC",
+   "branch": "链愈师",
+   "nation": "罗德岛",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "策略：超压链接",
+   "skillKind": "instant",
+   "sp": [
+    3,
+    3,
+    4,
+    4
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：在攻击范围内的地面放置重构体（召唤物，只能被此干员治疗）；重构体周围的干员攻击力 +{a}%。",
+     "params": {
+      "a": [
+       10,
+       15,
+       20,
+       25
+      ]
+     },
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "tile(range)",
+     "effect": "summon(reconstruct); aura(atkPct=a)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "策略：超压链接：下次治疗恢复 {b}% 攻击力，并在 {c} 名干员间跳跃。",
+     "params": {
+      "b": [
+       170,
+       185,
+       200,
+       220
+      ],
+      "c": [
+       4,
+       4,
+       5,
+       5
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(chain, n)",
+     "effect": "heal(scale=b, chain=c)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "战术协同：此干员或重构体造成治疗时，被治疗的其他干员攻击速度 +{d}，持续 10 秒（不叠加）。",
+     "params": {
+      "d": [
+       16,
+       18,
+       20,
+       22
+      ]
+     },
+     "trigger": {
+      "event": "heal",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "healed otherAllies",
+     "effect": "buff(aspd=d, t=10)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "stack",
+     "template": "自我修复：你的其他干员施放技能时，本场战斗内重构体光环攻击力 +1%。",
+     "params": {},
+     "trigger": {
+      "event": "skillStart",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "ownSummon",
+     "effect": "stack(auraAtkPct=+1)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "施放技能",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_monstr",
+     "name": "记忆存档",
+     "line": {
+      "kind": "module",
+      "template": "记忆存档：重构体受到此干员治疗时，额外进行一次不衰减的治疗跳跃。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "ownSummon",
+      "effect": "mod(extraJump)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_136_hsguma",
+   "name": "星熊",
+   "typeLabel": "重装 · 铁卫 · 龙门 · 龙门近卫局",
+   "profession": "TANK",
+   "branch": "铁卫",
+   "nation": "炎-龙门",
+   "group": "龙门近卫局",
+   "team": null,
+   "format": "synergy",
+   "skillName": "力之锯",
+   "skillKind": "instant",
+   "sp": [
+    30,
+    34,
+    38,
+    42
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：周围 4 格的其他重装干员防御力 +20%，持续 10 秒。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies:重装(around4, others)",
+     "effect": "buff(defPct=20, t=10)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "力之锯：立即进入 {a} 秒：攻击力 +140%，防御力 +90%，用盾牌切割前方一格的所有敌人。持续中可重复发起。 重复施放结算：每次施放立即切割前方一格所有敌人，造成350%物理伤害；力之锯姿态刷新，防御不累加。",
+     "params": {
+      "a": [
+       8,
+       10,
+       12,
+       15
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self+enemies(front1)",
+     "effect": "buff(atkPct=140, defPct=90, t=a); hitAll(front1)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [],
+     "overlap": "refresh-stance-and-independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "战术装甲：受到伤害时 {b}% 几率完全抵挡这次伤害。",
+     "params": {
+      "b": [
+       20,
+       24,
+       28,
+       31
+      ]
+     },
+     "trigger": {
+      "event": "static",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "buff(blockChance=b)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "特种作战策略：你的其他重装干员防御力 +{c}%。",
+     "params": {
+      "c": [
+       8,
+       10,
+       12,
+       15
+      ]
+     },
+     "trigger": {
+      "event": "aura",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies:重装(others)",
+     "effect": "buff(defPct=c)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "grant",
+     "template": "特种作战策略：此干员在场时，你的重装干员可以阻挡空中敌人。",
+     "params": {},
+     "trigger": {
+      "event": "aura",
+      "subject": "allies:重装",
+      "condition": null
+     },
+     "target": "allies:重装 (含自身)",
+     "effect": "grantBlockAir(class=重装)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "grantBlockAir"
+     ]
+    },
+    {
+     "kind": "growth",
+     "template": "特种作战策略：你的其他重装干员阻挡空中敌人时，特种作战策略的防御力加成 +{d}%（本局游戏内）。",
+     "params": {
+      "d": [
+       0.5,
+       0.5,
+       0.8,
+       1
+      ]
+     },
+     "trigger": {
+      "event": "blockedAir",
+      "subject": "allies:重装",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "persistGrowth(auraDefPct=+d)",
+     "limit": null,
+     "scope": "run",
+     "newPrimitives": [
+      "blockedAir"
+     ],
+     "consumeKey": "阻挡空中",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_hsguma",
+     "name": "友人们的赠礼",
+     "line": {
+      "kind": "module",
+      "template": "友人们的赠礼：阻挡数 +1；成功抵挡伤害后 5 秒内攻击力 +35%（不叠加）。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "buff(block=+1); buff(atkPct=35, t=5, onBlockDamage)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    },
+    {
+     "id": "uniequip_003_hsguma",
+     "name": "护身符",
+     "line": null
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_202_demkni",
+   "name": "塞雷娅",
+   "typeLabel": "重装 · 守护者 · 哥伦比亚 · 莱茵生命",
+   "profession": "TANK",
+   "branch": "守护者",
+   "nation": "哥伦比亚",
+   "group": "莱茵生命",
+   "team": null,
+   "format": "synergy",
+   "skillName": "药物配置",
+   "skillKind": "instant",
+   "sp": [
+    6,
+    7,
+    7,
+    8
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：治疗周围所有干员 80% 攻击力，被治疗的其他干员充能 1。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(around); sp→otherAllies",
+     "effect": "heal(scale=80); sp(1, healed others)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "药物配置：治疗周围所有干员 {a}% 攻击力的生命。",
+     "params": {
+      "a": [
+       110,
+       125,
+       140,
+       160
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(around)",
+     "effect": "heal(scale=a)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "精神回复：此干员每次回复其他干员生命时，为该干员充能 1。",
+     "params": {},
+     "trigger": {
+      "event": "heal",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "healed otherAllies",
+     "effect": "sp(1)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "growth",
+     "template": "莱茵充能护服：你的其他干员施放技能时，此干员攻击力与防御力 +{b}%（本局游戏内）。",
+     "params": {
+      "b": [
+       0.2,
+       0.25,
+       0.3,
+       0.4
+      ]
+     },
+     "trigger": {
+      "event": "skillStart",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "persistGrowth(atkPct=+b, defPct=+b)",
+     "limit": null,
+     "scope": "run",
+     "newPrimitives": [],
+     "consumeKey": "施放技能",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_demkni",
+     "name": "闲置的拳击手套",
+     "line": {
+      "kind": "module",
+      "template": "闲置的拳击手套：精神回复改为充能 2（莱茵生命干员充能 3）；治疗生命低于 50% 的干员时治疗量 +15%。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(talentSp=2|3); mod(healPct=+15, if=hp<50%)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    },
+    {
+     "id": "uniequip_003_demkni",
+     "name": "科技新星",
+     "line": null
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_423_blemsh",
+   "name": "瑕光",
+   "typeLabel": "重装 · 守护者 · 卡西米尔",
+   "profession": "TANK",
+   "branch": "守护者",
+   "nation": "卡西米尔",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "光芒涌动",
+   "skillKind": "instant",
+   "sp": [
+    4,
+    4,
+    5,
+    5
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时（“长骑”）：此干员所在格内的所有地面敌人沉睡 {a} 秒。",
+     "params": {
+      "a": [
+       5,
+       6,
+       7,
+       8
+      ]
+     },
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemies(own tile, ground)",
+     "effect": "status(sleep, t=a)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "光芒涌动：下次攻击造成 {b}% 攻击力的物理伤害，并治疗周围 1 名干员 {c}% 攻击力。可储存 3 次。",
+     "params": {
+      "b": [
+       220,
+       240,
+       260,
+       280
+      ],
+      "c": [
+       120,
+       130,
+       150,
+       170
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemy(target)+ally(around, 1)",
+     "effect": "damage(scale=b, phys); heal(scale=c)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "仁慈：可以攻击并优先攻击沉睡的敌人，攻击力提升至 {d}%。你的其他干员使敌人沉睡时，此干员充能 1。",
+     "params": {
+      "d": [
+       130,
+       135,
+       140,
+       144
+      ]
+     },
+     "trigger": {
+      "event": "statusApplied:sleep",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "sp(1)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "沉睡"
+    },
+    {
+     "kind": "talent",
+     "template": "剑盾骑士：在场时，你的其他干员的受击回复技能，攻击时也回复 1 技力。",
+     "params": {},
+     "trigger": {
+      "event": "aura",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "otherAllies(spOnHitSkill)",
+     "effect": "mod(spOnAttack=1)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_blemsh",
+     "name": "工匠团的回响",
+     "line": {
+      "kind": "module",
+      "template": "工匠团的回响：你的其他卡西米尔干员部署或再部署时，此干员充能 3。",
+      "params": {},
+      "trigger": {
+       "event": "redeploy|deployed",
+       "subject": "allies:卡西米尔",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "sp(3)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": [],
+      "consumeKey": "再部署"
+     }
+    },
+    {
+     "id": "uniequip_003_blemsh",
+     "name": "“长骑”",
+     "line": null
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_2025_shu",
+   "name": "黍",
+   "typeLabel": "重装 · 守护者 · 炎 · 炎-岁",
+   "profession": "TANK",
+   "branch": "守护者",
+   "nation": "炎",
+   "group": "炎-岁",
+   "team": null,
+   "format": "synergy",
+   "skillName": "化被草木",
+   "skillKind": "instant",
+   "sp": [
+    5,
+    4,
+    4,
+    4
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时（百谷长青）：立即给所在地块播种：每秒回复 60 生命、获得 12% 庇护。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "tile(own)",
+     "effect": "seedTile(regen=60, sanctuary=12)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "seedTile"
+     ]
+    },
+    {
+     "kind": "skill",
+     "template": "化被草木：下次攻击为周围生命不足一半的 1 名干员恢复 {a}% 攻击力的生命。可储存 3 次。",
+     "params": {
+      "a": [
+       150,
+       160,
+       170,
+       180
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "ally(around, hp<50%)",
+     "effect": "heal(scale=a)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "百谷长青：治疗干员时，对其与周围四格地块播种：每秒回复 {b} 生命、获得 {c}% 庇护。播种的地块一直保留，重复播种不叠加。",
+     "params": {
+      "b": [
+       60,
+       65,
+       70,
+       80
+      ],
+      "c": [
+       12,
+       13,
+       14,
+       14
+      ]
+     },
+     "trigger": {
+      "event": "static",
+      "subject": "self",
+      "condition": "治疗时附加（使用效果）"
+     },
+     "target": "tiles(healed+around4)",
+     "effect": "seedTile(regen=b, sanctuary=c)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "seedTile"
+     ]
+    },
+    {
+     "kind": "talent",
+     "template": "天有四时：场上有三名不同职业干员时，你的干员生命上限 +12%；三名相同职业时攻击速度 +12；有四名岁干员时攻击力 +12%，且每 4 秒获得 1 技力。",
+     "params": {},
+     "trigger": {
+      "event": "aura",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies(all)",
+     "effect": "buff(hpPct=12 | aspd=12 | atkPct=12 + spEvery4s)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "化被草木：你的其他岁干员施放技能时，此干员充能 {d}。",
+     "params": {
+      "d": [
+       0.5,
+       0.5,
+       1,
+       1
+      ]
+     },
+     "trigger": {
+      "event": "skillStart",
+      "subject": "allies:岁",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "sp(d)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "施放技能"
+    },
+    {
+     "kind": "growth",
+     "template": "百谷长青：你的其他岁干员施放技能时，播种的每秒回复 +2（本局游戏内）。",
+     "params": {},
+     "trigger": {
+      "event": "skillStart",
+      "subject": "allies:岁",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "persistGrowth(seedRegen=+2)",
+     "limit": null,
+     "scope": "run",
+     "newPrimitives": [],
+     "consumeKey": "施放技能",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_shu",
+     "name": "“钦天司时”",
+     "line": null
+    },
+    {
+     "id": "uniequip_003_shu",
+     "name": "好时节",
+     "line": {
+      "kind": "module",
+      "template": "好时节：受到的伤害 -15%；天有四时达成两种或以上时，你的干员攻击力再 +5%。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "buff(dmgTakenPct=-15); mod(talentBonus atkPct=5)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_311_mudrok",
+   "name": "泥岩",
+   "typeLabel": "重装 · 不屈者 · 罗德岛",
+   "profession": "TANK",
+   "branch": "不屈者",
+   "nation": "罗德岛",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "岩崩锤",
+   "skillKind": "instant",
+   "sp": [
+    4,
+    4,
+    5,
+    5
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时（沃土予身）：立即获得 1 层护盾。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "shield(layer=1)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "岩崩锤：下次攻击回复自身 6% 最大生命，对周围所有地面敌人造成 {a}% 攻击力的物理伤害，30% 几率晕眩 1.2 秒；被击中的敌人浮空 0.5 秒。",
+     "params": {
+      "a": [
+       210,
+       240,
+       270,
+       300
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemies(around, ground)",
+     "effect": "heal(self 6%); damage(scale=a, phys); proc(30%, status(stun, t=1.2)); status(levitate, t=0.5)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "沃土予身：每 9 秒获得 1 层护盾（最多 3 层）；每层护盾破裂时恢复自身 {b}% 最大生命。",
+     "params": {
+      "b": [
+       18,
+       20,
+       22,
+       24
+      ]
+     },
+     "trigger": {
+      "event": "static",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "shield(every 9s, max=3); onBreak(heal(b))",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "growth",
+     "template": "沃土予身：你的其他罗德岛干员施放技能时，此干员生命上限 +{c}%（本局游戏内）。",
+     "params": {
+      "c": [
+       0.5,
+       0.6,
+       0.8,
+       1
+      ]
+     },
+     "trigger": {
+      "event": "skillStart",
+      "subject": "allies:罗德岛",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "persistGrowth(hpPct=+c)",
+     "limit": null,
+     "scope": "run",
+     "newPrimitives": [],
+     "consumeKey": "施放技能",
+     "suppressed": true
+    },
+    {
+     "kind": "stack",
+     "template": "手足相惜：你的其他干员的护盾或屏障破裂时，本场战斗内此干员防御力 +2%（每 2 秒最多一次）。",
+     "params": {},
+     "trigger": {
+      "event": "shieldBroken",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(defPct=+2)",
+     "limit": "每 2 秒最多一次",
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "屏障破裂",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_mudrok",
+     "name": "土石的根系",
+     "line": {
+      "kind": "module",
+      "template": "土石的根系：每层护盾破裂时，此干员额外充能 2。",
+      "params": {},
+      "trigger": {
+       "event": "shieldBroken",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "sp(2)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    },
+    {
+     "id": "uniequip_003_mudrok",
+     "name": "沃土的愿景",
+     "line": null
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_4065_judge",
+   "name": "斥罪",
+   "typeLabel": "重装 · 不屈者 · 叙拉古",
+   "profession": "TANK",
+   "branch": "不屈者",
+   "nation": "叙拉古",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "一锤定音",
+   "skillKind": "instant",
+   "sp": [
+    3,
+    3,
+    3,
+    4
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时（律法卫士）：立即获得相当于生命上限 {a}% 的屏障。",
+     "params": {
+      "a": [
+       40,
+       45,
+       50,
+       55
+      ]
+     },
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "barrier(pctMaxHp=a)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "一锤定音：下次攻击额外造成 {b}% 攻击力的法术伤害。可储存 2 次；储存满 2 次时发动，这次攻击力提升至 200%，并晕眩目标 {c} 秒。",
+     "params": {
+      "b": [
+       180,
+       190,
+       200,
+       220
+      ],
+      "c": [
+       3,
+       3,
+       4,
+       5
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemy(target)",
+     "effect": "damage(scale=b, arts); charged(atkPct=200, status(stun, t=c))",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "律法卫士：你的其他干员击倒敌人时，此干员获得相当于生命上限 {d}% 的屏障（最多不超过生命上限 300%）。",
+     "params": {
+      "d": [
+       5,
+       6,
+       8,
+       10
+      ]
+     },
+     "trigger": {
+      "event": "kill",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "barrier(pctMaxHp=d, cap=300%)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "击倒"
+    },
+    {
+     "kind": "talent",
+     "template": "荆棘环身：拥有来自自身的屏障时，每次受到攻击对攻击者造成 {e}% 攻击力的法术伤害。",
+     "params": {
+      "e": [
+       40,
+       45,
+       50,
+       56
+      ]
+     },
+     "trigger": {
+      "event": "damageTaken",
+      "subject": "self",
+      "condition": "拥有来自自身的屏障"
+     },
+     "target": "attacker",
+     "effect": "damage(scale=e, arts)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "grant",
+     "template": "律法卫士：此干员拥有来自自身的屏障时，你的叙拉古干员可以阻挡空中敌人。",
+     "params": {},
+     "trigger": {
+      "event": "aura",
+      "subject": "allies:叙拉古",
+      "condition": "此干员拥有来自自身的屏障"
+     },
+     "target": "allies:叙拉古 (含自身)",
+     "effect": "grantBlockAir(class=叙拉古, while=selfBarrier)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "grantBlockAir"
+     ]
+    },
+    {
+     "kind": "growth",
+     "template": "律法卫士：你的其他叙拉古干员击倒敌人时，此干员生命上限 +{f}%（本局游戏内）。",
+     "params": {
+      "f": [
+       0.5,
+       0.6,
+       0.8,
+       1
+      ]
+     },
+     "trigger": {
+      "event": "kill",
+      "subject": "allies:叙拉古",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "persistGrowth(hpPct=+f)",
+     "limit": null,
+     "scope": "run",
+     "newPrimitives": [],
+     "consumeKey": "击倒",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_judge",
+     "name": "通往未来的荆棘之路",
+     "line": null
+    },
+    {
+     "id": "uniequip_003_judge",
+     "name": "“无罪”",
+     "line": {
+      "kind": "module",
+      "template": "“无罪”：荆棘环身的反击伤害提高到 61% 攻击力。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(talentScale=61)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_416_zumama",
+   "name": "森蚺",
+   "typeLabel": "重装 · 决战者 · 萨尔贡",
+   "profession": "TANK",
+   "branch": "决战者",
+   "nation": "萨尔贡",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "震慑劈砍",
+   "skillKind": "instant",
+   "sp": [
+    24,
+    26,
+    28,
+    30
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时（轻型挂斧）：攻击力 +25%、防御力 +25%，持续 15 秒。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "buff(atkPct=25, defPct=25, t=15)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "震慑劈砍：立即劈砍阻挡的所有敌人，造成{r0}%物理伤害，并晕眩3秒。",
+     "params": {
+      "a": [
+       8,
+       10,
+       12,
+       15
+      ],
+      "b": [
+       130,
+       150,
+       170,
+       180
+      ],
+      "r0": [
+       350,
+       400,
+       450,
+       500
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self+enemies(blocked)",
+     "effect": "resolvedSkill",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "overlap": "independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "愈战愈勇：阻挡敌人时，加速此干员 {c} 秒。",
+     "params": {
+      "c": [
+       3,
+       4,
+       4,
+       5
+      ]
+     },
+     "trigger": {
+      "event": "blocked",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "haste(t=c)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "selfTrigger": true
+    },
+    {
+     "kind": "talent",
+     "template": "勇冠三军：生命高于一半时，攻击造成 {d}% 伤害；不高于一半时，获得 {e}% 庇护。",
+     "params": {
+      "d": [
+       117,
+       119,
+       121,
+       123
+      ],
+      "e": [
+       22,
+       24,
+       26,
+       28
+      ]
+     },
+     "trigger": {
+      "event": "static",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "buff(dmgPct=d | sanctuary=e)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "stack",
+     "template": "勇冠三军：此干员使敌人晕眩时，相邻干员本场战斗内攻击力 +1%（每 2 秒最多一次）。",
+     "params": {},
+     "trigger": {
+      "event": "statusApplied:stun",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "adjacentAllies",
+     "effect": "stack(atkPct=+1)",
+     "limit": "每 2 秒最多一次",
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "suppressed": true
+    },
+    {
+     "kind": "growth",
+     "template": "勇冠三军：你的其他干员使敌人晕眩时，此干员攻击力 +{f}%（本局游戏内，每 2 秒最多一次）。",
+     "params": {
+      "f": [
+       0.3,
+       0.4,
+       0.5,
+       0.6
+      ]
+     },
+     "trigger": {
+      "event": "statusApplied:stun",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "persistGrowth(atkPct=+f)",
+     "limit": "每 2 秒最多一次",
+     "scope": "run",
+     "newPrimitives": [],
+     "consumeKey": "晕眩",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_zumama",
+     "name": "祖玛玛的工具箱",
+     "line": null
+    },
+    {
+     "id": "uniequip_003_zumama",
+     "name": "“小小的丑东西”",
+     "line": {
+      "kind": "module",
+      "template": "“小小的丑东西”：勇冠三军改为生命高于一半时造成 125% 伤害，不高于一半时获得 30% 庇护。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "mod(talent dmgPct=125 | sanctuary=30)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    },
+    {
+     "id": "uniequip_004_zumama",
+     "name": "森蚺特限证章",
+     "line": null
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_4039_horn",
+   "name": "号角",
+   "typeLabel": "重装 · 要塞 · 维多利亚",
+   "profession": "TANK",
+   "branch": "要塞",
+   "nation": "维多利亚",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "照明榴弹",
+   "skillKind": "instant",
+   "sp": [
+    6,
+    5,
+    5,
+    5
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：向攻击范围内发射 1 枚照明榴弹：目标周围 150% 攻击力的物理伤害，留下 8 秒照明区域。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemy(range)+splash",
+     "effect": "damage(scale=150, phys); flareZone(t=8)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "flareZone"
+     ]
+    },
+    {
+     "kind": "skill",
+     "template": "照明榴弹：下次攻击造成 {a}% 攻击力的物理伤害；远程攻击时溅射半径扩大至 2 格，并留下 8 秒照明区域（区域内敌人隐匿失效）。可储存 2 次。",
+     "params": {
+      "a": [
+       220,
+       240,
+       260,
+       280
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemy(target)+splash",
+     "effect": "damage(scale=a, phys); flareZone(t=8)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "flareZone"
+     ]
+    },
+    {
+     "kind": "talent",
+     "template": "军事要塞：你的其他重装干员攻击力 +{b}%。",
+     "params": {
+      "b": [
+       15,
+       18,
+       20,
+       26
+      ]
+     },
+     "trigger": {
+      "event": "aura",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies:重装(others)",
+     "effect": "buff(atkPct=b)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "血战：每次部署后首次受到致命伤害时不撤退：恢复所有生命，生命上限 -50%，攻击速度 +{c}，防御力 +{e}%。",
+     "params": {
+      "c": [
+       12,
+       15,
+       18,
+       21
+      ],
+      "e": [
+       12,
+       15,
+       18,
+       21
+      ]
+     },
+     "trigger": {
+      "event": "damageTaken",
+      "subject": "self",
+      "condition": "受到致命伤害；每次部署一次"
+     },
+     "target": "self",
+     "effect": "cheatDeath(fullHeal, hpPct=-50, aspd=c, defPct=c)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "grant",
+     "template": "要塞指挥：照明区域内，你的维多利亚干员可以阻挡空中敌人。",
+     "params": {},
+     "trigger": {
+      "event": "aura",
+      "subject": "allies:维多利亚",
+      "condition": "位于照明区域内"
+     },
+     "target": "allies:维多利亚 (含自身)",
+     "effect": "grantBlockAir(class=维多利亚, zone=flare)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "grantBlockAir",
+      "flareZone"
+     ]
+    },
+    {
+     "kind": "stack",
+     "template": "要塞指挥：你的其他维多利亚干员阻挡空中敌人时，本场战斗内军事要塞 +1%。",
+     "params": {},
+     "trigger": {
+      "event": "blockedAir",
+      "subject": "allies:维多利亚",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(auraAtkPct=+1)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack",
+      "blockedAir"
+     ],
+     "consumeKey": "阻挡空中",
+     "suppressed": true
+    },
+    {
+     "kind": "growth",
+     "template": "军事要塞：你的其他重装干员击倒精英敌人时，军事要塞 +{d}%（本局游戏内）。",
+     "params": {
+      "d": [
+       1,
+       1,
+       1.5,
+       2
+      ]
+     },
+     "trigger": {
+      "event": "eliteKill",
+      "subject": "allies:重装",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "persistGrowth(auraAtkPct=+d)",
+     "limit": null,
+     "scope": "run",
+     "newPrimitives": [
+      "eliteKill"
+     ],
+     "consumeKey": "击倒精英",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_horn",
+     "name": "“典范之人”",
+     "line": {
+      "kind": "module",
+      "template": "“典范之人”：攻击被你的其他干员阻挡的敌人时，攻击力提升至 110%。",
+      "params": {},
+      "trigger": {
+       "event": "attack",
+       "subject": "enemyByOthers",
+       "condition": "目标被其他干员阻挡"
+      },
+      "target": "self",
+      "effect": "buff(atkPct=110)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": [],
+      "consumeKey": "被阻挡"
+     }
+    },
+    {
+     "id": "uniequip_003_horn",
+     "name": "旧日新装",
+     "line": null
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_1034_jesca2",
+   "name": "涤火杰西卡",
+   "typeLabel": "重装 · 哨戒铁卫 · 哥伦比亚 · 黑钢国际",
+   "profession": "TANK",
+   "branch": "哨戒铁卫",
+   "nation": "哥伦比亚",
+   "group": "黑钢国际",
+   "team": null,
+   "format": "synergy",
+   "skillName": "饱和迸射",
+   "skillKind": "instant",
+   "sp": [
+    25,
+    28,
+    32,
+    35
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：在相邻格放置机动盾牌（召唤物，持续 {a} 秒）；此干员与身后的干员防御力 +18%。",
+     "params": {
+      "a": [
+       20,
+       35,
+       50,
+       55
+      ]
+     },
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "tile(adjacent)",
+     "effect": "summon(mobileShield, t=a); buff(defPct=18, behind)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "饱和迸射：装填 20 发弹药：攻击距离 +1，攻击力 +{b}%，防御力 +80%；机动盾牌存在时立即发射炮弹，范围内 250% 攻击力的物理伤害并晕眩 {c} 秒。",
+     "params": {
+      "b": [
+       200,
+       240,
+       280,
+       310
+      ],
+      "c": [
+       5,
+       5,
+       6,
+       6
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self+enemies(area)",
+     "effect": "ammoSkill(n=20); buff(atkPct=b, defPct=80); damage(250, phys); status(stun, t=c)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [
+      "ammoSkill"
+     ]
+    },
+    {
+     "kind": "talent",
+     "template": "蓄能释放：机动盾牌受到伤害时，{d}% 几率让此干员充能 1。",
+     "params": {
+      "d": [
+       55,
+       60,
+       60,
+       65
+      ]
+     },
+     "trigger": {
+      "event": "damageTaken",
+      "subject": "self",
+      "condition": "由此干员的召唤物（机动盾牌）受到伤害"
+     },
+     "target": "self",
+     "effect": "proc(d, sp(1))",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "stack",
+     "template": "灵活应变：你的其他干员消耗弹药时，本场战斗内此干员攻击力 +0.5%（每 1 秒最多一次）。",
+     "params": {},
+     "trigger": {
+      "event": "ammoUsed",
+      "subject": "otherAllies",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(atkPct=+0.5)",
+     "limit": "每 1 秒最多一次",
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "弹药",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_jesca2",
+     "name": "“私家英雄”",
+     "line": null
+    },
+    {
+     "id": "uniequip_003_jesca2",
+     "name": "未曾风化",
+     "line": {
+      "kind": "module",
+      "template": "未曾风化：机动盾牌被击倒后 30 秒重新放置；机动盾牌受到伤害时，这个时间 -1 秒（最多 -14 秒）。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "ownSummon",
+      "effect": "mod(summonRedeploy=-1s per hit, max=-14s)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_4194_rmixer",
+   "name": "信仰搅拌机",
+   "typeLabel": "重装 · 哨戒铁卫 · 拉特兰",
+   "profession": "TANK",
+   "branch": "哨戒铁卫",
+   "nation": "拉特兰",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "铳骑主考官",
+   "skillKind": "instant",
+   "sp": [
+    5,
+    5,
+    5,
+    4
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    80,
+    80,
+    80,
+    80
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时（退休前布道）：为你的其他拉特兰干员装填 2 发弹药。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies:拉特兰(others)",
+     "effect": "reload(2)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "reload"
+     ]
+    },
+    {
+     "kind": "skill",
+     "template": "铳骑主考官：下次攻击变为三连击，每次 {a}% 攻击力的物理伤害，并为周围另一名开启弹药技能的拉特兰干员装填 1 发。",
+     "params": {
+      "a": [
+       160,
+       170,
+       180,
+       190
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemy(target)+ally:拉特兰(around, other)",
+     "effect": "damage(scale=a, hits=3); reload(1)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "reload"
+     ]
+    },
+    {
+     "kind": "talent",
+     "template": "扫射迎宾仪礼：每次造成伤害，此干员 10 秒内防御力 +{b}、攻击速度 +{c}，最多 3 层。",
+     "params": {
+      "b": [
+       20,
+       25,
+       30,
+       30
+      ],
+      "c": [
+       2,
+       2,
+       3,
+       3
+      ]
+     },
+     "trigger": {
+      "event": "hit",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "buff(def=b, aspd=c, t=10, max=3)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "架盾送客仪礼：8 秒内未主动攻击时，获得相当于生命上限 {d}% 的屏障，失去屏障后重新计时。",
+     "params": {
+      "d": [
+       18,
+       19,
+       20,
+       21
+      ]
+     },
+     "trigger": {
+      "event": "static",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "barrier(pctMaxHp=d, idle=8s)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "growth",
+     "template": "扫射迎宾仪礼：你的其他拉特兰干员消耗弹药时，此干员防御力 +{e}%（本局游戏内，每 1 秒最多一次）。",
+     "params": {
+      "e": [
+       0.2,
+       0.3,
+       0.4,
+       0.5
+      ]
+     },
+     "trigger": {
+      "event": "ammoUsed",
+      "subject": "allies:拉特兰",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "persistGrowth(defPct=+e)",
+     "limit": "每 1 秒最多一次",
+     "scope": "run",
+     "newPrimitives": [],
+     "consumeKey": "弹药",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_rmixer",
+     "name": "毛刷套装",
+     "line": {
+      "kind": "module",
+      "template": "毛刷套装：扫射迎宾仪礼叠满时，你的其他拉特兰干员攻击速度不会低于战斗开始时。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "allies:拉特兰(others)",
+      "effect": "mod(aspdFloor)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    },
+    {
+     "id": "uniequip_003_rmixer",
+     "name": "“老朋友”",
+     "line": null
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_2026_yu",
+   "name": "余",
+   "typeLabel": "重装 · 本源铁卫 · 炎 · 炎-岁",
+   "profession": "TANK",
+   "branch": "本源铁卫",
+   "nation": "炎",
+   "group": "炎-岁",
+   "team": null,
+   "format": "synergy",
+   "skillName": "厚礼上宾",
+   "skillKind": "instant",
+   "sp": [
+    18,
+    22,
+    26,
+    29
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    70,
+    70,
+    70,
+    70
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：周围所有敌人受到 60% 攻击力的法术伤害，附带 12% 攻击力的灼燃损伤。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemies(around)",
+     "effect": "damage(scale=60, arts); elementDamage(burn, 12)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "elementDamage"
+     ]
+    },
+    {
+     "kind": "skill",
+     "template": "厚礼上宾：对周围所有敌人造成 100% 攻击力的法术伤害，并把其中的地面敌人传送到此干员位置。 重复施放结算：每次施放立即回复10%最大生命；周围法术伤害、地面传送、阻挡+2与法术普攻照常结算，属性不累加。",
+     "params": {},
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "enemies(around)",
+     "effect": "damage(scale=100, arts); teleport(to=self, ground)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "teleport"
+     ],
+     "overlap": "refresh-stance-and-independent-payoff"
+    },
+    {
+     "kind": "skill",
+     "template": "厚礼上宾：之后 {a} 秒：阻挡数 +2，生命上限 +{b}%，攻击力 +{c}%，普通攻击造成法术伤害。持续中可重复发起。",
+     "params": {
+      "a": [
+       8,
+       10,
+       12,
+       15
+      ],
+      "b": [
+       80,
+       110,
+       130,
+       160
+      ],
+      "c": [
+       150,
+       200,
+       250,
+       290
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "buff(block=+2, hpPct=b, atkPct=c, dmgType=arts, t=a)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "礼尚往来：阻挡敌人时获得 {d}% 庇护；被阻挡的敌人每秒受到 {e}% 攻击力的法术伤害与 {f}% 攻击力的灼燃损伤。",
+     "params": {
+      "d": [
+       20,
+       25,
+       30,
+       35
+      ],
+      "e": [
+       25,
+       30,
+       35,
+       40
+      ],
+      "f": [
+       8,
+       10,
+       12,
+       12
+      ]
+     },
+     "trigger": {
+      "event": "static",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self+enemies(blocked)",
+     "effect": "buff(sanctuary=d, if=blocking); dot(arts=e); elementDamage(burn, f)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [
+      "elementDamage"
+     ]
+    },
+    {
+     "kind": "talent",
+     "template": "闲云隐市：你的其他岁干员施放技能时，此干员充能 {g}；场上干员不少于 4 名时，每秒回复 2% 最大生命与元素损伤。",
+     "params": {
+      "g": [
+       1,
+       1,
+       1.5,
+       2
+      ]
+     },
+     "trigger": {
+      "event": "skillStart",
+      "subject": "allies:岁",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "sp(g)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "施放技能"
+    },
+    {
+     "kind": "stack",
+     "template": "人间百味：任一敌人因你的其他干员灼燃损伤爆发时，本场战斗内礼尚往来伤害 +3%。",
+     "params": {},
+     "trigger": {
+      "event": "elementBurst:burn",
+      "subject": "enemyByOthers",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(talentDmgPct=+3)",
+     "limit": null,
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "灼燃爆发",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_yu",
+     "name": "人间百味",
+     "line": {
+      "kind": "module",
+      "template": "人间百味：对处于灼燃损伤爆发的敌人，法术伤害 +14%。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "self",
+      "effect": "buff(artsDmgPct=14, vs=burnBurst)",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  },
+  {
+   "id": "char_220_grani",
+   "name": "格拉尼",
+   "typeLabel": "先锋 · 冲锋手 · 维多利亚",
+   "profession": "PIONEER",
+   "branch": "冲锋手",
+   "nation": "维多利亚",
+   "group": null,
+   "team": null,
+   "format": "synergy",
+   "skillName": "永不后退！",
+   "skillKind": "instant",
+   "sp": [
+    40,
+    45,
+    50,
+    55
+   ],
+   "castOnDeploy": false,
+   "redeploySeconds": [
+    80,
+    80,
+    80,
+    80
+   ],
+   "lines": [
+    {
+     "kind": "deploy",
+     "template": "部署时：你的其他先锋干员物理闪避 +20%，持续 10 秒。",
+     "params": {},
+     "trigger": {
+      "event": "deployed",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies:先锋(others)",
+     "effect": "buff(dodge=20, t=10)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "skill",
+     "template": "永不后退！：立即进入 {a} 秒：攻击力与防御力 +80%，阻挡数 +1，同时攻击阻挡的所有敌人。持续中可重复发起。 重复施放结算：每次施放立即攻击所有阻挡的敌人，造成180%物理伤害并回复15%最大生命；永不后退姿态刷新。",
+     "params": {
+      "a": [
+       10,
+       12,
+       14,
+       15
+      ]
+     },
+     "trigger": {
+      "event": "skillReady",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "buff(atkPct=80, defPct=80, block=+1, hitAllBlocked, t=a)",
+     "limit": null,
+     "scope": "timed",
+     "newPrimitives": [],
+     "overlap": "refresh-stance-and-independent-payoff"
+    },
+    {
+     "kind": "talent",
+     "template": "骑警：你的先锋干员获得 {b}% 物理闪避。",
+     "params": {
+      "b": [
+       25,
+       26,
+       28,
+       30
+      ]
+     },
+     "trigger": {
+      "event": "aura",
+      "subject": "self",
+      "condition": null
+     },
+     "target": "allies:先锋",
+     "effect": "buff(dodge=b)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": []
+    },
+    {
+     "kind": "talent",
+     "template": "骑警：攻击被你的其他干员浮空或失重的敌人时，攻击力提升至 {c}%。",
+     "params": {
+      "c": [
+       130,
+       135,
+       140,
+       150
+      ]
+     },
+     "trigger": {
+      "event": "attack",
+      "subject": "enemyByOthers",
+      "condition": "目标处于由其他干员施加的浮空或失重"
+     },
+     "target": "self",
+     "effect": "buff(atkPct=c)",
+     "limit": null,
+     "scope": "instant",
+     "newPrimitives": [],
+     "consumeKey": "浮空"
+    },
+    {
+     "kind": "stack",
+     "template": "骑警：你的其他先锋干员闪避时，本场战斗内此干员防御力 +1%（每 1 秒最多一次）。",
+     "params": {},
+     "trigger": {
+      "event": "dodge",
+      "subject": "allies:先锋",
+      "condition": null
+     },
+     "target": "self",
+     "effect": "stack(defPct=+1)",
+     "limit": "每 1 秒最多一次",
+     "scope": "battle",
+     "newPrimitives": [
+      "stack"
+     ],
+     "consumeKey": "闪避",
+     "suppressed": true
+    }
+   ],
+   "modules": [
+    {
+     "id": "uniequip_002_grani",
+     "name": "骑警套装",
+     "line": {
+      "kind": "module",
+      "template": "骑警套装：击倒敌人后获得 2 费用。",
+      "params": {},
+      "trigger": {
+       "event": "static",
+       "subject": "self",
+       "condition": null
+      },
+      "target": "player",
+      "effect": "onKill(dp(2))",
+      "limit": null,
+      "scope": "instant",
+      "newPrimitives": []
+     }
+    }
+   ],
+   "sourceFile": "server/sim/content/assault/cards/synergy-support.js"
+  }
+ ]
+}

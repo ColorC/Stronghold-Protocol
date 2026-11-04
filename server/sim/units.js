@@ -20,6 +20,13 @@ const EMPTY = Object.freeze({});
 const NO_MUL = Object.freeze({ atk: 1, def: 1, hp: 1 });
 /** Aggregates can overflow (huge stacked *Mul mods → Infinity) — fall back to `d` so no stat is ever non-finite. */
 const fin = (v, d) => (Number.isFinite(v) ? v : d);
+/** Flat DEF with the unit's own gains (each buff's positive defFlat) scaled; reductions keep their full value. */
+function scaledDefFlat(buffs, total, scale) {
+  if (scale === 1 || !(scale >= 0)) return total;
+  let gained = 0;
+  for (const b of buffs) { const v = b.mods?.defFlat; if (Number.isFinite(v) && v > 0) gained += v * b.stacks; }
+  return total - gained + gained * scale;
+}
 
 export class Unit {
   /**
@@ -39,8 +46,6 @@ export class Unit {
     this.ownerId = init.ownerId ?? null;  // playerId (enemies: field owner)
     this.uid = init.uid ?? null;          // match piece uid (ops/tokens from the board)
     this.ownerUnit = init.ownerUnit ?? null; // summoner (tokens)
-    this.nativeGrowthStatus = init.nativeGrowthStatus ?? null; // optional runtime owner phase/level for native summon curves
-    this.nativeOwnerGrowth = init.nativeOwnerGrowth ?? null; // frozen phase/level context on a spawned summon
     this.x = init.x ?? 0;
     this.y = init.y ?? 0;
     this.tileR = init.tileR ?? Math.round(this.y);
@@ -60,6 +65,8 @@ export class Unit {
     };
     /** @type {object[]} */
     this.buffs = [];
+    // a mode's enemy DEF multiplier for the flat DEF this unit gains from its own buffs (auras, states); 1 = native
+    this.defFlatScale = 1;
     this._dirty = true;
     this._s = null;
     this.hp = this.base.maxHp;
@@ -79,7 +86,7 @@ export class Unit {
     this.deathAt = -Infinity;
     this.respawnAt = Infinity;
     this.deploySeq = 0;         // deployment counter; also the identity of one deployment (content: `seq === u.deploySeq`)
-    this.aggroSeq = 0;          // 仇恨 order (the later the more attacked): = deploySeq, except summons of the initial deployment
+    this.aggroSeq = 0;          // 仇恨 order: usually deploySeq; initial summons and prepared map characters are exceptions
     this.spawnSeq = 0;
     this.elem = { burn: 0, neural: 0, necrosis: 0, apoptosis: 0, erosion: 0 };
     this.burstPending = null;   // { [element]: true } while that element's burst resolves (damage.js burstLocked)
@@ -142,8 +149,9 @@ export class Unit {
     const maxHp = Math.max(1, fin((bHp + a('hpFlat')) * Math.max(0, 1 + a('hpPct')) * m('hpMul') * cm.hp, bHp));
     // PRTS 游戏数据基础 属性基本公式 A_f = F_t[(A + D_p)(1 + D_t) + F_p]: `atkFinal` is the 最终加算 (FINAL_ADDITION) —
     // added after the percentages, inside the Πmul (阿戈尔's devoured base ATK, DESIGN §24.7)
-    const atk = Math.max(0, fin(((b.atk + a('atkFlat')) * Math.max(0, 1 + a('atkPct')) + a('atkFinal')) * m('atkMul') * cm.atk, fin(b.atk, 0)));
-    const def = Math.max(0, fin((b.def + a('defFlat')) * Math.max(0, 1 + a('defPct')) * m('defMul') * cm.def, fin(b.def, 0)));
+    // Resonance HP-derived attack is independent from ordinary atkPct stacking and uses the freshly recalculated max HP.
+    const atk = Math.max(0, fin(((b.atk + a('atkFlat')) * Math.max(0, 1 + a('atkPct')) + a('atkFinal') + maxHp * a('atkHpPct')) * m('atkMul') * cm.atk, fin(b.atk, 0)));
+    const def = Math.max(0, fin((b.def + scaledDefFlat(this.buffs, a('defFlat'), this.defFlatScale)) * Math.max(0, 1 + a('defPct')) * m('defMul') * cm.def, fin(b.def, 0)));
     const res = clamp(fin((b.res + a('resFlat')) * m('resMul'), fin(b.res, 0)), 0, 100);
     const aspd = clamp(fin(b.aspd + a('aspd'), 100), ASPD_MIN, ASPD_MAX);
     const bBat = fin(b.bat, 1) > 0 ? fin(b.bat, 1) : 1;

@@ -292,7 +292,7 @@ export default {
           battle.on('deploy', (ctx) => {
             if (ctx.unit !== unit || ctx.initial || unit.ground) return;
             const n = unit.base.cost * back;
-            battle.addDp(unit.ownerId, n);
+            battle.addDp(unit.ownerId, n, { sourceUnitId: unit.id });
             battle.fx('dp', { x: unit.x, y: unit.y, n, id: unit.id });
           }, { owner: unit });
         }

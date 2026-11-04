@@ -6,6 +6,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
+import { publicResourcePath, resolveStylesheetHref } from '../helpers/public-resources.mjs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -347,8 +348,12 @@ describe('public/js/ui/emotes.js helpers', () => {
     assert.equal(ensureEmoteCss(doc), false);
     assert.deepEqual(links, [{ rel: 'stylesheet', href: EMOTE_CSS_HREF }]);
     assert.equal(ensureEmoteCss(undefined), false);
-    assert.ok(existsSync(path.join(ROOT, 'public', EMOTE_CSS_HREF)));
-    assert.match(readFileSync(path.join(ROOT, 'public/index.html'), 'utf8'), /href="\/css\/emotes\.css"/);
+    assert.ok(existsSync(publicResourcePath(EMOTE_CSS_HREF)));
+    const html = readFileSync(path.join(ROOT, 'public/index.html'), 'utf8');
+    const href = html.match(/<link rel="stylesheet" href="([^"]*emotes\.css)" \/>/)?.[1];
+    const resolved = resolveStylesheetHref(href, 'css/emotes.css');
+    assert.deepEqual(resolved, { root: '/css/emotes.css', mounted: '/stronghold/assault/css/emotes.css', resource: 'css/emotes.css' });
+    assert.ok(existsSync(publicResourcePath(resolved.resource)), 'both URLs resolve to the same read-only public asset under the mount mapping');
   });
 
   test('a hung emote manifest is missing when the clock fires (glyph), and a later retry replaces it', async () => {

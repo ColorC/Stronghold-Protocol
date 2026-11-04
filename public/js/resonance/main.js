@@ -1,0 +1,17 @@
+import '../ui/compat.js';
+import {render} from '../../vendor/preact.module.js';
+import {html,UiHosts,setDifficultyNames,setTierLook} from '../ui/components.js';
+import {ToastHost} from '../ui/toasts.js';
+import {installDeviceSupport} from '../ui/device.js';
+import {installAudio} from '../audio.js';
+import {settingsStore} from '../ui/settings.js';
+import {data} from '../data.js';
+import {App} from './app.js';
+import {installResonanceWave} from './resonanceWave.js';
+import {RESONANCE_DIFFICULTY_NAMES} from '../../../shared/resonance/difficulty-names.js';
+installDeviceSupport();
+installAudio({getManifest:()=>data.get('assets'),settings:settingsStore.get()});
+installResonanceWave();
+setTierLook('color');
+setDifficultyNames(RESONANCE_DIFFICULTY_NAMES);
+const root=document.getElementById('app');root.textContent='';render(html`<${App}/><${ToastHost}/><${UiHosts}/>`,root);

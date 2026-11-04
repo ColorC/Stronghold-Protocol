@@ -123,6 +123,48 @@ export function isHpLoss(dmg) {
   return !!dmg && Array.isArray(dmg.tags) && dmg.tags.includes('hpLoss');
 }
 
+/**
+ * Record one redirect ratio of the pre-redirect hit and leave the victim the rest.
+ * Each recorded ratio is a share of that hit; the victim keeps `1 − sum`. Two redirects therefore
+ * add up with the part the victim still takes. [ASSUMED] 浊心斯卡蒂 S1 and 坚守 do not say how they
+ * combine; multiplying the two remainders drops the product of the ratios. A sum of 1 or more leaves
+ * the victim with none of this hit (the same loss a single 100 % redirect already has, because the
+ * HP that arrives is 0 and no share is dealt).
+ * @param {object} dmg normalised DamageInfo
+ * @param {number} ratio
+ */
+export function applyRedirectCut(dmg, ratio) {
+  const r = ratio < 0 ? 0 : ratio > 1 ? 1 : Number(ratio) || 0;
+  if (!(r > 0) || !dmg) return 0;
+  const prev = Array.isArray(dmg.redirectCuts) ? dmg.redirectCuts : (dmg.redirectCuts = []);
+  let prevSum = 0;
+  for (const x of prev) prevSum += x;
+  const prevKeep = prevSum >= 1 ? 0 : 1 - prevSum;
+  prev.push(r);
+  const nextSum = prevSum + r;
+  const nextKeep = nextSum >= 1 ? 0 : 1 - nextSum;
+  if (prevKeep > 1e-12) dmg.mul *= nextKeep / prevKeep;
+  else dmg.mul *= 0;
+  return r;
+}
+
+/**
+ * This redirect's share of the HP that reached the victim, taken from the pre-redirect amount.
+ * @param {number} amount HP removed from the victim after every redirect cut
+ * @param {number} own this redirect's ratio
+ * @param {number[]|undefined} cuts every ratio recorded on the hit
+ */
+export function redirectShare(amount, own, cuts) {
+  const list = Array.isArray(cuts) ? cuts : [];
+  let sum = 0;
+  for (const x of list) sum += x;
+  const o = own > 0 ? own : 0;
+  if (!(amount > 0) || !(o > 0) || !(sum > 0)) return 0;
+  const keep = 1 - sum;
+  if (keep > 1e-12) return amount / keep * o;
+  return amount * (o / sum);
+}
+
 /** 沉睡 (ba.sleep "无敌且无法行动"): only attackers whose profile has `hitSleep` (or `ignoreSleep` damage) reach a sleeper. */
 function sleepBlocks(target, source, dmg) {
   return !!target.s.flags.sleep && !dmg.ignoreSleep && !(source && source.profile && source.profile.hitSleep);
@@ -190,16 +232,19 @@ export function leaderHitCancelled(battle, target, amount) {
  * absorbs every type (PRTS 术语释义 屏障 "若无特殊说明，屏障可吸收全种类伤害"). Older shields first (buff order:
  * "优先消耗先生成的屏障").
  */
-export function absorbShields(battle, target, amount, type = null) {
+export function absorbShields(battle, target, amount, type = null, source = null) {
   if (amount <= 0) return 0;
   let changed = false;
   let rest = amount;
+  const depleted = [];
   const absorbs = (b) => !b.shieldType || (Array.isArray(b.shieldType) ? b.shieldType.includes(type) : b.shieldType === type);
   for (let i = 0; i < target.buffs.length && rest > 0; i++) {
     const b = target.buffs[i];
     if (b.shieldHits > 0 && absorbs(b)) {
       b.shieldHits--;
+      if (b.shieldHits <= 0) depleted.push({ amount: 1, shieldKind: 'layers' });
       if (battle._hooks.shieldLayersBroken) battle.emit('shieldLayersBroken', { unit: target, layers: 1, buff: b });
+      if (battle._hooks.shieldAbsorbed) battle.emit('shieldAbsorbed', { unit: target, amount: rest, buff: b, kind: 'layer', layers: 1 });
       rest = 0;
       if (b.shieldHits <= 0 && !(b.shield > 0) && !b.mods && !b.flags) { battle._removeBuffAt(target, i); i--; }
       changed = true;
@@ -212,15 +257,98 @@ export function absorbShields(battle, target, amount, type = null) {
       const take = Math.min(b.shield, rest);
       b.shield -= take;
       rest -= take;
+      if (take > 0 && battle._hooks.shieldAbsorbed) battle.emit('shieldAbsorbed', { unit: target, amount: take, buff: b, kind: 'shield', layers: 0 });
       changed = true;
       if (b.shield <= 1e-9) {
         b.shield = 0;
+        depleted.push({ amount: take, shieldKind: 'hp' });
         if (!b.mods && !b.flags && !(b.shieldHits > 0)) { battle._removeBuffAt(target, i); i--; }
       }
     }
   }
+  const absorbed = amount - rest;
   if (changed) target.markDirty();
+  if (absorbed > 0 && battle.assaultStrict) {
+    const base = { source, sourceUid: source?.uid ?? source?.id ?? null, target, targetUid: target.uid ?? target.id, damageType: type };
+    battle.assaultRuntime.publish('shieldAbsorbed', { ...base, amount: absorbed }, { sourceUid: base.sourceUid });
+    for (const broken of depleted) battle.assaultRuntime.publish('shieldBroken', { ...base, ...broken }, { sourceUid: base.sourceUid });
+  }
   return rest;
+}
+
+/**
+ * Official red-number test (PRTS 作战机制 「伤害红字（暴击）」, https://prts.wiki/w/作战机制).
+ * A red integer is shown when 最终伤害 ≥ 期望伤害 × 1.5. `1e-9` only absorbs a binary rounding crumb.
+ * 0 ≥ 0 × 1.5 is red: an invulnerable hit still shows red 0 in the official client. This function reports that;
+ * `dealDamage` does not emit a new event for it (a new `dmg` tuple would change golden counts and play an impact).
+ * @returns {'r'|null}
+ */
+export function officialDamageMark(finalAmount, expectedAmount) {
+  const fin = Number.isFinite(finalAmount) ? Math.max(0, finalAmount) : 0;
+  const exp = Number.isFinite(expectedAmount) ? Math.max(0, expectedAmount) : 0;
+  return fin + 1e-9 >= exp * 1.5 ? 'r' : null;
+}
+
+/**
+ * Expected damage for the red-number test. Same mitigation as the hit, without DEF/RES penetration and without
+ * the multipliers applied after mitigation (source dmgDealtMul / phys/artsDealtMul, target dmgTakenMul and the
+ * type-taken multipliers, shields, hpDamage rewrites, hit-count replacement).
+ * [ASSUMED] `dmg.amount` is already the attack's stated ATK × 攻击倍率 — callers bake `atkScaleMul` in, and this
+ * does not divide it back out. `dmg.mul` stays on both sides (the instance's own scale, including a skill-hit
+ * fraction). Cached-ATK expected damage (raw ATK only), forced red, blue numbers and yellow BLOCK have no
+ * DamageInfo flag here and are not applied.
+ */
+function officialExpectedAmount(dmg, type, ts, target) {
+  const base = mitigate(dmg.amount, type, ts, {
+    defIgnorePct: 0, defIgnoreFlat: 0, resIgnorePct: 0, resIgnoreFlat: 0,
+    elementalRes: type === 'elemental' ? (target.def?.epDamageResistance ?? 0) : 0,
+  });
+  const mul = Number.isFinite(dmg.mul) ? dmg.mul : 1;
+  const exp = base * mul;
+  return Number.isFinite(exp) && exp > 0 ? exp : 0;
+}
+
+/** Pre-shield damage after mitigation and the post-mitigation multipliers. Identical to the inline formula it replaced. */
+function landedPreShield(dmg, type, ts, ss, target, battle, source) {
+  let final = mitigate(dmg.amount, type, ts, {
+    defIgnorePct: dmg.defIgnorePct + (ss ? ss.defIgnorePct : 0),
+    defIgnoreFlat: dmg.defIgnoreFlat + (ss ? ss.defIgnoreFlat : 0),
+    resIgnorePct: dmg.resIgnorePct + (ss ? ss.resIgnorePct : 0),
+    resIgnoreFlat: dmg.resIgnoreFlat + (ss ? ss.resIgnoreFlat : 0),
+    elementalRes: type === 'elemental' ? (target.def?.epDamageResistance ?? 0) : 0,
+  });
+  // 脆弱 / "受到的伤害±" (dmgTakenMul) scale 物理、法术、真实 only; 元素伤害 takes 元素脆弱 alone (header)
+  let mul = dmg.mul * (type === 'elemental' ? 1 : ts.dmgTakenMul);
+  const independentOperator = (battle.contentMode === 'independent' || !!battle.flags?.independent)
+    && source?.side === 'ally' && source?.kind === 'op';
+  if (ss) {
+    if (independentOperator) {
+      // Unit.s currently products MUL_KEYS. In this mode, every outgoing increase contributes to the
+      // shared additive bucket with explicit DamageInfo increases before type-specific and target buckets.
+      const buffs = Array.isArray(source.buffs) ? source.buffs : [];
+      const buffBonus = buffs.reduce((sum, buff) => {
+        const v = Number(buff?.mods?.dmgDealtMul);
+        return Number.isFinite(v) ? sum + (v - 1) * Math.max(1, Number(buff.stacks) || 1) : sum;
+      }, 0);
+      const explicitBonus = Number(dmg.damageIncreaseBonus) || 0;
+      mul *= Math.max(0, 1 + buffBonus + explicitBonus);
+    } else mul *= ss.dmgDealtMul;
+    mul *= type === 'phys' ? ss.physDealtMul : type === 'arts' ? ss.artsDealtMul : 1;
+  } else if (independentOperator && dmg.damageIncreaseBonus) {
+    // Preserve the engine's sourceless rule for source buffs/type-specific stats while honoring
+    // a per-hit output factor explicitly snapshotted by the caller.
+    mul *= Math.max(0, 1 + Number(dmg.damageIncreaseBonus));
+  }
+  mul *= type === 'phys' ? ts.physTakenMul : type === 'arts' ? ts.artsTakenMul : type === 'elemental' ? ts.elementalTakenMul : ts.trueTakenMul;
+  final *= mul;
+  if (!(final > 0) || !Number.isFinite(final)) final = 0;
+  return final;
+}
+
+/** Source stats for a display-only dodge classification. Reading `source.s` while dirty rescales HP (units.js). */
+function peekStats(unit) {
+  if (!unit) return null;
+  return unit._dirty ? (unit._s || null) : unit.s;
 }
 
 /**
@@ -244,11 +372,16 @@ export function dealDamage(battle, source, target, dmgIn) {
     if (ts.flags.invulnerable || sleepBlocks(target, hs, dmg)) return 0;
   }
   const type = dmg.type;
-  // dodge
+  // dodge. The yellow MISS (PRTS: a hit that would have been red, dodged) is classified after the existing roll
+  // and does not roll again. Source stats are peeked so a dirty attacker is not refreshed just to label the dodge.
   if (dmg.canDodge && (type === 'phys' || type === 'arts')) {
     const p = type === 'phys' ? ts.dodgePhys : ts.dodgeArts;
     if (p > 0 && battle.rng() < p) {
-      battle.fx('dodge', { x: target.x, y: target.y, id: target.id });
+      const peeked = !dmg.sourceless ? peekStats(source) : null;
+      const red = officialDamageMark(landedPreShield(dmg, type, ts, peeked, target, battle, source), officialExpectedAmount(dmg, type, ts, target)) === 'r';
+      battle.fx('dodge', red
+        ? { x: target.x, y: target.y, id: target.id, num: 'm' }
+        : { x: target.x, y: target.y, id: target.id });
       if (battle._hooks.dodge) battle.emit('dodge', { source, target, dmg });
       return 0;
     }
@@ -256,72 +389,51 @@ export function dealDamage(battle, source, target, dmgIn) {
   // 频次 units (flags hitCount / hitCountArts): every damage instance removes exactly 1 HP (maxHp = hits needed);
   // hitCountArts ignores physical instances. The instance keeps its own DamageInfo, so `damaged` handlers still
   // recognise their own (tagged) damage — never re-create such a loss with a fresh loseHp.
+  // The red test compares that 1 (or 0) with the ordinary expected damage: 特殊生命值机制均不考虑 on the expected side.
   if (ts.flags.hitCount || ts.flags.hitCountArts) {
     const counts = !(ts.flags.hitCountArts && !ts.flags.hitCount && type === 'phys');
+    const mark = officialDamageMark(counts ? 1 : 0, officialExpectedAmount(dmg, type, ts, target));
     const finalHit = absorbShields(battle, target, counts ? 1 : 0, type);
+    if (battle.assaultStrict) battle.assaultRuntime.publish('hit', { source: hs, sourceUid: hs?.uid ?? hs?.id ?? null, target, targetUid: target.uid ?? target.id, amount: finalHit, damageType: type, attackId: dmg.attackId ?? null, skillId: dmg.isSkill ? source?.skill?.evSkillId ?? null : null, credit: source }, { sourceUid: hs?.uid ?? hs?.id ?? null });
     return typeof battle.independentPostMitigationDamage === 'function'
-      ? (battle.independentPostMitigationDamage(source, target, finalHit, dmg, { applyHpLoss, absorbShields: (b, t, amount) => absorbShields(b, t, amount, type) }) ?? applyHpLoss(battle, source, target, finalHit, dmg))
-      : applyHpLoss(battle, source, target, finalHit, dmg);
+      ? (battle.independentPostMitigationDamage(source, target, finalHit, dmg, { applyHpLoss, absorbShields }) ?? applyHpLoss(battle, source, target, finalHit, dmg, mark))
+      : applyHpLoss(battle, source, target, finalHit, dmg, mark);
   }
   // 无来源 damage (element bursts) takes nothing from its source's stats; the source still gets the credit below
   const ss = source && source.s && !dmg.sourceless ? source.s : null;
-  let final = mitigate(dmg.amount, type, ts, {
-    defIgnorePct: dmg.defIgnorePct + (ss ? ss.defIgnorePct : 0),
-    defIgnoreFlat: dmg.defIgnoreFlat + (ss ? ss.defIgnoreFlat : 0),
-    resIgnorePct: dmg.resIgnorePct + (ss ? ss.resIgnorePct : 0),
-    resIgnoreFlat: dmg.resIgnoreFlat + (ss ? ss.resIgnoreFlat : 0),
-    elementalRes: type === 'elemental' ? (target.def?.epDamageResistance ?? 0) : 0,
-  });
-  // 脆弱 / "受到的伤害±" (dmgTakenMul) scale 物理、法术、真实 only; 元素伤害 takes 元素脆弱 alone (header)
-  let mul = dmg.mul * (type === 'elemental' ? 1 : ts.dmgTakenMul);
-  const independentDamageActor = (battle.contentMode === 'independent' || !!battle.flags?.independent)
-    && source?.side === 'ally' && (source?.kind === 'op' || source?.kind === 'token');
-  if (ss) {
-    if (independentDamageActor) {
-      // Workshop operators and their battle projections use the same additive outgoing-damage bucket.
-      // Unit.s currently products MUL_KEYS, so collect only outgoing-damage buffs and explicit per-hit increases.
-      const buffs = Array.isArray(source.buffs) ? source.buffs : [];
-      const buffBonus = buffs.reduce((sum, buff) => {
-        const v = Number(buff?.mods?.dmgDealtMul);
-        return Number.isFinite(v) ? sum + (v - 1) * Math.max(1, Number(buff.stacks) || 1) : sum;
-      }, 0);
-      const explicitBonus = Number(dmg.damageIncreaseBonus) || 0;
-      mul *= Math.max(0, 1 + buffBonus + explicitBonus);
-    } else mul *= ss.dmgDealtMul;
-    mul *= type === 'phys' ? ss.physDealtMul : type === 'arts' ? ss.artsDealtMul : 1;
-  } else if (independentDamageActor && dmg.damageIncreaseBonus) {
-    // Preserve the engine's sourceless rule for source buffs/type-specific stats while honoring
-    // a per-hit output factor explicitly snapshotted by the caller.
-    mul *= Math.max(0, 1 + Number(dmg.damageIncreaseBonus));
-  }
-  mul *= type === 'phys' ? ts.physTakenMul : type === 'arts' ? ts.artsTakenMul : type === 'elemental' ? ts.elementalTakenMul : ts.trueTakenMul;
-  final *= mul;
-  if (!(final > 0) || !Number.isFinite(final)) final = 0;
+  let final = landedPreShield(dmg, type, ts, ss, target, battle, source);
+  const mark = officialDamageMark(final, officialExpectedAmount(dmg, type, ts, target));
   // 限伤: a leader's hit of ≥ BOSS_HIT_LIMIT in a boss / hidden battle is cancelled before it reaches shields / HP — what
   // ran before it (the attack, its SP, `hit` hook effects, separate element 损伤) stays; nothing after it happens
   if (final > 0 && leaderHitCancelled(battle, target, final)) return 0;
-  final = absorbShields(battle, target, final, type);
-  // 伤判 effects run after typed barriers and before independent-mode sharing/redirect, and may only lower HP loss.
+  final = absorbShields(battle, target, final, type, source);
+  // 伤判效果 after the barriers (header): a handler may lower what reaches the HP — never raise it (a 流失 skips this)
   if (final > 0 && battle._hooks.hpDamage) {
     const hctx = { source: hs, target, amount: final, dmg, credit: source };
     battle.emit('hpDamage', hctx);
     if (Number.isFinite(hctx.amount)) final = Math.max(0, Math.min(final, hctx.amount));
   }
+  // 独立模式 redirection after the shields and the hpDamage pass: it applies its own HP losses (with its own shield
+  // pass on the redirected recipients) and reports the total removed — the caller never applies it again, so there is
+  // no double deduction for the original target (its shields were already consumed above; the wearers' are fresh).
   if (typeof battle.independentPostMitigationDamage === 'function') {
-    const api = { applyHpLoss, absorbShields: (b, t, amount) => absorbShields(b, t, amount, type) };
-    const redirected = battle.independentPostMitigationDamage(source, target, final, dmg, api);
+    const redirected = battle.independentPostMitigationDamage(source, target, final, dmg, { applyHpLoss, absorbShields });
     if (redirected != null) return redirected;
   }
-  return applyHpLoss(battle, source, target, final, dmg);
+  if (battle.assaultStrict) battle.assaultRuntime.publish('hit', {
+    source: hs, sourceUid: hs?.uid ?? hs?.id ?? null, target, targetUid: target.uid ?? target.id,
+    amount: final, damageType: type, attackId: dmg.attackId ?? null,
+    skillId: dmg.isSkill ? source?.skill?.evSkillId ?? null : null, credit: source,
+  }, { sourceUid: hs?.uid ?? hs?.id ?? null });
+  return applyHpLoss(battle, source, target, final, dmg, mark);
 }
 
 /**
  * Remove HP (after mitigation) and run damaged/fatal/kill bookkeeping. Also used by `battle.loseHp` (流失).
  */
-export function applyHpLoss(battle, source, target, amount, dmg) {
+export function applyHpLoss(battle, source, target, amount, dmg, mark) {
   if (!target.alive) return 0;
   let dealt = 0;
-  let overkill = 0;
   const hs = dmg && dmg.sourceless ? null : source; // the source hooks see (无来源: none; `credit` keeps it)
   if (target.bossPool) {
     const pool = target.bossPool;
@@ -338,12 +450,11 @@ export function applyHpLoss(battle, source, target, amount, dmg) {
     const before = target.hp;
     target.hp -= amount;
     if (target.hp <= 0) {
-      overkill = Math.max(0, amount - before);
       target.hp = 0;
       if (battle._hooks.fatal) {
         const fctx = { unit: target, source: hs, credit: source, dmg, amount, prevented: false };
         battle.emit('fatal', fctx);
-        if (fctx.prevented && target.alive) { if (target.hp < 1) target.hp = Math.min(1, target.s.maxHp); overkill = 0; }
+        if (fctx.prevented && target.alive) { if (target.hp < 1) target.hp = Math.min(1, target.s.maxHp); }
       }
     }
     dealt = Math.max(0, before - Math.max(0, target.hp));
@@ -356,15 +467,24 @@ export function applyHpLoss(battle, source, target, amount, dmg) {
   }
   target.stats.taken += dealt;
   target.lastHitAt = battle.time;
+  if (dealt > 0 && battle.assaultStrict) {
+    battle.assaultRuntime.publish('damageTaken', {
+      source: hs, sourceUid: hs?.uid ?? hs?.id ?? null, target, targetUid: target.uid ?? target.id,
+      amount: dealt, damageType: dmg?.type ?? 'true', sourceClass: dmg?.isSkill ? 'skill' : (dmg?.isAttack ? 'attack' : 'effect'),
+      attackId: dmg?.attackId ?? null, skillId: dmg?.isSkill ? source?.skill?.evSkillId ?? null : null,
+    }, { sourceUid: hs?.uid ?? hs?.id ?? null });
+  }
   if (dmg && !dmg.silent && amount >= 0.5) {
     const shown = dmg.type === 'element' ? dmg.element : dmg.type === 'elemental' ? (dmg.element || 'true') : dmg.type;
     // ['dmg', target, amount, type, sourceId | null, attackId] (shared/protocol.js EV): the unit credited with it, the attack
-    battle._ev(['dmg', target.id, Math.round(amount), shown, source && source.id != null ? source.id : null, dmg.attackId || 0]);
+    const event = ['dmg', target.id, Math.round(amount), shown, source && source.id != null ? source.id : null, dmg.attackId || 0];
+    if (mark === 'r') event.push('r');
+    battle._ev(event);
   }
-  if (battle._hooks.damaged) battle.emit('damaged', { source: hs, target, amount, overkill, type: dmg ? dmg.type : 'true', dmg, credit: source });
+  if (battle._hooks.damaged) battle.emit('damaged', { source: hs, target, amount, dealt, type: dmg ? dmg.type : 'true', dmg, credit: source });
   if (target.side === 'ally' && target.skill && dmg && !dmg.noSp && dmg.type !== 'element') battle._skills.onDamaged(target);
   const dead = target.bossPool ? target.bossPool.hp <= 0 : target.hp <= 0;
-  if (dead && target.alive) battle.kill(target, source);
+  if (dead && target.alive) battle.kill(target, source, dmg ? { ...dmg, amount: dealt } : null);
   return dealt;
 }
 
@@ -419,9 +539,13 @@ export function elementView(u, now) {
  * 1 − 损伤抵抗 / 100) — the factor applyElement uses after the `elementHit` hook, exported for content that previews a
  * gauge gain.
  */
-export function elementIntake(target) {
+export function elementIntake(target, element = null) {
   const res = Number(target && target.def ? target.def.epResistance : 0) || 0;
-  return target.s.elemTakenMul * Math.max(MIN_DAMAGE_RATIO, 1 - clamp01(res / 100));
+  const sameElementBonus = element == null ? 1 : (target.buffs ?? []).reduce((mul, buff) => {
+    const bonus = buff.data?.assaultElementGaugeBonus;
+    return bonus?.element === element ? mul * Number(bonus.mul) : mul;
+  }, 1);
+  return target.s.elemTakenMul * sameElementBonus * Math.max(MIN_DAMAGE_RATIO, 1 - clamp01(res / 100));
 }
 
 /** Element gauge accumulation + burst. Fires `elementHit` { source, target, dmg } first (mutable amount/mul, cancel). */
@@ -431,22 +555,84 @@ export function applyElement(battle, source, target, dmg) {
   if (!hasHp(target)) return 0; // a killing blow's rider: the target is dead, nothing fills or bursts (header)
   if (target.s.flags.invulnerable || sleepBlocks(target, source, dmg)) return 0;
   if (liftoffEvades(target, dmg.sourceless ? null : source, dmg)) return 0;
-  if (burstLocked(target, el)) return 0;
+  const assaultRepeated = battle.assaultStrict && target.side === 'enemy';
+  if (!assaultRepeated && burstLocked(target, el)) return 0;
   if (battle._hooks.elementHit) {
     battle.emit('elementHit', { source, target, dmg });
-    if (dmg.cancel || !target.alive || !target.deployed || burstLocked(target, el)) return 0;
+    if (dmg.cancel || !target.alive || !target.deployed || (!assaultRepeated && burstLocked(target, el))) return 0;
     if (dmg.type !== 'element') return dealDamage(battle, source, target, dmg); // a handler converted it
   }
   const max = target.gaugeMax;
   // 元素损伤倍率 × max(5 %, 1 − 损伤抵抗 %) — official EP_RESISTANCE = data epResistance
-  let amt = dmg.amount * dmg.mul * elementIntake(target);
+  let amt = dmg.amount * dmg.mul * elementIntake(target, el);
   if (!(amt > 0) || !Number.isFinite(amt)) return 0;
-  target.elem[el] = Math.min(max, target.elem[el] + amt);
+  const before = target.elem[el];
+  let dealt;
+  if (assaultRepeated) {
+    const total = before + amt;
+    const bursts = Math.floor((total + 1e-9) / max);
+    if (bursts > 10000) throw new Error(`assault element ${el} produced ${bursts} bursts in one hit on unit ${target.id}`);
+    target.elem[el] = Math.max(0, total - bursts * max);
+    dealt = amt;
+    for (let i = 0; i < bursts && hasHp(target); i++) assaultEnemyBurst(battle, source, target, el);
+  } else {
+    target.elem[el] = Math.min(max, before + amt);
+    dealt = target.elem[el] - before;
+  }
   battle._ev(['dmg', target.id, Math.round(amt), el, source && source.id != null ? source.id : null, dmg.attackId || 0]);
   if (source) source.stats.elem = (source.stats.elem ?? 0) + amt;
-  if (battle._hooks.damaged) battle.emit('damaged', { source, target, amount: amt, type: 'element', dmg });
-  if (target.elem[el] >= max && target.alive) elementBurst(battle, source, target, el);
+  if (battle._hooks.damaged) battle.emit('damaged', { source, target, amount: amt, dealt, type: 'element', dmg });
+  if (!assaultRepeated && target.elem[el] >= max && target.alive) elementBurst(battle, source, target, el);
   return amt;
+}
+
+function prepareAssaultBurst(battle, source, target, el) {
+  battle._assaultBurstSeq = (battle._assaultBurstSeq ?? 0) + 1;
+  const instanceId = `${target.id}:${battle._assaultBurstSeq}`;
+  const sourceUid = source?.uid ?? source?.id ?? null;
+  const burstDamageMul = (target.buffs ?? []).reduce((mul, buff) => mul * Number(buff.data?.assaultBurstDamageMul ?? 1), 1);
+  const payload = { source, sourceUid, target, targetUid: target.uid ?? target.id, element: el, instanceId,
+    amount: target.gaugeMax, sourceClass: 'elementBurst', burstDamageMul, suppressDotTargetUids: new Set(), afterBurstEffects: [] };
+  const event = battle.assaultRuntime.publish('elementBurst', payload, { sourceUid });
+  return { payload, cause: event.cause };
+}
+
+function assaultEnemyBurst(battle, source, target, el) {
+  const cfg = ELEMENT[el];
+  const c = cfg?.enemy;
+  if (!c || !hasHp(target)) return;
+  const { payload, cause } = prepareAssaultBurst(battle, source, target, el);
+  const { instanceId, sourceUid } = payload;
+  battle.fx('burst', { x: target.x, y: target.y, id: target.id, element: el });
+  const key = `assaultBurst:${instanceId}`;
+  const hit = (amount, dot = false) => {
+    if (dot && payload.suppressDotTargetUids.has(String(target.uid ?? target.id))) return 0;
+    return battle.dealDamage(source, target, { amount: amount * payload.burstDamageMul, type: 'elemental', element: el,
+      canDodge: false, sourceless: true, tags: ['burst', el, 'assault', ...(dot ? ['dot', 'periodic'] : [])] });
+  };
+  battle.assaultRuntime.withCause(cause, () => {
+    if (battle._hooks.elementBurst) battle.emit('elementBurst', { source, target, element: el, instanceId });
+    if (el === 'burn') {
+      const buff = battle.addBuff(target, { key: `${key}:res`, duration: c.duration, refresh: 'independent', maxStacks: 1, mods: { resFlat: -c.resDown }, source });
+      if (buff) battle.assaultRuntime.publish('debuffApplied', { source, sourceUid, target, targetUid: target.uid ?? target.id, status: 'resDown', amount: c.resDown, duration: c.duration, instanceId, sourceClass: 'elementBurst' }, { sourceUid });
+      if (hasHp(target)) hit(c.elemDamage);
+    } else if (el === 'neural') {
+      battle.applyStatus(target, 'palsy', { value: c.palsy, duration: c.duration, source, instanceKey: `${key}:palsy`, refresh: 'independent', sourceClass: 'elementBurst' });
+      if (hasHp(target)) hit(c.elemDamage);
+    } else if (el === 'apoptosis') {
+      const buff = battle.addBuff(target, {
+        key: `${key}:dot`, duration: c.duration, refresh: 'independent', maxStacks: 1,
+        mods: { atkMul: 1 - c.weaken }, interval: 1, source,
+        onTick: () => { if (hasHp(target)) hit(c.elemDps, true); },
+      });
+      if (buff) battle.assaultRuntime.publish('debuffApplied', { source, sourceUid, target, targetUid: target.uid ?? target.id, status: 'atkDown', amount: c.weaken, duration: c.duration, instanceId, sourceClass: 'elementBurst' }, { sourceUid });
+    } else if (el === 'erosion') {
+      const buff = battle.addBuff(target, { key: `${key}:def`, duration: Infinity, refresh: 'independent', maxStacks: 1, mods: { defFlat: -c.defDown }, source });
+      if (buff) battle.assaultRuntime.publish('debuffApplied', { source, sourceUid, target, targetUid: target.uid ?? target.id, status: 'defDown', amount: c.defDown, duration: Infinity, instanceId, sourceClass: 'elementBurst' }, { sourceUid });
+      if (hasHp(target)) hit(c.elemDamage);
+    }
+    for (const after of payload.afterBurstEffects) after();
+  });
 }
 
 /**
@@ -462,16 +648,29 @@ export function elementBurst(battle, source, target, el) {
 }
 
 function resolveBurst(battle, source, target, el) {
+  if (!battle.assaultStrict) return resolveNativeBurst(battle, source, target, el);
+  const { payload, cause } = prepareAssaultBurst(battle, source, target, el);
+  return battle.assaultRuntime.withCause(cause, () => {
+    resolveNativeBurst(battle, source, target, el, payload);
+    for (const after of payload.afterBurstEffects) after();
+  });
+}
+
+function resolveNativeBurst(battle, source, target, el, assaultPayload = null) {
   const cfg = ELEMENT[el];
   target.elem[el] = target.gaugeMax;
   // the cooldown's end restores every element of the unit ("随后单位所有种类的元素值恢复至最大值")
   const reset = () => { for (const k of ELEMENT_ORDER) if (k in target.elem) target.elem[k] = 0; };
   battle.fx('burst', { x: target.x, y: target.y, id: target.id, element: el });
-  if (battle._hooks.elementBurst) battle.emit('elementBurst', { source, target, element: el });
+  if (battle._hooks.elementBurst) battle.emit('elementBurst', assaultPayload ?? { source, target, element: el });
   if (!target.alive) { reset(); return; }
   const tags = ['burst', el];
   // 无来源 damage credited to `source` (header)
-  const hit = (amount, type) => battle.dealDamage(source, target, { amount, type, element: el, canDodge: false, sourceless: true, tags });
+  const hit = (amount, type, dot = false) => {
+    if (dot && assaultPayload?.suppressDotTargetUids.has(String(target.uid ?? target.id))) return 0;
+    return battle.dealDamage(source, target, { amount: amount * (assaultPayload?.burstDamageMul ?? 1), type,
+      element: el, canDodge: false, sourceless: true, tags });
+  };
   const lock = (duration, extra = {}) => {
     if (!(duration > 0)) { reset(); return null; }
     return battle.addBuff(target, { key: `${el}Burst`, duration, visible: true, onExpire: reset, onRemove: reset, ...extra, flags: { burstLock: true, ...(extra.flags || {}) } });
@@ -479,7 +678,7 @@ function resolveBurst(battle, source, target, el) {
   if (el === 'necrosis') {
     lock(cfg.duration, {
       mods: { atkMul: 1 - cfg.atkDownPct }, interval: 1,
-      onTick: () => battle.dealDamage(source, target, { amount: cfg.dps, type: 'true', canDodge: false, sourceless: true, tags: ['burst', 'necrosis'] }),
+      onTick: () => hit(cfg.dps, 'true', true),
     });
     return;
   }
@@ -506,7 +705,7 @@ function resolveBurst(battle, source, target, el) {
         onTick: ({ buff }) => {
           buff.mods = { atkMul: 1 - c.weaken * Math.max(0, buff.timeLeft) / c.duration };
           target.markDirty();
-          hit(c.elemDps, 'elemental');
+          hit(c.elemDps, 'elemental', true);
         },
       });
     } else {
@@ -520,7 +719,7 @@ function resolveBurst(battle, source, target, el) {
         onTick: () => {
           const sk = target.skill;
           if (sk && !sk.noSkill && sk.kind !== 'passive' && !(sk.active && sk.isTimed) && sk.spTotal > 0) sk.setSpTotal(Math.max(0, sk.spTotal - c.spLossPerSec));
-          hit(c.dps, c.dpsType);
+          hit(c.dps, c.dpsType, true);
         },
       });
     }
@@ -575,6 +774,14 @@ export function heal(battle, source, target, amount, opts = {}) {
   if (!self && ((target.s.flags.noHeal && !through) || (target.profile && target.profile.noHeal))) return 0;
   const regen = !!opts.regen;
   if (target.s.flags.healFree && !regen && !opts.ignoreHealFree && !through) return 0;
+  if (!(amount > 0) || !Number.isFinite(amount)) return 0;
+  if (battle._hooks.healingAmount) {
+    const ctx = { source, target, amount, opts };
+    battle.emit('healingAmount', ctx);
+    if (!target.alive || target.removed || !target.deployed || target.bossPool) return 0;
+    amount = Number.isFinite(ctx.amount) ? Math.max(0, ctx.amount) : 0;
+    if (!(amount > 0)) return 0;
+  }
   let amt = regen ? amount : amount * (source && source.s ? source.s.healingDealtMul : 1) * target.s.healingTakenMul;
   if (!(amt > 0) || !Number.isFinite(amt)) return 0;
   if (battle._hooks.heal) {
@@ -597,6 +804,14 @@ export function heal(battle, source, target, amount, opts = {}) {
     source.stats.heal += actual;
     if (source.side === 'ally' && source.ownerId != null) { const pp = battle._pp(source.ownerId); if (pp) pp.healingDone += actual; }
   }
+  if (actual > 0 && battle._hooks.healed) battle.emit('healed', { source, target, amount: actual, opts });
   if (actual >= 0.5 && !opts.silent) battle._ev(['heal', target.id, Math.round(actual)]);
+  if (actual > 0 && battle.assaultStrict) {
+    const payload = {
+      source, sourceUid: source?.uid ?? source?.id ?? null, target, targetUid: target.uid ?? target.id,
+      amount: actual, sourceClass: opts.regen ? 'hpRegen' : 'heal', skillId: source?.skill?.evSkillId ?? null,
+    };
+    battle.assaultRuntime.publish(opts.regen ? 'hpRegen' : 'heal', payload, { sourceUid: payload.sourceUid });
+  }
   return actual;
 }

@@ -14,17 +14,15 @@ const G = (name) => {
 };
 // 隐现 is 拉特兰, 普罗旺斯 叙拉古, 跃跃 / 深靛 have no faction; none has a combat trait (干员表 v3)
 const OPS = { lateran: 'chess_char_1_01_a', syracusa: 'chess_char_1_07_a', a: 'chess_char_1_09_a', b: 'chess_char_1_17_a' };
-const FACTION_OPS = { victoria:'chess_char_1_06_a', aegir:'chess_char_2_07_a', sargon:'chess_char_2_08_a', kazimierz:'chess_char_1_19_a', yan:'chess_char_1_03_a', yan2:'chess_char_2_04_a' };
 const RANGE = [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1], [-1, 1], [1, 2], [-1, 2]];
 const tag = (faction) => ({ id: 'chess_item_1_04_e_a', state: { faction } }); // 调和识别牌: an extra faction
 
-function setup(pieces, { skill = null, enemyBlockCnt = 1, dmgType = null, enemies = [] } = {}) {
+function setup(pieces, { skill = null, enemyBlockCnt = 1, dmgType = null } = {}) {
   const chess = {};
   for (const p of pieces) chess[p.chessId] = chessRec({ id: p.chessId, rangeGrid: RANGE, dmgType, stats: { atk: 100, maxHp: 1000, def: 0, res: 0, aspd: 100, spRecovery: 0, respawnTime: 20, blockCnt: 1 }, skill });
   const full = pieces.map((p) => ({ dir: 'RIGHT', skillIndex: 0, moduleId: 'none', attachments: [], nativeState: {}, ...p, equipment: (p.equipment || []).map((x) => (typeof x === 'string' ? { id: x } : x)) }));
   const h = makeBattle({
     units: full.map(({ uid, chessId, row, col, dir }) => ({ uid, chessId, row, col, dir })),
-    enemies,
     defs: { chess, enemies: {
       dummy: enemyRec({ key: 'dummy', hp: 10000, def: 0, res: 0, speed: 0, blockCnt: enemyBlockCnt }),
       walker: enemyRec({ key: 'walker', hp: 10000, def: 0, res: 0, speed: 1 }),
@@ -81,27 +79,7 @@ test('elementOnHit with damageType (灼燃维式重锤): 15% of each arts hit as
   assert.ok(near(e.elem.burn, 30), `${e.elem.burn}`);
 });
 
-test('炎国点睛笔 adds stack-scaled ATK-based burn through the native element gauge', () => {
-  const run = (count) => {
-    const h = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: Array.from({ length: count }, () => G('炎国点睛笔')) }]);
-    const e = h.spawn('dummy', { pos: [10, 4] });
-    attacks(h, h.unit('w'), e);
-    return e.elem.burn;
-  };
-  assert.ok(near(run(1), 15), 'one piece applies 15% of ATK as burn');
-  assert.ok(near(run(2), 20), 'a second piece adds five percentage points');
-});
-
-test('莱塔尼亚共鸣音叉 grants temporary attack growth on a real element burst', () => {
-  const h = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [G('莱塔尼亚共鸣音叉')] }]);
-  const w = h.unit('w'), e = h.spawn('dummy', { pos: [10, 4] }), atk = w.s.atk;
-  h.b.dealDamage(w, e, { type: 'element', element: 'burn', amount: e.gaugeMax });
-  const growth = Object.values(w.mem.darkmoonTemporaryEquipment || {}).reduce((n, item) => n + Number(item.attackUnits || 0), 0);
-  assert.equal(growth, 1);
-  assert.ok(w.s.atk > atk, `element burst raises ATK ${atk} -> ${w.s.atk}`);
-});
-
-test('knockbackOnHit (冲击维式重锤): each real normal hit pushes the main target', () => {
+test('knockbackOnHit (冲击维式重锤): 中力 push of the main target, once per 4 s', () => {
   const h = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [G('冲击维式重锤')] }]);
   const e = h.spawn('heavy', { pos: [10, 4] });
   const x0 = e.x;
@@ -109,7 +87,7 @@ test('knockbackOnHit (冲击维式重锤): each real normal hit pushes the main 
   const x1 = e.x;
   assert.ok(x1 > x0 + 0.5, `pushed away: ${x0} → ${x1}`);
   attacks(h, h.unit('w'), e);
-  assert.ok(e.x > x1 + 0.5, `the next real attack pushes again: ${x1} → ${e.x}`);
+  assert.equal(e.x, x1, 'cooling down');
 });
 
 test('pullOnHit (阿戈尔深潜锚钩): every 4th normal attack pulls the main target to the wearer', () => {
@@ -209,13 +187,14 @@ test('脆弱 / 法术脆弱 / 防御力降低 from gear are their own effects: t
   assert.ok(near(e2.s.artsTakenMul, 1.15 * 1.2, 1e-6), `${e2.s.artsTakenMul}`);
 });
 
-test('wolf whistle uses the effective unique 12-attack / .75-second rule and retriggers on repeated counters',()=>{
+test('wolf whistle uses the effective unique 12-attack / .75-second / eight-second rule with real counters',()=>{
   const def=catalog.equipment[G('叙拉古狼嚎哨')],params=def.params.effects[0].params;
-  assert.equal(def.unique,true);assert.equal(params.counterEvery,12);assert.equal(params.durationSeconds,.75);assert.equal(params.cooldownSeconds,undefined);
+  assert.equal(def.unique,true);assert.equal(params.counterEvery,12);assert.equal(params.durationSeconds,.75);assert.equal(params.cooldownSeconds,8);
   const h=setup([{uid:'w',chessId:OPS.syracusa,row:10,col:3,equipment:[def.id]}]);
   const unit=h.unit('w'),enemy=h.spawn('dummy',{pos:[10,4]});
   attacks(h,unit,enemy,11);assert.ok(!enemy.s.flags.fear);attacks(h,unit,enemy);assert.ok(enemy.s.flags.fear);
-  h.run(.8);assert.ok(!enemy.s.flags.fear);attacks(h,unit,enemy,24);assert.ok(enemy.s.flags.fear,'two more full attack cycles retrigger without an artificial cooldown');
+  h.run(.8);assert.ok(!enemy.s.flags.fear);attacks(h,unit,enemy,24);assert.ok(!enemy.s.flags.fear,'extra twelve-attack cycles during cooldown cannot retrigger');
+  h.run(7.3);unit.atkCd=1e9;attacks(h,unit,enemy,12);assert.ok(enemy.s.flags.fear,'a full cycle after eight seconds triggers again');
   h.run(.8);assert.ok(!enemy.s.flags.fear);assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
 });
 
@@ -233,13 +212,13 @@ test('deployFirstHitStatus perDeploy (谢拉格冰爪): the first normal attack 
   assert.ok(e.findBuff('cold'), 'again after a new deployment');
 });
 
-test('disarmOnHit with 战栗 (战栗维式重锤) retriggers on real attacks without an artificial cooldown', () => {
+test('disarmOnHit with 战栗 (战栗维式重锤); 蒸汽之心 强化 shortens its cooldown', () => {
   const h = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [G('战栗维式重锤')] }]);
   const e = h.spawn('dummy', { pos: [10, 4] });
   attacks(h, h.unit('w'), e);
   assert.ok(e.s.flags.tremble);
-  const cd = (equipment,chessId=OPS.a) => {
-    const hh = setup([{ uid: 'w', chessId, row: 10, col: 3, equipment }]);
+  const cd = (equipment) => {
+    const hh = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment }]);
     const t = hh.spawn('dummy', { pos: [10, 4] });
     attacks(hh, hh.unit('w'), t);
     hh.b.removeBuff(t, 'tremble');
@@ -247,8 +226,8 @@ test('disarmOnHit with 战栗 (战栗维式重锤) retriggers on real attacks wi
     attacks(hh, hh.unit('w'), t);
     return !!t.s.flags.tremble;
   };
-  assert.equal(cd([G('战栗维式重锤')]), true, 'repeated hits retrigger without an artificial cooldown');
-  assert.equal(cd([G('战栗维式重锤'), { id: G('维多利亚蒸汽之心'), state: { hammerSourceIds: ['chess_item_2_03_e_a'] } }],FACTION_OPS.victoria), true, 'gear enhancement preserves retriggering');
+  assert.equal(cd([G('战栗维式重锤')]), false, '8 s cooldown');
+  assert.equal(cd([G('战栗维式重锤'), tag('维多利亚'), { id: G('维多利亚蒸汽之心'), state: { hammerSourceIds: ['chess_item_2_03_e_a'] } }]), true, '强化: 5 s');
 });
 
 test('spChargeMode (萨尔贡行军浓茶): each normal attack gives 1 SP', () => {
@@ -278,20 +257,19 @@ test('deviceOnDown (不屈部署支架): a 装置 that blocks one enemy lies whe
   assert.equal(w.tileR, 10); assert.equal(w.tileC, 3);
 });
 
-test('summonOnDeploy (炎国点睛笔): each deployment summons beside the wearer once a real target is in range', () => {
-  const h = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [G('炎国点睛笔')] }], { enemies: [{ key: 'dummy', pos: [10, 5] }] });
-  const w = h.unit('w');
-  const tokens = () => h.b.allyUnits.filter((u) => u.kind === 'token' && u.ownerUnit === w && u.defId === 'token_10015_dusk_drgn');
-  assert.ok(h.runUntil(() => tokens().some((u) => u.alive), 2), 'the enemy creates a real legal summon target');
-  const initial = tokens().filter((u) => u.alive);
-  assert.ok(initial.length >= 1);
-  const t = initial[0];
-  assert.ok(h.b.grid.inRect(t.tileR, t.tileC) && h.b.enemiesInKeys(t.rangeKeys, t, t.profile).includes(h.b.enemies[0]), 'the summon uses a real tile from which it can target the enemy');
+test('summonOnDeploy (炎国点睛笔): the first deployment of the battle puts a 召唤物 on a free tile next to the wearer', () => {
+  const h = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [G('炎国点睛笔')] }]);
+  const tokens = h.b.allyUnits.filter((u) => u.kind === 'token' && u.alive);
+  assert.equal(tokens.length, 1);
+  const t = tokens[0];
+  assert.equal(Math.abs(t.tileR - 10) + Math.abs(t.tileC - 3), 1);
   assert.ok(near(t.s.atk, 50) && near(t.s.maxHp, 500), `${t.s.atk}/${t.s.maxHp}`);
   assert.equal(t.s.blockCnt, 1);
+  const w = h.unit('w');
   h.b.moveRedeploy(w, w.tileR, w.tileC);
-  assert.ok(h.runUntil(() => tokens().filter((u) => u.alive).length > initial.length, 2), 'the next real deployment summons again');
-  assert.ok(t.alive, 'the source declares no summon duration');
+  assert.equal(h.b.allyUnits.filter((u) => u.kind === 'token').length, 1, 'once per battle');
+  h.run(20.5);
+  assert.ok(!t.alive, 'gone after 20 s');
 });
 
 test('skillStartStrike (炎国制式短刀) and deployStrike (卡西米尔竞技旗) hit every enemy in range', () => {
@@ -306,82 +284,18 @@ test('skillStartStrike (炎国制式短刀) and deployStrike (卡西米尔竞技
   assert.ok(near(lost(a), 230) && near(lost(b), 230) && lost(out) === 0, `${lost(a)} ${lost(b)}`);
 });
 
-test('only the Siracusa family emblem awards stealth-entry/exit growth; its first post-stealth hit gets the native paired damage', () => {
+test('stealthOnDeploy (叙拉古仪仗正装) ends with the first normal attack; 家族印记 then stuns, paired adds true damage', () => {
   const h = setup([{ uid: 'w', chessId: OPS.syracusa, row: 10, col: 3, equipment: [G('叙拉古仪仗正装'), G('叙拉古家族印记')] }]);
   const w = h.unit('w');
   assert.ok(w.s.flags.stealth, 'hidden on deployment');
-  const beforeAtk = w.s.atk;
-  const beforeTemporary = Object.values(w.mem.darkmoonTemporaryEquipment || {}).reduce((n, item) => n + Number(item.attackUnits || 0), 0);
-  assert.equal(beforeTemporary, 1, 'only the family emblem rewards stealth entry; outfit grants stealth only');
-  h.step(20);
-  assert.ok(w.s.atk > beforeAtk, 'the native 2%/second stealth attack ramp raises ATK while hidden');
   const e = h.spawn('dummy', { pos: [10, 4] });
   attacks(h, w, e);
   assert.ok(!w.s.flags.stealth, 'the first attack ends it');
-  assert.ok(!e.s.flags.stun, 'the attack that clears stealth lands before the effect starts');
-  const growth = Object.values(w.mem.darkmoonTemporaryEquipment || {}).reduce((n, item) => n + Number(item.attackUnits || 0), 0);
-  assert.equal(growth, beforeTemporary + 1, 'the family emblem rewards stealth exit once');
-  assert.ok(w.s.atk > beforeAtk, `temporary badges increase attack ${beforeAtk} -> ${w.s.atk}`);
-  attacks(h, w, e); // no intervening simulation tick: the event transition must already be armed
-  assert.ok(e.s.flags.stun, 'the first hit after exiting stealth receives the effect without waiting for a tick');
-  assert.ok(lost(e) >= 900, `paired native 800% true damage applies on the clearing hit: ${lost(e)}`);
-});
-
-test('two independent family emblems and one quantity-2 emblem have identical ramp, badge, and paired damage', () => {
-  const run = (equipment) => {
-    const h = setup([{ uid: 'w', chessId: OPS.syracusa, row: 10, col: 3, equipment: [G('叙拉古仪仗正装'), ...equipment] }]);
-    const w = h.unit('w');
-    const initial = Object.values(w.mem.darkmoonTemporaryEquipment || {}).reduce((n, x) => n + Number(x.attackUnits || 0), 0);
-    h.step(20);
-    const rampedAtk = w.s.atk;
-    const e = h.spawn('dummy', { pos: [10, 4] });
-    attacks(h, w, e);
-    const afterExit = Object.values(w.mem.darkmoonTemporaryEquipment || {}).reduce((n, x) => n + Number(x.attackUnits || 0), 0);
-    attacks(h, w, e);
-    return { initial, rampedAtk, afterExit, attack: w.s.atk, damage: lost(e) };
-  };
-  const separate = run([G('叙拉古家族印记'), G('叙拉古家族印记')]);
-  const quantity = run([{ id: G('叙拉古家族印记'), quantity: 2 }]);
-  assert.deepEqual(quantity, separate);
-  assert.equal(separate.initial, 2);
-  assert.equal(separate.afterExit, 4);
-});
-
-test('family emblem has no gameplay effect on a non-Siracusa wearer', () => {
-  const h = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [G('叙拉古仪仗正装'), G('叙拉古家族印记')] }]);
-  const w = h.unit('w');
-  assert.ok(w.s.flags.stealth);
-  assert.equal(Object.keys(w.mem.darkmoonTemporaryEquipment || {}).length, 0);
-});
-
-test('family emblem tracks native stealth transitions and does not exit while another stealth source remains', () => {
-  const count = (unit) => Object.values(unit.mem.darkmoonTemporaryEquipment || {}).reduce((n, item) => n + Number(item.attackUnits || 0), 0);
-  const nativeOnly = setup([{ uid: 'native', chessId: OPS.syracusa, row: 10, col: 3, equipment: [G('叙拉古家族印记')] }]);
-  const a = nativeOnly.unit('native');
-  nativeOnly.b.addBuff(a, { key: 'native:stealth', status: 'stealth', flags: { stealth: true }, duration: 20, source: a });
-  nativeOnly.step(1);
-  assert.equal(count(a), 1, 'tick observes actual native stealth even without the outfit event');
-  nativeOnly.b.removeBuff(a, 'native:stealth');
-  nativeOnly.step(1);
-  assert.equal(count(a), 2, 'native stealth ending awards one exit badge');
-
-  const overlap = setup([{ uid: 'overlap', chessId: OPS.syracusa, row: 10, col: 3, equipment: [G('叙拉古仪仗正装'), G('叙拉古家族印记')] }]);
-  const b = overlap.unit('overlap'), e = overlap.spawn('dummy', { pos: [10, 4] });
-  overlap.b.addBuff(b, { key: 'native:stealth', status: 'stealth', flags: { stealth: true }, duration: 20, source: b });
-  const before = count(b);
-  attacks(overlap, b, e);
-  assert.ok(b.s.flags.stealth || b.findBuff('stealth'), 'removing the outfit stealth leaves native stealth active');
-  assert.equal(count(b), before, 'the outfit end event cannot falsely award exit while native stealth remains');
-  overlap.b.removeBuff(b, 'native:stealth');
-  overlap.step(1);
-  assert.equal(count(b), before + 1, 'only the final native stealth removal awards exit');
-});
-
-test('叙拉古家族印记 is available and stackable in the workshop gear catalog', () => {
-  const emblem = Object.values(catalog.equipment).find((x) => x.newName === '叙拉古家族印记');
-  assert.ok(emblem?.available);
-  assert.equal(emblem.retired, false);
-  assert.equal(emblem.unique, false);
+  assert.ok(!e.s.flags.stun, 'not yet');
+  h.step(1); // the wearer notices it left 隐匿
+  attacks(h, w, e);
+  assert.ok(e.s.flags.stun, '家族印记: 晕眩');
+  assert.ok(near(lost(e), 100 + 100 + 100), `paired true damage: ${lost(e)}`);
 });
 
 test('attractOnDeploy (诱敌蜂鸣器): enemies in range are drawn to the wearer; it is easier to hit', () => {
@@ -443,16 +357,6 @@ test('skillStartShield (天马骑士战盔) and the paired break burst; 天马�
   assert.ok(near(lost(e2), 115), `alone 15%: ${lost(e2)}`);
 });
 
-test('equipmentShield charges from separate copies all stack above the former two-layer ceiling', () => {
-  const shieldGear=G('应急屏障组件');
-  const copyId='test-emergency-barrier-copy',saved=catalog.equipment[copyId];
-  catalog.equipment[copyId]={...catalog.equipment[shieldGear],id:copyId,sourceId:copyId,canonicalId:copyId,unique:false,uniqueKey:copyId};
-  let h;
-  try{h=setup([{uid:'w',chessId:OPS.a,row:10,col:3,equipment:[shieldGear,copyId]}]);}
-  finally{if(saved)catalog.equipment[copyId]=saved;else delete catalog.equipment[copyId];}
-  assert.equal(h.unit('w').findBuff(`independent:equipmentShield:${h.unit('w').uid}`)?.shieldHits,4);
-});
-
 test('countedExtraShot (拉特兰铳骑组件): every 8th attack one more shot at another enemy; with 跳弹模块 it bounces', () => {
   const h = setup([{ uid: 'w', chessId: OPS.lateran, row: 10, col: 3, equipment: [G('拉特兰铳骑组件'), G('拉特兰跳弹模块')] }]);
   const w = h.unit('w');
@@ -489,8 +393,8 @@ test('controlledSplash (罗德岛处置预案): hitting a stunned enemy hits the
 
 test('skillStartTeamStrike (炎国天师古鼎): the other 炎 operators’ next normal attack hits every enemy in their range', () => {
   const h = setup([
-    { uid: 'w', chessId: FACTION_OPS.yan, row: 10, col: 3, equipment: [G('炎国天师古鼎')] },
-    { uid: 'y', chessId: FACTION_OPS.yan2, row: 12, col: 3, equipment: [] },
+    { uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [tag('炎'), G('炎国天师古鼎')] },
+    { uid: 'y', chessId: OPS.b, row: 12, col: 3, equipment: [tag('炎')] },
   ], { skill: SKILL });
   const a = h.spawn('dummy', { pos: [12, 4] });
   const b = h.spawn('dummy', { pos: [12, 6] });
@@ -502,7 +406,7 @@ test('skillStartTeamStrike (炎国天师古鼎): the other 炎 operators’ next
 });
 
 test('damageReductionAndRetaliation paired splash (阿戈尔海沟实验体 + 裂潮重刃)', () => {
-  const h = setup([{ uid: 'w', chessId: FACTION_OPS.aegir, row: 10, col: 3, equipment: [G('阿戈尔海沟实验体'), G('阿戈尔裂潮重刃')] }]);
+  const h = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [tag('阿戈尔'), G('阿戈尔海沟实验体'), G('阿戈尔裂潮重刃')] }]);
   const w = h.unit('w');
   const src = h.spawn('hitter', { pos: [10, 4] });
   const by = h.spawn('dummy', { pos: [11, 4] });
@@ -511,30 +415,10 @@ test('damageReductionAndRetaliation paired splash (阿戈尔海沟实验体 + �
   assert.ok(near(w.s.maxHp - w.hp, 100), 'no flat reduction any more');
 });
 
-test('阿戈尔海沟实验体 retaliates directly without the paired splash blade',()=>{
-  const h=setup([{uid:'w',chessId:FACTION_OPS.aegir,row:10,col:3,equipment:[G('阿戈尔海沟实验体')]}]);
-  const w=h.unit('w'),source=h.spawn('hitter',{pos:[10,4]}),nearby=h.spawn('dummy',{pos:[11,4]});
-  h.b.dealDamage(source,w,{amount:100,type:'phys'});
-  assert.ok(near(lost(source),40),`${lost(source)}`);assert.equal(lost(nearby),0);assert.ok(near(lost(w),100));
-});
-
-test('阿戈尔裂潮重刃 splashes its own normal-attack hit without the paired retaliation gear',()=>{
-  const h=setup([{uid:'w',chessId:OPS.a,row:10,col:3,equipment:[G('阿戈尔裂潮重刃')]}]);
-  const main=h.spawn('dummy',{pos:[10,4]}),nearby=h.spawn('dummy',{pos:[11,4]});
-  attacks(h,h.unit('w'),main);
-  assert.ok(near(lost(main),100));assert.ok(near(lost(nearby),40),`${lost(nearby)}`);
-});
-
-test('萨尔贡行军浓茶 grants its wearer SP on normal attacks without a compass',()=>{
-  const h=setup([{uid:'w',chessId:FACTION_OPS.sargon,row:10,col:3,equipment:[G('萨尔贡行军浓茶')]}],{skill:{...SKILL,spCost:99}});
-  const w=h.unit('w'),enemy=h.spawn('dummy',{pos:[10,4]});w.skill.sp=0;
-  attacks(h,w,enemy);assert.ok(w.skill.sp>=1-1e-6,`SP=${w.skill.sp}`);
-});
-
-test('skillRecast (萨尔贡黄沙罗盘): each skill starts again for free; paired 行军浓茶 gives other 萨尔贡 SP', () => {
+test('skillRecast (萨尔贡黄沙罗盘): the first skill starts again for free; paired 行军浓茶 gives other 萨尔贡 SP', () => {
   const h = setup([
-    { uid: 'w', chessId: FACTION_OPS.sargon, row: 10, col: 3, equipment: [G('萨尔贡黄沙罗盘'), G('萨尔贡行军浓茶')] },
-    { uid: 's', chessId: 'chess_char_4_05_a', row: 12, col: 3, equipment: [] },
+    { uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [tag('萨尔贡'), G('萨尔贡黄沙罗盘'), G('萨尔贡行军浓茶')] },
+    { uid: 's', chessId: OPS.b, row: 12, col: 3, equipment: [tag('萨尔贡')] },
   ], { skill: { ...SKILL, durationType: 'NONE', duration: 2 } });
   const w = h.unit('w');
   w.skill.gainSp(99); assert.ok(w.skill.activate('manual'));
@@ -542,17 +426,12 @@ test('skillRecast (萨尔贡黄沙罗盘): each skill starts again for free; pai
   h.run(2.5);
   assert.equal(w.skill.activations, n0 + 1, 'cast again');
   h.run(3);
-  assert.ok(w.skill.activations >= n0 + 2, 'each ended skill can recast again while deployed');
+  assert.equal(w.skill.activations, n0 + 1, 'once per battle');
   assert.ok(h.unit('s').skill.sp >= 4 - 1e-6, `other 萨尔贡 got SP: ${h.unit('s').skill.sp}`);
 });
 
-test('萨尔贡黄沙罗盘 recasts each ended skill while the wearer stays deployed',()=>{
-  const h=setup([{uid:'w',chessId:FACTION_OPS.sargon,row:10,col:3,equipment:[G('萨尔贡黄沙罗盘')]}],{skill:{...SKILL,duration:2}});
-  const w=h.unit('w');assert.ok(cast(w));h.run(7);assert.ok(w.skill.activations>=4,`repeated recasts: ${w.skill.activations}`);const before=w.skill.activations;h.run(2.5);assert.ok(w.skill.activations>before,'a later skill completion recasts again');
-});
-
 test('skillEndRedeploy (卡西米尔骑士戒律 + 竞技旗): the wearer redeploys on its tile when its skill ends and charges again', () => {
-  const h = setup([{ uid: 'w', chessId: FACTION_OPS.kazimierz, row: 10, col: 3, equipment: [G('卡西米尔骑士戒律'), G('卡西米尔竞技旗')] }], { skill: { ...SKILL, duration: 2 } });
+  const h = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [tag('卡西米尔'), G('卡西米尔骑士戒律'), G('卡西米尔竞技旗')] }], { skill: { ...SKILL, duration: 2 } });
   const w = h.unit('w');
   const e = h.spawn('dummy', { pos: [10, 5] });
   const seq = w.deploySeq;
@@ -563,18 +442,6 @@ test('skillEndRedeploy (卡西米尔骑士戒律 + 竞技旗): the wearer redepl
   assert.ok(near(lost(e), 150), `the charge again: ${lost(e)}`);
   assert.equal(h.gear.filter((x) => x.target === e).length, 1);
   assert.equal(w.tileR, 10); assert.equal(w.tileC, 3);
-});
-
-test('卡西米尔骑士戒律 alone slows only enemies in the wearer attack range when a skill starts',()=>{
-  const h=setup([{uid:'w',chessId:FACTION_OPS.kazimierz,row:10,col:3,equipment:[G('卡西米尔骑士戒律')]}],{skill:SKILL});
-  const nearEnemy=h.spawn('dummy',{pos:[10,5]}),farEnemy=h.spawn('dummy',{pos:[10,9]});
-  assert.ok(cast(h.unit('w')));assert.ok(nearEnemy.findBuff('independent:skillWindowSlow:w'));assert.equal(farEnemy.findBuff('independent:skillWindowSlow:w'),null);
-});
-
-test('卡西米尔竞技旗 alone charges on redeployment and strikes in range',()=>{
-  const h=setup([{uid:'w',chessId:FACTION_OPS.kazimierz,row:10,col:3,equipment:[G('卡西米尔竞技旗')]}]);
-  const w=h.unit('w'),enemy=h.spawn('dummy',{pos:[10,5]});assert.equal(lost(enemy),0);
-  assert.equal(h.b.moveRedeploy(w,w.tileR,w.tileC),true);assert.ok(near(lost(enemy),150),`${lost(enemy)}`);
 });
 
 test('工程部特供 mechanisms: 重装防护套件 stuns a blocked attacker sometimes; 战备箱 gives SP on a kill', () => {

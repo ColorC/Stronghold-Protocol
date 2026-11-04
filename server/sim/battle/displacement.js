@@ -8,6 +8,21 @@ import {
 } from '../constants.js';
 import { fin } from './util.js';
 import { hypot } from '../detmath.js';
+import { hitRect } from '../body.js';
+import { OB_BLOCK, OB_CRATE } from '../grid.js';
+
+function blockedTerrainContact(battle, r, c, x, y) {
+  const at = { x, y };
+  if (!battle.grid.inRect(r, c)) return { kind: 'boundary', other: null, at };
+  const tile = battle.grid.tile(r, c), key = r * COLS + c, bits = battle.grid.obstacle[key] ?? 0;
+  if (tile.height === 'HIGH') return { kind: 'highland', other: null, at };
+  const device = battle.allyUnits.find((unit) => unit.kind === 'device' && unit.alive
+    && unit.tileR === r && unit.tileC === c && unit.obstacle);
+  if (bits & OB_CRATE) return { kind: device ? 'device' : 'crate', other: device ?? null, at };
+  if (bits & OB_BLOCK) return { kind: device ? 'device' : 'obstacle', other: device ?? null, at };
+  if (tile.pass !== 'ALL') return { kind: 'wall', other: null, at };
+  return null;
+}
 
 /**
  * Official push distance (tiles) of a 受力等级 (constants.js PUSH_TILES: ≤ −3 → 0, ≥ 3 → the 3 value); `effect` = a 特效
@@ -32,6 +47,70 @@ export function pullUnbalance(level) {
 }
 
 export class BattleDisplacement {
+  /** Pull an enemy using the native path, reporting only a newly-entered enemy body contact. */
+  assaultPullEnemy(enemy, source, force) {
+    if (!this.assaultStrict) throw new Error('assaultPullEnemy requires assault content');
+    if (!source?.alive || !source.deployed || !this._displaceable(enemy)) return { moved: 0, collision: null };
+    const start = { x: enemy.x, y: enemy.y };
+    let collision = null;
+    const f = Array.isArray(source.fwd) ? source.fwd : [0, 1];
+    const to = { x: source.x + f[1] * PULL_ORIGIN, y: source.y + f[0] * PULL_ORIGIN };
+    const moved = this.pull(enemy, force, { to, center: source, stop: PULL_STOP_RADIUS,
+      collisionProbe: enemy.hidden || enemy.isFlying ? null : (contact) => { if (contact.kind === 'enemy') collision ??= contact; } });
+    const end = { x: enemy.x, y: enemy.y };
+    if (moved > 1e-9) {
+      enemy.tileR = Math.round(enemy.y); enemy.tileC = Math.round(enemy.x);
+      this._buildEnemyIndex();
+    }
+    if (collision && moved > 1e-9) {
+      collision = { ...collision, contactUids: collision.other ? [collision.other.uid ?? collision.other.id] : [] };
+      const payload = { source, sourceUid: source.uid ?? source.id, target: enemy,
+        targetUid: enemy.uid ?? enemy.id, pulledUid: enemy.uid ?? enemy.id,
+        moved, actualDistance: moved, start, end, ...collision,
+        contactUids: collision.contactUids };
+      this.assaultRuntime.publish('pullCollision', payload);
+    } else collision = null;
+    return { moved, collision, start, end, actualDistance: moved,
+      sourceUid: source.uid ?? source.id, pulledUid: enemy.uid ?? enemy.id,
+      contactUids: collision?.contactUids ?? [] };
+  }
+  /** Assault collision effects use the simulator's positional enemy bodies. */
+  assaultPushEnemy(enemy, source, force, options = {}) {
+    if (!this.assaultStrict) throw new Error('assaultPushEnemy requires assault content');
+    if (!source?.alive || !source.deployed || !this._displaceable(enemy)) return { moved: 0, collision: null };
+    let collision = null;
+    const moved = this.push(enemy, force, { ...options, collisionProbe: (contact) => { collision = contact; } });
+    if (collision) {
+      enemy.tileR = Math.round(enemy.y); enemy.tileC = Math.round(enemy.x);
+      this._buildEnemyIndex();
+      this.assaultRuntime.publish('pushCollision', { source, sourceUid: source.uid ?? source.id,
+        target: enemy, targetUid: enemy.uid ?? enemy.id, moved, ...collision });
+    }
+    return { moved, collision };
+  }
+
+  /** Instant ground relocation preserves the enemy's next route checkpoint. */
+  assaultTeleportEnemy(enemy, owner) {
+    if (!this.assaultStrict) throw new Error('assaultTeleportEnemy requires assault content');
+    if (!enemy?.alive || !enemy.deployed || enemy.hidden || enemy.isFlying
+      || enemy.s.flags.selfBound || enemy.def?.immune?.has('teleport') || !owner?.alive || !owner.deployed) return false;
+    const r = owner.tileR, c = owner.tileC;
+    if (!this.grid.groundPassable(r, c)) return false;
+    const er = Math.round(enemy.y), ec = Math.round(enemy.x);
+    if ((er !== r || ec !== c) && !this.grid.findPath(er, ec, r, c)) return false;
+    const from = { x: enemy.x, y: enemy.y };
+    enemy.x = c; enemy.y = r; enemy.tileR = r; enemy.tileC = c;
+    this._unblock(enemy);
+    if (enemy.route) enemy.route.pts = null;
+    this._cutAttackStand(enemy);
+    enemy.atkStandUntil = -Infinity;
+    this._buildEnemyIndex();
+    this.fx('teleport', { x: c, y: r, id: enemy.id, src: owner.id });
+    this.assaultRuntime.publish('teleported', { source: owner, sourceUid: owner.uid ?? owner.id,
+      target: enemy, targetUid: enemy.uid ?? enemy.id, from, to: { x: c, y: r } });
+    return true;
+  }
+
   /**
    * 受力等级 of enemy `e` under a push / pull of 力度 `force` (微小力 −1, 小力 0, 中力 1, 较大力 2, 大力 3, 大力+1 4, 特大力 5):
    * force − its current 重量等级 (massLevel incl. 失重) — PRTS 游戏数据基础 §重量公式, 推与拉 (user playtest #6 item 14).
@@ -52,9 +131,18 @@ export class BattleDisplacement {
    * 而改变推动的方向或削减力度" — the < 0.25 tile rule still applies). `inward` = a radial push towards `from` (薄绿 S2's "拖拽", PRTS 备注 "实际为
    * 反方向（指向薄绿方向）的推开"), never nearer than PULL_STOP_RADIUS to its centre [ASSUMED: "至面前"]. `effect` = a 特效
    * push (PRTS 推与拉: one frame less of travel than a 弹道 push — constants.js PUSH_TILES_EFFECT / PUSH_EFFECT_SKILLS).
+   * The displace fx keeps the enemy's pre-hit facing by default: official footage shows this for a directional push
+   * (野鬃 S2, #418) and a radial push (莫斯提马 S3). [ASSUMED] for other push sources; an explicitly different
+   * client action can pass `keepFacing: false`. Pulls use the same display rule; raw displacements remain unmarked.
    * Returns the tiles moved.
    */
-  push(e, force, { from = null, dir = null, fixed = false, fixedAngle = false, inward = false, effect = false } = {}) {
+  push(e, force, options = {}) {
+    const { from = null, dir = null, fixed = false, fixedAngle = false, inward = false, effect = false, keepFacing = true, collisionProbe = null } = options;
+    const hasExtraDistance = Object.prototype.hasOwnProperty.call(options, 'extraDistance');
+    const extraDistance = hasExtraDistance ? options.extraDistance : 0;
+    if (hasExtraDistance && !this.assaultStrict) throw new Error('extraDistance requires assault content');
+    if (hasExtraDistance && (!Number.isFinite(extraDistance) || extraDistance < 0)) throw new RangeError('extraDistance must be a finite non-negative number');
+    if (collisionProbe && !this.assaultStrict) throw new Error('collisionProbe requires assault content');
     if (!this._displaceable(e)) { this._staticForce(e, force, false); return 0; }
     let level = this.forceLevel(e, force);
     const fx0 = fin(from?.x, e.x), fy0 = fin(from?.y, e.y);
@@ -72,11 +160,12 @@ export class BattleDisplacement {
     else if (!inward && from && Array.isArray(from.fwd)) { ux = from.fwd[1]; uy = from.fwd[0]; }
     else return 0;
     let dist = pushTiles(level, effect);
+    if (dist > 0) dist += extraDistance;
     if (inward && !(dl > 0)) { ux = -ux; uy = -uy; dist = Math.min(dist, Math.max(0, d - PULL_STOP_RADIUS)); }
     // 失衡 for the row's 位移时间 — also when the 特效 column or a wall shortens the slide [ASSUMED for the wall]; a slide a
     // wall stops at the first step gets the 0.1 s floor, like a body that cannot move [ASSUMED: 碰撞、停止 is 待补充]
     const hold = pushUnbalance(level);
-    const moved = this.displace(e, { x: ux, y: uy }, dist, { dur: hold });
+    const moved = this.displace(e, { x: ux, y: uy }, dist, { dur: hold, keepFacing, collisionProbe });
     if (hold > 0) this._unbalance(e, moved > 0 ? hold : UNBALANCE_MIN);
     return moved;
   }
@@ -85,9 +174,14 @@ export class BattleDisplacement {
    * Pull enemy `e` with 力度 `force` towards the point `to` (PRTS 推与拉 §拉力 / §捕网): 受力等级 ≥ 0 — all the way, until it
    * is within `stop` tiles of `center` (急停; `center` defaults to `to`, `stop` to PULL_STOP_RADIUS) or reaches `to`;
    * −1 — PULL_WEAK_SHARE of its starting distance to `to`; −2 — PULL_CRAWL tiles; ≤ −3 — nothing. `pullToFront` aims at
-   * the official 拉力起点 in front of an operator. Returns the tiles moved.
+   * the official 拉力起点 in front of an operator. The displace fx keeps the pre-hit facing by default, as for pushes.
+   * The supplied 歌蕾蒂娅 S1/S2 clip directly shows the target keeping its facing before and after a hook pull.
+   * [ASSUMED] for other pull directions/sources: the clip does not isolate travel against the prior facing.
+   * PRTS distinguishes 薄绿's inward push from a hook pull, not their model facing.
+   * Pass `keepFacing: false` for a documented exception. Returns the tiles moved.
    */
-  pull(e, force, { to, center = null, stop = PULL_STOP_RADIUS } = {}) {
+  pull(e, force, { to, center = null, stop = PULL_STOP_RADIUS, keepFacing = true, collisionProbe = null } = {}) {
+    if (collisionProbe && !this.assaultStrict) throw new Error('collisionProbe requires assault content');
     if (!to) return 0;
     // an enemy the puller itself blocks already stands in front of it (at contact) [ASSUMED: no pull, no unblocking]
     if (e && center && center.side === 'ally' && e.blockedBy === center) return 0;
@@ -110,7 +204,7 @@ export class BattleDisplacement {
       if (disc >= 0) { const t = -wu - Math.sqrt(disc); if (t >= 0) full = Math.min(full, t); }
     }
     const dist = level >= 0 ? full : level === -1 ? Math.min(full, PULL_WEAK_SHARE * d0) : Math.min(full, PULL_CRAWL);
-    const moved = dist > 1e-6 ? this.displace(e, { x: ux, y: uy }, dist, { dur: hold }) : 0;
+    const moved = dist > 1e-6 ? this.displace(e, { x: ux, y: uy }, dist, { dur: hold, keepFacing, collisionProbe }) : 0;
     this._unbalance(e, hold);
     return moved;
   }
@@ -177,7 +271,7 @@ export class BattleDisplacement {
    * ⇒ no movement (_displaceable). The tiles it may cross follow its movement (`motion`): a hovering enemy walks the
    * ground, so it stays on ground-passable tiles.
    */
-  displace(e, dir, distance, { dur = 0 } = {}) {
+  displace(e, dir, distance, { dur = 0, keepFacing = false, collisionProbe = null } = {}) {
     if (!this._displaceable(e) || !dir) return 0;
     const dxv = fin(dir.x, 0), dyv = fin(dir.y, 0);
     const len = hypot(dxv, dyv);
@@ -192,7 +286,47 @@ export class BattleDisplacement {
       const nx = e.x + ux * s, ny = e.y + uy * s;
       const r = Math.round(ny), c = Math.round(nx);
       const ok = e.motion === 'FLY' ? this.grid.inRect(r, c) : this.grid.groundPassable(r, c);
-      if (!ok) break;
+      if (!ok) {
+        if (collisionProbe) {
+          const contact = blockedTerrainContact(this, r, c, nx, ny);
+          if (contact) collisionProbe(contact);
+        }
+        break;
+      }
+      if (collisionProbe) {
+        // Sweep the moving body's actual path against the stationary native
+        // body (a point or hitArea rectangle); no assumed radius is added.
+        const contacts = this.enemies.filter((other) => other !== e && other.alive && other.deployed
+          && !other.hidden && !other.isFlying).map((other) => {
+          const stationary = hitRect(other) ?? { x0: other.x, x1: other.x, y0: other.y, y1: other.y };
+          const moving = e.hitArea;
+          const hx = moving ? Number(moving.w) / 2 : 0, hy = moving ? Number(moving.h) / 2 : 0;
+          const dx = moving ? Number(moving.dx ?? 0) : 0, dy = moving ? Number(moving.dy ?? 0) : 0;
+          const rect = { x0: stationary.x0 - dx - hx, x1: stationary.x1 - dx + hx,
+            y0: stationary.y0 - dy - hy, y1: stationary.y1 - dy + hy };
+          // A pre-existing overlap does not create a new contact.
+          if (e.x >= rect.x0 - 1e-9 && e.x <= rect.x1 + 1e-9 && e.y >= rect.y0 - 1e-9 && e.y <= rect.y1 + 1e-9) return null;
+          const edges = [];
+          const addEdge = (axis, edge) => {
+            const den = axis === 'x' ? ux : uy;
+            if (Math.abs(den) <= 1e-12) return;
+            const t = (axis === 'x' ? edge - e.x : edge - e.y) / den;
+            if (t > 1e-9 && t <= s + 1e-9) {
+              const x = e.x + ux * t, y = e.y + uy * t;
+              if (x >= rect.x0 - 1e-9 && x <= rect.x1 + 1e-9 && y >= rect.y0 - 1e-9 && y <= rect.y1 + 1e-9) edges.push(t);
+            }
+          };
+          addEdge('x', rect.x0); addEdge('x', rect.x1); addEdge('y', rect.y0); addEdge('y', rect.y1);
+          return { other, along: edges.length ? Math.min(...edges) : Infinity };
+        }).filter((hit) => hit && hit.along > 1e-9 && hit.along <= s + 1e-9)
+          .sort((a, b) => a.along - b.along || String(a.other.uid ?? a.other.id).localeCompare(String(b.other.uid ?? b.other.id)));
+        if (contacts.length) {
+          const contact = contacts[0];
+          e.x += ux * contact.along; e.y += uy * contact.along; moved += contact.along;
+          collisionProbe({ kind: 'enemy', other: contact.other, at: { x: e.x, y: e.y } });
+          break;
+        }
+      }
       e.x = nx; e.y = ny; moved += s;
     }
     if (moved > 0) {
@@ -202,7 +336,7 @@ export class BattleDisplacement {
       e.atkStandUntil = -Infinity;
       if (e.route) e.route.pts = null;
       // `dur` (game s): the 失衡 the push / pull gives — the client's slide takes that long (render/units.js slideTo)
-      this.fx('displace', dur > 0 ? { x: e.x, y: e.y, id: e.id, dur } : { x: e.x, y: e.y, id: e.id });
+      this.fx('displace', { x: e.x, y: e.y, id: e.id, ...(dur > 0 ? { dur } : {}), ...(keepFacing ? { keepFacing: true } : {}) });
     }
     return moved;
   }

@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { html, Icon } from '../ui/components.js';
 import { toast } from '../ui/toasts.js';
 import { copyText } from '../ui/clipboard.js';
+import { t } from '../../../shared/i18n.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -26,16 +27,16 @@ function describe(el, view, x, y) {
   const text = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 120);
   const style = getComputedStyle(el);
   const lines = [
-    `【圈选元素】${nameOf(el)}`,
-    text ? `文字：${text}` : null,
-    `位置：x ${Math.round(r.left)} y ${Math.round(r.top)} 宽 ${Math.round(r.width)} 高 ${Math.round(r.height)}（窗口 ${innerWidth}×${innerHeight}）`,
-    `字号：${style.fontSize}`,
-    path.length ? `路径：${path.join(' > ')}` : null,
-    `页面：${location.pathname}${location.search}`,
+    t('【圈选元素】{0}', { 0: nameOf(el) }),
+    text ? t('文字：{text}', { text }) : null,
+    t('位置：x {0} y {1} 宽 {2} 高 {3}（窗口 {innerWidth}×{innerHeight}）', { 0: Math.round(r.left), 1: Math.round(r.top), 2: Math.round(r.width), 3: Math.round(r.height), innerWidth, innerHeight }),
+    t('字号：{fontSize}', { fontSize: style.fontSize }),
+    path.length ? t('路径：{0}', { 0: path.join(' > ') }) : null,
+    t('页面：{pathname}{search}', { pathname: location.pathname, search: location.search }),
   ];
   if (el.tagName === 'CANVAS' && view?.pieceAtClient) {
     const hit = view.pieceAtClient(x, y);
-    lines.push(hit ? `棋盘上：棋子 ${hit.uid}（${hit.area || ''}）` : '棋盘上：指针下没有棋子');
+    lines.push(hit ? t('棋盘上：棋子 {uid}（{1}）', { uid: hit.uid, 1: hit.area || '' }) : t('棋盘上：指针下没有棋子'));
   }
   return lines.filter(Boolean).join('\n');
 }
@@ -64,7 +65,7 @@ export function ElementPicker({ view }) {
       if (!el) return;
       const text = describe(el, viewRef.current, e.clientX, e.clientY);
       const ok = await copyText(text);
-      toast(ok ? '已复制元素信息，直接粘贴给开发即可' : text, ok ? 'info' : 'warn', { ttl: 4000 });
+      toast(ok ? t('已复制元素信息，直接粘贴给开发即可') : text, ok ? 'info' : 'warn', { ttl: 4000 });
     };
     const key = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setOn(false); } };
     const opts = { capture: true, passive: false };
@@ -83,7 +84,7 @@ export function ElementPicker({ view }) {
   }, [on]);
   return html`
     <button type="button" class=${cx('gm__gear', 'ix-picker__btn', on && 'is-on')} aria-pressed=${on ? 'true' : 'false'}
-      aria-label="圈选元素" title=${on ? '点选要诊断的元素（Esc 取消）' : '圈选元素：点选页面上的东西，复制它的信息'} data-testid="ix-picker"
+      aria-label=${t('圈选元素')} title=${on ? t('点选要诊断的元素（Esc 取消）') : t('圈选元素：点选页面上的东西，复制它的信息')} data-testid="ix-picker"
       onClick=${() => setOn((v) => !v)}><${Icon} name="search" /></button>
     ${on && box ? html`<div class="ix-picker" aria-hidden="true" style=${`left:${box.x}px;top:${box.y}px;width:${box.w}px;height:${box.h}px`}>
       <span class="ix-picker__label">${box.label}</span></div>` : null}`;

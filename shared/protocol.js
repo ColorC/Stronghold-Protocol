@@ -54,6 +54,18 @@ const isPerPlayer = (p) => isPlain(p) && isInt(p.killed, 0, 1e5) && isInt(p.tota
   && (p.unitStats === undefined || isList(p.unitStats, RESULT_LIMITS.unitStats, isUnitStat));
 const isUnspawned = (u) => isPlain(u) && isId(u.enemyKey) && nullable(isId)(u.sourcePlayerId) && nullable((v) => isStr(v, 16))(u.tag)
   && optional((v) => isNum(v, 0, 1e6))(u.time);
+const isModeMetric = (v) => isPlain(v) && Object.keys(v).length <= 96
+  && Object.entries(v).every(([key, amount]) => /^[A-Za-z][A-Za-z0-9_.]{0,95}$/.test(key) && isNum(amount, 0, 1e9));
+const isModeGrowth = (v) => isPlain(v) && nullable(isUid)(v.pieceUid) && isId(v.key) && isNum(v.amount, 0, 1e9)
+  && optional((x) => isNum(x, 0, 1e9))(v.cap) && optional(isId)(v.source);
+const isModeCoin = (v) => isPlain(v) && isNum(v.amount, 0, 1e9) && optional(isId)(v.source) && optional(isId)(v.reason);
+const isModeForge = (v) => isPlain(v) && isNum(v.progress, 0, 1e9) && isNum(v.threshold, 0, 1e9)
+  && isId(v.source) && optional((x) => isNum(x, 0, 1e9))(v.nodeCap);
+const isResonanceResult = (v) => isPlain(v) && isModeMetric(v.metrics)
+  && isList(v.growth, 160, isModeGrowth) && isList(v.coins, 80, isModeCoin) && isList(v.forge, 80, isModeForge)
+  && (v.contributions === undefined || isList(v.contributions, 128, (row) => isPlain(row) && isId(row.charId)
+    && ['damage','healing','summonDamage','blocked','controlMs','kills','deaths','skills'].every((key) => optional((x) => isNum(x, 0, 1e9))(row[key]))
+    && optional(isBool)(row.survived) && Object.keys(row).every((key) => ['charId','damage','healing','summonDamage','blocked','controlMs','kills','deaths','skills','survived'].includes(key))));
 
 /**
  * Structural check of a client BattleResult (DESIGN §5.1 / §14 `b.result`): types, ranges and size limits only —
@@ -65,6 +77,7 @@ export function isBattleResult(v) {
     && optional((x) => isInt(x, 0, 1e5))(v.resolved)
     && isMap(v.perPlayer, RESULT_LIMITS.players, isId, isPerPlayer) && Object.keys(v.perPlayer).length > 0
     && (v.unspawned === undefined || isList(v.unspawned, RESULT_LIMITS.unspawned, isUnspawned))
+    && optional(isResonanceResult)(v.resonance)
     && optional((x) => isInt(x, 0, 1e9))(v.errors) && optional((x) => isNum(x, 0, BIG))(v.bossHpLeft);
 }
 
@@ -361,7 +374,6 @@ export function unitStatsEntry(u, s = null) {
     ...(isDir(u?.dir) ? { dir: u.dir } : {}),
     // the enemy card greys a SILENCE-format line (折射) from this; absent flags ⇒ not silenced
     silenced: !!(cur.flags && cur.flags.silence),
-    ...(u?.mem?.darkmoonTemporaryEquipment?{temporaryGrowth:Object.values(u.mem.darkmoonTemporaryEquipment).map(x=>({...x}))}:{}),
   };
 }
 
@@ -376,10 +388,35 @@ const target = (v) => {
   return false;
 };
 
+const RESONANCE_ACTION_FIELDS = Object.freeze({
+  refresh: [], lockShop: ['locked'], buyXp: [], buy: ['offerUid', 'mergeTargetUid'], sell: ['pieceUid'],
+  deploy: ['pieceUid', 'row', 'col', 'dir'], move: ['pieceUid', 'row', 'col', 'dir'], bench: ['pieceUid'], turn: ['pieceUid', 'dir'],
+  equip: ['pieceUid', 'itemUid'], unequip: ['itemUid'], combine: ['itemUids'], advanceSupply: [],
+  chooseStrategy: ['choiceUid', 'strategyId', 'targets'], claimReward: ['choiceUid', 'optionIds'], useCopy: ['consumableUid', 'pieceUid'],
+  useConsumable: ['consumableUid', 'itemUid'], disassemble: ['itemUid'], recycleEquipment: ['itemUid'], clearSummonOrder: ['pieceUid', 'tokenId', 'copy'], setSummonOrder: ['pieceUid', 'tokenId', 'copy', 'row', 'col', 'dir'],
+});
+const resonanceUid = (v) => isId(v) || isUid(v);
+function isResonanceAction(v) {
+  if (!isPlain(v) || typeof v.type !== 'string' || !Object.hasOwn(RESONANCE_ACTION_FIELDS, v.type)) return false;
+  const allowed = new Set(['type', ...RESONANCE_ACTION_FIELDS[v.type]]);
+  if (Object.keys(v).some((key) => !allowed.has(key))) return false;
+  for (const key of ['pieceUid', 'itemUid', 'offerUid', 'mergeTargetUid', 'choiceUid', 'strategyId', 'consumableUid', 'tokenId']) {
+    if (v[key] !== undefined && v[key] !== null && !resonanceUid(v[key])) return false;
+  }
+  for (const key of ['row', 'col']) if (v[key] !== undefined && !isInt(v[key], 0, GEO.ROWS - 1)) return false;
+  if (v.dir !== undefined && !isDir(v.dir)) return false;
+  if (v.copy !== undefined && !isInt(v.copy, 0, 9)) return false;   // which placed copy of a summon (data deployLimit ≤ 10)
+  if (v.locked !== undefined && !isBool(v.locked)) return false;
+  if (v.itemUids !== undefined && (!Array.isArray(v.itemUids) || v.itemUids.length !== 2 || !v.itemUids.every(resonanceUid))) return false;
+  if (v.optionIds !== undefined && !isList(v.optionIds, 12, isId)) return false;
+  return true;
+}
+
 /** @type {Record<string, Record<string, (v:any)=>boolean> & { $optional?: string[] }>} */
 export const C2S = {
   // session & lobby
-  hello: { name: (v) => isStr(v, NAME_MAX_LEN) && v.trim().length > 0, token: (v) => v == null || isStr(v, 64), version: (v) => v == null || isInt(v, 0, 1e6), $optional: ['token', 'version'] },
+  hello: { name: (v) => isStr(v, NAME_MAX_LEN) && v.trim().length > 0, token: (v) => v == null || isStr(v, 64), version: (v) => v == null || isInt(v, 0, 1e6),
+    noReplace: isBool, claimAt: (v) => isNum(v, 0, Number.MAX_SAFE_INTEGER), $optional: ['token', 'version', 'noReplace', 'claimAt'] },
   ping: { c: (v) => typeof v === 'number' && Number.isFinite(v) },
   'room.create': { mode: (v) => v === 'solo' || v === 'coop', difficulty: (v) => DIFFICULTIES.includes(v) },
   'room.join': { code: (v) => isStr(v, ROOM_CODE_LEN + 2) && /^[A-Za-z0-9]+$/.test(v) },
@@ -395,6 +432,8 @@ export const C2S = {
   // host confirmed — a seat that changed hands meanwhile is refused
   'room.kick': { seat: (v) => isInt(v, 0, MAX_SEATS - 1), playerId: isId },
   'room.start': {},
+  'room.rerollSetup': { setupRevision: (v) => isInt(v, 0, 2 ** 31) },
+  'room.cancelReroll': { voteId: (v) => isInt(v, 1, 2 ** 31) },
   // operator loadout (DESIGN §16): stored per session/seat; accepted until the match leaves INFO_CHECK — `ops` (0.2.2):
   // the per-operator 潜能 / 练度 (absent = none set: every operator at 潜能 6, 精英2 Lv.60)
   'room.loadout': { entries: isLoadoutEntries, ops: isLoadoutOps, $optional: ['ops'] },
@@ -411,7 +450,8 @@ export const C2S = {
   'room.removeSpectator': { playerId: isId },
 
   // match
-  'g.infoReady': {},
+  'g.infoReady': { setupRevision: (v) => isInt(v, 0, 2 ** 31), $optional: ['setupRevision'] },
+  'g.rerollVote': { voteId: (v) => isInt(v, 1, 2 ** 31), agree: isBool },
   'g.band': { bandId: isId },
   'g.bandSkip': {},
   // the strategy highlighted in the draft screen (user playtest #4 item 4): a turn that runs out takes it while it is
@@ -432,6 +472,10 @@ export const C2S = {
   'g.reward': { idx: (v) => isInt(v, 0, 5) },
   'g.choice': { idx: (v) => isInt(v, 0, 5), choiceId: isId, $optional: ['choiceId'] },
   'g.ready': { ready: isBool },
+  'g.resonance': { action: isResonanceAction },
+  // Resonance Native combat controls are an isolated single-player extension. A speed selection and a natural
+  // fast-finish request are mutually exclusive; ordinary Native modes never send this message.
+  'g.resonanceCombat': { speed: (v) => [1, 2, 4].includes(v), finish: (v) => v === true, $optional: ['speed', 'finish'] },
   'g.emote': { id: (v) => EMOTES.includes(v) },
   // playerId: the player tapped in the team panel (a 联防 / boss pair field shows two) — what an eliminated viewer or a
   // spectator seat follows from then on (Match.watchPref; community report of 2026-10-06, item 56)
@@ -469,6 +513,8 @@ export const S2C = [
   'welcome', 'ok', 'error', 'pong',
   'room.state', 'room.closed',
   'm.public', 'm.private', 'm.field', 'm.toast', 'm.ticker', 'm.emote', 'm.result',
+  // m.layer { playerId, bondId, add } — own live prep layer gain; ephemeral, never replayed on resync.
+  'm.layer',
   // m.unitStats { seq, round, units: [unitStatsEntry] } — the answer to g.unitStats (the requester only)
   'm.unitStats',
   // client-side combat (DESIGN §14): b.start { battleId, fieldId, kind, spec, authoritative, startAt, serverNow, elapsed,
@@ -487,6 +533,10 @@ export function validateC2S(msg) {
   if (!msg || typeof msg !== 'object' || Array.isArray(msg)) return 'not an object';
   const spec = typeof msg.t === 'string' && Object.hasOwn(C2S, msg.t) ? C2S[msg.t] : null;
   if (!spec) return `unknown type ${String(msg.t).slice(0, 32)}`;
+  if (msg.t === 'g.resonanceCombat'
+    && !((msg.speed !== undefined && msg.finish === undefined) || (msg.finish === true && msg.speed === undefined))) {
+    return 'bad resonance combat control';
+  }
   if (msg.rid != null && !isInt(msg.rid, 0, 2 ** 31)) return 'bad rid';
   const optional = spec.$optional || [];
   for (const [k, check] of Object.entries(spec)) {
@@ -514,6 +564,11 @@ export const EV = Object.freeze({
   SPAWN: 'spawn', ATK: 'atk', DMG: 'dmg', HEAL: 'heal', SKILL: 'skill', ENGAGE: 'engage', DIE: 'die', LEAK: 'leak',
   STATUS: 'status', FX: 'fx', LAYER: 'layer', BOUNTY: 'bounty', DEPLOY: 'deploy',
 });
+
+// Source-aware damage tuples retain sourceId/attackId at 4/5; legacy upstream tuples put the red mark at 4.
+export function damageEventMark(event) {
+  return event?.[0] === 'dmg' && (event[6] === 'r' || event[4] === 'r') ? 'r' : null;
+}
 
 /**
  * The model form a `b.ev` 'fx' tuple ['fx', kind, x, y, extra] puts its unit in: `extra.form` (sim content/enemies/helpers.js

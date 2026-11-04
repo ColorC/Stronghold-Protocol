@@ -81,6 +81,18 @@ const SUI_NEEDED = 4;
 /** 【岁】: character_table groupId 'sui' (data/backups.json diy.operators powers carry it for the 自选 picks). */
 const SUI = new Set(['char_2014_nian', 'char_2015_dusk', 'char_2023_ling', 'char_2024_chyue', 'char_2025_shu', 'char_2026_yu', 'char_2027_wang']);
 const FARM = 'talent:shu:farm';
+export { FARM as SHU_FARM, X1 as SHU_S2_RANGE };
+/** Shared native SOW geometry; callers may separately exclude dynamic obstacles. */
+export function shuSowableCells(battle,r,c,grid=SOW) {
+  const cells=[];
+  for(const [dr,dc] of grid) {
+    const rr=r+dr,cc=c+dc;
+    if(!battle.grid.inRect(rr,cc))continue;
+    const tile=battle.grid.tile(rr,cc);
+    if(tile&&(tile.build!=='NONE'||tile.pass==='ALL'))cells.push([rr,cc]);
+  }
+  return cells;
+}
 const HARVEST = 'skill:shu:harvest';
 
 const bbOf = (chess, id) => skillRec(chess, id)?.bb ?? {};
@@ -99,6 +111,10 @@ export default {
     const born = RANGE_IDS[r0?.bbStr?.born_range_id] ?? null;
     const b1 = bbOf(chess, S1), b2 = bbOf(chess, S2), b3 = bbOf(chess, S3);
     const s1 = skillRec(chess, S1);
+    // GUA-Y stages 2/3: the extra ATK sits on the module's hidden talent (index -1), not 天有四时.
+    const seasonAtk = num(talentRec(chess, -1)?.bb?.atk);
+    const squadOf = (battle, unit) => battle.allyUnits.filter((a) => a.kind === 'op' && a.ownerId === unit.ownerId);
+    const suiReady = (battle, unit) => squadOf(battle, unit).filter((a) => SUI.has(a.def?.charId)).length >= SUI_NEEDED;
     const g1 = gridOf(chess, S1, X4), g2 = gridOf(chess, S2, X1), g3 = gridOf(chess, S3, X2);
 
     /** The sown tiles of her current deployment (a Set of tile keys). */
@@ -126,11 +142,7 @@ export default {
     const sow = (battle, unit, r, c, grid) => {
       const tiles = sown(unit);
       let n = 0;
-      for (const [dr, dc] of grid) {
-        const rr = r + dr, cc = c + dc;
-        if (!battle.grid.inRect(rr, cc)) continue;
-        const t = battle.grid.tile(rr, cc);
-        if (!t || (t.build === 'NONE' && t.pass !== 'ALL')) continue;
+      for (const [rr, cc] of shuSowableCells(battle,r,c,grid)) {
         const k = rr * COLS + cc;
         if (!tiles.has(k)) { tiles.add(k); n++; }
       }
@@ -244,13 +256,15 @@ export default {
             const per = new Map();
             for (const a of ops) { const p = a.def?.profession ?? '?'; per.set(p, (per.get(p) ?? 0) + 1); }
             const many = per.size >= PROF_NEEDED, same = Math.max(0, ...per.values()) >= PROF_NEEDED;
+            const bonus = seasonAtk > 0 && Number(many) + Number(same) + Number(suiReady(battle, unit)) >= 2;
             for (const a of ops) {
               if (many && hpUp) battle.addBuff(a, { key: 'talent:shu:seasons:hp', duration: FARM_HOLD, mods: { hpPct: hpUp }, source: unit, tags: ['talent'] });
               if (same && asUp) battle.addBuff(a, { key: 'talent:shu:seasons:aspd', duration: FARM_HOLD, mods: { aspd: asUp }, source: unit, tags: ['talent'] });
+              if (bonus) battle.addBuff(a, { key: 'talent:shu:seasons:atk', duration: FARM_HOLD, mods: { atkPct: seasonAtk }, source: unit, tags: ['talent'] });
             }
           }, { owner: unit, immediate: true });
           // 编入队伍且编队中有四名【岁】干员: her squad's operators ATK + for the battle, +sp SP every `interval` s deployed
-          const squadOf = () => battle.allyUnits.filter((a) => a.kind === 'op' && a.ownerId === unit.ownerId);
+          const ownSquad = () => squadOf(battle, unit);
           const atk = num(t1.atk), sp = num(t1.sp), iv = num(t1.interval);
           const spBuff = (a) => {
             if (sp > 0 && iv > 0) battle.addBuff(a, { key: 'talent:shu:suiSp', interval: iv, onTick: ({ unit: x }) => giveSp(x, sp), source: unit, tags: ['talent'] });
@@ -258,7 +272,7 @@ export default {
           const apply = () => {
             if (unit.mem.shuSuiDone) return;
             unit.mem.shuSuiDone = true;
-            const squad = squadOf();
+            const squad = ownSquad();
             if (squad.filter((a) => SUI.has(a.def?.charId)).length < SUI_NEEDED) return;
             const members = new Set(squad);
             for (const a of squad) {
@@ -272,6 +286,11 @@ export default {
         } },
       ],
       install(battle, unit) {
+        // GUA-Y: damage reduction, independent of the sown tile's 庇护 (official trait damage_resistance).
+        const dr = num(tb.damage_resistance);
+        if (dr > 0) battle.on('deploy', ({ unit: u }) => {
+          if (u === unit) battle.addBuff(unit, { key: 'shu:gua-y', mods: { dmgTakenMul: 1 - dr }, source: unit, tags: ['module'] });
+        }, { owner: unit });
         // GUA-X: 治疗生命值低于50%的友方单位时治疗量提升15% (heal_scale_up[hpratio][LE]: at or below hp_ratio)
         const hs = num(tb.heal_scale, 1), hr = num(tb.hp_ratio);
         if (hs !== 1 && hr > 0) {

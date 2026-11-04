@@ -2,11 +2,11 @@
 // thinned by http.js packet) to what the original renderer and the HUD need. No DOM, no fetch — test/independent/
 // page-model.test.js runs them in Node. The rules stay on the server: legal tiles, forecasts and prices come from it.
 import { INVENTORY_STACK_LIMIT, inventoryStackGroups } from '../../../shared/independentInventory.js';
-import { GEO } from '../../../shared/constants.js';
+import { t, N_ } from '../../../shared/i18n.js';
 
-/** Basic equipment reuses the native bond glyphs (public/assets/bond). */
+/** The 15 badges reuse the names of the 15 small bonds, so they wear those bonds' glyphs (public/assets/bond). */
 export const BADGE_BOND = Object.freeze({
-  precision: 'preciShip', agility: 'skillfulShip', damage: 'raidShip', vitality: 'steadShip', defense: 'deputShip', assault: 'raidShip',
+  precision: 'preciShip', agility: 'skillfulShip', vitality: 'steadShip', defense: 'deputShip', assault: 'raidShip',
   recovery: 'swiftShip', arcane: 'arcaneShip', foresight: 'visiShip', miracle: 'miraShip', investor: 'investShip',
   unyielding: 'indomShip', harmony: 'maniShip', coordination: 'emptyShip', solitary: 'soloShip', mastery: 'suntShip',
 });
@@ -18,13 +18,6 @@ export const TEMP_SLOTS = 5;
 export const pieceNum = (uid) => Number(String(uid).replace(/^\D+/, ''));
 
 export const isDeployed = (p) => p.row !== null && p.row !== undefined && p.col !== null && p.col !== undefined;
-
-export const deploymentSlotsOf = (piece) => piece?.kind === 'token' ? 0 : Number.isFinite(piece?.deploymentSlots) ? piece.deploymentSlots : 1;
-export const deployedSlots = (state) => (state?.pieces || []).filter(isDeployed).reduce((count, piece) => count + deploymentSlotsOf(piece), 0);
-const overDeploymentCapForDrop = (state, piece) => deploymentSlotsOf(piece) > 0
-  && (state?.pieces || []).some((p) => p.uid === piece?.uid)
-  && !isDeployed(piece)
-  && deployedSlots(state) >= Number(state?.deployCap);
 
 /** The catalog entry of a piece's current form: an elite reads its own entry (summary counts live there). */
 export function formEntry(catalog, piece) {
@@ -43,14 +36,9 @@ export const renderChessId = (catalog, piece) => (piece.elite ? catalog?.operato
  * cap may hold more: those are listed by the HUD (`overflow`).
  */
 export function benchLayout(state) {
-  const seen = new Set();
-  const pieces = [...(state?.pieces || []), ...(state?.summons || [])].filter((p) => {
-    if (!p?.uid || seen.has(p.uid)) return false;
-    seen.add(p.uid); return true;
-  });
-  const off = pieces.filter((p) => !isDeployed(p));
+  const off = (state?.pieces || []).filter((p) => !isDeployed(p));
   const bench = off.filter((p) => !p.temp); const temp = off.filter((p) => p.temp);
-  return { hand: bench, temp, overflow: [] };
+  return { hand: bench.slice(0, HAND_SLOTS), temp: temp.slice(0, TEMP_SLOTS), overflow: [...bench.slice(HAND_SLOTS), ...temp.slice(TEMP_SLOTS)] };
 }
 
 /**
@@ -58,18 +46,14 @@ export function benchLayout(state) {
  * not drawn as item pips (those are the original two-slot items): the HUD draws the equipment level instead.
  */
 export function prepView(state, catalog) {
-  const toPiece = (p) => p.kind === 'token' ? ({ uid: pieceNum(p.uid), kind: 'token', id: p.tokenId || p.id, tokenId: p.tokenId || p.id,
-    count: Number(p.count || 1), ownerUid: pieceNum(p.ownerUid), ownerUnitId: p.ownerUnitId || null, ownerChessId: p.ownerChessId || null,
-    ownerName: p.ownerName || '', summonSourceText: p.summonSourceText || '',
-    name: p.name || '', desc: p.desc || '', legalActions: p.legalActions || ['move', 'bench'], legalTiles: p.legalTiles || [],
-    ...(isDeployed(p) ? { row: p.row, col: p.col, dir: p.dir || 'RIGHT' } : {}) }) : ({ uid: pieceNum(p.uid), kind: 'chess', id: renderChessId(catalog, p), golden: !!p.elite,
+  const toPiece = (p) => ({ uid: pieceNum(p.uid), kind: 'chess', id: renderChessId(catalog, p), golden: !!p.elite,
     tier: catalog?.operators?.[p.chessId]?.tier ?? 1, items: [], ...(isDeployed(p) ? { row: p.row, col: p.col, dir: p.dir || 'RIGHT' } : {}) });
   const { hand, temp } = benchLayout(state);
   const pad = (list, n) => Array.from({ length: n }, (_, i) => (list[i] ? toPiece(list[i]) : null));
   return {
-    hand: pad(hand, Math.max(HAND_SLOTS, hand.length)),
-    temp: pad(temp, Math.max(TEMP_SLOTS, temp.length)),
-    board: [...(state?.pieces || []), ...(state?.summons || [])].filter(isDeployed).map(toPiece),
+    hand: pad(hand, HAND_SLOTS),
+    temp: pad(temp, TEMP_SLOTS),
+    board: (state?.pieces || []).filter(isDeployed).map(toPiece),
     nextEnemies: Array.isArray(state?.nextEnemies) ? state.nextEnemies : [],
   };
 }
@@ -103,7 +87,7 @@ export function withCatalogTiers(replay, catalog) {
 }
 
 /** Session piece for a renderer uid. */
-export const pieceByNum = (state, n) => [...(state?.pieces || []), ...(state?.summons || [])].find((p) => pieceNum(p.uid) === n) || null;
+export const pieceByNum = (state, n) => (state?.pieces || []).find((p) => pieceNum(p.uid) === n) || null;
 
 /**
  * Whether the renderer may drop piece `n` on `target` (render/drag.js canPlace): a board tile from the server's
@@ -115,38 +99,16 @@ export function canDrop(state, n, target) {
   if (target.area === 'hand') return isDeployed(piece) || !!piece.temp; // a 临时整备区 operator may go back to the bench
   if (target.area !== 'board') return false;
   if (!(piece.legalTiles || []).includes(`${target.row},${target.col}`)) return false;
-  // Deployment capacity applies to operators on the field, not shop purchases, bench cards, or native summons.
-  if (overDeploymentCapForDrop(state, piece)) return false;
-  const holder = [...(state.pieces || []), ...(state.summons || [])].find((p) => isDeployed(p) && p.row === target.row && p.col === target.col);
+  const holder = (state.pieces || []).find((p) => isDeployed(p) && p.row === target.row && p.col === target.col);
   return !holder || holder.uid === piece.uid;
-}
-
-/** Player-facing reason a legal drag is refused; null means the server should accept the drop. */
-export function dropRefusal(state, n, tile) {
-  const piece = pieceByNum(state, n);
-  if (!piece || !tile || typeof tile !== 'object') return null;
-  const legalBoardCell = Number.isInteger(tile.row) && Number.isInteger(tile.col) && (piece.legalTiles || []).includes(`${tile.row},${tile.col}`);
-  if (tile.area === 'board' || (!tile.area && legalBoardCell)) {
-    if (isDeployed(piece) && piece.row === tile.row && piece.col === tile.col) return null;
-    if (!(piece.legalTiles || []).includes(`${tile.row},${tile.col}`)) return '无法部署在该位置';
-    const holder = [...(state.pieces || []), ...(state.summons || [])].find((p) => isDeployed(p) && p.row === tile.row && p.col === tile.col);
-    if (holder && holder.uid !== piece.uid) return '这个位置已有干员';
-    if (overDeploymentCapForDrop(state, piece)) return `场上最多 ${state.deployCap} 名干员`;
-    return null;
-  }
-  if (tile.area === 'hand') return null;
-  if (tile.area === 'temp') return '临时整备区无法放入单位';
-  if (Number.isInteger(tile.row) && tile.row >= GEO.FIELD.r0 && tile.row <= GEO.FIELD.r1) return '无法部署在该位置';
-  return null;
 }
 
 /** Tiles to light while piece `n` is dragged. */
 export function legalTilesOf(state, n) {
   const piece = pieceByNum(state, n);
   if (!piece) return [];
-  if (overDeploymentCapForDrop(state, piece)) return [];
   return (piece.legalTiles || []).map((cell) => cell.split(',').map(Number))
-    .filter(([r, c]) => ![...(state.pieces || []), ...(state.summons || [])].some((p) => p.uid !== piece.uid && isDeployed(p) && p.row === r && p.col === c));
+    .filter(([r, c]) => !(state.pieces || []).some((p) => p.uid !== piece.uid && isDeployed(p) && p.row === r && p.col === c));
 }
 
 const gearRecord = (catalog, id) => catalog?.gear?.[id] || null;
@@ -172,61 +134,8 @@ export function groupEquipment(items, catalog) {
   return [...rows.values()].sort((a, b) => (a.badge - b.badge) || (b.level ?? 0) - (a.level ?? 0) || b.count - a.count);
 }
 
-/** Project battle-frame temporary growth into display-only equipment rows; never mutates piece equipment. */
-export function temporaryGrowthDisplay(entries, catalog, growthMode = 'badges') {
-  const sourceName = (sourceId) => Object.values(catalog?.operators || {})
-    .find((op) => op.sourceRefs?.darkmoon19_2?.id === sourceId)?.name || catalog?.gear?.[sourceId]?.name || null;
-  const sources = new Set();
-  if (growthMode === 'levels') {
-    let levels = 0;
-    for (const entry of entries || []) {
-      const amount = Number(entry?.temporaryTrainingLevels || 0);
-      if (Number.isFinite(amount) && amount > 0) {
-        levels += amount;
-        const name = sourceName(entry.sourceId); if (name) sources.add(name);
-      }
-    }
-    return { mode: 'levels', levels, items: [], sources: [...sources] };
-  }
-  const quantities = new Map();
-  for (const entry of entries || []) {
-    const ids = Array.isArray(entry?.badgeIds) ? entry.badgeIds : [];
-    const counts = [Number(entry?.attackUnits || 0), Number(entry?.secondaryUnits || 0)];
-    let contributed = false;
-    for (let i = 0; i < ids.length && i < counts.length; i++) {
-      const id = ids[i], count = counts[i], gear = catalog?.gear?.[id];
-      if (!id || !gear || !isBadge(catalog, id) || !Number.isFinite(count) || count <= 0) continue;
-      quantities.set(id, (quantities.get(id) || 0) + count); contributed = true;
-    }
-    const name = contributed && sourceName(entry.sourceId); if (name) sources.add(name);
-  }
-  const items = [...quantities].map(([id, quantity]) => ({ id, uid: `temporary:${id}`, quantity }));
-  return { mode: 'badges', levels: 0, items, total: items.reduce((n, item) => n + item.quantity, 0), sources: [...sources] };
-}
-
-/** Fast count for live HUD labels; avoids building badge rows or resolving source names for each field unit. */
-export function temporaryBadgeTotal(entries, catalog) {
-  let total = 0;
-  for (const entry of entries || []) {
-    const ids = Array.isArray(entry?.badgeIds) ? entry.badgeIds : [];
-    const counts = [Number(entry?.attackUnits || 0), Number(entry?.secondaryUnits || 0)];
-    for (let i = 0; i < ids.length && i < counts.length; i++) {
-      const id = ids[i], count = counts[i], gear = catalog?.gear?.[id];
-      if (id && gear && isBadge(catalog, id) && Number.isFinite(count) && count > 0) total += count;
-    }
-  }
-  return total;
-}
-
-/** Current visible equipment stack total: permanent gear plus battle-only badges, once. Training levels stay separate. */
-export function displayEquipmentLevel(piece, catalog, temporaryGrowth = null) {
-  if (!piece) return null;
-  const permanent = piece.equipmentLevel ?? (piece.equipment || []).reduce((n, item) => n + itemLevel(item, catalog), 0);
-  return permanent + (temporaryGrowth?.mode === 'badges' ? Number(temporaryGrowth.total || 0) : 0);
-}
-
 /** Kinds of inventory items that are used (补给, 玩家设施) rather than worn; a prize kept in the inventory too. */
-export const USED_KINDS = new Set(['补给', '玩家设施', '奖品']);
+export const USED_KINDS = new Set([N_('补给'), N_('玩家设施'), N_('奖品')]);
 
 /**
  * Inventory stacks for the strip: badge kinds (count summed) then the other items; the uid to equip from. A prize
@@ -238,9 +147,9 @@ export function inventoryStacks(inventory, catalog) {
     const item = group.items[0];
     const key = `${item.id}:n${Object.keys(item.state || {}).length ? `:${encodeURIComponent(group.key)}` : ''}`;
     const prize = !gearRecord(catalog, item.id) && catalog?.prizes?.[item.id];
-    const rec = gearRecord(catalog, item.id) || (prize ? { name: prize.name, kind: '奖品', mechanism: prize.mechanism, params:prize.params, normal: prize.effect } : {});
-    const s = stacks.get(key) || { key, id: item.id, name: rec.name || '未知物品', level: rec.level,
-      kind: rec.kind || null, mechanism: rec.mechanism || null, params:rec.params, text: rec.normal, used: USED_KINDS.has(rec.kind),
+    const rec = gearRecord(catalog, item.id) || (prize ? { name: prize.name, kind: t('奖品'), mechanism: prize.mechanism, normal: prize.effect } : {});
+    const s = stacks.get(key) || { key, id: item.id, name: rec.name || t('未知物品'), level: rec.level,
+      kind: rec.kind || null, mechanism: rec.mechanism || null, text: rec.normal, used: USED_KINDS.has(rec.kind),
       badge: isBadge(catalog, item.id), count: 0, items: [] };
     s.count += group.quantity; s.items.push(...group.items);
     stacks.set(key, s);
@@ -292,10 +201,9 @@ export function forecastRows(state, catalog) {
   return { rows, idle, funds: Number(state?.forecast?.pendingFunds || 0) };
 }
 
-/** Equipment stack units an item contributes (the gear's stack value times its quantity). */
+/** Equipment level an item stack contributes (design: 装备总等级 = 每件等级之和). */
 export function itemLevel(item, catalog) {
   const g = catalog?.gear?.[item.id] || {};
-  if(g.mechanism==='growthTraining')return 0;
   return Number(g.level ?? 1) * Number(item.quantity || 1);
 }
 
@@ -332,10 +240,6 @@ export function replayClock(replay) {
   const t0 = frames.length ? frames[0].snap.t : 0;
   const duration = frames.length ? frames[frames.length - 1].snap.t - t0 : 0;
   return { t0, duration };
-}
-export function stepReplayClock(gameTime, previousNow, now, speed, paused) {
-  const delta = Math.min(0.1, Math.max(0, (now - previousNow) / 1000));
-  return { gameTime: paused ? gameTime : gameTime + delta * speed, previousNow: now };
 }
 export function frameAt(frames, t) {
   let lo = 0, hi = frames.length - 1, k = -1;

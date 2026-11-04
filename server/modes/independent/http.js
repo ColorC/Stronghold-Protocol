@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { getCatalog } from './catalog.js';
 import { createSession, applyAction, viewSession, validateSession } from './session.js';
 import { independentDisplayCatalog, independentSessionView } from './display.js';
-import { renameWithTransientRetry } from './persistence.js';
+import { t } from '../../../shared/i18n.js';
 export { independentDisplayCatalog } from './display.js';
 
 const PREFIX = '/independent/api/';
@@ -63,13 +63,13 @@ export function createIndependentHttp({ data, directory }) {
     await mkdir(directory, { recursive: true });
     const pending = path.join(directory, `${id}.${randomUUID()}.pending`);
     await writeFile(pending, gzipSync(JSON.stringify(replay)), { flag: 'wx' });
-    await renameWithTransientRetry(pending, replayFile(id, replay.round));
+    await rename(pending, replayFile(id, replay.round));
   }
   async function sendReplay(req, res, id, round) {
     let body;
     try { body = await readFile(replayFile(id, round)); }
     catch (error) {
-      if (error.code === 'ENOENT') { reply(res, 404, { ok: false, error: { code: 'NOT_FOUND', message: '这一轮没有战斗记录' } }); return; }
+      if (error.code === 'ENOENT') { reply(res, 404, { ok: false, error: { code: 'NOT_FOUND', message: t('这一轮没有战斗记录') } }); return; }
       throw error;
     }
     const gzip = /\bgzip\b/.test(String(req.headers['accept-encoding'] || ''));
@@ -93,7 +93,7 @@ export function createIndependentHttp({ data, directory }) {
     await mkdir(directory, { recursive: true });
     const pending = path.join(directory, `${id}.${randomUUID()}.pending`);
     await writeFile(pending, JSON.stringify(state), { flag: 'wx' });
-    await renameWithTransientRetry(pending, file(id));
+    await rename(pending, file(id));
   }
   // withCatalog false: the page fetched GET catalog once and only needs the state (body.catalog === false / ?catalog=0)
   function packet(id, state, events = [], withCatalog = true) {
@@ -111,7 +111,7 @@ export function createIndependentHttp({ data, directory }) {
     if (!pathname.startsWith(PREFIX)) return false;
     try {
       if (req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) {
-        reply(res, 403, { ok: false, error: { code: 'ORIGIN', message: '请在游戏页面进行操作' } }); return true;
+        reply(res, 403, { ok: false, error: { code: 'ORIGIN', message: t('请在游戏页面进行操作') } }); return true;
       }
       const relative = pathname.slice(PREFIX.length);
       if (relative === 'catalog' && req.method === 'GET') {
@@ -121,20 +121,20 @@ export function createIndependentHttp({ data, directory }) {
         const body = await bodyOf(req, MAX_CHECKPOINT_BODY);
         if (body.rawState !== undefined) {
           const errors = validateExternalSession(body.rawState);
-          if (errors.length || body.rawState.revision !== 0) { reply(res, 422, { ok: false, error: { code: 'INVALID_SESSION', message: '对局存档无效', details: errors.length ? errors : ['revision'] } }); return true; }
+          if (errors.length || body.rawState.revision !== 0) { reply(res, 422, { ok: false, error: { code: 'INVALID_SESSION', message: t('对局存档无效'), details: errors.length ? errors : ['revision'] } }); return true; }
           const id = randomUUID();
           await save(id, body.rawState);
           reply(res, 201, { ok: true, id, rawState: body.rawState });
           return true;
         }
-        const state = createSession({ seed: body.seed, difficulty: body.difficulty, roundLimit: body.roundLimit, growthMode: body.growthMode, ...definitions() });
+        const state = createSession({ seed: body.seed, difficulty: body.difficulty, roundLimit: body.roundLimit, ...definitions() });
         const id = randomUUID(); await save(id, state); reply(res, 201, packet(id, state)); return true;
       }
       const parts = relative.split('/');
       const replayRoute = parts.length === 4 && parts[2] === 'replays' && /^[1-9][0-9]?$/.test(parts[3]);
       const checkpointRoute = parts.length === 3 && parts[2] === 'checkpoint';
       if (parts[0] !== 'sessions' || !SESSION_ID.test(parts[1] || '') || parts.length > 4 || (parts.length === 3 && parts[2] !== 'actions' && !checkpointRoute) || (parts.length === 4 && !replayRoute)) {
-        reply(res, 404, { ok: false, error: { code: 'NOT_FOUND', message: '这一局不存在或已过期' } }); return true;
+        reply(res, 404, { ok: false, error: { code: 'NOT_FOUND', message: t('这一局不存在或已过期') } }); return true;
       }
       const id = parts[1];
       if (parts.length === 2 && req.method === 'GET') {
@@ -148,22 +148,22 @@ export function createIndependentHttp({ data, directory }) {
         await exclusive(id, async () => {
           const current = await load(id);
           if (body.expectedRevision !== current.revision) {
-            reply(res, 409, { ok: false, error: { code: 'REVISION', message: '对局已更新，请重试当前操作' }, rawState: current });
+            reply(res, 409, { ok: false, error: { code: 'REVISION', message: t('对局已更新，请重试当前操作') }, rawState: current });
             return;
           }
           const delta = body.changes !== undefined;
           if (delta && !safeCheckpointChanges(body.changes)) {
-            reply(res, 422, { ok: false, error: { code: 'INVALID_SESSION', message: '对局存档无效' } });
+            reply(res, 422, { ok: false, error: { code: 'INVALID_SESSION', message: t('对局存档无效') } });
             return;
           }
           if (!delta && (!body.state || typeof body.state !== 'object' || Array.isArray(body.state))) {
-            reply(res, 422, { ok: false, error: { code: 'INVALID_SESSION', message: '对局存档无效' } });
+            reply(res, 422, { ok: false, error: { code: 'INVALID_SESSION', message: t('对局存档无效') } });
             return;
           }
           const nextState = delta ? { ...current, ...body.changes } : body.state;
           const errors = validateExternalSession(nextState);
           if (errors.length || nextState.revision !== current.revision + 1) {
-            reply(res, 422, { ok: false, error: { code: 'INVALID_SESSION', message: '对局存档无效', details: errors.length ? errors : ['revision'] } });
+            reply(res, 422, { ok: false, error: { code: 'INVALID_SESSION', message: t('对局存档无效'), details: errors.length ? errors : ['revision'] } });
             return;
           }
           await save(id, nextState);
@@ -177,7 +177,7 @@ export function createIndependentHttp({ data, directory }) {
         await exclusive(id, async () => {
           const state = await load(id);
           const withCatalog = body.catalog !== false;
-          if (body.expectedRevision !== state.revision) { reply(res, 409, { ...packet(id, state, [], withCatalog), ok: false, error: { code: 'REVISION', message: '对局已更新，请重试当前操作' } }); return; }
+          if (body.expectedRevision !== state.revision) { reply(res, 409, { ...packet(id, state, [], withCatalog), ok: false, error: { code: 'REVISION', message: t('对局已更新，请重试当前操作') } }); return; }
           const result = applyAction(state, body.action, definitions());
           if (!result.ok) { reply(res, 422, { ...packet(id, state, [], withCatalog), ok: false, error: result.error }); return; }
           // the replay first: a saved state never points at a battle whose replay is missing
@@ -187,10 +187,10 @@ export function createIndependentHttp({ data, directory }) {
         });
         return true;
       }
-      reply(res, 405, { ok: false, error: { code: 'METHOD', message: '不支持此操作' } });
+      reply(res, 405, { ok: false, error: { code: 'METHOD', message: t('不支持此操作') } });
     } catch (error) {
       if (!error.status && !/^[A-Z][A-Z0-9_]*$/.test(error.message)) throw error;
-      reply(res, error.status || 422, { ok: false, error: { code: error.code || error.message, message: error.status ? error.message : '无法开始新的一局' } });
+      reply(res, error.status || 422, { ok: false, error: { code: error.code || error.message, message: error.status ? error.message : t('无法开始新的一局') } });
     }
     return true;
   };

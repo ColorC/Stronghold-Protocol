@@ -104,6 +104,15 @@ export function pickOnTile(units, ground) {
   return best;
 }
 
+/** All units on the picked tile in the same nearest-then-frontmost order as pickOnTile. */
+export function pickOnTileAll(units, ground) {
+  if (!Array.isArray(units) || !isTile(ground)) return [];
+  return units.filter((u) => u && onTile(u, ground)).sort((a, b) => {
+    const distance = groundDist(a, ground) - groundDist(b, ground);
+    return Math.abs(distance) > EPS ? distance : depthOf(b) - depthOf(a);
+  });
+}
+
 /**
  * Battle pick (see the header): allies on the tile under the pointer, enemies within ENEMY_REACH of it; the nearer wins.
  * @param {Array<PickUnit|null>} units allies with `tile`, enemies with `tile: null` and their drawn `body`
@@ -137,4 +146,39 @@ export function pickBattle(units, ground, px, py) {
     if (d < Infinity && better(u, d)) { best = u; bd = d; }
   }
   return best;
+}
+
+/** All battle units eligible at this point, ordered with pickBattle's distance and tie rules. */
+export function pickBattleAll(units, ground, px, py) {
+  if (!Array.isArray(units)) return [];
+  const onGround = !!ground && Number.isFinite(ground.x) && Number.isFinite(ground.y);
+  const scored = [];
+  for (const unit of units) {
+    if (!unit) continue;
+    let distance = Infinity;
+    if (unit.tile) { if (onTile(unit, ground)) distance = groundDist(unit, ground); }
+    else {
+      distance = bodyDist(unit.body, px, py);
+      if (!unit.fly && onGround && Number.isFinite(unit.x) && Number.isFinite(unit.y)) distance = Math.min(distance, Math.hypot(unit.x - ground.x, unit.y - ground.y));
+      if (!(distance <= ENEMY_REACH)) {
+        if (unit.fly || !(inBox(unit.body, px, py) || (onGround && inArea(unit.area, ground)))) continue;
+        distance = AREA_PICK;
+      }
+    }
+    if (distance < Infinity) scored.push({ unit, distance });
+  }
+  return scored.sort((a, b) => {
+    const delta = a.distance - b.distance;
+    if (Math.abs(delta) > EPS) return delta;
+    if (!!a.unit.tile !== !!b.unit.tile) return a.unit.tile ? -1 : 1;
+    return depthOf(b.unit) - depthOf(a.unit);
+  }).map(({ unit }) => unit);
+}
+
+/** Select the next candidate only when opted in; a changed stack or a moved pointer starts at its top. */
+export function pickCycleIndex(previous, keys, x, y, tolerance = 5) {
+  const stable = previous && previous.keys.length === keys.length && previous.keys.every((key, index) => key === keys[index])
+    && Math.hypot(previous.x - x, previous.y - y) <= tolerance;
+  const index = stable ? (previous.index + 1) % keys.length : 0;
+  return { index, state: keys.length > 1 ? { keys: [...keys], x, y, index } : null };
 }

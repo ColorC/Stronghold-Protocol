@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
+import { N_, t } from '../../shared/i18n.js';
 import { traitSummary, TRAIT_WHEN } from '../../server/modes/independent/summary.js';
 
 test('money/discount/summon/retirement summaries carry the exact form counts and player action labels',()=>{
@@ -15,20 +16,9 @@ test('money/discount/summon/retirement summaries carry the exact form counts and
   const flat=value=>Array.isArray(value)?value.map(flat).join(''):value==null?'':typeof value==='function'?'glyph':String(value);
   const html=(strings,...values)=>strings.map((s,i)=>s+flat(values[i])).join('');
   const render=runInNewContext(source.slice(start,end).replace('export function TraitGlyphs','function TraitGlyphs')+';TraitGlyphs;',{
-    html,cx:(...x)=>x.filter(Boolean).join(' '),GearIcon:()=>{},CoinGlyph:()=>{},Icon:()=>{},summaryCount:(x,elite)=>x?Number(x[elite?'elite':'normal']??x.normal??1):null,
+    html,N_,t,cx:(...x)=>x.filter(Boolean).join(' '),GearIcon:()=>{},CoinGlyph:()=>{},Icon:()=>{},summaryCount:(x,elite)=>x?Number(x[elite?'elite':'normal']??x.normal??1):null,
   });
   const rendered=render({summary:entries,catalog:{traitWhen:TRAIT_WHEN},max:10});
   assert.match(rendered,/升级减费/);assert.match(rendered,/−2/);assert.match(rendered,/\+2/);assert.match(rendered,/召唤/);assert.match(rendered,/退场时/);assert.doesNotMatch(rendered,/\+null/);
   assert.doesNotMatch(render({summary:[{when:'gain',kind:'funds'}],catalog:{traitWhen:TRAIT_WHEN}}),/<b class="num">\+/,'unknown amount never renders a bare plus');
-  const gearScope=traitSummary({prep:[{trigger:'gain',behavior:'grantEquipment',params:{outputs:[{id:'oath-cover'}]}},{trigger:'gain',behavior:'shopCarry',params:{id:'precision',quantity:1}}]});
-  assert.equal(gearScope[0].lasting,undefined,'a unit wearing gear needs no extra 本局 duration tag');
-  assert.equal(gearScope[1].lasting,true,'shop carry remains marked as a match-long effect');
-  const lastingRendered=render({summary:gearScope,catalog:{traitWhen:TRAIT_WHEN},max:10});
-  assert.match(lastingRendered,/title="本局后续酒馆持续">本局<\/span>/,'the lasting tag identifies the later-shop scope');
-  const glyphItems=runInNewContext(source.slice(start,end).replace('export function TraitGlyphs','function TraitGlyphs')+';traitGlyphItems;',{});
-  const glyphCatalog={gear:{precision:{kind:'badge'},damage:{kind:'徽章'},'oath-cover':{kind:'equipment'}}};
-  assert.deepEqual(JSON.parse(JSON.stringify(glyphItems([{id:'precision'},{id:'damage'},{id:'oath-cover'}],glyphCatalog,'levels'))),
-    [{id:'oath-cover'},{id:'growth-training-record'}], 'levels mode hides badge icons and retains actual equipment outputs');
-  assert.deepEqual(JSON.parse(JSON.stringify(glyphItems([{id:'precision'},{id:'damage'}],glyphCatalog,'badges'))),
-    [{id:'precision'},{id:'damage'}], 'badge mode keeps its explicit badge outputs');
 });

@@ -11,7 +11,12 @@ const fieldId = 'vfx-compare';
 const errors = [];
 let before;
 let after;
-let running = true;
+let running = false;
+let preparing = false;
+let paused = false;
+let selectionGeneration = 0;
+let preparingAt = 0;
+let readyAt = 0;
 let speed = 1;
 let scenario = 'full';
 let operator = 'rosmon';
@@ -40,16 +45,38 @@ const VFX_PRELOAD = Object.freeze({
 async function preloadCurrentOperator() {
   const original = after?.debug?.fx?.originalVfx;
   if (!original?.preload) return;
-  const names = VFX_PRELOAD[operator]?.[scenario] || [];
-  $('status').innerHTML = '<strong>准备素材中</strong>：首次播放会预先解码当前场景的特效';
+  const names = [...(VFX_PRELOAD[operator]?.[scenario] || [])];
+  // Normal attacks alternate A/B across replays; both branches belong to this scenario.
+  if (operator === 'rosmon') names.push('rosmon_attack_B_start', 'rosmon_attack_B_hit_01');
+  $('status').textContent = '正在准备战斗…';
   const meshNames = operator === 'blkkgt' && scenario === 'skchr_blkkgt_3' ? ['blkkgt_skill_03_start_02', 'blkkgt_skill_03_end'] : [];
+  original.selectPrefabs?.(names, meshNames);
   // A browser image decode can remain pending after a 200 response (for
   // example when the remote tab is backgrounded). Warmup is an optimisation,
   // so it must never prevent the compare surface from becoming interactive.
   // The player keeps the same lazy promises and will use any late-loaded
   // atlas on the first event.
   const warmup = Promise.all([original.preload(names), original.preloadMesh?.(meshNames)]);
-  await Promise.race([warmup, new Promise((resolve) => setTimeout(resolve, 8000))]);
+  let timer;
+  try { await Promise.race([warmup, new Promise((resolve) => { timer = setTimeout(resolve, 8000); })]); }
+  finally { clearTimeout(timer); }
+}
+
+async function prepareBattle() {
+  const generation = ++selectionGeneration;
+  preparing = true;
+  preparingAt = performance.now();
+  running = false;
+  resetBattle();
+  await preloadCurrentOperator();
+  if (generation !== selectionGeneration) return false;
+  resetBattle();
+  preparing = false;
+  readyAt = performance.now();
+  running = !paused;
+  document.querySelector('[data-action="toggle"]').textContent = running ? '❚❚' : '▶';
+  if (paused) $('status').textContent = '已暂停';
+  return true;
 }
 
 window.addEventListener('error', (e) => { errors.push(e.message || '页面错误'); renderErrors(); });
@@ -162,10 +189,7 @@ function resetBattle() {
   const units = unitsFor(skillId);
   const original = after?.debug?.fx?.originalVfx;
   original?.clear?.();
-  if (original && original.root !== (operator === 'blkkgt' ? '/assets/vfx/blkkgt' : '/assets/vfx/rosmon')) {
-    original.destroy();
-    original.root = operator === 'blkkgt' ? '/assets/vfx/blkkgt' : '/assets/vfx/rosmon';
-  }
+  original?.setRoot?.(operator === 'blkkgt' ? '/assets/vfx/blkkgt' : '/assets/vfx/rosmon');
   const meta = { fieldId, kind: 'normal', rect, stageId, units };
   for (const view of [before, after]) {
     view.enterBattle(meta);
@@ -177,6 +201,29 @@ function resetBattle() {
   before.pushSnapshot(initial); after.pushSnapshot(initial);
   const label = operator === 'blkkgt' ? `锏 · ${skillId.replace('skchr_blkkgt_', '技能')}` : (scenario === 'full' ? '迷迭香 · 完整流程' : `迷迭香 · ${scenario.replace('skchr_rosmon_', '技能')}`);
   $('status').innerHTML = `<strong>${label}：</strong> 同步播放中`;
+}
+
+function updateLinks(focus = null) {
+  const params = new URLSearchParams({ operator, scenario });
+  if (focus) params.set('focus', focus);
+  history.replaceState(null, '', `#${params}`);
+  document.querySelector('.vc-link').href = `${location.pathname}#${params}`;
+}
+
+function focusComponent(focus) {
+  document.querySelectorAll('.vc-focused').forEach(element => element.classList.remove('vc-focused'));
+  if (!focus) return;
+  const target = document.querySelector(`[data-link-id="${CSS.escape(focus)}"]`);
+  target?.scrollIntoView({ block: 'center' });
+  target?.classList.add('vc-focused');
+}
+
+function syncSelectionControls() {
+  document.querySelectorAll('[data-operator]').forEach(x => x.classList.toggle('is-on', x.dataset.operator === operator));
+  document.querySelectorAll('[data-scenario]').forEach(x => {
+    x.hidden = x.dataset.scenario.startsWith('skchr_blkkgt_') !== (operator === 'blkkgt');
+    x.classList.toggle('is-on', x.dataset.scenario === scenario);
+  });
 }
 
 function sendFrame(t, ev, units) {
@@ -218,11 +265,8 @@ function wireControls() {
     if ((operator === 'blkkgt') !== blakkScenario) return;
     scenario = b.dataset.scenario;
     document.querySelectorAll('[data-scenario]').forEach((x) => x.classList.toggle('is-on', x === b));
-    running = false;
-    resetBattle();
-    await preloadCurrentOperator();
-    resetBattle();
-    running = true;
+    updateLinks();
+    await prepareBattle();
   };
   for (const b of document.querySelectorAll('[data-operator]')) b.onclick = async () => {
     operator = b.dataset.operator;
@@ -233,15 +277,57 @@ function wireControls() {
       x.hidden = isBlakk !== (operator === 'blkkgt');
       x.classList.toggle('is-on', x.dataset.scenario === scenario);
     });
-    running = false;
-    resetBattle();
-    await preloadCurrentOperator();
-    resetBattle();
-    running = true;
+    updateLinks();
+    await prepareBattle();
   };
-  toggle.onclick = () => { running = !running; toggle.textContent = running ? '❚❚' : '▶'; };
-  restart.onclick = () => { running = true; toggle.textContent = '❚❚'; resetBattle(); };
+  toggle.onclick = () => {
+    paused = !paused;
+    running = !paused && !preparing;
+    toggle.textContent = paused ? '▶' : '❚❚';
+    if (!preparing) $('status').textContent = paused ? '已暂停' : '同步播放中';
+  };
+  restart.onclick = () => { paused = false; updateLinks(); void prepareBattle(); };
   $('speed').onchange = () => { speed = Number($('speed').value) || 1; };
+}
+
+function wireLinks() {
+  for (const element of document.querySelectorAll('[id], [data-operator], [data-scenario], [data-action]')) {
+    element.dataset.linkId = element.id || `${Object.keys(element.dataset)[0]}-${Object.values(element.dataset)[0]}`;
+  }
+  const copy = async element => {
+    const params = new URLSearchParams({ operator, scenario, focus: element.dataset.linkId });
+    const url = `${location.origin}${location.pathname}#${params}`;
+    try { await navigator.clipboard.writeText(url); }
+    catch {
+      const input = document.createElement('textarea');
+      input.value = url;
+      input.style.cssText = 'position:fixed;opacity:0;left:0;top:0';
+      document.body.append(input);
+      input.focus(); input.select();
+      try { if (!document.execCommand('copy')) throw new Error('浏览器没有允许复制'); }
+      finally { input.remove(); }
+    }
+  };
+  document.addEventListener('contextmenu', e => {
+    const element = e.target.closest('[data-link-id]');
+    if (!element || e.target.closest('a,input,textarea')) return;
+    e.preventDefault();
+    copy(element).catch(err => { errors.push(`链接复制失败：${err.message}`); renderErrors(); });
+  });
+  for (const button of document.querySelectorAll('[data-copy-link]')) button.onclick = () => {
+    copy($(button.dataset.copyLink)).then(() => { button.textContent = '已复制'; setTimeout(() => { button.textContent = '复制链接'; }, 1500); }).catch(err => { errors.push(`链接复制失败：${err.message}`); renderErrors(); });
+  };
+  window.addEventListener('hashchange', async () => {
+    const requested = new URLSearchParams(location.hash.slice(1));
+    const nextOperator = VFX_PRELOAD[requested.get('operator')] ? requested.get('operator') : operator;
+    const nextScenario = VFX_PRELOAD[nextOperator]?.[requested.get('scenario')] ? requested.get('scenario') : scenario;
+    if (operator !== nextOperator || scenario !== nextScenario) {
+      operator = nextOperator; scenario = nextScenario;
+      syncSelectionControls();
+      if (!await prepareBattle()) return;
+    }
+    focusComponent(requested.get('focus'));
+  });
 }
 
 async function main() {
@@ -252,13 +338,16 @@ async function main() {
       createFieldView($('before-field'), { data, assets, board: '2d', originalVfx: false, settings: { quality: 'high', damageNumbers: true } }),
       createFieldView($('after-field'), { data, assets, board: '2d', originalVfx: { root: '/assets/vfx/rosmon', cacheKey: 'vfx-20261008-r3' }, settings: { quality: 'high', damageNumbers: true } }),
     ]);
+    const requested = new URLSearchParams(location.hash.slice(1));
+    if (VFX_PRELOAD[requested.get('operator')]) operator = requested.get('operator');
+    scenario = VFX_PRELOAD[operator]?.[requested.get('scenario')] ? requested.get('scenario') : (operator === 'blkkgt' ? 'skchr_blkkgt_3' : 'full');
     wireControls();
-    document.querySelectorAll('[data-scenario]').forEach((x) => { const isBlakk = x.dataset.scenario.startsWith('skchr_blkkgt_'); x.hidden = isBlakk; });
-    await preloadCurrentOperator();
-    resetBattle();
+    wireLinks();
+    syncSelectionControls();
+    updateLinks(requested.get('focus'));
     window.__vfxCompare = { before, after, reset: resetBattle, stats: () => ({ before: before.stats(), after: after.stats() }),
-      coverage: () => after?.debug?.fx?.originalVfx?.coverage?.() || after?.stats?.()?.originalCoverage || null };
-    $('status').innerHTML = '<strong>准备完成</strong>：两侧使用同一批战斗事件';
+      coverage: () => after?.debug?.fx?.originalVfx?.coverage?.() || after?.stats?.()?.originalCoverage || null,
+      state: () => ({ operator, scenario, preparing, running, preparingAt, readyAt, elapsed, cursor, generation: selectionGeneration, resources: after?.debug?.fx?.originalVfx?.resourceStats?.() }) };
     const loop = (now) => {
       const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
       last = now;
@@ -268,6 +357,8 @@ async function main() {
       requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
+    await prepareBattle();
+    focusComponent(requested.get('focus'));
   } catch (err) {
     errors.push(err?.stack || err?.message || String(err));
     $('status').textContent = '加载失败';

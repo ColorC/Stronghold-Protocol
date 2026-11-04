@@ -3,31 +3,18 @@
 // files that actually exist on disk into data/assets.json. Entries whose files
 // are missing are dropped (never emitted as broken URLs); a `literal(value)` node
 // is emitted as it is (no files behind it).
+//
+// A dropped entry is never silent: resolveTemplate reports every leaf none of whose
+// alternatives is on disk in `droppedLeaves` (a leaf whose file is missing is an
+// entry the client loses — a sound that never plays, not a broken URL it recovers
+// from), besides the wider `misses` list (leaves and unresolved Spine models). The
+// caller prints that list, keeps it in .cache/assets-report.json and can turn it
+// into a failure (fetch-assets.mjs --strict / SP_ASSETS_STRICT).
 
 import { existsSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { assetUrl, githubSourceUrl, mirrorUrl } from './sources.mjs';
-
-/** Keep a registered semantic role only when all its clips still exist in the freshly parsed body. */
-export function retainRegisteredAnimationRoles(previous, parsed, animations) {
-  const out = structuredClone(parsed);
-  if (!previous || !out || !animations) return out;
-  const exists = (name) => typeof name === 'string' && Object.hasOwn(animations, name);
-  const compatibleClip = (old, fresh) => old && fresh && typeof old === 'object' && typeof fresh === 'object'
-    && old.index === fresh.index && exists(old.loop)
-    && ['begin', 'end', 'idle'].every(key => old[key] == null || exists(old[key]));
-  const compatibleSkill = (old, fresh) => compatibleClip(old, fresh) && (!old.via || old.via === fresh.via);
-  for (const key of ['idle', 'deploy', 'die']) if (exists(previous[key])) out[key] = previous[key];
-  for (const key of ['attack', 'attackDown', 'skill', 'move', 'stun']) {
-    if ((key === 'skill' ? compatibleSkill : compatibleClip)(previous[key], out[key])) out[key] = structuredClone(previous[key]);
-  }
-  // Only current selectable indices can survive; a valid clip alone cannot reactivate a retired skill slot.
-  for (const [index, fresh] of Object.entries(out.skills || {})) {
-    if (compatibleSkill(previous.skills?.[index], fresh)) out.skills[index] = structuredClone(previous.skills[index]);
-  }
-  return out;
-}
 
 /** Manifest schema version (bump on breaking shape changes). */
 export const MANIFEST_VERSION = 1;
@@ -43,32 +30,6 @@ const isLiteral = (n) => !!n && typeof n === 'object' && Object.hasOwn(n, LITERA
  * @param {any} value JSON value
  */
 export function literal(value) { return { [LITERAL]: JSON.parse(JSON.stringify(value)) }; }
-
-/** Keep registered extensions when a research plan covers only part of the installed catalog. */
-export function mergeRegisteredManifest(registered, generated) {
-  if (generated === undefined) return structuredClone(registered);
-  if (!generated || typeof generated !== 'object' || Array.isArray(generated)) return structuredClone(generated);
-  const out = registered && typeof registered === 'object' && !Array.isArray(registered)
-    ? structuredClone(registered) : {};
-  // Parsed model capabilities are one validated record: retaining an absent old clip would describe another skeleton.
-  if (typeof generated.skel === 'string' && typeof generated.atlas === 'string' && Array.isArray(generated.textures)) {
-    return { ...out, ...structuredClone(generated),
-      anims: retainRegisteredAnimationRoles(out.anims, generated.anims, generated.animations) };
-  }
-  for (const [key, value] of Object.entries(generated)) out[key] = mergeRegisteredManifest(out[key], value);
-  return out;
-}
-
-/** Referenced asset paths, including extensions that were registered after the research snapshot. */
-export function registeredAssetPaths(manifest) {
-  const found = new Set();
-  const walk = value => {
-    if (typeof value === 'string' && value.startsWith('/assets/')) found.add(value.slice('/assets/'.length));
-    else if (value && typeof value === 'object') Object.values(value).forEach(walk);
-  };
-  walk(manifest);
-  return found;
-}
 
 /**
  * Collect every leaf of the template with its dotted path.
@@ -126,10 +87,14 @@ export async function downloadLeaves(leaves, dl, root, label = 'files') {
  * @param {Map<string, any>} o.spine resolved Spine entries by model key
  * @param {(rel:string)=>string|undefined} [o.sourceOf] URL a file was downloaded from (ledger), to report
  *   fallbacks that share the primary's path (e.g. an enemy icon taken from its base id)
- * @returns {{ value: any, misses: string[], fallbacks: string[], files: Set<string> }}
+ * @returns {{ value: any, misses: string[], droppedLeaves: string[], fallbacks: string[], files: Set<string> }}
+ *   `droppedLeaves`: the dotted paths of the leaves no alternative of which is on disk, i.e. exactly the entries the
+ *   manifest loses here (a subset of `misses`, which also names the unresolved Spine models) — what a caller reports
+ *   as dropped, and what --strict fails on.
  */
 export function resolveTemplate(template, { root, spine, sourceOf = () => undefined }) {
   const misses = [];
+  const droppedLeaves = [];
   const fallbacks = [];
   const files = new Set();
   const walk = (node, path) => {
@@ -149,6 +114,9 @@ export function resolveTemplate(template, { root, spine, sourceOf = () => undefi
           return assetUrl(a.rel);
         }
       }
+      // No alternative on disk: the entry is left out of the manifest, which is a real loss (never a broken URL) — so
+      // it is named as a dropped leaf, not only among the misses.
+      droppedLeaves.push(path);
       misses.push(path);
       return undefined;
     }
@@ -158,7 +126,12 @@ export function resolveTemplate(template, { root, spine, sourceOf = () => undefi
       for (const u of [e.skel, e.atlas, ...e.textures]) files.add(u.replace(/^\/assets\//, ''));
       return e;
     }
-    if (Array.isArray(node)) return node.map((x, i) => walk(x, `${path}[${i}]`)).filter((x) => x !== undefined);
+    if (Array.isArray(node)) {
+      const lines = node.map((x, i) => walk(x, `${path}[${i}]`)).filter((x) => x !== undefined);
+      // An array whose every line is missing on disk is a missing entry, like a missing leaf (e.g. a voice slot whose
+      // lines were never downloaded here): dropped, never an empty [] that reads as a slot with no lines.
+      return lines.length || !node.length ? lines : undefined;
+    }
     if (typeof node !== 'object') return node;
     const out = {};
     for (const [k, v] of Object.entries(node)) {
@@ -171,7 +144,7 @@ export function resolveTemplate(template, { root, spine, sourceOf = () => undefi
   };
   const isContainer = (v) => v && typeof v === 'object' && !isLeaf(v) && !isModelRef(v) && !isLiteral(v);
   const value = walk(template, '');
-  return { value, misses, fallbacks, files };
+  return { value, misses, droppedLeaves, fallbacks, files };
 }
 
 /**
@@ -197,9 +170,6 @@ export function contentHash(value) {
 
 /** Top-level manifest fields that describe the build, not assets: never counted as dropped entries. */
 const BUILD_FIELDS = new Set(['version', 'hash', 'generator', 'stats']);
-const PARSED_MODEL_FIELDS = new Set(['anims', 'animations', 'events', 'hits', 'bounds', 'pma']);
-const isParsedModel = (v) => v && typeof v.skel === 'string' && typeof v.atlas === 'string'
-  && Array.isArray(v.textures) && v.anims && v.animations;
 
 /**
  * Entries of the manifest `prev` that `next` no longer has, as sorted dotted paths. An entry is a leaf value (a URL
@@ -220,13 +190,7 @@ export function droppedEntries(prev, next) {
   const walk = (p, n, path) => {
     if (n === undefined) { leaves(p, path); return; }
     if (!isObj(p) || !isObj(n)) return;
-    // A complete fresh parse may remove capabilities the current skeleton does not have. Guard catalog identity
-    // and public file registrations, while accepting the parser's atomic capability record.
-    const reparsed = isParsedModel(p) && isParsedModel(n);
-    for (const [k, v] of Object.entries(p)) {
-      if (reparsed && PARSED_MODEL_FIELDS.has(k)) continue;
-      walk(v, Object.hasOwn(n, k) ? n[k] : undefined, `${path}.${k}`);
-    }
+    for (const [k, v] of Object.entries(p)) walk(v, Object.hasOwn(n, k) ? n[k] : undefined, `${path}.${k}`);
   };
   if (!isObj(prev)) return out;
   const nx = isObj(next) ? next : {};

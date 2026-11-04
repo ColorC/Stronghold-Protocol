@@ -1,0 +1,64 @@
+{
+ "version": 1,
+ "size": 256,
+ "format": "webp",
+ "note": "Official Arknights material item icons (sprites of the official client bundle), one per Resonance basic component that used to borrow a native T3+ item. Raw sprites stay outside Git.",
+ "resVersion": "26-10-08-04-51-28-56071834",
+ "resourceRoot": "https://ak.hycdn.cn/assetbundle/official/Android/assets/26-10-08-04-51-28-56071834",
+ "downloadedAt": "2026-10-12T08:42:52.886918+00:00",
+ "itemTable": "ArknightsGameResource gamedata/excel/item_table.json (iconId and itemId per item)",
+ "components": {
+  "bow": {
+   "itemName": "装置",
+   "itemId": "30062",
+   "iconId": "MTL_SL_BOSS2",
+   "file": "bow.webp",
+   "bytes": 11118,
+   "sourceBundle": "arts/ui_item_icons_5.ab",
+   "spriteName": "MTL_SL_BOSS2",
+   "sourceSize": [
+    142,
+    169
+   ]
+  },
+  "belt": {
+   "itemName": "糖",
+   "itemId": "30022",
+   "iconId": "MTL_SL_STRG2",
+   "file": "belt.webp",
+   "bytes": 13822,
+   "sourceBundle": "arts/ui_item_icons_5.ab",
+   "spriteName": "MTL_SL_STRG2",
+   "sourceSize": [
+    162,
+    130
+   ]
+  },
+  "cloak": {
+   "itemName": "固源岩",
+   "itemId": "30012",
+   "iconId": "MTL_SL_G2",
+   "file": "cloak.webp",
+   "bytes": 13926,
+   "sourceBundle": "arts/ui_item_icons_5.ab",
+   "spriteName": "MTL_SL_G2",
+   "sourceSize": [
+    135,
+    131
+   ]
+  },
+  "tear": {
+   "itemName": "技巧概要·卷1",
+   "itemId": "3301",
+   "iconId": "MTL_SKILL1",
+   "file": "tear.webp",
+   "bytes": 17912,
+   "sourceBundle": "arts/ui_item_icons_5.ab",
+   "spriteName": "MTL_SKILL1",
+   "sourceSize": [
+    170,
+    180
+   ]
+  }
+ }
+}

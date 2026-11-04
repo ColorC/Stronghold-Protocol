@@ -2,11 +2,11 @@
 // Conventions of the tier-3 kits: ../shared/tier3.js; kit contract and rules: ../README.md.
 
 import { num, defOf, talentBb, selectedId, altSkills, alive, fx, textNum, tacticalPoint } from '../shared/tier3.js';
-import { applyDamageIncrease } from '../../../../../shared/damageIncrease.js';
 import { installWolfTacticalPoint, wolfReturnNow, wolfShadowInterval, wolfTacticalPoint } from '../../tokens.js';
+import { applyDamageIncrease } from '../../../../../shared/damageIncrease.js';
 
 /** Tokens `tokenId` summoned by / placed for `owner` (board pieces included). */
-const tokensOf = (battle, owner, tokenId) => battle.allyUnits.filter((t) => t.kind === 'token' && t.defId === tokenId && t.ownerUnit === owner && !t.mem.isClone && !t.def?.raw?.darkmoonPrototypeTokenId);
+const tokensOf = (battle, owner, tokenId) => battle.allyUnits.filter((t) => t.kind === 'token' && t.defId === tokenId && t.ownerUnit === owner && !t.mem.isClone);
 
 export default {
   // ---- 3_19 伺夜 · 战术家 — the tactical reinforcement is the wolf pack (狼群领袖: 2 wolves, +1 every 25 s up to 3, each
@@ -152,7 +152,7 @@ export default {
       fx(battle, 'summon', w, { src: vigil.id, wolves: w.mem.shadows });
       return true;
     };
-    const dpGain = (battle, unit, n) => { if (n > 0) { battle.addDp(unit.ownerId, n); fx(battle, 'dp', unit, { n }); } };
+    const dpGain = (battle, unit, n) => { if (n > 0) { battle.addDp(unit.ownerId, n, { sourceUnitId: unit.id }); fx(battle, 'dp', unit, { n }); } };
     // S1: the cast — ready and the pack on the field in either form (PRTS 备注 「仅场上存在狼群时可触发技能」 with ① for its
     // 战术点形态)
     const installCall = (battle, unit) => {
@@ -237,13 +237,13 @@ export default {
           while (unit.mem.vigilAcc >= iv - 1e-9 && unit.mem.vigilDp + step <= cap + 1e-9) {
             unit.mem.vigilAcc -= iv;
             unit.mem.vigilDp += step;
-            battle.addDp(unit.ownerId, step);
+            battle.addDp(unit.ownerId, step, { sourceUnitId: unit.id });
           }
         },
         onEnd({ battle, unit, reason }) {
           // the whole `value` is granted over a full duration (精锐: 11 × 1.364 s ends a hair after 15 s)
           const rest = num(bb.value, 0) - (unit.mem.vigilDp ?? 0);
-          if (reason === 'duration' && rest > 1e-9) { battle.addDp(unit.ownerId, rest); unit.mem.vigilDp += rest; }
+          if (reason === 'duration' && rest > 1e-9) { battle.addDp(unit.ownerId, rest, { sourceUnitId: unit.id }); unit.mem.vigilDp += rest; }
           fx(battle, 'dp', unit, { n: unit.mem.vigilDp ?? 0 });
         },
       },

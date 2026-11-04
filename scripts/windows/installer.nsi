@@ -6,10 +6,10 @@
 ; PAYLOAD is the bundle directory of scripts/make-windows-bundle.mjs (lite mode); PAYLOAD_NSH, generated next to it,
 ; lists that directory's top-level entries so the uninstaller removes exactly what the setup put there.
 ;
-; Same payload and folder as the MSI (installer.wxs): per-user %LOCALAPPDATA%\Programs\Stronghold-Protocol-Workshop,
+; Same payload and folder as the MSI (installer.wxs): per-user %LOCALAPPDATA%\Programs\Stronghold-Protocol-Assault,
 ; no elevation, Start Menu + desktop shortcuts, an entry in Apps & features. Uninstall deletes app\ and node\ (the
 ; resources the game downloaded included), the launcher, the notices, the shortcuts and the entry; saves live in
-; %LOCALAPPDATA%\Stronghold-Protocol-Workshop and stay. Installing a newer version over an older one keeps what the
+; %LOCALAPPDATA%\Stronghold-Protocol-Assault and stay. Installing a newer version over an older one keeps what the
 ; game downloaded into app\ and replaces everything else.
 
 Unicode true
@@ -23,15 +23,15 @@ SetCompressorDictSize 64
 !include "FileFunc.nsh"
 !include "${PAYLOAD_NSH}"
 
-!define PRODUCT "卫戍协议：工坊"
+!define PRODUCT "卫戍协议：进击"
 !define LAUNCHER "启动游戏.exe"
-!define STATE_KEY "Software\Stronghold-Protocol-Workshop"
-!define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Stronghold-Protocol-Workshop"
+!define STATE_KEY "Software\Stronghold-Protocol-Assault"
+!define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Stronghold-Protocol-Assault"
 !define KEEP_DIR "$INSTDIR\.upgrade-keep"
 
 Name "${PRODUCT}"
 OutFile "${OUTFILE}"
-InstallDir "$LOCALAPPDATA\Programs\Stronghold-Protocol-Workshop"
+InstallDir "$LOCALAPPDATA\Programs\Stronghold-Protocol-Assault"
 BrandingText "${PRODUCT} ${VERSION}"
 ShowInstDetails nevershow
 ShowUninstDetails nevershow
@@ -111,7 +111,8 @@ FunctionEnd
   !insertmacro ${MACRO} "public\vendor" "public-vendor"
   !insertmacro ${MACRO} ".cache" "cache"
   !insertmacro ${MACRO} ".venv-extract" "venv-extract"
-  !insertmacro ${MACRO} "data\local-assets.json" "local-assets.json"
+  ; runtime\ holds the downloaded assault art (runtime\assault-assets). data\local-assets.json is a tracked file on
+  ; this line, so the new version's copy is installed rather than the old one kept.
   !insertmacro ${MACRO} "runtime" "runtime"
 !macroend
 
@@ -154,7 +155,7 @@ Section "Install"
   WriteRegStr HKCU "${UNINSTALL_KEY}" "Publisher" "Stronghold-Protocol"
   WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayIcon" "$INSTDIR\${LAUNCHER}"
   WriteRegStr HKCU "${UNINSTALL_KEY}" "InstallLocation" "$INSTDIR"
-  WriteRegStr HKCU "${UNINSTALL_KEY}" "URLInfoAbout" "https://github.com/ColorC/Stronghold-Protocol/tree/workshop"
+  WriteRegStr HKCU "${UNINSTALL_KEY}" "URLInfoAbout" "https://github.com/ColorC/Stronghold-Protocol/tree/assault-clean-20261104"
   WriteRegStr HKCU "${UNINSTALL_KEY}" "UninstallString" '"$INSTDIR\uninstall.exe"'
   WriteRegStr HKCU "${UNINSTALL_KEY}" "QuietUninstallString" '"$INSTDIR\uninstall.exe" /S'
   WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoModify" 1

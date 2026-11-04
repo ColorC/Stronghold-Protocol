@@ -1,6 +1,6 @@
 import { tavernFactions } from '../../../shared/independentRules.js';
 import { INVENTORY_STACK_LIMIT, inventoryStackKey, inventoryStackGroups, quantityEquippable } from '../../../shared/independentInventory.js';
-import { grantGrowthLevels } from '../../../shared/independentGrowth.js';
+import { t, N_ } from '../../../shared/i18n.js';
 export { INVENTORY_STACK_LIMIT } from '../../../shared/independentInventory.js';
 
 const own = (o, k) => !!o && typeof o === 'object' && !Array.isArray(o) && Object.hasOwn(o, k);
@@ -50,8 +50,8 @@ export function makeItem(state, id, quantity = 1, extra = {}) {
 }
 
 /** Where a landing badge may go (catalog.config.badgeLanding, a rule's params.landOn). */
-export const LANDING_MODES = Object.freeze(['self', 'front', 'adjacent', 'factionLowest', 'lowest', 'faction:<阵营>']);
-const LANDING_ORIGINS = new Set(['native', 'equipment', 'attachment', 'prize']);
+export const LANDING_MODES = Object.freeze(['self', 'front', 'adjacent', 'factionLowest', 'lowest', N_('faction:<阵营>')]);
+const LANDING_ORIGINS = new Set(['native', 'equipment', 'attachment']);
 const STEP = { RIGHT: [0, 1], LEFT: [0, -1], UP: [-1, 0], DOWN: [1, 0] };
 const onField = (p) => p && p.row != null && p.col != null;
 const fewestWorn = (list) => [...list].sort((a, b) => pieceEquipmentCount(a) - pieceEquipmentCount(b) || String(a.uid).localeCompare(String(b.uid)))[0] || null;
@@ -61,17 +61,16 @@ const fewestWorn = (list) => [...list].sort((a, b) => pieceEquipmentCount(a) - p
  * the one wearing the least; of a named faction on the field (`faction:<阵营>`), the one wearing the least.
  * Nobody there → the maker.
  */
-export function landingPiece(state, catalog, source, how = 'self', { allowBenchTarget = false } = {}) {
+export function landingPiece(state, catalog, source, how = 'self') {
   if (typeof how === 'string' && how.startsWith('uid:')) {
     const uid = how.slice(4);
     const target = (state.pieces || []).find((p) => String(p.uid) === uid);
-    if ((source && (source.removed || source.deleted)) || !target || (!onField(target) && !(allowBenchTarget && source && onField(source))) || target.removed || target.deleted || (target.kind && target.kind !== 'op')
-        || (source && (target.playerId ?? target.ownerId) !== (source.playerId ?? source.ownerId))
+    if (!source || !onField(source) || source.removed || source.deleted || !target || !onField(target) || target.removed || target.deleted || (target.kind && target.kind !== 'op')
+        || (target.playerId ?? target.ownerId) !== (source.playerId ?? source.ownerId)
         || !catalog?.operators?.[target.chessId]) throw new Error('BAD_LANDING_TARGET');
     return target;
   }
-  if (!source || how === 'self') return source;
-  if (!onField(source)) return how === 'front' || how === 'adjacent' ? source : null;
+  if (!source || how === 'self' || !onField(source)) return source;
   const others = (state.pieces || []).filter((p) => p !== source && onField(p));
   let target = null;
   if (how === 'front') {
@@ -88,11 +87,11 @@ export function landingPiece(state, catalog, source, how = 'self', { allowBenchT
     const f = String(how).slice(8);
     target = fewestWorn([source, ...others].filter((p) => tavernFactions(p, catalog).includes(f)));
   } else throw new Error(`BAD_LANDING ${how}`);
-  return target || (how === 'front' || how === 'adjacent' ? source : null);
+  return target || source;
 }
 
 export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
-  let def = equipmentRecord(catalog, id);
+  const def = equipmentRecord(catalog, id);
   if (!def || def.available === false || def.mechanism === 'disabled') throw new Error('UNKNOWN_EQUIPMENT');
   if (!Number.isInteger(quantity) || quantity < 1) throw new Error('BAD_QUANTITY');
   // 徽章落点 (user 2026-10-06: 「徽章直接落点，装备进库存」): a badge an operator's own effect makes — its trait, its gear,
@@ -102,43 +101,20 @@ export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
   const isBadge = !!rec(catalog?.badges, id) || def.mechanism === 'badge';
   const source = extra.sourceUid ? (state.pieces || []).find((p) => p.uid === extra.sourceUid) : null;
   const explicit = typeof landing === 'string' && landing.startsWith('uid:');
-  const wearable = isBadge || ['功能装备', '战斗装备', '生产装备', 'equipment', 'prizeGear'].includes(def.kind);
-  if (explicit && (!wearable || !['native', 'prize', 'equipment', 'attachment'].includes(extra.origin) || String(extra.targetUid) !== landing.slice(4))) throw new Error('BAD_LANDING_TARGET');
-  const allowBenchTarget = extra.allowBenchTarget === true && extra.origin === 'native' && isBadge;
-  const explicitTarget = explicit ? landingPiece(state, catalog, source, landing, { allowBenchTarget }) : null;
-  const fixedIntent = explicit || !!(source && LANDING_ORIGINS.has(extra.origin)
-    && (isBadge || extra.landOn) && landing !== 'stock');
-  const fixedWearer = explicitTarget || (fixedIntent ? landingPiece(state, catalog, source, landing) : null);
-  if (wearable && fixedIntent) {
-    const target = fixedWearer;
-    if (!target) {
-      recordProduction(state, { id, quantity, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, lost: true });
-      return { id, quantity: 0, lost: quantity };
-    }
-    if (isBadge && state.growthMode === 'levels') {
-      const growth = grantGrowthLevels(state, catalog, target, quantity);
-      if(growth.added>0)recordProduction(state, { id:'growth-training-record', quantity:growth.added, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, prizeId: extra.prizeId,
-        worn: true, targetUid: target.uid, growthLevels: growth.added, growthLevel: growth.level });
-      return { id:'growth-training-record', quantity:growth.added, worn: target.uid, growth, growthLevels:growth.added };
-    }
-    const alreadyUnique = def.unique && (target.equipment || []).some((x) => {
-      const other = equipmentRecord(catalog, x.id);
-      return (other?.uniqueKey || other?.canonicalId || x.id) === (def.uniqueKey || def.canonicalId || id);
-    });
-    const add = alreadyUnique ? 0 : Math.max(0, Math.min(quantity, def.unique ? 1 : quantity, EQUIPMENT_CAPACITY - pieceEquipmentCount(target)));
+  if (explicit && (!isBadge || extra.origin !== 'native' || String(extra.targetUid) !== landing.slice(4))) throw new Error('BAD_LANDING_TARGET');
+  const explicitTarget = explicit ? landingPiece(state, catalog, source, landing) : null;
+  if (landing !== 'stock' && isBadge && source && LANDING_ORIGINS.has(extra.origin)) {
+    const target = explicitTarget || landingPiece(state, catalog, source, landing);
+    const add = Math.min(quantity, EQUIPMENT_CAPACITY - pieceEquipmentCount(target));
     if (add > 0) {
       const stack = (target.equipment ||= []).find((x) => x.id === id);
       if (stack) stack.quantity = Number(stack.quantity || 1) + add;
       else target.equipment.push(makeItem(state, id, add));
-      recordProduction(state, { id, quantity: add, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, prizeId: extra.prizeId, copied: extra.copied, repeated: extra.repeated, worn: true, targetUid: target.uid });
+      recordProduction(state, { id, quantity: add, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, copied: extra.copied, repeated: extra.repeated, worn: true, targetUid: target.uid });
     }
-    // A fixed-target buff is never converted into a freely assignable hand resource on overflow.
-    const lost = quantity - add;
-    if (lost) recordProduction(state, { id, quantity: lost, origin: extra.origin, phase: extra.phase,
-      sourceUid: extra.sourceUid, prizeId: extra.prizeId, targetUid: target.uid, worn: true, lost: true });
-    return { id, quantity: add, worn: target.uid, ...(lost ? { lost } : {}) };
+    if (add >= quantity) return { id, quantity, worn: target.uid };
+    quantity -= add;
   }
-  if (state.growthMode === 'levels' && isBadge) { id = 'growth-training-record'; def = equipmentRecord(catalog, id); }
   const add = Math.min(quantity, inventoryRoomFor(state, catalog, id, extra));
   const lost = quantity - add;
   let remaining = add;
@@ -164,7 +140,7 @@ export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
  * production column can trace any round (user 10-07: 「安排一个完整的log可折叠追溯」).
  */
 export const PRODUCTION_ROUNDS_KEPT = 16;
-const PRODUCTION_FIELDS = ['origin', 'phase', 'sourceUid', 'prizeId', 'copied', 'repeated', 'lost', 'worn', 'targetUid', 'growthLevels', 'growthLevel'];
+const PRODUCTION_FIELDS = ['origin', 'phase', 'sourceUid', 'prizeId', 'copied', 'repeated', 'lost', 'worn', 'targetUid'];
 
 /**
  * Append one entry to `state.production`, the player-facing record of where inventory items came from. An entry
@@ -187,16 +163,7 @@ export function equipItem(state, catalog, itemUid, targetUid, quantity = 1, opti
   if (pi < 0 || !target || !Number.isInteger(quantity) || quantity < 1) throw new Error('BAD_TARGET');
   const item = state.inventory[pi]; const def = equipmentRecord(catalog, item.id);
   if (!def || def.available === false || def.mechanism === 'disabled' || quantity > item.quantity) throw new Error('BAD_QUANTITY');
-  if (!['徽章', 'badge', '功能装备', '战斗装备', '生产装备', 'equipment', 'prizeGear'].includes(def.kind)) throw new Error('NOT_EQUIPPABLE');
-  if (state.growthMode === 'levels' && (catalog.badges?.[item.id] || def.mechanism === 'badge' || def.mechanism === 'growthTraining')) {
-    const growth = grantGrowthLevels(state, catalog, target, quantity);
-    if (!growth.added) throw new Error('GROWTH_LEVEL_MAX');
-    const consumed = Math.min(quantity, Math.ceil(growth.added / Number(catalog.config?.levelsPerBadge ?? 1)));
-    item.quantity -= consumed;
-    if (!item.quantity) state.inventory.splice(pi, 1);
-    return { id: item.id, quantity: consumed, growth, targetUid: target.uid };
-  }
-  if (def.mechanism === 'growthTraining') throw new Error('WRONG_GROWTH_MODE');
+  if (![N_('徽章'), 'badge', N_('功能装备'), N_('战斗装备'), N_('生产装备'), 'equipment', 'prizeGear'].includes(def.kind)) throw new Error('NOT_EQUIPPABLE');
   if (def.unique && quantity !== 1) throw new Error('UNIQUE_QUANTITY');
   if (quantity > 1 && !quantityEquippable(def)) throw new Error('SINGLE_EQUIP_ONLY');
   const usedByPieces = pieceEquipmentCount(target);
@@ -207,7 +174,7 @@ export function equipItem(state, catalog, itemUid, targetUid, quantity = 1, opti
   })) throw new Error('UNIQUE');
   const movedState = structuredClone(item.state || {});
   if (def.mechanism === 'identityTag') {
-    const factions = ['炎', '维多利亚', '拉特兰', '阿戈尔', '谢拉格', '萨尔贡', '叙拉古', '卡西米尔'];
+    const factions = [N_('炎'), N_('维多利亚'), N_('拉特兰'), N_('阿戈尔'), N_('谢拉格'), N_('萨尔贡'), N_('叙拉古'), N_('卡西米尔')];
     if (!factions.includes(options.faction)) throw new Error('BAD_FACTION');
     movedState.faction = options.faction;
   }
@@ -255,7 +222,6 @@ export function discardPieceAssets(state, piece) {
 export function totalEquipmentLevel(piece, catalog) {
   return (piece?.equipment || []).reduce((sum, item) => {
     const def = equipmentRecord(catalog, item.id);
-    if(def?.mechanism==='growthTraining')return sum;
     return sum + Math.max(0, Number((def?.level ?? def?.tier) || 0)) * Math.max(1, Number(item.quantity || 1));
   }, 0);
 }

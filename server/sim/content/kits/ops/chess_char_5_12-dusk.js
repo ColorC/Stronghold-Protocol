@@ -2,13 +2,13 @@
 // Conventions of the tier-5 kits: ../shared/tier5.js; kit contract and rules: ../README.md.
 
 import { sortEnemyTargets } from '../../../targeting.js';
-import { applyDamageIncrease } from '../../../../../shared/damageIncrease.js';
 import {
   HALF_HP, num, on, talent, talentRec, batPct, mods, selectedId, lazySkills, skillRange, moduleRangeUp,
 } from '../shared/tier5.js';
+import { applyDamageIncrease } from '../../../../../shared/damageIncrease.js';
 
 /** 夕 S1 "下一次攻击溅射范围扩大" — expanded splash radius (tiles; the splash-caster default is 1.1). PRTS: "溅射半径扩大至1.7". */
-const DUSK_SPLASH_RADIUS = 1.7;
+export const DUSK_SPLASH_RADIUS = 1.7;
 /** 夕 S3 "攻击范围与溅射范围扩大" — the expanded splash radius, the same 1.7 as S1 (PRTS). [ASSUMED for S3] */
 const DUSK_S3_SPLASH = DUSK_SPLASH_RADIUS;
 

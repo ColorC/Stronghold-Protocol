@@ -74,14 +74,24 @@ const DEFAULT_RECTS = { normal: GEO.NORMAL_RECT, unite: GEO.UNITE_RECT, boss: GE
 export class Battle {
   constructor(opts = {}) {
     this.opts = opts;
+    this.contentMode = opts.content ?? 'full';
+    if (this.contentMode === 'assault' && (!opts.assault || opts.assault.strict !== true)) {
+      throw new Error('content: assault requires opts.assault.strict=true');
+    }
+    if (this.contentMode === 'assault' && opts.kits != null) throw new Error('content: assault kits must be supplied through opts.assault.kits');
+    this.assaultStrict = this.contentMode === 'assault';
     this.seed = (Number(opts.seed) >>> 0) || 1;
     this.rng = createRng(this.seed);
     this.kind = opts.kind ?? 'normal';
     this.modeId = opts.modeId ?? null;
     this.round = opts.round ?? 0;
     this.fieldId = opts.fieldId ?? null;
-    this.logger = opts.logger ?? console;
     this.recordEvents = opts.recordEvents !== false;
+    // Optional content-owned floor metadata. Resonance static snow is emitted once in fieldMeta; only active dynamic
+    // areas are copied into snapshots so recording:false battles do not allocate full visualization state per frame.
+    this.resonanceFloors = Array.isArray(opts.resonanceFloors) ? opts.resonanceFloors : null;
+    this.resonanceDynamicFloors = this.recordEvents ? [] : null;
+    this.logger = opts.logger ?? console;
     /** When false the battle only ends by time limit / boss pool / forceEnd (tests, sandboxes). */
     this.autoFinish = opts.autoFinish !== false;
     this.data = toDataSource(opts.data);
@@ -102,7 +112,11 @@ export class Battle {
     const tl = Number(opts.timeLimit);
     this.timeLimit = opts.timeLimit == null || !(tl > 0) ? (bossLike ? Infinity : 60) : tl;
     // startOpCooldown: the operation cooldown of the battle-start deployment (skills.js AUTO_OP_COOLDOWN)
-    this.flags = { layerGainsEnabled: this.kind === 'normal', ...DP_DEFAULTS, startOpCooldown: AUTO_OP_COOLDOWN, ...(opts.flags || {}) };
+    this.flags = {
+      layerGainsEnabled: this.kind === 'normal', ...DP_DEFAULTS,
+      ...(this.assaultStrict ? { dpInit: 50, dpPerSec: 1, dpMax: 99 } : null),
+      startOpCooldown: AUTO_OP_COOLDOWN, ...(opts.flags || {}),
+    };
     const soc = Number(this.flags.startOpCooldown);
     this.flags.startOpCooldown = this.flags.startOpCooldown != null && Number.isFinite(soc) && soc >= 0 ? soc : AUTO_OP_COOLDOWN;
     // DP knobs may arrive as undefined/null/strings (e.g. a template without `dp`): never let them poison DP with NaN.
@@ -171,7 +185,6 @@ export class Battle {
     this._pending.sort((a, b) => a.time - b.time || a.seq - b.seq);
 
     // ---- content
-    this.contentMode = opts.content ?? 'full';
     this._safe(() => installContent(this, { mode: this.contentMode, extra: opts.extraContent }), 'installContent');
     for (const u of this.allyUnits) if (!u.kit) this._setupUnit(u);
     if (typeof opts.setup === 'function') this._safe(() => opts.setup(this), 'opts.setup');

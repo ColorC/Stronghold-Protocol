@@ -26,7 +26,7 @@ export default withDefaults({
           kind: 'instant',
           trigger: 'SP_FULL',
           onStart({ battle, unit }) {
-            battle.addDp(unit.ownerId, num(bb.cost, 6));
+            battle.addDp(unit.ownerId, num(bb.cost, 6), { sourceUnitId: unit.id });
             battle.addBuff(unit, { key: 'flamtl:evade', visible: true });
             battle.fx('dp', { x: unit.x, y: unit.y, id: unit.id, n: num(bb.cost, 6) });
           },
@@ -34,7 +34,7 @@ export default withDefaults({
         skchr_flamtl_2: () => ({
           kind: 'instant',
           onStart({ battle, unit }) {
-            battle.addDp(unit.ownerId, num(bb.cost, 11));
+            battle.addDp(unit.ownerId, num(bb.cost, 11), { sourceUnitId: unit.id });
             const area = g || [[0, 0], [0, 1]];
             const foes = targetsInGrid(battle, unit, area);
             sortEnemyTargets(battle, unit, foes, null);
@@ -60,12 +60,12 @@ export default withDefaults({
           const F = unit.mem.flame;
           if (!F) return;
           F.acc += dt;
-          while (F.acc + 1e-9 >= F.step && F.given < total) { F.acc -= F.step; F.given++; battle.addDp(unit.ownerId, per); }
+          while (F.acc + 1e-9 >= F.step && F.given < total) { F.acc -= F.step; F.given++; battle.addDp(unit.ownerId, per, { sourceUnitId: unit.id }); }
         },
         onEnd({ battle, unit, reason }) {
           const F = unit.mem.flame;
           unit.mem.flame = null;
-          if (F && reason === 'duration' && F.given < total) battle.addDp(unit.ownerId, per * (total - F.given));
+          if (F && reason === 'duration' && F.given < total) battle.addDp(unit.ownerId, per * (total - F.given), { sourceUnitId: unit.id });
         },
       },
       install(battle, unit) {

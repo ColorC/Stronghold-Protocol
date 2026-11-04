@@ -1,8 +1,10 @@
 // server/data.js — loads the generated game data (data/*.json, produced by tools/build-data.mjs) once.
 //
-// Every `*.json` file in the data directory becomes a top-level key named after its basename
+// Game `*.json` files become top-level keys named after their basenames.
+// Assault implementation coverage and native art extraction evidence are tool
+// inputs, not battle data; they stay outside the runtime loader.
 // (config, chess, bonds, garrisons, items, bands, effects, choices, enemies, factions, waves, stages,
-// bosses, tokens, assets, …). The result is deep-frozen so no module can mutate shared data by accident.
+// bosses, tokens, assets, backups, …). The result is deep-frozen so no module can mutate shared data by accident.
 // Missing or unparsable files are tolerated with a warning (data is generated in parallel with the
 // server); consumers must cope with an absent key.
 //
@@ -26,8 +28,14 @@ export const DATA_DIR = process.env.SP_DATA_DIR ? path.resolve(process.env.SP_DA
 /** Files the game expects (a warning lists the missing ones). */
 export const DATA_FILES = Object.freeze([
   'config', 'chess', 'bonds', 'garrisons', 'items', 'bands', 'effects', 'choices',
-  'enemies', 'factions', 'waves', 'stages', 'bosses', 'tokens', 'assets',
+  'enemies', 'factions', 'waves', 'stages', 'bosses', 'tokens', 'assets', 'backups',
 ]);
+
+export function isGameDataFile(name) {
+  const key = String(name).toLowerCase();
+  return key.endsWith('.json') && !key.startsWith('assault-coverage-')
+    && key !== 'assault-native-model-evidence.json';
+}
 
 /**
  * Recursively freeze an object graph (iterative; safe for deep JSON). Returns the same object.
@@ -61,7 +69,7 @@ export function loadData(dir = DATA_DIR, { log = console, expected = DATA_FILES 
   let names = [];
   try {
     names = fs.readdirSync(dir, { withFileTypes: true })
-      .filter((d) => d.isFile() && d.name.toLowerCase().endsWith('.json'))
+      .filter((d) => d.isFile() && isGameDataFile(d.name))
       .map((d) => d.name)
       .sort();
   } catch (e) {

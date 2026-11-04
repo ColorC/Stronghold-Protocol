@@ -1,19 +1,20 @@
+import { t, N_, tName } from '../../../shared/i18n.js';
 // Icon summary of an operator's own trait (自有特质) for shop cards and unit plates: when it fires, what it gives and
 // the conditions worth a glance. It is an index into the full text the detail card shows, never a replacement: every
 // rule of the structured catalog effect (catalog.js nativeTrait.effect) yields one entry, unknown behaviors included.
 
 /** Trigger → the player-facing moment. */
 export const TRAIT_WHEN = Object.freeze({
-  gain: '获得时', firstDeploy: '整备期首次部署时', roundStart: '整备开始', prepEnd: '整备结束时', sold: '出售时', refresh: '刷新后', merge: '三连时',
-  passive: '常驻', battleStart: '战斗开始', deploy: '部署时', kill: '击杀', hit: '命中', skillStart: '技能开启',
-  death: '倒下时', statusApplied: '施加状态时', ammoUsed: '消耗弹药时', nativeProduction: '原生效果产出时', dollSwap: '替身切换时',
-  aura: '在场时', selling: '出售时', battleProduction: '战斗产出时', bought: '购买干员后', played: '打出后',
-  battle: '战斗中', attack: '攻击时',
-  allyGain: '友方获得时', retiring: '退场时', summon:'召唤友方时', allyDamaged:'友方受到伤害时', allyKill:'友方击杀时', allyDeath:'友方退场时',
+  gain: N_('获得时'), roundStart: N_('整备开始'), prepEnd: N_('整备结束时'), sold: N_('出售时'), refresh: N_('刷新后'), merge: N_('三连时'),
+  passive: N_('常驻'), battleStart: N_('战斗开始'), deploy: N_('部署时'), kill: N_('击杀'), hit: N_('命中'), skillStart: N_('技能开启'),
+  death: N_('倒下时'), statusApplied: N_('施加状态时'), ammoUsed: N_('消耗弹药时'), nativeProduction: N_('原生效果产出时'), dollSwap: N_('替身切换时'),
+  aura: N_('在场时'), selling: N_('出售时'), battleProduction: N_('战斗产出时'), bought: N_('购买干员后'),
+  battle: N_('战斗中'), attack: N_('攻击时'),
+  allyGain: N_('友方获得时'), retiring: N_('退场时'), summon:N_('召唤友方时'), allyDamaged:N_('友方受到伤害时'), allyKill:N_('友方击杀时'), allyDeath:N_('友方退场时'),
   // 干员特质 v4 (2026-10-07)
-  heal: '治疗时', damaged: '受到伤害时', dodge: '闪避时', elementBurst: '元素爆发时', battleEnd: '战斗结束时',
-  shieldLayersGained: '获得护盾层时', shieldLayersBroken: '护盾层破碎时', shieldLayersThreshold: '护盾层达到门槛时',
-  freeze: '冻结敌人时', stun: '使敌人晕眩时',
+  heal: N_('治疗时'), damaged: N_('受到伤害时'), dodge: N_('闪避时'), elementBurst: N_('元素爆发时'), battleEnd: N_('战斗结束时'),
+  shieldLayersGained: N_('获得护盾层时'), shieldLayersBroken: N_('护盾层破碎时'), shieldLayersThreshold: N_('护盾层达到门槛时'),
+  freeze: N_('冻结敌人时'), stun: N_('使敌人晕眩时'),
 });
 
 // temporary combat traits (干员表 v3, 2026-10-07): a buff for this battle, or damage / control in it
@@ -31,7 +32,7 @@ const caps = (p) => (p.capNormal != null ? { normal: Number(p.capNormal), elite:
  * One summary entry per rule: { when, kind, items?, amount?, cap?, perBattle?, bench?, faction?, condition?, stats? }.
  * The normal and the elite form are separate catalog entries, and some rules keep the elite numbers only in the
  * elite entry (eventProduction): read a form's count from its own entry — normal entry `.normal`, elite entry `.elite`.
- * kind ∈ forge | funds | refresh | recruit | shopBadge | random | stat | damage | copy | merge | double | boost | transfer | devour | doubleWorn | summon | discount.
+ * kind ∈ forge | funds | refresh | recruit | shopBadge | random | stat | damage | copy | merge | double | boost | transfer | devour | doubleWorn.
  * `items` = [{ id, normal, elite }] (id null = decided in play, e.g. the dominant faction's recipe).
  */
 export function traitSummary(effect) {
@@ -43,25 +44,25 @@ export function traitSummary(effect) {
     if (b === 'factionReaction') {
       entry.kind = p.mode === 'shop' ? 'shopBadge' : p.mode==='discount' ? 'discount' : ['refund','funds'].includes(p.mode) ? 'funds' : 'forge';
       if(['refund','funds','discount'].includes(p.mode))entry.amount={normal:p.count,elite:p.count};
-      entry.faction=p.faction; entry.items=(p.outputs||[]).map(o=>({id:o.id,normal:o.quantity,elite:o.quantity})); entry.perPrep=p.maxEventsPerPrep; entry.targets=p.targets;
-      entry.description={badge:'友方获得后分发徽章',shop:'为指定阵营的商店干员增添徽章',refund:'购买指定阵营干员后返还资金',discount:'获得时减少商店升级费用',funds:'出售时额外获得资金'}[p.mode];
+      entry.faction=p.faction ? tName(p.faction) : p.faction; entry.items=(p.outputs||[]).map(o=>({id:o.id,normal:o.quantity,elite:o.quantity})); entry.perPrep=p.maxEventsPerPrep; entry.targets=p.targets;
+      entry.description={badge:t('友方获得后分发徽章'),shop:t('为指定阵营的商店干员增添徽章'),refund:t('购买指定阵营干员后返还资金'),discount:t('获得时减少商店升级费用'),funds:t('出售时额外获得资金')}[p.mode];
     } else if (b === 'retiringEffect') {
-      entry.when='retiring';entry.kind=p.summon||p.returnFallen?'summon':'stat';entry.temporary=true;entry.perBattle=p.perBattle;entry.stats=p.buff?.stats;entry.faction=p.buff?.faction||p.shield?.faction||p.returnFallen?.faction;
-      entry.description=p.returnFallen?'退场时重新召唤本战最早倒下的召唤物':p.summon?'退场时召唤友方':p.shield?'退场时为友方增添护盾':'退场时强化指定阵营友方';
-    } else if (b === 'deathrattleEcho') { entry.kind='copy';entry.every=p.every;entry.perBattle=p.perBattle;entry.faction=p.faction;entry.description='普通攻击后触发另一名友方的退场效果';
-    } else if (b === 'retirementMultiplier') { entry.kind='double';entry.amount={normal:1+p.extra,elite:1+p.extra};entry.hook='retiring';entry.description='让友方退场效果额外触发';
-    } else if (b === 'warbandEvent') { entry.kind='stat';entry.temporary=true;entry.stats=p.stats;entry.faction=p.faction;entry.targets=p.targets;entry.maxStacks=p.maxStacks;entry.when={damaged:'allyDamaged',kill:'allyKill',death:'allyDeath'}[p.event]||p.event;entry.description='指定阵营友方行动后强化友方';
-    } else if (b === 'firstWaveStrike') { entry.kind='damage';entry.temporary=true;entry.description='战斗开始后对敌方造成伤害';
+      entry.when='retiring';entry.kind=p.summon||p.returnFallen?'summon':'stat';entry.temporary=true;entry.perBattle=p.perBattle;entry.stats=p.buff?.stats;const faction=p.buff?.faction||p.shield?.faction||p.returnFallen?.faction;entry.faction=faction ? tName(faction) : faction;
+      entry.description=p.returnFallen?t('退场时重新召唤本战最早倒下的召唤物'):p.summon?t('退场时召唤友方'):p.shield?t('退场时为友方增添护盾'):t('退场时强化指定阵营友方');
+    } else if (b === 'deathrattleEcho') { entry.kind='copy';entry.every=p.every;entry.perBattle=p.perBattle;entry.faction=p.faction ? tName(p.faction) : p.faction;entry.description=t('普通攻击后触发另一名友方的退场效果');
+    } else if (b === 'retirementMultiplier') { entry.kind='double';entry.amount={normal:1+p.extra,elite:1+p.extra};entry.hook='retiring';entry.description=t('让友方退场效果额外触发');
+    } else if (b === 'warbandEvent') { entry.kind='stat';entry.temporary=true;entry.stats=p.stats;entry.faction=p.faction ? tName(p.faction) : p.faction;entry.targets=p.targets;entry.maxStacks=p.maxStacks;entry.when={damaged:'allyDamaged',kill:'allyKill',death:'allyDeath'}[p.event]||p.event;entry.description=t('指定阵营友方行动后强化友方');
+    } else if (b === 'firstWaveStrike') { entry.kind='damage';entry.temporary=true;entry.description=t('战斗开始后对敌方造成伤害');
     } else if (b === 'allyConditionStats') {
       entry.kind = 'stat'; entry.temporary = true; entry.stats = { ...p.stats }; entry.maxCount = p.maxCount;
       entry.countBy = p.countBy; entry.match = { ...p.match };
-      entry.condition = p.match?.keywordGear ? `携带${p.match.keywordGear}的友方` : p.match?.faction ? `${p.match.faction}友方`
-        : p.match?.professions || p.match?.profession ? '指定职业友方' : p.match?.baseStat ? '满足原生属性条件的友方' : '其他在场友方';
+      entry.condition = p.match?.keywordGear ? t('携带{keywordGear}的友方', { keywordGear: tName(p.match.keywordGear) }) : p.match?.faction ? t('{faction}友方', { faction: tName(p.match.faction) })
+        : p.match?.professions || p.match?.profession ? t('指定职业友方') : p.match?.baseStat ? t('满足原生属性条件的友方') : t('其他在场友方');
     } else if (b === 'teamForge') {
       entry.kind = 'forge'; entry.grows = true; entry.targets = p.targets; entry.excludeSelf = p.excludeSelf; entry.targetCount = p.count; entry.sort = p.sort;
       entry.items = (p.outputs || []).map((o) => ({ id: o.id, normal: o.normal, elite: o.elite }));
-      entry.condition = p.targets.startsWith('faction:') ? `${p.targets.slice(8)}友方` : p.targets.startsWith('profession:') ? '指定职业友方'
-        : p.targets === 'adjacent' ? '相邻友方' : p.targets === 'row' ? '同排友方' : '在场友方';
+      entry.condition = p.targets.startsWith('faction:') ? t('{0}友方', { 0: tName(p.targets.slice(8)) }) : p.targets.startsWith('profession:') ? t('指定职业友方')
+        : p.targets === 'adjacent' ? t('相邻友方') : p.targets === 'row' ? t('同排友方') : t('在场友方');
     } else if (b === 'grantEquipment' || b === 'conditionalGrant') {
       entry.kind = 'forge'; entry.items = (p.outputs || []).map((o) => ({ id: o.id, normal: Number(o.normal ?? 1), elite: Number(o.elite ?? o.normal ?? 1) }));
       if (p.alsoAt) entry.alsoAt = p.alsoAt;
@@ -129,47 +130,6 @@ export function traitSummary(effect) {
       entry.kind = 'copy';
     } else if (b === 'twoCopyElite') {
       entry.kind = 'merge';
-    } else if (b === 'darkmoonBeastSummonGrowth' || b === 'darkmoonBoughtSelfGrowth'
-      || b === 'darkmoonBattlecryTargetGrowth' || b === 'darkmoonEndTurnGrowth'
-      || b === 'darkmoonPlayedTagSelfGrowth' || b === 'darkmoonAdjacentGrowth'
-      || b === 'darkmoonTaggedGrowth' || b === 'darkmoonPlayedTribeGrowth' || b === 'darkmoonPlayedRandomTribeGrowth'
-      || b === 'darkmoonPlayedFactionCountSelfGrowth' || b === 'darkmoonPreviousWinSelfGrowth') {
-      // Prep adapters compiled from effectDelivery: their full Chinese wording remains on the card; this compact
-      // index only tells the HUD that the effect permanently grows an operator.
-      entry.kind = 'stat'; entry.grows = true;
-      entry.faction = p.faction || p.triggerFaction;
-      entry.description = '为干员增加属性成长';
-    } else if (b === 'darkmoonBattlecryFactionGrowth' || b === 'darkmoonBoughtTribeTargetGrowth') {
-      entry.kind = 'stat'; entry.grows = true;
-      entry.faction = p.faction || p.triggerFaction;
-      entry.description = '为符合条件的友方增加徽章成长';
-    } else if (b === 'darkmoonMagneticMerge') {
-      entry.kind = 'transfer'; entry.faction = p.faction;
-      entry.description = '招募时可选择将退场效果附加给一名友方干员';
-    } else if (b === 'darkmoonTransformFromShop') {
-      entry.kind = 'stat';
-      entry.description = '招募后按效果变为精锐形态';
-    } else if (b === 'darkmoonLastWarbandRecruit') {
-      entry.kind = 'recruit';
-      entry.description = '招募上一休整期阵容中的友方干员';
-    } else if (b === 'darkmoonRecruitTribeToHand' || b === 'darkmoonAddTribeShopOffer') {
-      entry.kind = 'recruit'; entry.faction = p.faction;
-      entry.amount = counts(p);
-      entry.description = '为酒馆增加指定阵营的招募机会';
-    } else if (b === 'darkmoonShopGrowth') {
-      entry.kind = 'stat'; entry.temporary = !p.persistent;
-      entry.stats = { attack: p.attack, health: p.health };
-      entry.faction = p.faction;
-      entry.description = p.persistent ? '强化指定阵营的酒馆干员' : '暂时强化当前酒馆在售干员';
-    } else if (b === 'darkmoonRosterTribePurchaseFunds') {
-      entry.kind = 'funds'; entry.amount = counts(p); entry.faction = p.faction;
-      entry.description = '购买符合条件的干员后获得资金';
-    } else if (b === 'darkmoonElementalTokenOffer') {
-      entry.kind = 'recruit'; entry.amount = counts(p);
-      entry.description = '出售后为酒馆增加元素招募机会';
-    } else if (b === 'darkmoonSummonSupport') {
-      entry.kind = 'summon';
-      entry.description = '招募后召唤一名友方支援干员';
     }
     if (!entry.kind) throw new Error(`UNCLASSIFIED_TRAIT_RULE:${rule.trigger}:${b}`);
     if (p.requiresFactionOnField) entry.faction = p.requiresFactionOnField;

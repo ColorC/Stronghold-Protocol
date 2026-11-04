@@ -144,6 +144,7 @@ export function buildDeployMap(stage, { deviceOverrides = {}, tileOverrides = {}
  * @param {object|null} rec
  */
 export function positionClass(rec) {
+  if (rec && ['melee', 'ranged', 'all', 'high'].includes(rec.assaultPlacementClass)) return rec.assaultPlacementClass;
   if (rec && rec.rangedTilesOnly === true) return 'high';
   return meleeOnHighGround(rec) ? 'all' : basePositionClass(rec);
 }

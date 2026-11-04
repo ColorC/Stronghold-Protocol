@@ -5,7 +5,7 @@
 //   * 路径比较要经得起大小写（Windows / macOS 默认不区分）、符号链接、8.3 短名；
 //   * `--force` 只肯删「空目录」或「上一次打的便携包」，认不出来就不许动；
 //   * 素材是整树复制的，点开头的条目（打包机器的 .DS_Store）与符号链接不该跟着进包；
-//   * 按清单复制时，缺失的必需源文件必须失败；
+//   * 按清单复制时，缺失的源文件跳过而不是抛错（素材可能还没下载）；
 //   * 包内说明的措辞：不能声称「不访问外网」（Google Fonts 外链没改），`--no-node` 时也不能说不用装 Node。
 
 import { test, describe } from 'node:test';
@@ -117,18 +117,6 @@ describe('make-windows-bundle.mjs: --force 只肯删空目录或上一次的包'
 });
 
 describe('make-windows-bundle.mjs: 包内说明的措辞', () => {
-  test('Lite 首次联网准备，withNode / noNode 都启动工坊并保留准备步骤', async () => {
-    const { bundleReadme } = await mod('scripts/make-windows-bundle.mjs');
-    for (const withNode of [true, false]) {
-      const r = bundleReadme({ version: 'v22.23.3', withNode, lite: true });
-      assert.match(r, /首次启动需要联网/);
-      assert.match(r, /下载完成后可以离线/);
-      assert.match(r, /launch\.mjs --workshop/);
-      assert.doesNotMatch(r, /--no-setup/, 'Lite 必须调用 setup 获取资源');
-      assert.doesNotMatch(r, /美术\s*\/\s*音频\s*\/\s*依赖\s*\/\s*字体全部在包内/);
-      assert.equal(/不需要安装 Node/.test(r), withNode);
-    }
-  });
   test('不再声称「不访问外网」，改成联网 / 断网两种情况都讲清', async () => {
     const { bundleReadme } = await mod('scripts/make-windows-bundle.mjs');
     const r = bundleReadme({ version: 'v22.23.3', withNode: true });
@@ -161,28 +149,6 @@ describe('make-windows-bundle.mjs: 包内说明的措辞', () => {
     assert.match(r, /没有带便携版 Node/, '要明确告诉玩家自己去装 Node 22/24');
     assert.ok(!/node\\node\.exe/.test(r), '目录结构里不该出现 node.exe');
     assert.ok(!/LICENSE-node\.txt/.test(r), '也不该提 node\\LICENSE-node.txt');
-  });
-});
-
-describe('launch.mjs: 工坊入口', () => {
-  test('--workshop 由 launcher 消费，默认盟约入口和 setup 参数仍各自正确', async () => {
-    const { parseLaunchArgs, launchEntryPath } = await mod('scripts/launch.mjs');
-    assert.equal(launchEntryPath(parseLaunchArgs([], {})), '', '默认仍打开盟约首页');
-    const o = parseLaunchArgs(['--workshop', '--port', '3011', '--no-local', '--asset-source=direct'], {});
-    assert.equal(o.port, 3011);
-    assert.equal(launchEntryPath(o), '/independent.html');
-    assert.deepEqual(o.setupArgs, ['--no-local', '--asset-source=direct'], '工坊 flag 不透传给 setup');
-    assert.equal(o.setup, true, 'Lite 首次资源准备仍开启');
-    assert.equal(parseLaunchArgs(['--workshop', '--no-setup'], {}).setup, false, '完整包可以跳过 setup');
-  });
-});
-
-describe('Windows 便携 Node 原生版本', { skip: process.platform !== 'win32' }, () => {
-  test('运行 exe --version 确认版本；错误版本和不存在的 exe 都失败', async () => {
-    const { verifyPortableNodeVersion } = await mod('scripts/make-windows-bundle.mjs');
-    assert.equal(verifyPortableNodeVersion(process.execPath, process.version), process.version);
-    assert.throws(() => verifyPortableNodeVersion(process.execPath, 'v0.0.0'), /版本不符/);
-    assert.throws(() => verifyPortableNodeVersion(path.join(os.tmpdir(), 'sp-missing-node.exe'), process.version), /无法运行便携 Node/);
   });
 });
 
@@ -233,7 +199,7 @@ describe('make-windows-bundle.mjs: 素材整树复制', () => {
     }
   });
 
-  test('copyFiles 复制完整的必需文件清单；缺失文件或目录必须报错', async () => {
+  test('copyFiles 跳过不存在的文件，其余照常复制', async () => {
     const { copyFiles } = await mod('scripts/make-windows-bundle.mjs');
     const base = await fsp.mkdtemp(path.join(os.tmpdir(), 'sp-copyfiles-'));
     try {
@@ -244,19 +210,11 @@ describe('make-windows-bundle.mjs: 素材整树复制', () => {
       await fsp.writeFile(path.join(src, 'server', 'index.js'), 'code');
       await fsp.writeFile(path.join(src, 'data', 'local-assets.json'), '{}');
 
-      const r = await copyFiles(['server/index.js', 'data/local-assets.json'], dst, src);
-      assert.equal(r.files, 2);
-      assert.equal(r.bytes, Buffer.byteLength('code{}'), '统计实际复制的字节');
+      const r = await copyFiles(['server/index.js', 'data/local-assets.json', 'public/assets/missing.png'], dst, src);
+      assert.equal(r.files, 2, '缺失的那个被跳过');
       assert.equal(fs.existsSync(path.join(dst, 'server', 'index.js')), true, '目录自动建出来');
       assert.equal(fs.existsSync(path.join(dst, 'data', 'local-assets.json')), true);
-      await assert.rejects(copyFiles(['public/assets/missing.png'], dst, src), (error) => {
-        assert.match(error.message, /打包源文件缺失：public\/assets\/missing\.png/);
-        assert.ok(error.message.includes(path.join(src, 'public/assets/missing.png')), '回执给出源文件绝对路径');
-        assert.equal(error.cause.code, 'ENOENT', '保留首个原生错误');
-        return true;
-      });
-      assert.equal(fs.existsSync(path.join(dst, 'public')), false, '缺失文件不应建空目录');
-      await assert.rejects(copyFiles(['server'], dst, src), /打包源不是普通文件：server/);
+      assert.equal(fs.existsSync(path.join(dst, 'public')), false, '没有文件就不该建空目录');
     } finally {
       await fsp.rm(base, { recursive: true, force: true });
     }

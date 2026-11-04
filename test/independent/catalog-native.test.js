@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { nativeTraitFor, runNativeHook } from '../../server/modes/independent/native.js';
-import { withoutObsoleteWorkshopLimits } from '../../shared/warbandSchema.js';
 import { tavernFactions } from '../../shared/independentRules.js';
 import { preWarbandCatalog } from './helpers/preWarband.js';
 import { preV3Catalog } from './helpers/preV3.js';
@@ -32,20 +31,15 @@ function fixture() {
   return { state, services, granted, offers };
 }
 
-test('the legacy roster keeps 120 ordinary/elite pairs while native support tokens stay outside the recruitable pool', () => {
+test('catalog resolves every approved operator in ordinary and elite chessId namespaces', () => {
   const ordinary = all.filter((x) => !x.elite);
   const elite = all.filter((x) => x.elite);
-  const pairedOrdinary = ordinary.filter((x) => x.chessId.startsWith('chess_char_') && catalog.operators[x.eliteChessId]?.elite);
-  const support = ordinary.filter((x) => x.chessId.startsWith('darkmoon:support-'));
-  assert.equal(ordinary.length, 123);
+  assert.equal(ordinary.length, 120);
   assert.equal(elite.length, 120);
-  assert.equal(pairedOrdinary.length, 120, 'raw operator bodies retain exactly 120 ordinary/elite pairs');
-  assert.deepEqual(support.map((x) => x.chessId).sort(), ['darkmoon:support-cat-1-1','darkmoon:support-cat-2-2','darkmoon:support-elemental-2-2']);
-  assert.ok(support.every((x) => !x.recruitable), 'native support-token records do not enter the player pool');
   assert.equal(ordinary.filter((x) => x.recruitable).length, 101);
   assert.equal(elite.filter((x) => x.recruitable).length, 101);
-  assert.equal(Object.keys(catalog.operators).length, 243, '120 paired bodies plus three non-recruitable support-token records');
-  for (const base of pairedOrdinary) {
+  assert.equal(Object.keys(catalog.operators).length, 240);
+  for (const base of ordinary) {
     const promoted = catalog.operators[base.eliteChessId];
     assert.ok(promoted, `${base.name} elite id is queryable`);
     assert.equal(base.nativeTrait.origin, 'operator body');
@@ -73,8 +67,7 @@ test('stable item catalog covers 15 badges, all 59 legacy destinations, prizes a
   assert.equal(identity[0].uniqueKey, identity[1].uniqueKey);
   assert.equal(identity[0].level, 2);
   assert.equal(identity[1].eliteLevel, null);
-  assert.equal(Object.values(catalog.attachments).filter((x) => x.id !== 'darkmoon-magnetic').length, 4, 'the explicit pre-v3 snapshot preserves its four source attachments');
-  assert.ok(catalog.attachments['darkmoon-magnetic'], 'current magnetic handover helper is outside the historic source attachment pool');
+  assert.equal(Object.values(catalog.attachments).length, 4);
   assert.equal(Object.values(catalog.prizes).length, 19);
   assert.ok(Object.values(catalog.attachments).every((x) => x.mechanism && x.params));
   assert.ok(Object.values(catalog.prizes).every((x) => x.mechanism && x.params));
@@ -119,7 +112,6 @@ test('native gain handlers emit actual ordinary and elite inventory effects and 
   runNativeHook(normal.state, 'gain', { piece: normalPiece, origin: 'native', sourceUid: 'a' }, normal.services);
   assert.equal(normal.granted.length, 1, 'a gain from a native source does not recursively repeat the ordinary gear grant');
 });
-
 
 test('白面鸮 replays the front operator\'s 获得时 effect once at the end of the prep phase, never itself', () => {
   // 2026-10-07: 白面鸮 now re-triggers the 获得时 effect in front of it at 休整期结束时 (it used to copy 休整期开始)
@@ -173,7 +165,7 @@ test('native sale, spend and refresh rules mutate the concrete prep state exactl
   spent.state.pieces.push(xiaoman);
   runNativeHook(spent.state, 'prepEnd', { origin: 'player' }, spent.services);
   runNativeHook(spent.state, 'prepEnd', { origin: 'player' }, spent.services);
-  assert.deepEqual(spent.granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'precision', quantity: 7 }], 'all seven qualifying roster gains count; retired caps are ignored');
+  assert.deepEqual(spent.granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'precision', quantity: 6 }]);
 
   const refreshed = fixture();
   refreshed.state.counters.refreshes = 1;
@@ -402,21 +394,21 @@ test('native status production observes targets in range regardless of status so
   assert.equal(rinyu.params.probability, 0.6);
 });
 
-test('Specter the Unchained keeps death and dollSwap outputs after legacy Workshop limits are normalized', () => {
+test('Specter the Unchained combines first death and dollSwap output under the shared badge cap', () => {
   const normal = all.find((x) => x.name === '归溟幽灵鲨' && !x.elite);
   const elite = catalog.operators[normal.eliteChessId];
-  for (const [operator, expectedQuantity] of [[normal, 1], [elite, 2]]) {
-    const rules = operator.nativeTrait.effect.combat.filter((x) => ['death', 'dollSwap'].includes(x.trigger)).map(withoutObsoleteWorkshopLimits);
+  for (const [operator, expectedQuantity, expectedCap] of [[normal, 1, 4], [elite, 2, 8]]) {
+    const rules = operator.nativeTrait.effect.combat.filter((x) => ['death', 'dollSwap'].includes(x.trigger));
     assert.deepEqual(rules.map((x) => x.trigger).sort(), ['death', 'dollSwap']);
     const death = rules.find((x) => x.trigger === 'death');
     const swap = rules.find((x) => x.trigger === 'dollSwap');
     for (const rule of [death, swap]) {
       assert.equal(rule.params.outputs[0].id, 'vitality');
       assert.equal(rule.params.outputs[0].quantity, expectedQuantity);
-      assert.equal(Object.hasOwn(rule.params, 'maxPerBattle'), false);
+      assert.equal(rule.params.maxPerBattle, expectedCap);
       assert.equal(rule.params.filter.actor, 'self');
     }
-    assert.equal(Object.hasOwn(death.params, 'firstOnly'), false);
+    assert.equal(death.params.firstOnly, true);
     assert.equal(Object.hasOwn(swap.params, 'firstOnly'), false);
   }
 });

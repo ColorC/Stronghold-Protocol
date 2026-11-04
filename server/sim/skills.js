@@ -88,7 +88,11 @@ export class SkillRuntime {
     this.id = s.id ?? d.id ?? 'skill';
     this.name = s.name ?? d.name ?? '';
     this.kind = s.kind ?? 'instant';
-    this.duration = Number.isFinite(+s.duration) ? +s.duration : (d.duration > 0 ? d.duration : 0);
+    // Explicitly tagged resonance permanent skills use -1 as a sentinel. Keep the exception opt-in so an
+    // untagged -1 or Infinity cannot silently make a skill permanent.
+    this.resonancePermanentDuration = s.duration === -1 && Array.isArray(s.tags)
+      && (s.tags.includes('resonancePermanentDuration') || s.tags.includes('resonanceYelaPermanent'));
+    this.duration = this.resonancePermanentDuration ? -1 : Number.isFinite(+s.duration) ? +s.duration : (d.duration > 0 ? d.duration : 0);
     this.ammo = Math.max(0, Math.floor(+s.ammo || 0));
     this.baseSpCost = Math.max(0, Number.isFinite(+s.spCost) ? +s.spCost : (d.spCost ?? 0));
     this.initSp = Math.max(0, Number.isFinite(+s.initSp) ? +s.initSp : (d.initSp ?? 0));
@@ -101,8 +105,9 @@ export class SkillRuntime {
     if (this.rule.startsWith('CUSTOM_RANGE')) this.rule = 'CUSTOM_RANGE';
     this.triggerGrid = trig.grid ?? trig.rangeGrid ?? d.trigger?.grid ?? null;
     // kit options: an injured, healable ally of the trigger grid with an HP ratio of at most `hpAtMost` (SKILL_RANGE:
-    // instead of an enemy; DEFAULT: in addition to the basic rule)
+    // instead of an enemy; DEFAULT: a heal target at the normal attack cadence)
     this.triggerAllies = !!trig.allies;
+    this.triggerEnemies = !!trig.enemies; // mixed attack/heal skills may also open for a selectable enemy
     this.triggerHpAtMost = Number.isFinite(+trig.hpAtMost) && +trig.hpAtMost > 0 ? +trig.hpAtMost : 1;
     this.healSkill = s.heal ?? (unit.profile && unit.profile.dmgType === 'heal' && !!unit.profile.heal);
     // the official skill strategies automate the manual 开启: only MANUAL skills wait for the operation cooldown
@@ -124,6 +129,7 @@ export class SkillRuntime {
     this._trigKeys = null;
     this._trigSet = null;
     this.triggerRanges = [];      // content trigger ranges (addTriggerRange)
+    this.attackTriggerRanges = new Set(); // special targeting checked only at the next attack
     this.noSkill = !spec;         // unit without any skill spec
   }
 
@@ -149,20 +155,23 @@ export class SkillRuntime {
    * keys, or `{ keys, profile }` — tile keys with the enemy profile the effect selects by (`canHitFly` false: ground
    * enemies only — the owner's larger-range rule through a summon's area, kits/shared/summoner.js summonTriggerArea;
    * 0.2.0 WV, additive). A targetable enemy (flyers included unless the entry's profile says otherwise) on those tiles
-   * satisfies the DEFAULT rule (and unknown DEFAULT-like rules); it is checked every tick, since the unit itself may
-   * have nothing to attack. Returns an unregister fn.
+   * satisfies the DEFAULT rule (and unknown DEFAULT-like rules). Summon effect areas are checked every tick;
+   * { attackOnly: true } is for special targeting that must wait for the next attack (蕾缪安, 死芒).
+   * Returns an unregister fn.
    */
-  addTriggerRange(fn) {
+  addTriggerRange(fn, { attackOnly = false } = {}) {
     if (typeof fn !== 'function') return () => {};
     this.triggerRanges.push(fn);
-    return () => { const i = this.triggerRanges.indexOf(fn); if (i >= 0) this.triggerRanges.splice(i, 1); };
+    if (attackOnly) this.attackTriggerRanges.add(fn);
+    return () => { this.attackTriggerRanges.delete(fn); const i = this.triggerRanges.indexOf(fn); if (i >= 0) this.triggerRanges.splice(i, 1); };
   }
 
   /** An enemy inside one of the content trigger ranges. */
-  _extraTriggerSatisfied() {
+  _extraTriggerSatisfied(allowAttackOnly = true) {
     const b = this.battle;
     const u = this.unit;
     for (const fn of this.triggerRanges) {
+      if (!allowAttackOnly && this.attackTriggerRanges.has(fn)) continue;
       const list = b._safe(() => fn(b, u), 'skill.triggerRange', u);
       if (!list || typeof list[Symbol.iterator] !== 'function') continue;
       for (const x of list) {
@@ -210,9 +219,11 @@ export class SkillRuntime {
   }
 
   get spCost() {
-    const c = Math.floor(this.baseSpCost * this.spCostMul + (this.unit.s ? this.unit.s.spCostFlat : 0));
+    const raw = this.baseSpCost * this.spCostMul + (this.unit.s ? this.unit.s.spCostFlat : 0);
+    const c = this.battle.assaultStrict ? raw : Math.floor(raw);
     // content writes spCostMul / spCostFlat: a NaN/Infinity cost would freeze SP forever — use the base cost instead
-    return Number.isFinite(c) ? Math.max(0, c) : this.baseSpCost;
+    if (this.kind === 'passive') return 0;
+    return Number.isFinite(c) ? Math.max(this.battle.assaultStrict ? 0.5 : 0, c) : this.baseSpCost;
   }
 
   /** SP cost multiplier (content-writable). Invalid values count as 1; SP/charges are re-normalised immediately. */
@@ -320,11 +331,14 @@ export class SkillRuntime {
   }
 
   /** Add SP (fires the `spGain` hook). Ignored while a duration/ammo/toggle skill runs (its bar shows the skill). */
-  gainSp(amount, reason = 'time', silent = false) {
+  // ignoreLock is reserved for explicitly documented exceptions (黄沙罗盘), not ordinary SP gifts.
+  gainSp(amount, reason = 'time', silent = false, { ignoreLock = false } = {}) {
     if (this.noSkill || this.kind === 'passive' || !(amount > 0)) return 0;
-    if (this.active && this.isTimed && reason !== 'init') return 0;
+    const assault = this.battle.assaultStrict;
+    const beforeTotal = assault ? this.spTotal : 0;
+    if (this.active && this.isTimed && reason !== 'init' && !ignoreLock) return 0;
     // 阻回 (the operators' 凋亡 burst, damage.js): "停止并阻止任意形式的技力回复" — no SP of any kind (time, attack, hurt, gifts)
-    if (reason !== 'init' && this.unit.s.flags.noSp) return 0;
+    if (reason !== 'init' && !ignoreLock && this.unit.s.flags.noSp) return 0;
     let cost = this.spCost;
     if (this.charges >= this.maxCharges && this.sp >= cost) return 0;
     let amt = amount;
@@ -349,7 +363,15 @@ export class SkillRuntime {
       else this.sp = cost;
     }
     if (this.charges >= this.maxCharges) this.sp = cost;
-    return amt;
+    if (!assault) return amt;
+    const received = Math.max(0, this.spTotal - beforeTotal);
+    if (received > 0 && !silent) {
+      this.battle.assaultRuntime.publish('spReceived', {
+        source: this.unit, sourceUid: this.unit.uid ?? this.unit.id, target: this.unit, targetUid: this.unit.uid ?? this.unit.id,
+        amount: received, sourceClass: reason === 'time' ? 'natural' : 'grant', reason, skillId: this.evSkillId,
+      });
+    }
+    return received;
   }
 
   /** Re-establish sp/charges invariants after an SP-cost change (e.g. content sets spCostMul mid-battle). */
@@ -385,6 +407,13 @@ export class SkillRuntime {
       const rate = u.s.spRecovery;
       if (rate > 0) this.gainSp(rate * dt, 'time');
     }
+    if (this.battle.assaultStrict) {
+      const runtime = this.battle.assaultRuntime;
+      runtime.flush();
+      if (!u.canAct || !this.ready || u.s.flags.silence || (this.active && this.isTimed) || this.rule === 'NEVER') return;
+      runtime.cast(u, { extra: false });
+      return;
+    }
     if (!u.canAct) return;
     // a DEFAULT cast bound to an ally condition (塞雷娅 S1) replaces the attack about to be made: should the condition
     // have failed before that attack (the ally healed meanwhile), the cast is withdrawn — no heal mode stays behind
@@ -407,12 +436,12 @@ export class SkillRuntime {
       const prof = u.profile;
       if (prof && (prof.noAttack || (prof.noAttackUnlessSkill && !this.active))) {
         if (this._defaultCondition()) this.activate('DEFAULT');
-      } else if (this.triggerRanges.length && !this.healSkill && this._extraTriggerSatisfied()) this.activate('DEFAULT');
+      } else if (this.triggerRanges.length && !this.healSkill && this._extraTriggerSatisfied(false)) this.activate('DEFAULT');
     }
   }
 
   /** The automatic operations of a MANUAL skill are cooling down (AUTO_OP_COOLDOWN). */
-  _opCooling() { return this.manual && this.battle.time < this.opReadyAt - 1e-9; }
+  _opCooling() { return !this.battle.assaultStrict && this.manual && this.battle.time < this.opReadyAt - 1e-9; }
 
   /** Public form of the operation cooldown, for kits with their own automatic cast of a MANUAL skill. */
   get opCooling() { return this._opCooling(); }
@@ -486,8 +515,14 @@ export class SkillRuntime {
     if (b.rangeChanged(u)) b._refreshRange(u);
     const keys = range || u.baseRangeKeys || u.rangeKeys;
     if (keys) {
-      if (this.healSkill) return b.injuredAlliesInKeys(keys, u).length > 0;
+      if (this.healSkill) return b.injuredAlliesInKeys(keys, u, !!u.profile?.heal?.elementHealRatio).length > 0
+        || (this.triggerEnemies && b.enemiesInKeys(keys, u, TRIGGER_PROFILE).length > 0);
       if (b.enemiesInKeys(keys, u, u.profile).length > 0 || this._allyTargetIn(keys)) return true;
+    }
+    if (!this.healSkill && u.profile?.fortress) {
+      // The branch's own-tile melee range also satisfies the basic cast condition for unblockable fragments.
+      const here = [u.tileR * COLS + u.tileC];
+      if (b.enemiesInKeys(here, u, u.profile).length > 0 || this._allyTargetIn(here)) return true;
     }
     // the enemies a unit blocks are always its targets (Battle.blockedTargets), in range or not — PRTS 卫戍协议/帮助
     // "敌人被近战干员自身阻挡" satisfies the target condition of the basic strategy (a ranged blocker too: user playtest #6)
@@ -497,12 +532,13 @@ export class SkillRuntime {
 
   /** Called by the attack loop right before a normal attack/heal. Returns true when the skill fired. */
   onAboutToAttack() {
+    if (this.battle.assaultStrict) return false;
     if (!this.ready || this.unit.s.flags.silence) return false;
     if (this.active && this.isTimed) return false;
     if (this.rule === 'TAKE_DAMAGE' || this.rule === 'NEVER' || TICK_RULES.has(this.rule)) return false;
     if (this.pending || this._opCooling()) return false;
-    if (!this._defaultCondition()) return false;
-    if (this.triggerAllies && !this._allyTriggerSatisfied()) return false;
+    // Guardian charged heals supply their own attack target; no enemy is required (#406).
+    if (this.triggerAllies ? !this._allyTriggerSatisfied() : !this._defaultCondition()) return false;
     this._beforeAttack = true;   // the attack follows this cast in the same check (ai.js updateAlly): attacks pace it
     try { return this.activate('DEFAULT'); } finally { this._beforeAttack = false; }
   }
@@ -518,6 +554,7 @@ export class SkillRuntime {
 
   /** Activate now (consumes one charge). Returns true on success. */
   activate(reason = 'manual', { free = false } = {}) {
+    if (this.battle.assaultStrict) return this.battle.assaultRuntime.cast(this.unit, { extra: false, cause: this.battle.assaultRuntime.currentCause });
     if (this.noSkill || this.kind === 'passive') return false;
     if (!free && !this.ready) return false;
     if (this.active && this.isTimed) return false;
@@ -534,7 +571,7 @@ export class SkillRuntime {
     if (this.manual) this.opReadyAt = b.time + AUTO_OP_COOLDOWN;
     if (this.isTimed) {
       this.active = true;
-      this.timeLeft = this.kind === 'duration' ? Math.max(0.01, this.duration) : (this.kind === 'ammo' && this.duration > 0 ? this.duration : Infinity);
+      this.timeLeft = this.kind === 'duration' ? (this.resonancePermanentDuration ? Infinity : Math.max(0.01, this.duration)) : (this.kind === 'ammo' && this.duration > 0 ? this.duration : Infinity);
       this.ammoLeft = this.kind === 'ammo' ? Math.max(1, this.ammo) : 0;
       this.ammoMax = this.ammoLeft;
       this._applyMods();
@@ -566,6 +603,53 @@ export class SkillRuntime {
     return true;
   }
 
+  _castAssault({ extra = false, suppressRedeploy = false, force = false, cause = null } = {}) {
+    if (this.noSkill || this.kind === 'passive' || !this.unit.alive || !this.unit.deployed) return false;
+    if (!force && !this.unit.canAct) return false;
+    if (!extra && (!this.ready || (this.active && this.isTimed))) return false;
+    if (typeof this.spec.canCast === 'function' && !this.spec.canCast(this._ctx({ reason: 'ready', extra, force }))) return false;
+
+    const unit = this.unit;
+    const battle = this.battle;
+    if (!extra) {
+      const wasFull = this.charges >= this.maxCharges;
+      this.charges--;
+      if (this.maxCharges === 1 || wasFull) this.sp = 0;
+      this.activations++;
+      this.lastStart = battle.time;
+      this.active = true;
+      this.pending = false;
+      if (this.spec.mods || this.spec.flags || this.spec.targeting) this._applyMods();
+    }
+    battle._ev(['skill', unit.id, 1, this.evSkillId]);
+    unit.skillAnimUntil = battle.time + SKILL_ANIM_WINDOW;
+    const event = battle.assaultRuntime.publish('skillStart', {
+      source: unit, sourceUid: unit.uid ?? unit.id, target: unit, targetUid: unit.uid ?? unit.id,
+      skillId: this.evSkillId, extra, force, reason: extra ? 'extra' : 'automatic',
+    }, { cause });
+    if (battle._hooks.skillStart) battle.emit('skillStart', { unit, skill: this, reason: extra ? 'extra' : 'automatic', extra });
+    const handler = this.spec.assaultCast ?? (this.kind === 'passive' ? this.spec.onStart : null);
+    if (typeof handler !== 'function') throw new Error(`assault skill ${this.evSkillId ?? this.id} has no assaultCast handler`);
+    battle.assaultRuntime.withCause(event.cause, () => handler(this._ctx({
+      reason: extra ? 'extra' : 'automatic', extra, force, suppressRedeploy,
+      cause: battle.assaultRuntime.currentCause,
+    })));
+    battle.assaultRuntime.afterFlush(() => {
+      if (!extra) {
+        this.active = false;
+        this.pending = false;
+        this.timeLeft = 0;
+        this._removeMods();
+        battle._ev(['skill', unit.id, 0, this.evSkillId]);
+      }
+      battle.assaultRuntime.publish('skillResolved', {
+        source: unit, sourceUid: unit.uid ?? unit.id, target: unit, targetUid: unit.uid ?? unit.id,
+        skillId: this.evSkillId, extra, force,
+      }, { cause: event.cause });
+    }, { cause: event.cause });
+    return true;
+  }
+
   /**
    * Called after each attack/heal performed by the unit. `noAmmo` (Battle.forceAttack opts, or `ctx.noAmmo = true`
    * set by the spec's onAttack) = this attack spends no ammo of a running ammo skill (no `ammoUsed`).
@@ -586,7 +670,7 @@ export class SkillRuntime {
       // an extra attack that spends no bullet
     } else if (this.active && this.kind === 'ammo') {
       this.ammoLeft--;
-      if (b._hooks.ammoUsed) b.emit('ammoUsed', { unit: this.unit, left: this.ammoLeft, skill: this });
+      if (b._hooks.ammoUsed) b.emit('ammoUsed', { unit: this.unit, left: this.ammoLeft, skill: this, targets: targets.slice() });
       if (this.ammoLeft <= 0) this.end('ammo');
     } else if (usedOverride && this.pending && !this.isTimed) {
       this.pending = false;

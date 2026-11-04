@@ -2,6 +2,7 @@ import { createSession, applyAction, viewSession, validateSession } from './engi
 import { getData } from './engine/server/data.js';
 import { getCatalog } from './engine/server/modes/independent/catalog.js';
 import { independentDisplayCatalog, independentSessionView } from './engine/server/modes/independent/display.js';
+import { t } from '../../../shared/i18n.js';
 
 const data = getData();
 const catalog = getCatalog(data);
@@ -22,13 +23,13 @@ self.addEventListener('message', (event) => {
     }
     if (op === 'restore') {
       const errors = validateSession(args.rawState);
-      if (errors.length) { self.postMessage({ requestId, ok: false, error: { code: 'INVALID_SESSION', message: '对局存档无效', details: errors } }); return; }
+      if (errors.length) { self.postMessage({ requestId, ok: false, error: { code: 'INVALID_SESSION', message: t('对局存档无效'), details: errors } }); return; }
       self.postMessage({ requestId, ok: true, rawState: args.rawState, state: view(args.rawState) });
       return;
     }
     if (op === 'act') {
       const errors = validateSession(args.rawState);
-      if (errors.length) { self.postMessage({ requestId, ok: false, error: { code: 'INVALID_SESSION', message: '对局存档无效', details: errors } }); return; }
+      if (errors.length) { self.postMessage({ requestId, ok: false, error: { code: 'INVALID_SESSION', message: t('对局存档无效'), details: errors } }); return; }
       const result = applyAction(args.rawState, args.action, { data, catalog });
       if (!result.ok) {
         self.postMessage({ requestId, ok: false, error: result.error, rawState: args.rawState, state: view(args.rawState) });
@@ -37,9 +38,9 @@ self.addEventListener('message', (event) => {
       self.postMessage({ requestId, ok: true, rawState: result.state, state: view(result.state), events: result.events || [], replay: result.replay || null });
       return;
     }
-    self.postMessage({ requestId, ok: false, error: { code: 'BAD_OPERATION', message: '无法执行操作' } });
+    self.postMessage({ requestId, ok: false, error: { code: 'BAD_OPERATION', message: t('无法执行操作') } });
   } catch (error) {
-    self.postMessage({ requestId, ok: false, error: { code: 'ENGINE', message: error?.message || '引擎运行失败' } });
+    self.postMessage({ requestId, ok: false, error: { code: 'ENGINE', message: error?.message || t('引擎运行失败') } });
   }
 });
 self.postMessage({ type: 'ready' });

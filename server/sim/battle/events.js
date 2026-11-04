@@ -4,7 +4,7 @@
 
 import { EVENT_BUFFER_CAP } from '../constants.js';
 import { elementView } from '../damage.js';
-import { unitInfo, snapshotUnits, ammoView, wolfView, negView } from '../snapshot.js';
+import { unitInfo, snapshotUnits, ammoView, wolfView, negView, coinView } from '../snapshot.js';
 
 export class BattleEvents {
   fx(kind, params = {}) {
@@ -102,6 +102,8 @@ export class BattleEvents {
       if (wv) (wolves || (wolves = [])).push([u.id, wv[0], wv[1]]);
       const ng = negView(u);
       if (ng) (neg || (neg = [])).push([u.id, ng]);
+      const purse = coinView(u);
+      if (purse) (snap.coins || (snap.coins = [])).push([u.id, ...purse]);
     }
     if (elem) snap.elem = elem;
     if (ammo) snap.ammo = ammo;
@@ -109,6 +111,9 @@ export class BattleEvents {
     if (neg) snap.neg = neg;
     if (stand) snap.stand = stand;
     if (standCut) snap.standCut = standCut;
+    if (this.resonanceDynamicFloors?.length) snap.resonanceFloors = this.resonanceDynamicFloors.slice(0, 12).map((f) => ({
+      id: f.id, kind: f.kind, owner: f.owner, tiles: f.tiles, until: f.until,
+    }));
     return snap;
   }
 
@@ -120,6 +125,7 @@ export class BattleEvents {
     return {
       fieldId: this.fieldId, kind: this.kind, rect: { ...this.rect }, stageId: this.stageId,
       units: this.units.filter((u) => (u.alive && u.deployed && !u.hidden) || this.isDown(u)).map(unitInfo),
+      ...(this.resonanceFloors ? { resonanceFloors: this.resonanceFloors } : null),
     };
   }
 }

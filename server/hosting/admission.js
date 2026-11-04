@@ -1,14 +1,12 @@
 import { randomBytes } from 'node:crypto';
+import { t, N_ } from '../../shared/i18n.js';
 
 const COOKIE = 'sp_ix_lease';
-const MESSAGE = '工坊已满，请稍后再试';
-const ROUTE = '/independent/api/admission';
+const MESSAGE = N_('工坊已满，请稍后再试');
+// the 工坊 and the 共鸣 share one admission queue (their API and their page)
+const ROUTES = new Set(['/independent/api/admission', '/resonance/api/admission']);
+const PAGE_ROUTES = new Set(['/independent.html', '/resonance.html']);
 const MAX_WAIT_MS = 25000;
-const RECORDING_READ_PATH = /^\/independent\/api\/recordings\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?:\/media(?:\/\d+|\/playback(?:\/\d+)?)?)?$/i;
-
-function isReadOnlyRecordingRequest(req, pathname) {
-  return (req.method === 'GET' || req.method === 'HEAD') && RECORDING_READ_PATH.test(pathname);
-}
 
 function cookieToken(req) {
   const part = String(req.headers.cookie || '').split(';').find((x) => x.trim().startsWith(`${COOKIE}=`));
@@ -91,7 +89,7 @@ export function createAdmission({
       waiting.delete(token);
       const index = order.indexOf(token);
       if (index >= 0) order.splice(index, 1);
-      settlePending(token, 410, { ok: false, error: { code: 'QUEUE_EXPIRED', message: '等待已结束，请重新进入工坊' } }, { clear: true });
+      settlePending(token, 410, { ok: false, error: { code: 'QUEUE_EXPIRED', message: t('等待已结束，请重新进入工坊') } }, { clear: true });
       queueChanged = true;
     }
     if (queueChanged) notifyPositions();
@@ -152,15 +150,15 @@ export function createAdmission({
   }
 
   function queuedPage(req, res, info) {
-    const body = '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101216"><title>卫戍协议：工坊</title><body style="margin:0;min-height:100vh;display:grid;place-items:center;background:#101216;color:#eee;font:16px system-ui"><main style="max-width:32rem;padding:2rem;text-align:center"><h1>稍等片刻</h1><p>工坊正在为你留位，空位一到会自动进入。</p><p id="queue-position">前面还有 ' + Math.max(0, info.position - 1) + ' 位</p><button id="copy-link" type="button">复制等待页链接</button> <button id="cancel-wait" type="button">取消等待</button><p id="queue-status" aria-live="polite"></p></main><script type="module" src="/js/hostingWait.js"></script></body></html>';
+    const body = t('<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101216"><title>卫戍协议：工坊</title><body style="margin:0;min-height:100vh;display:grid;place-items:center;background:#101216;color:#eee;font:16px system-ui"><main style="max-width:32rem;padding:2rem;text-align:center"><h1>稍等片刻</h1><p>工坊正在为你留位，空位一到会自动进入。</p><p id="queue-position">前面还有 ') + Math.max(0, info.position - 1) + t(' 位</p><button id="copy-link" type="button">复制等待页链接</button> <button id="cancel-wait" type="button">取消等待</button><p id="queue-status" aria-live="polite"></p></main><script type="module" src="/js/hostingWait.js"></script></body></html>');
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Length': Buffer.byteLength(body) });
     res.end(req.method === 'HEAD' ? undefined : body);
   }
 
   function refuse(req, res, page = false) {
     res.setHeader('Retry-After', '30');
-    if (!page) { json(res, 503, { ok: false, error: { code: 'CAPACITY', message: MESSAGE } }); return; }
-    const body = '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>卫戍协议：工坊</title><body style="margin:3rem;font-family:system-ui;color:#eee;background:#101216"><h1>工坊已满</h1><p>请稍后再试。</p><button onclick="location.reload()">重新尝试</button></body></html>';
+    if (!page) { json(res, 503, { ok: false, error: { code: 'CAPACITY', message: t(MESSAGE) } }); return; }
+    const body = t('<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>卫戍协议：工坊</title><body style="margin:3rem;font-family:system-ui;color:#eee;background:#101216"><h1>工坊已满</h1><p>请稍后再试。</p><button onclick="location.reload()">重新尝试</button></body></html>');
     res.writeHead(503, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Length': Buffer.byteLength(body) });
     res.end(req.method === 'HEAD' ? undefined : body);
   }
@@ -207,12 +205,12 @@ export function createAdmission({
 
   function handle(req, res, pathname) {
     if (closed) return false;
-    if (pathname === ROUTE) {
+    if (ROUTES.has(pathname)) {
       if (req.headers.origin && req.headers.origin !== `${secure(req) ? 'https' : 'http'}://${req.headers.host}`) {
-        json(res, 403, { ok: false, error: { code: 'ORIGIN', message: '请在游戏页面进行操作' } }); return true;
+        json(res, 403, { ok: false, error: { code: 'ORIGIN', message: t('请在游戏页面进行操作') } }); return true;
       }
       if (req.method !== 'POST' && req.method !== 'DELETE') {
-        res.setHeader('Allow', 'POST, DELETE'); json(res, 405, { ok: false, error: { code: 'METHOD', message: '不支持此操作' } }); return true;
+        res.setHeader('Allow', 'POST, DELETE'); json(res, 405, { ok: false, error: { code: 'METHOD', message: t('不支持此操作') } }); return true;
       }
       if (!enabled) { json(res, 200, { ok: true, lease: { enabled: false, execution } }); return true; }
       const token = cookieToken(req);
@@ -222,7 +220,7 @@ export function createAdmission({
           if (waiting.delete(token)) {
             const index = order.indexOf(token);
             if (index >= 0) order.splice(index, 1);
-            settlePending(token, 410, { ok: false, error: { code: 'QUEUE_CANCELLED', message: '已取消等待' } }, { clear: true });
+            settlePending(token, 410, { ok: false, error: { code: 'QUEUE_CANCELLED', message: t('已取消等待') } }, { clear: true });
           }
         }
         clearCookie(req, res);
@@ -246,7 +244,7 @@ export function createAdmission({
       return true;
     }
     if (!enabled) return false;
-    if (pathname === '/independent.html' && (req.method === 'GET' || req.method === 'HEAD')) {
+    if (PAGE_ROUTES.has(pathname) && (req.method === 'GET' || req.method === 'HEAD')) {
       pump();
       const token = cookieToken(req);
       if (token && leases.has(token)) {
@@ -264,11 +262,10 @@ export function createAdmission({
       queuedPage(req, res, queueInfo(identity));
       return true;
     }
-    if (pathname.startsWith('/independent/api/')) {
-      if (isReadOnlyRecordingRequest(req, pathname)) return false;
+    if (pathname.startsWith('/independent/api/') || pathname.startsWith('/resonance/api/')) {
       pump();
       if (!leases.has(cookieToken(req))) {
-        json(res, 403, { ok: false, error: { code: 'ADMISSION_REQUIRED', message: '请重新进入工坊' } }); return true;
+        json(res, 403, { ok: false, error: { code: 'ADMISSION_REQUIRED', message: t('请重新进入工坊') } }); return true;
       }
     }
     return false;
@@ -280,7 +277,7 @@ export function createAdmission({
     clearTimeout(sweepTimer);
     sweepTimer = null;
     for (const token of [...pending.keys()]) {
-      settlePending(token, 503, { ok: false, error: { code: 'SERVER_CLOSING', message: '服务即将关闭，请稍后重试' } });
+      settlePending(token, 503, { ok: false, error: { code: 'SERVER_CLOSING', message: t('服务即将关闭，请稍后重试') } });
     }
     waiting.clear(); order.length = 0; leases.clear();
   }

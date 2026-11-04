@@ -1,0 +1,130 @@
+import { authoredCard as card, pct } from './core-adaptations.js';
+
+export const RANGED_ADAPTATIONS=Object.freeze({
+  char_253_greyy:card(1,'B','medium',20,1,v=>[
+    `向目标释放${v.hits}轮${pct(v.scale)}%群体法伤，停顿${v.slow}秒。`,
+    `友军每累计停顿${v.every}次，为相邻术师充能${v.charge}。`,
+  ],{values:{hits:6,scale:1,slow:1.2,nativeSlow:.6,every:8,charge:4},sourceTalent:0,tags:['静电场','群攻保持原溅射范围']}),
+  char_4051_akkord:card(1,'B','medium',20,99,v=>[
+    `原范围${v.hits}轮${pct(v.scale)}%法伤，友军处音爆${pct(v.echo)}%。`,
+    `范围内前${v.first}名施放技能的友军，本场攻击+${pct(v.allyATK)}%。`,
+  ],{values:{hits:5,scale:1.6,echo:.25,radius:.9,first:3,allyATK:.15,selfATK:.15},sourceTalent:0,tags:['律脉同构']}),
+  char_469_indigo:card(1,'B','medium',20,1,v=>[
+    `攻击${v.hits}次，${pct(v.skillChance)}%束缚${v.bind}秒；束缚目标追加${pct(v.maze)}%。`,
+    `友军每累计束缚${v.every}次，积存1次必定束缚的攻击。`,
+  ],{values:{hits:4,scale:1,skillChance:.54,nativeChance:.18,bind:4,maze:1.6,every:3},sourceTalent:0,tags:['保留蓄能','普攻不攻击束缚目标']}),
+  char_235_jesica:card(1,'B','medium',20,1,v=>[
+    `连射${v.hits}次${pct(v.scale)}%物伤，获得${v.smoke}次${pct(v.dodge)}%闪避。`,
+    `友军每累计装填${v.every}次，自身多获得1次烟幕闪避。`,
+  ],{values:{hits:6,scale:1.8,smoke:3,dodge:.75,every:2,aspd:12},sourceTalent:0,tags:['烟幕次数可积存','快速弹匣']}),
+  char_190_clour:card(1,'B','medium',20,2,v=>[
+    `向2名敌人各射击${v.hits}次${pct(v.scale)}%物伤。`,
+    `相邻狙击每累计施放${v.every}次，为其充能${v.charge}。`,
+  ],{values:{hits:12,scale:1.45,every:2,charge:4,spAura:.3},sourceTalent:0,tags:['自身自然技力回复+0.3／秒']}),
+  char_440_pinecn:card(1,'B','medium',20,99,v=>[
+    `原缩短范围内${v.hits}轮${pct(v.scale)}%物伤，每次施放倍率+20%。`,
+    `每累计${v.every}次友军装置触发，加速相邻狙击${v.haste}秒。`,
+  ],{values:{hits:5,scale:1.6,growth:.2,maxGrowth:3,every:3,haste:4,recovery:.45,powerTime:60},
+    sourceTalent:0,nativeDeploy:true,tags:['技能倍率最多提升60%','便携电源：部署后60秒']}),
+  char_366_acdrop:card(1,'B','medium',20,1,v=>[
+    `射出${v.hits}轮双连射，每发${pct(v.scale)}%物伤。`,
+    `其他干员每累计耗弹${v.every}次，自身追加1次滑射。`,
+  ],{values:{hits:6,scale:1.4,floor:.25,frontFloor:.4,every:3},sourceTalent:0,tags:['自身正前方两格保底40%','自身滑射保底25%']}),
+  char_4100_caper:card(1,'B','medium',20,1,v=>[
+    `连续${v.rounds}轮双回旋，每轮4次${pct(v.scale)}%物伤。`,
+    `其他狙击每累计施放${v.every}次，下次技能必定暴击。`,
+  ],{values:{rounds:6,scale:1.6,chance:.25,crit:1.5,every:3},sourceTalent:0,tags:['戏耍随心']}),
+  char_183_skgoat:card(1,'B','medium',16,99,v=>[
+    `在原范围释放${v.pulses}轮流沙，每轮使敌人停顿${v.slow}秒。`,
+    `自身停顿延长${v.extend}秒；队友每${v.every}次停顿追加流沙。`,
+  ],{values:{pulses:4,interval:1.4,slow:.8,extend:.1,every:4},sourceTalent:0,tags:['流沙逐轮结算']}),
+  char_258_podego:card(1,'A','medium',16,1,v=>[
+    `投瓶形成${v.seconds}秒孢子群，每秒${pct(v.dot)}%法伤、停顿并沉默。`,
+    `辅助攻击+${pct(v.aura)}%；其他辅助每${v.every}次停顿，治疗${pct(v.heal)}%攻击力。`,
+  ],{values:{seconds:6,dot:.8,radius:1.2,every:6,heal:.8,aura:.09},sourceTalent:0,tags:['多个孢子群各自结算']}),
+  char_346_aosta:card(1,'B','medium',20,99,v=>[
+    `散射${v.hits}轮${pct(v.scale)}%物伤、束缚${v.bind}秒，附加双倍流血。`,
+    `友军每累计束缚${v.every}次，立即结算目标${pct(v.bleed*v.seconds)}%法伤流血。`,
+  ],{values:{hits:5,scale:1.7,bind:1.5,every:3,bleed:.18,seconds:3,bleedBonus:2},sourceTalent:0,tags:['未阻挡目标流血','尖钉']}),
+  char_306_leizi:card(1,'B','slow',30,1,v=>[
+    `释放${v.rounds}轮闪电，连锁4名敌人${pct(v.scale)}%法伤，不衰减。`,
+    `其他术师每累计施放${v.every}次技能，自身释放1轮连锁闪电。`,
+  ],{values:{rounds:4,scale:2.5,chainTargets:4,bonus:.2,every:2},sourceTalent:0,tags:['自身攻击未阻挡敌人伤害+20%','保留连锁停顿']}),
+  char_446_aroma:card(1,'B','medium',24,99,v=>[
+    `原范围${v.hits}轮${pct(v.scale)}%法伤，浮空目标落地追加${pct(v.landing)}%。`,
+    `友军每累计首次命中${v.every}名敌人，使目标浮空${v.lift}秒。`,
+  ],{values:{hits:5,scale:2,landing:1.1,every:3,lift:2.5,firstScale:1.1},sourceTalent:0,tags:['首次攻击浮空','起泡性能测试']}),
+  char_4013_kjera:card(1,'B','medium',20,1,v=>[
+    `自身与双浮游单元射击${v.rounds}轮，攻击倍率${pct(v.scale)}%。`,
+    `每累计${v.funnelEvery}次浮游命中，寒冷${v.cold}秒。`,
+    `友军每累计寒冷${v.every}次，加速自身${v.haste}秒。`,
+  ],{values:{rounds:6,scale:1.55,funnelEvery:5,cold:2.5,every:6,haste:4,atk:.1,groundATK:.16},sourceTalent:0,tags:['低眉','保留浮游单元增伤']}),
+  char_4040_rockr:card(1,'B','medium',24,1,v=>[
+    `自身与浮游单元过载射击${v.rounds}轮，施放后晕眩${v.stun}秒。`,
+    `每在场${v.interval}秒或友军装填，攻击+${pct(v.growth)}%，最多${v.maxStacks}层。`,
+  ],{values:{rounds:17,scale:1.5,funnelMax:2.2,stun:3,growth:.04,maxStacks:4,interval:15},sourceTalent:0,tags:['立于磐石']}),
+  char_145_prove:card(1,'B','medium',24,1,v=>[
+    `射击生命不高于80%的目标${v.hits}次${pct(v.scale)}%物伤。`,
+    `攻击${pct(v.chance)}%造成${pct(v.crit)}%伤害，前方一格概率升至${pct(v.frontChance)}%。`,
+  ],{values:{hits:9,scale:3.2,chance:.2,frontChance:.5,crit:1.8,hpLimit:.8},sourceTalent:0,tags:['终结件','狩猎箭头']}),
+});
+
+export const RANGED_CARD_ROLES=Object.freeze({
+  char_253_greyy:{line:'workshop',produces:[],consumes:[],roles:['direct','feed']},
+  char_4051_akkord:{line:'workshop',produces:[],consumes:['skill'],roles:['direct','buffOthers']},
+  char_469_indigo:{line:'workshop',produces:['control'],consumes:['control'],roles:['direct','control']},
+  char_235_jesica:{line:'ammo',produces:[],consumes:['ammunition'],roles:['direct']},
+  char_190_clour:{line:'ammo',produces:[],consumes:['skill'],roles:['direct','feed']},
+  char_440_pinecn:{line:'workshop',produces:[],consumes:['summon'],roles:['direct','feed','selfGrowth','deploy']},
+  char_366_acdrop:{line:'ammo',produces:[],consumes:['ammunition'],roles:['direct']},
+  char_4100_caper:{line:'ammo',produces:[],consumes:['skill'],roles:['direct']},
+  char_183_skgoat:{line:'workshop',produces:[],consumes:['control'],roles:['control']},
+  char_258_podego:{line:'workshop',produces:['sustain'],consumes:[],roles:['direct','aura']},
+  char_346_aosta:{line:'redeploy',produces:['control'],consumes:['control'],roles:['direct','control']},
+  char_306_leizi:{line:'workshop',produces:[],consumes:['skill'],roles:['direct']},
+  char_446_aroma:{line:'redeploy',produces:['displacement'],consumes:['displacement'],roles:['direct','control']},
+  char_4013_kjera:{line:'redeploy',produces:['cold'],consumes:['cold'],roles:['direct']},
+  char_4040_rockr:{line:'workshop',produces:[],consumes:['ammunition'],roles:['direct','selfGrowth']},
+  char_145_prove:{line:'ammo',produces:[],consumes:[],roles:['direct']},
+});
+
+const pair=(key,value,text,linkKey,linkValue,linkText)=>[
+  {sourceKind:'skill',key,value,text},{sourceKind:'talent',key:linkKey,value:linkValue,text:linkText},
+];
+export const RANGED_MODULES=Object.freeze({
+  char_253_greyy:pair('hits',8,'静电释放提升至8轮。','charge',6,'停顿连线充能提升至6。'),
+  char_4051_akkord:pair('scale',1.9,'震爆调谐每轮提升至190%。','allyATK',.2,'律脉同构连线攻击提升至+20%。'),
+  char_469_indigo:pair('maze',2.4,'光影迷宫额外伤害提升至240%。','every',2,'每累计2次友军束缚积存必定束缚。'),
+  char_235_jesica:pair('scale',2.2,'烟幕射击每发提升至220%。','every',1,'每次友军装填均积存1次烟幕。'),
+  char_190_clour:pair('scale',1.75,'双弦开弓每发提升至175%。','charge',6,'狙击连线充能提升至6。'),
+  char_440_pinecn:pair('scale',1.9,'电能过载基础伤害提升至190%。','haste',6,'装置连线加速延长至6秒。'),
+  char_366_acdrop:pair('scale',1.7,'扳机时刻每发提升至170%。','floor',.3,'滑射技巧最低伤害提升至30%。'),
+  char_4100_caper:pair('rounds',8,'乐趣加倍提升至8轮双回旋。','every',2,'其他狙击每累计施放2次触发暴击。'),
+  char_183_skgoat:pair('pulses',6,'流沙化提升至6轮。','extend',.2,'自身停顿延长0.2秒。'),
+  char_258_podego:pair('dot',1,'孢子群每秒伤害提升至100%。','aura',.12,'辅助干员攻击加成提升至+12%。'),
+  char_346_aosta:pair('scale',2,'影钉每轮伤害提升至200%。','bleed',.24,'尖钉每秒伤害提升至24%。'),
+  char_306_leizi:pair('scale',3,'初雷每跳伤害提升至300%。','bonus',.3,'通流无阻伤害加成提升至+30%。'),
+  char_446_aroma:pair('landing',1.5,'落地追加伤害提升至150%。','lift',3,'首次接敌浮空延长至3秒。'),
+  char_4013_kjera:pair('scale',1.85,'心随意动攻击倍率提升至185%。','haste',6,'寒冷连线加速延长至6秒。'),
+  char_4040_rockr:pair('funnelMax',2.6,'过载浮游单元上限提升至260%。','growth',.05,'每层磐石攻击加成提升至+5%。'),
+  char_145_prove:pair('scale',3.8,'杀戮嗅觉每发提升至380%。','crit',2.1,'狩猎箭头暴击倍率提升至210%。'),
+});
+
+export const RANGED_INNATES=Object.freeze({
+  char_253_greyy:['普通攻击使目标停顿0.6秒；静电释放保留原技能1.2秒停顿。'],
+  char_4051_akkord:['攻击范围内有其他友军时，自身攻击+15%；音爆在每名范围内友军处发生。'],
+  char_469_indigo:['普通攻击有18%概率束缚4秒，优先改选未束缚目标；保留秘术师蓄能。'],
+  char_235_jesica:['自身攻击速度+12；烟幕按受击次数结算，每次受击独立判断75%闪避。'],
+  char_190_clour:['自身自然技力回复每秒+0.3。'],
+  char_440_pinecn:['部署后60秒内自身自然技力回复每秒+0.45；每次施放提高技能倍率20%，最多提高60%。'],
+  char_366_acdrop:['自身物理攻击至少造成攻击力25%的伤害，目标位于正前方两格时提升至40%。'],
+  char_4100_caper:['普通攻击有25%概率造成150%伤害；双回旋保留去程与回程的命中次数。'],
+  char_183_skgoat:['每轮流沙按原1.4秒间隔发生；多个施放各自完成所有轮次。'],
+  char_258_podego:['辅助干员攻击+9%；孢子群保留原投掷范围和落点周围作用区域。'],
+  char_346_aosta:['普通攻击使未阻挡敌人流血3秒，每秒18%法伤；技能期间流血倍率翻倍。'],
+  char_306_leizi:['技能连锁4目标，跳跃不降低伤害并附加停顿；普通攻击仍按特性跳跃。'],
+  char_446_aroma:['自身首次攻击每名敌人时伤害提升至110%，并浮空2.5秒；落地追加伤害按各次施放结算。'],
+  char_4013_kjera:['自身攻击+10%；范围内至少两格地面地形时提升至+16%；浮游单元保留锁敌增伤。'],
+  char_4040_rockr:['每实际在场15秒推进1层磐石，与装填共用4层上限；保留浮游单元过载增伤。'],
+  char_145_prove:['技能仅攻击生命不高于80%的敌人；狩猎箭头保留20%或正前方一格50%的暴击判断。'],
+});

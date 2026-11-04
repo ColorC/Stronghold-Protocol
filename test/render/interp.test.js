@@ -26,6 +26,31 @@ describe('normalizeSnapshot', () => {
     assert.deepEqual(s.units.get(4), [4, 1, 2, 0, 0, 0, 0, 0, 0]);
   });
 
+  test('the assault read-outs: `redeploy` and `zones` are validated like the other lists', () => {
+    const s = normalizeSnapshot({
+      t: 5, units: [U(1, 2, 3)],
+      redeploy: [[1, 18, 13], [2, 9, 13], [1, -1, 13], [1, 9, 0], 'x'],
+      zones: [['u1:flare', 'flare', [[3, 4], [3, 5], ['9,2'], [1.5, 2]]], ['u1:empty', 'seed', []], [42, 'snow', [[1, 1]]], 'x'],
+    });
+    assert.deepEqual(s.redeploy.get(1), [18, 13], 'the valid row of its unit survives; junk and other units are dropped');
+    assert.equal(s.redeploy.size, 1);
+    assert.deepEqual(s.zones, [{ id: 'u1:flare', kind: 'flare', tiles: [[3, 4], [3, 5]] }], 'a string or non-integer tile is dropped');
+    assert.equal(normalizeSnapshot({ t: 5, units: [U(1, 2, 3)] }).redeploy, null);
+    assert.equal(normalizeSnapshot({ t: 5, units: [U(1, 2, 3)] }).zones, null);
+  });
+
+  test('sample() hands `redeploy` out from the older snapshot; zonesAt() reads the shown snapshot', () => {
+    const b = new SnapshotBuffer({ delay: 0.1, rate: 2 });
+    b.push({ t: 0, units: [U(1, 2, 3)], redeploy: [[1, 13, 13]], zones: [['u1:seed', 'seed', [[9, 2]]]] }, 0);
+    b.push({ t: 0.1, units: [U(1, 2, 3)], redeploy: [[1, 12.9, 13]] }, 0.05);
+    b.update(0.06);
+    const out = b.sample(b.renderT, new Map());
+    assert.deepEqual(out.get(1).redeploy, [13, 13], 'steps with the snapshot like flags');
+    assert.deepEqual(b.zonesAt(b.renderT), [{ id: 'u1:seed', kind: 'seed', tiles: [[9, 2]] }]);
+    assert.equal(b.zonesAt(0.1), null, 'the newer snapshot lists no zone');
+    assert.equal(new SnapshotBuffer().zonesAt(0), null);
+  });
+
   test('wire frames: game time comes from `gt` (the frame `t` is the message type)', () => {
     const wire = { t: 'b.snap', fieldId: 'n:a', gt: 12.5, units: [U(1, 2, 9)], killed: 1, total: 3 };
     assert.equal(frameTime(wire), 12.5);

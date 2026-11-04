@@ -150,6 +150,7 @@ export const OPERATOR_KIT_FILES = Object.freeze([
   'op-necras.js',
   'op-kalts2.js',
   'op-monstr.js',
+  'op-clemnt.js',
 ]);
 
 /**
@@ -171,6 +172,18 @@ async function loadKitFile(file) {
 const MODULES = await Promise.all(KIT_FILES.map((group) => Promise.all(group.map(loadKitFile))));
 const STANDIN_MODULES = await Promise.all(STANDIN_KIT_FILES.map(loadKitFile));
 const OPERATOR_MODULES = await Promise.all(OPERATOR_KIT_FILES.map(loadKitFile));
+// 工坊 native imports (workshop line, used by 共鸣's season roster): data/chess.json `chess_native_*` pieces (chessType
+// NATIVE_IMPORT_CANDIDATE, hidden from every shop) keep their kits in two files of their own, merged after the 自选 kits.
+async function loadNativeKitFile(file) {
+  try {
+    return await import(`../${file}`);
+  } catch (e) {
+    console.error(`[content] failed to load ${file}: ${e && e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e}`);
+    return {};
+  }
+}
+export const NATIVE_KIT_FILES = Object.freeze(['newnativekits.js', 'nativeVictoriaKazimierzSiracusa.js']);
+const NATIVE_MODULES = await Promise.all(NATIVE_KIT_FILES.map(loadNativeKitFile));
 const registryOf = (m) => (m && m.default && typeof m.default === 'object' ? m.default : {});
 
 /** The registry of each tier group (index 0 = tier 1): baseChessId → kit builder, in KIT_FILES order. */
@@ -184,9 +197,12 @@ export const OPERATOR_KITS = Object.freeze(Object.assign({}, ...OPERATOR_MODULES
 
 /**
  * The merged kit registry: baseChessId → (bb, chess, def) => Kit, tier 1 … tier 6, then the stand-ins' charIds, then
- * the 自选 operators' charIds.
+ * the 自选 operators' charIds, then the 工坊 native imports (`chess_native_*`).
  */
-export const KITS = Object.freeze(Object.assign({}, ...TIER_KITS, STANDIN_KITS, OPERATOR_KITS));
+/** The 工坊 native-import kits: `chess_native_*` baseChessId → kit builder, in NATIVE_KIT_FILES order. */
+export const NATIVE_KITS = Object.freeze(Object.assign({}, ...NATIVE_MODULES.map(registryOf)));
+
+export const KITS = Object.freeze(Object.assign({}, ...TIER_KITS, STANDIN_KITS, OPERATOR_KITS, NATIVE_KITS));
 
 /**
  * Every character a 自选 pick may field with a faithful kit: the 预备干员 (GENERIC_KIT_CHARS), the stand-ins with a kit

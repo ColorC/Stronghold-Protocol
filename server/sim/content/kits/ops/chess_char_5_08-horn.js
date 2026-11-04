@@ -7,7 +7,7 @@ import {
 } from '../shared/tier5.js';
 
 /** 号角 S2 过载: the second half of the ammo (PRTS 备注 of S3 "技能进行到一半时"; S2 counts shots). [ASSUMED] */
-const HORN_S2_OVERLOAD_AT = 0.5;
+export const HORN_S2_OVERLOAD_AT = 0.5;
 
 export default {
   // ---------------------------------------------------------------------------------------------------------------
@@ -50,7 +50,7 @@ export default {
         }),
         skchr_horn_2: () => ({
           kind: 'ammo', ammo: s2Ammo,
-          attack: { atkScale: num(bb['attack@s2.atk_scale'], 1) },
+          attack: { atkScale: num(bb['attack@s2.atk_scale'], 1), fortressMeleeSplash: true },
           onStart({ unit }) { unit.mem.hornS2Over = false; },
           onEnd({ unit }) { unit.mem.hornS2Over = false; },
         }),

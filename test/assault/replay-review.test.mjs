@@ -1,0 +1,222 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { createReplayReviewConfig, createReplayCommentAnchor, reviewCommentHref } from '../../public/js/assault/replayReviewConfig.js';
+import { waitForVideoSeek } from '../../public/js/assault/replayReviewSeek.js';
+
+const root = new URL('../../', import.meta.url);
+const page = await readFile(new URL('public/assault-review.html', root), 'utf8');
+const html = await readFile(new URL('public/js/assault/review.js', root), 'utf8');
+const replay = await readFile(new URL('public/js/assault/replay.js', root), 'utf8');
+const id = 'c3c3f89e-eae2-46ac-a118-a6deda3aa3b6';
+
+test('review shell builds same-origin replay and comments URLs with or without gateway prefix', () => {
+  const prefixed = createReplayReviewConfig(`https://workshop.colorc.cc/stronghold/assault/assault-review.html?recording=${id}&film=1&autoplay=1`);
+  assert.equal(new URL(prefixed.sourceUrl).pathname, '/stronghold/assault/assault-replay.html');
+  assert.equal(new URL(prefixed.sourceUrl).searchParams.get('film'), '1');
+  assert.equal(new URL(prefixed.sourceUrl).searchParams.get('autoplay'), '1');
+  assert.equal(new URL(prefixed.sourceUrl).searchParams.get('recording'), id);
+  assert.equal(new URL(prefixed.sourceUrl).searchParams.get('review'), '1');
+  assert.equal(new URL(prefixed.commentsApi).pathname, `/stronghold/assault/api/assault/recordings/${id}/comments`);
+  assert.equal(prefixed.apiName, '__SP_REPLAY_REVIEW__');
+  assert.equal(prefixed.title, '进击 · 游玩回放');
+  assert.equal(prefixed.duration, 0);
+  assert.equal('beats' in prefixed, false);
+
+  const local = createReplayReviewConfig(`http://127.0.0.1:5460/assault-review.html?recording=${id}`);
+  assert.equal(new URL(local.commentsApi).pathname, `/api/assault/recordings/${id}/comments`);
+  assert.throws(() => createReplayReviewConfig('http://localhost/assault-review.html'), /无效/);
+  assert.throws(() => createReplayReviewConfig(`http://localhost/assault-review.html?recording=${id.replace('-4', '-1')}`), /无效/);
+});
+
+test('comment anchors retain precise time and nested-frame rectangle without exposing selectors in links', () => {
+  const anchor = createReplayCommentAnchor({
+    time: 1064.9517,
+    selector: '.board > canvas',
+    framePath: ['#stage > iframe'],
+    tag: 'canvas',
+    textExcerpt: '  战斗画面  ',
+    rect: { x: 4.4, y: 8.6, width: 120.2, height: 80.7 },
+    viewport: { width: 1280, height: 720 },
+  });
+  assert.deepEqual(anchor, {
+    time_sec: 1064.952,
+    selector: '.board > canvas',
+    frame_path: ['#stage > iframe'],
+    tag: 'canvas',
+    text_excerpt: '战斗画面',
+    rect: { x: 4, y: 9, width: 120, height: 81 },
+    viewport: { width: 1280, height: 720 },
+  });
+  const href = reviewCommentHref(`https://example.test/stronghold/assault/assault-review.html?recording=${id}`, anchor.time_sec, 'comment-2');
+  const url = new URL(href);
+  assert.equal(url.pathname, '/stronghold/assault/assault-review.html');
+  assert.equal(url.searchParams.get('t'), '1064.952');
+  assert.equal(url.searchParams.get('comment'), 'comment-2');
+  assert.equal(url.searchParams.get('recording'), id);
+});
+
+test('video seek resolves only after seeked and the target frame, and times out explicitly', async () => {
+  const callbacks = [];
+  const video = new EventTarget();
+  let currentTime = 0;
+  let seeking = false;
+  let callbacksAtSeek = 0;
+  video.readyState = 1;
+  Object.defineProperty(video, 'seeking', { get: () => seeking });
+  Object.defineProperty(video, 'currentTime', { get: () => currentTime, set: (value) => { callbacksAtSeek = callbacks.length; currentTime = value; seeking = true; } });
+  video.requestVideoFrameCallback = (callback) => { callbacks.push(callback); return callbacks.length; };
+  video.cancelVideoFrameCallback = () => {};
+  let resolved = false;
+  const pending = waitForVideoSeek(video, 12.5, { timeoutMs: 100 });
+  pending.then(() => { resolved = true; });
+  assert.equal(callbacksAtSeek, 1, 'frame observation is registered before currentTime changes');
+  assert.equal(currentTime, 12.5);
+  video.readyState = 2;
+  seeking = false;
+  video.dispatchEvent(new Event('seeked'));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(resolved, false, 'seeked alone is not enough before the decoded frame');
+  callbacks.shift()(0, { mediaTime: 12.5 });
+  await pending;
+  assert.equal(resolved, true);
+
+  const alreadySeeking = new EventTarget();
+  let inFlightTime = 8;
+  let inFlightSeeking = true;
+  alreadySeeking.readyState = 2;
+  Object.defineProperty(alreadySeeking, 'seeking', { get: () => inFlightSeeking });
+  Object.defineProperty(alreadySeeking, 'currentTime', { get: () => inFlightTime, set: value => { inFlightTime = value; } });
+  alreadySeeking.requestVideoFrameCallback = callback => { callbacks.push(callback); return callbacks.length; };
+  alreadySeeking.cancelVideoFrameCallback = () => {};
+  const inFlight = waitForVideoSeek(alreadySeeking, 8, { timeoutMs: 100 });
+  inFlightSeeking = false;
+  alreadySeeking.dispatchEvent(new Event('seeked'));
+  callbacks.pop()(0, { mediaTime: 8 });
+  await inFlight;
+
+  const stuck = new EventTarget();
+  Object.defineProperty(stuck, 'currentTime', { value: 0, writable: true });
+  stuck.readyState = 1;
+  await assert.rejects(waitForVideoSeek(stuck, 3, { timeoutMs: 5 }), /定位超时/);
+});
+
+test('retargets an in-flight seek and ignores a stale seeked before accepting the requested frame', async () => {
+  const callbacks = new Map();
+  let callbackId = 0;
+  const video = new EventTarget();
+  let currentTime = 2;
+  let seeking = true;
+  video.readyState = 2;
+  video.assignments = [];
+  Object.defineProperty(video, 'seeking', { get: () => seeking });
+  Object.defineProperty(video, 'currentTime', {
+    get: () => currentTime,
+    set: value => { video.assignments.push(value); currentTime = value; seeking = true; },
+  });
+  video.requestVideoFrameCallback = callback => { const id = ++callbackId; callbacks.set(id, callback); return id; };
+  video.cancelVideoFrameCallback = id => callbacks.delete(id);
+
+  let settled = false;
+  const pending = waitForVideoSeek(video, 5, { timeoutMs: 100 });
+  pending.then(() => { settled = true; });
+  assert.deepEqual(video.assignments, [5], 'new target overwrites an in-flight currentTime');
+
+  seeking = false;
+  currentTime = 2;
+  video.dispatchEvent(new Event('seeked'));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(settled, false, 'the superseded seeked event cannot satisfy the new target');
+
+  currentTime = 5;
+  video.dispatchEvent(new Event('seeked'));
+  const [id, callback] = callbacks.entries().next().value;
+  callbacks.delete(id);
+  callback(0, { mediaTime: 5 });
+  await pending;
+  assert.equal(settled, true);
+});
+
+test('abort rejects with AbortError and cleans video, frame, and abort listeners', async () => {
+  const controller = new AbortController();
+  const video = new EventTarget();
+  let currentTime = 0;
+  let seeking = false;
+  video.readyState = 1;
+  Object.defineProperty(video, 'seeking', { get: () => seeking });
+  Object.defineProperty(video, 'currentTime', { get: () => currentTime, set: value => { currentTime = value; seeking = true; } });
+  let cancelledFrame = 0;
+  video.requestVideoFrameCallback = () => 42;
+  video.cancelVideoFrameCallback = id => { cancelledFrame = id; };
+  const removed = [];
+  const remove = video.removeEventListener.bind(video);
+  video.removeEventListener = (type, listener, options) => { removed.push(type); remove(type, listener, options); };
+  const removeAbort = controller.signal.removeEventListener.bind(controller.signal);
+  controller.signal.removeEventListener = (type, listener, options) => { removed.push(type); removeAbort(type, listener, options); };
+
+  const pending = waitForVideoSeek(video, 9, { timeoutMs: 100, signal: controller.signal });
+  controller.abort();
+  await assert.rejects(pending, error => error.name === 'AbortError');
+  assert.equal(cancelledFrame, 42);
+  assert.deepEqual(removed.sort(), ['abort', 'canplay', 'error', 'loadeddata', 'seeked']);
+
+  const alreadyAborted = new AbortController();
+  alreadyAborted.abort();
+  await assert.rejects(waitForVideoSeek(video, 1, { signal: alreadyAborted.signal }), error => error.name === 'AbortError');
+});
+
+test('waits through insufficient readyState and completes without video-frame callbacks', async () => {
+  const callbacks = [];
+  let rafId = 0;
+  const view = {
+    requestAnimationFrame(callback) { callbacks.push(callback); return ++rafId; },
+    cancelAnimationFrame(id) { this.cancelled = id; },
+  };
+  const video = new EventTarget();
+  let currentTime = 4;
+  let seeking = true;
+  video.readyState = 1;
+  video.ownerDocument = { defaultView: view };
+  Object.defineProperty(video, 'seeking', { get: () => seeking });
+  Object.defineProperty(video, 'currentTime', { get: () => currentTime, set: value => { currentTime = value; } });
+
+  const pending = waitForVideoSeek(video, 4, { timeoutMs: 100 });
+  video.dispatchEvent(new Event('loadeddata'));
+  seeking = false;
+  video.dispatchEvent(new Event('seeked'));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(callbacks.length, 0, 'seeked at readyState 1 cannot pass the target check');
+  video.readyState = 3;
+  video.dispatchEvent(new Event('canplay'));
+  assert.equal(callbacks.length, 1);
+  callbacks.shift()(0);
+  assert.equal(callbacks.length, 1);
+  callbacks.shift()(0);
+  await pending;
+});
+
+test('review DOM uses player controls, precise async seek and player-facing copy only', () => {
+  for (const id of ['stage', 'film', 'toggle', 'seek', 'pick', 'comments', 'composer', 'sourceLink']) assert.match(page, new RegExp(`id="${id}"`));
+  assert.match(page, /<script type="module" src="js\/assault\/review\.js">/);
+  assert.match(html, /await current\.setTime\(target\)/);
+  assert.match(html, /film\.src=config\.sourceUrl/);
+  assert.doesNotMatch(html, /config\.source[,)]/);
+  assert.match(html, /await setTime\(anchor\.time_sec\|\|0\)/);
+  assert.match(html, /const state=readState\(\);\s*if\(state&&!state\.paused\)/);
+  assert.match(html, /stage\.scrollIntoView\(\{block:stage\.getBoundingClientRect\(\)\.height>innerHeight\?'start':'center'/);
+  assert.match(html, /reviewCommentHref\(location\.href/);
+  assert.match(html, /method:'PATCH'/);
+  assert.match(html, /method:'DELETE'/);
+  assert.match(replay, /window\.__SP_REPLAY_REVIEW__ = reviewApi/);
+  assert.match(replay, /ready: initialized && !seeking/);
+  assert.match(replay, /viewport: replayViewport, error: initializationError/);
+  assert.match(html, /stage\.style\.aspectRatio=`\$\{state\.viewport\.width\} \/ \$\{state\.viewport\.height\}`/);
+  assert.match(html, /if\(state\.error\)\{setStatusText\(state\.error,'err'\)/);
+  assert.match(replay, /回放载入失败，请检查链接或稍后重试/);
+  assert.match(html, /回放链接无效，请检查链接后重试/);
+  assert.match(replay, /async function positionMediaAt\(second, generation = seekGeneration\)/);
+  assert.match(replay, /await waitForVideoSeek\(mediaVideo, target(?:,\s*\{\s*signal[^}]*\})?\)/);
+  assert.doesNotMatch(replay, /ffmpeg|rendered/i);
+  assert.doesNotMatch(page + html, /bilibili|WEB SOURCE|真源|原工程|config\.beats|beat_id|ffmpeg/i);
+  assert.doesNotMatch(html, /meta\.textContent=.*selector|composerEl\.textContent=.*selector/);
+});

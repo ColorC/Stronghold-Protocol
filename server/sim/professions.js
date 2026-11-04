@@ -21,6 +21,9 @@
 //   noAttack bool (never attacks)   noAttackUnlessSkill bool (attacks only while its skill is active)
 //   noHeal bool (cannot be healed by others)   blockFly bool   onHitStatus {key, duration, value}
 //   dmgMul(battle, unit, target) → number      afterHit(battle, unit, target, {dealt,x,y})
+//   funnelMul(battle, unit, target) → number (drone ramp, separate from the caster's attack multiplier)
+//   funnelBodyHits n (body hits kept beside that ramp. Omit it for one. 0: drone-only, ramp folded into the hits,
+//                     no body — 荒芜拉普兰德 S2. >0: that many body hits — 至简 S2. Not keyed off the skill flag)
 //   canAttack(battle, unit) → bool             afterAttack(battle, unit, targets)
 //   skipEnemy(enemy) → bool (an enemy the unit never selects — targeting.js canTargetEnemy; 嵯峨 "不攻击重伤单位")
 //   healThrough(healer, ally) → bool (a healer that selects and heals that ally through its 禁疗 — Battle
@@ -171,7 +174,7 @@ const installMerchant = (battle, unit) => {
 
 const installCharger = (battle, unit) => {
   battle.on('kill', (ctx) => {
-    if (ctx.killer === unit && ctx.victim.side === 'enemy') battle.addDp(unit.ownerId, unit.profile.dpOnKill ?? 1);
+    if (ctx.killer === unit && ctx.victim.side === 'enemy') battle.addDp(unit.ownerId, unit.profile.dpOnKill ?? 1, { sourceUnitId: unit.id });
   }, { owner: unit });
 };
 
@@ -294,13 +297,14 @@ const installLibrator = (battle, unit) => {
   const rampMax = unit.profile.rampMax ?? 2;
   const rampTime = unit.profile.rampTime ?? 40;
   const rampInit = Math.min(rampMax, unit.profile.rampInit ?? 0); // golden module: "部署后获得+100%加成" (init_atk)
+  const skillActive = () => unit.skill?.active || (battle.assaultStrict && unit.mem.assaultMlynarWindowOpen && battle.time < unit.mem.assaultMlynarSkillUntil);
   const applyBlock = () => {
-    if (unit.skill?.active) battle.removeBuff(unit, 'trait:libratorBlock');
+    if (skillActive()) battle.removeBuff(unit, 'trait:libratorBlock');
     else { battle.addBuff(unit, { key: 'trait:libratorBlock', mods: { blockCnt: -99 } }); battle.releaseBlocked(unit); }
   };
   unit.trait.ramp = 0;
   battle.every(1, () => {
-    if (!unit.alive || !unit.deployed || unit.skill?.active) return;
+    if (!unit.alive || !unit.deployed || skillActive()) return;
     unit.trait.ramp = Math.min(rampMax, unit.trait.ramp + rampMax / rampTime);
     battle.addBuff(unit, { key: 'trait:libratorRamp', mods: { atkPct: unit.trait.ramp } });
   }, { owner: unit });
@@ -320,7 +324,9 @@ const installLibrator = (battle, unit) => {
 
 const installPhalanx = (battle, unit) => {
   const apply = () => {
-    if (unit.skill?.active) battle.removeBuff(unit, 'trait:phalanxGuard');
+    const raw=unit.def?.raw??unit.def??{};
+    const resonanceKeepGuard=unit.resonanceKeepGuard===true || (raw.charId==='char_1046_sbell2'&&Number(raw.resonanceStar)===3);
+    if (unit.skill?.active && !resonanceKeepGuard) battle.removeBuff(unit, 'trait:phalanxGuard');
     else battle.addBuff(unit, { key: 'trait:phalanxGuard', mods: { defPct: unit.profile.guardDef ?? 2, resFlat: unit.profile.guardRes ?? 20 } });
   };
   battle.on('deploy', (ctx) => { if (ctx.unit === unit) apply(); }, { owner: unit });
@@ -367,28 +373,39 @@ const installLoopshooter = (battle, unit) => {
 };
 
 const installTactician = (battle, unit) => {
+  // Assault supplies the roster-specific, compiled reinforcement (伺夜's 狼影 / 缪尔赛思's 流形) through
+  // its typed summon ledger. The native generic stand-in has no registered Assault token source and would both
+  // double-summon and fail strict kit lookup. Keep the native fallback for every other mode.
+  if (battle.assaultStrict) return;
   const spawn = () => {
     if (!unit.alive || !unit.deployed) return;
     if (unit.trait.reinforcement && unit.trait.reinforcement.alive) return;
-    if (battle.flags.independent && unit.mem.nativeTacticianSummonTokenId) return;
     const tile = battle.findTacticalPoint(unit);
     if (!tile) return;
     unit.trait.reinforcement = battle.spawnToken(unit, 'token_tactician_reinforce', tile[0], tile[1], {
-        def: {
-          name: '援军', stats: {
-            maxHp: unit.base.maxHp * 0.7, atk: unit.base.atk * 0.5, def: unit.base.def, magicResistance: 0,
-            blockCnt: 1, baseAttackTime: 1.2, attackSpeed: 100, respawnTime: 999, cost: 0,
-          }, rangeGrid: [[0, 0]], dmgType: 'phys', attackKind: 'melee', profession: 'TOKEN',
-          nativeGrowthProjection: { source: 'ownerOperator', scales: { atk: 0.5, maxHp: 0.7, def: 1, res: 0 } },
-        },
+      def: {
+        name: '援军', stats: {
+          maxHp: unit.base.maxHp * 0.7, atk: unit.base.atk * 0.5, def: unit.base.def, magicResistance: 0,
+          blockCnt: 1, baseAttackTime: 1.2, attackSpeed: 100, respawnTime: 999, cost: 0,
+        }, rangeGrid: [[0, 0]], dmgType: 'phys', attackKind: 'melee', profession: 'TOKEN',
+      },
     });
   };
   battle.on('deploy', (ctx) => { if (ctx.unit === unit) spawn(); }, { owner: unit });
 };
 
 const installFunnel = (battle, unit) => {
-  unit.trait.funnelTarget = null;
-  unit.trait.funnelScale = unit.profile.funnel?.init ?? 0.2;
+  // PRTS 分支特性信息 驭械术师: changing the target, or redeploying, resets the drone ramp at once, even against the
+  // same living enemy. The per-target map (耶拉 / 至简) resets with it. A free move (moveRedeploy, the same carry as a
+  // 秘术师's stored energy and 乌尔比安 S3) keeps the ramp. An in-flight drone still applies the ramp it computes on
+  // impact, so a shot launched before the reset can step the new ramp.
+  const reset = () => {
+    unit.trait.funnelTarget = null;
+    unit.trait.funnelScale = unit.profile.funnel?.init ?? 0.2;
+    unit.trait.funnelMap?.clear();
+  };
+  reset();
+  battle.on('deploy', (ctx) => { if (ctx.unit === unit && !ctx.move) reset(); }, { owner: unit });
 };
 
 /**
@@ -432,7 +449,8 @@ export function bardRegen(battle, bard, ally, value, duration = BARD_REGEN_DUR) 
 
 const installBard = (battle, unit) => {
   battle.every(BARD_REGEN_IV, () => {
-    if (!unit.canAct) return;
+    // Continuous regeneration is an aura, so stun does not stop it.
+    if (!unit.alive || !unit.deployed || unit.hidden) return;
     const v = unit.s.atk * (unit.profile.auraRatio ?? 0.1);
     for (const ally of battle.alliesInGrid(unit)) bardRegen(battle, unit, ally, v);
   }, { owner: unit });
@@ -509,7 +527,7 @@ export const SUB = Object.freeze({
   blastcaster: P({ rangeAoe: true }),
   chain: P({ chain: { count: 3, falloff: 0.15, radius: CHAIN_RADIUS, sluggish: 0.5 } }),
   funnel: P({ projectile: 'drone', install: installFunnel,
-    dmgMul: (battle, unit, target) => {
+    funnelMul: (battle, unit, target) => {
       const f = unit.profile.funnel || { init: 0.2, delta: 0.15, max: 1.1 };
       if (unit.trait.funnelTarget === target.id) unit.trait.funnelScale = Math.min(f.max, (unit.trait.funnelScale ?? f.init) + f.delta);
       else { unit.trait.funnelTarget = target.id; unit.trait.funnelScale = f.init; }
@@ -551,6 +569,7 @@ export const SUB = Object.freeze({
   fortress: P({ fortress: true, splashRadius: 1.0, projectile: 'bomb', canHitFly: false, groundOnly: true }),
   // --- WARRIOR
   centurion: P({ hitAllBlocked: true }),
+  primguard: P({ hitAllBlocked: true }),
   crusher: P({ hitAllBlocked: true }),
   fearless: P({}),
   fighter: P({}),

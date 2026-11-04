@@ -1,9 +1,6 @@
 /** Additional Workshop tuning. Upstream enemy definitions and other modes stay authoritative. */
 export function independentEnemyBalance(state, catalog) {
-  const difficulty = String(state.difficulty ?? 'NORMAL').toUpperCase();
-  const growthMode = String(state.growthMode ?? catalog?.config?.defaultGrowthMode ?? 'badges').toLowerCase();
-  const stages = catalog?.config?.enemyBalanceByGrowthMode?.[growthMode]?.[difficulty]
-    ?? catalog?.config?.enemyBalance?.[difficulty];
+  const stages = catalog?.config?.enemyBalance?.[String(state.difficulty ?? 'NORMAL').toUpperCase()];
   if (!stages) return null;
   if (!Array.isArray(stages) || !stages.length) throw new TypeError('BAD_INDEPENDENT_ENEMY_BALANCE');
   let chosen = null;

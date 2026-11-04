@@ -101,7 +101,7 @@ describe('tiers come from the mode\'s catalog, not the upstream chess record', (
 
   test('the board, the detail card and the battle read the catalog tier', () => {
     // prep pieces: the piece's tier (model.js prepView, from the catalog) wins over the chess record's
-    assert.match(read('public/js/render/app.js'), /tier: piece\.tier \|\| rec\?\.tier \|\| 1, golden/);
+    assert.match(read('public/js/render/app.js'), /tier: piece\.tier \|\| chess\?\.tier \|\| rec\?\.tier \|\| 1, golden/);
     assert.match(read('public/js/independent/model.js'), /tier: catalog\?\.operators\?\.\[p\.chessId\]\?\.tier \?\? 1/);
     // the detail card's header chip: the form's catalog entry
     assert.match(read('public/js/independent/detail.js'), /const tier = formOp\?\.tier \?\? opBase\?\.tier;/);

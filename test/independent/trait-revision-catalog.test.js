@@ -28,16 +28,16 @@ function battle(pieces,{content='none',state=stateFor(pieces)}={}){
   return h;
 }
 const conditions={
-  红豆:{match:{baseStat:'atk',minBaseStatRatioToSelf:1.2},countBy:'operators',stats:{attackPercent:0.15}},
-  艾丝黛尔:{match:{faction:'萨尔贡'},countBy:'operators',stats:{maxHpPercent:0.08}},
-  深靛:{match:{professions:['CASTER','SUPPORT']},countBy:'professions',stats:{attackSpeedFlat:8}},
-  拉普兰德:{match:{faction:'叙拉古'},countBy:'operators',stats:{attackSpeedFlat:8}},
-  休谟斯:{match:{keywordGear:'坚守盟约'},countBy:'operators',stats:{attackPercent:0.1}},
-  能天使:{match:{profession:'TANK',baseStat:'def',minBaseStatRatioToSelf:2},countBy:'operators',stats:{attackPercent:0.12}},
-  斯卡蒂:{match:{faction:'深海猎人'},countBy:'operators',stats:{attackPercent:0.1,maxHpPercent:0.1}},
-  百炼嘉维尔:{match:{faction:'罗德岛'},countBy:'professions',stats:{defensePercent:0.08,attackSpeedFlat:5}},
-  空弦:{match:{keywordGear:'护盾发生器'},countBy:'operators',stats:{attackSpeedFlat:10}},
-  银灰:{match:{faction:'谢拉格'},countBy:'professions',stats:{attackPercent:0.12}},
+  红豆:{match:{baseStat:'atk',minBaseStatRatioToSelf:1.2},countBy:'operators',maxCount:1,stats:{attackPercent:0.15}},
+  艾丝黛尔:{match:{faction:'萨尔贡'},countBy:'operators',maxCount:3,stats:{maxHpPercent:0.08}},
+  深靛:{match:{professions:['CASTER','SUPPORT']},countBy:'professions',maxCount:2,stats:{attackSpeedFlat:8}},
+  拉普兰德:{match:{faction:'叙拉古'},countBy:'operators',maxCount:3,stats:{attackSpeedFlat:8}},
+  休谟斯:{match:{keywordGear:'坚守盟约'},countBy:'operators',maxCount:3,stats:{attackPercent:0.1}},
+  能天使:{match:{profession:'TANK',baseStat:'def',minBaseStatRatioToSelf:2},countBy:'operators',maxCount:2,stats:{attackPercent:0.12}},
+  斯卡蒂:{match:{faction:'深海猎人'},countBy:'operators',maxCount:3,stats:{attackPercent:0.1,maxHpPercent:0.1}},
+  百炼嘉维尔:{match:{faction:'罗德岛'},countBy:'professions',maxCount:4,stats:{defensePercent:0.08,attackSpeedFlat:5}},
+  空弦:{match:{keywordGear:'护盾发生器'},countBy:'operators',maxCount:3,stats:{attackSpeedFlat:10}},
+  银灰:{match:{faction:'谢拉格'},countBy:'professions',maxCount:3,stats:{attackPercent:0.12}},
 };
 const forgeCases={号角:['profession:TANK',2,false],乌尔比安:['faction:深海猎人',3,false],荒芜拉普兰德:['faction:叙拉古',3,false],玛恩纳:['all',2,true],迷迭香:['row',3,true],佩佩:['adjacent',2,true]};
 test('canonical active roster has 101 ordinary/elite pairs and no blank authored traits',()=>{
@@ -156,7 +156,7 @@ test('锏 excludes her own purchase and grows real bought-operator badges to ord
     assert.equal(maker.nativeState.boughtGear,10);
   }
 });
-test('妮芙/仇白/圣约 actual engine events produce uncapped native rewards and preserve them in prep equipment',()=>{
+test('妮芙/仇白/圣约 actual engine events produce capped native rewards and preserve them in prep equipment',()=>{
   for(const name of ['妮芙','仇白','圣约送葬人'])for(const elite of [false,true]){
     const p=piece(name,'w',elite),h=battle([p],{content:'full'}),u=h.unit('w');
     const r=op(name,elite).nativeTrait.effect.combat.find(r=>r.behavior==='eventProduction'),before=JSON.stringify(p.equipment);
@@ -183,44 +183,18 @@ test('妮芙/仇白/圣约 actual engine events produce uncapped native rewards 
     }
     assert.equal(JSON.stringify(p.equipment),before,'battle rewards await settlement');
     const rewards=(h.b.independentRewards||[]).filter(x=>x.sourceUid==='w'&&x.origin==='native');
-    const eventCount=name==='妮芙'?12:name==='仇白'?80:h.hooksOf('ammoUsed').length;
-    const expectedBatches=Math.floor(eventCount/Number(r.params.counterEvery));
-    assert.equal(Object.hasOwn(r.params,'maxPerBattle'),false,`${name} has no retired Workshop reward cap`);
-    for(const output of r.params.outputs)assert.equal(rewards.filter(x=>x.id===output.id).reduce((n,x)=>n+x.quantity,0),expectedBatches*Number(output.quantity),`${name} ${output.id} equals its real event batches`);
+    for(const output of r.params.outputs)assert.equal(rewards.filter(x=>x.id===output.id).reduce((n,x)=>n+x.quantity,0),elite?8:4,`${name} ${output.id} cap`);
     h.b.forceEnd();const state=stateFor([p]);for(const reward of rewards)grantEquipment(state,catalog,reward.id,reward.quantity,{origin:reward.origin,sourceUid:reward.sourceUid,phase:'battle'});
-    for(const output of r.params.outputs)assert.equal(sum(p,output.id),expectedBatches*Number(output.quantity),`${name} persistent settled ${output.id}`);
+    for(const output of r.params.outputs)assert.equal(sum(p,output.id),elite?8:4,`${name} persistent settled ${output.id}`);
     assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
   }
 });
-test('BGS_041 Nearl rewards qualifying gain effects on present Kazimierz allies in both growth modes',()=>{
-  const liveCatalog=getCatalog(data),liveServices={...services,catalog:liveCatalog,grantEquipment:(s,id,n,e)=>grantEquipment(s,liveCatalog,id,n,e)};
-  const currentPiece=(name,uid,elite=false,row=10,col=3)=>{
-    const normal=Object.values(liveCatalog.operators).find(o=>o.name===name&&!o.elite);assert.ok(normal,name);
-    const op=elite?liveCatalog.operators[normal.eliteChessId]:normal;
-    return {uid,chessId:op.chessId,elite,row,col,dir:'RIGHT',moduleId:'none',skillIndex:0,growthLevel:1,equipment:[],attachments:[],nativeState:{}};
-  };
-  const gaining=currentPiece('莫斯提马','incoming',false,null,null),gainerRef=liveCatalog.operators[gaining.chessId].sourceRefs.darkmoon19_2;
-  assert.equal(gainerRef.battlecry,true,'the incoming operator has the authored on-gain effect');
-  for(const growthMode of ['badges','levels'])for(const elite of [false,true]){
-    const near=currentPiece('耀骑士临光','near',elite),mannan=currentPiece('玛恩纳','m1'),meteor=currentPiece('流星','m2'),outsider=currentPiece('红豆','other');
-    const pieces=[near,mannan,meteor,outsider],state=stateFor(pieces);state.growthMode=growthMode;
-    const nativeSkill=structuredClone(liveCatalog.operators[near.chessId].source.normalChess.skill);
-    runNativeHook(state,'gain',{piece:gaining,source:'buy'},liveServices);
-    const amount=elite?2:1;
-    const sourced=(targetUid,id)=>state.production.filter(x=>x.sourceUid===near.uid&&x.targetUid===targetUid&&x.id===id).reduce((n,x)=>n+Number(x.quantity||0),0);
-    for(const target of [near,mannan,meteor]){
-      if(growthMode==='badges'){
-        assert.equal(sourced(target.uid,'precision'),amount,`${growthMode} ${elite?'elite':'normal'} Nearl precision -> ${target.uid}`);
-        assert.equal(sourced(target.uid,'damage'),amount,`${growthMode} ${elite?'elite':'normal'} Nearl damage -> ${target.uid}`);
-      }else{
-        const rows=state.production.filter(x=>x.id==='growth-training-record'&&x.sourceUid===near.uid&&x.targetUid===target.uid);
-        assert.equal(rows.length,2,`${growthMode} records both badge-derived training outputs for ${target.uid}`);
-        assert.equal(rows.reduce((n,x)=>n+Number(x.growthLevels||0),0),amount*2,`${growthMode} ${elite?'elite':'normal'} amount -> ${target.uid}`);
-      }
-    }
-    assert.equal(sourced(outsider.uid,'precision'),0,'non-Kazimierz allies do not receive the faction growth');
-    assert.equal(sourced(outsider.uid,'damage'),0);
-    assert.equal(state.production.some(x=>x.id==='growth-training-record'&&x.sourceUid===near.uid&&x.targetUid===outsider.uid),false);
-    assert.deepEqual(liveCatalog.operators[near.chessId].source.normalChess.skill,nativeSkill,'gain resolution leaves the source operator skill definition intact');
+test('耀骑士临光 deploy shields real allies in normal/elite target counts and reapply on redeploy',()=>{
+  for(const elite of [false,true]){
+    const pieces=[piece('耀骑士临光','w',elite),...['红豆','深靛','艾丝黛尔'].map((n,i)=>piece(n,`a${i}`,false,11,3+i))],h=battle(pieces);
+    const counts=()=>pieces.slice(1).map(p=>h.unit(p.uid).findBuff(`independent:equipmentShield:${p.uid}`)?.shieldHits||0);
+    assert.deepEqual(counts().sort(),elite?[2,2,2]:[0,2,2]);
+    assert.equal(h.unit('w').findBuff('independent:equipmentShield:w'),null);
+    h.b.retreat(h.unit('w'));h.b.redeploy(h.unit('w'));assert.equal(counts().filter(x=>x===2).length,3);
   }
 });

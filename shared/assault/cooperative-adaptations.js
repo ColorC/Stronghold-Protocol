@@ -1,0 +1,69 @@
+import { authoredCard as card, pct } from './core-adaptations.js';
+export const COOPERATIVE_ADAPTATIONS=Object.freeze({
+  char_4134_cetsyr:card(2,'B','slow',35,99,v=>[
+    `原扩大范围再生并重分配生命${v.pulses}次，友军积存生命鼓舞。`,
+    '微尘碰触友军后，所受特性再生×1.5；保留3枚环绕微尘。',
+  ],{values:{pulses:6,heal:.9,hp:1,uses:4,protect:.1},sourceTalent:0,
+    tags:['生命鼓舞积存4次受击，上限增加魔王100%最大生命','施放时微尘对范围内友军立即生效一次','全体友军受到萨卡兹敌人伤害−10%']}),
+  char_4202_haruka:card(2,'B','slow',30,1,v=>[
+    `原范围治疗${v.heals}次，积存${v.uses}枚${pct(v.protect)}%庇护浮泡。`,
+    `浮泡破裂时，回复其${pct(v.popHeal)}%攻击力生命。`,
+  ],{values:{heals:6,scale:1.55,uses:6,protect:.6,popHeal:.25,levitate:4,dot:.8,base:.3},sourceTalent:1,
+    tags:['强化浮泡触发4秒浮空、每秒80%法伤','普通攻击间隔补充原30%庇护浮泡']}),
+  char_245_cello:card(2,'B','slow',35,99,v=>[
+    `最高生命、攻击、防御友军，分别积存${v.uses}次${pct(v.bonus)}%对应强化。`,
+    `原范围${v.pulses}轮${pct(v.element)}%攻击凋亡损伤、停顿0.2秒。`,
+    `范围内凋亡损伤+${pct(v.amp)}%，本次哀歌增至+${pct(v.amp*v.mult)}%。`,
+  ],{values:{uses:6,bonus:.3,pulses:6,element:.28,amp:.2,mult:2.5},sourceTalent:1,
+    tags:['保留每秒10%攻击力无词哀歌与原精神逆构']}),
+  char_1020_reed2:card(2,'B','slow',35,2,v=>[
+    `2目标连击${v.hits}次${pct(v.scale)}%法伤，积存${v.pulses}轮灼痕燃烧。`,
+    `治疗其他友军时，自身同时回复该治疗量的${pct(v.share)}%。`,
+  ],{values:{hits:6,scale:1.6,pulses:6,dot:.6,explosion:1.4,radius:1.7,share:.5,fragile:.3,weaken:.2,seconds:6},sourceTalent:1,
+    tags:['原灼痕：攻击−20%、法术脆弱30%','燃烧每秒60%法伤，击倒时140%群体法伤并传染']}),
+  char_4056_titi:card(2,'B','slow',35,2,v=>[
+    `原范围2目标${v.hits}轮${pct(v.scale)}%法伤、沉睡5秒。`,
+    `积存${v.wakes}次梦醒爆发及${v.guards}次梦境庇护，梦醒可传睡。`,
+    `米诺斯、萨尔贡友军生命过半时，攻速+${v.aspd}。`,
+  ],{values:{hits:6,scale:2.8,wakes:6,guards:1,aspd:20},sourceTalent:1,
+    tags:['全场梦醒伤害随睡眠增长，最高460%攻击','庇护使濒死友军沉睡至回满生命','保留可攻击睡眠及凝固时光']}),
+  char_2025_shu:card(2,'B','slow',35,1,v=>[
+    `攻击并治疗${v.hits}轮${pct(v.scale)}%，播种地块，积存${v.returns}次回返。`,
+    '三种职业生命+12%，三名同职业攻速+12；保留四岁加成。',
+  ],{values:{hits:6,scale:1.5,returns:6,harvestUses:6,atk:.25,aspd:25,distance:2},sourceTalent:1,
+    tags:['敌人离开播种标记2格即回返','地面敌踏播种后，范围友军积存6次攻击+25%、攻速+25','百谷长青原70再生与10%庇护保留']}),
+  char_2026_yu:card(2,'C','slow',35,99,v=>[
+    `本场生命、攻击、防御+${pct(v.stats)}%，生成贯穿全场的火墙。`,
+    `每次施放为火墙补${v.uses}次穿墙附灼燃或拦截。`,
+    `阻挡时庇护25%，目标每秒受40%法伤与12%灼燃。`,
+  ],{values:{stats:1.1,uses:8,burn:.1,prob:.2},sourceTalent:0,
+    tags:['火墙尚存时全队享受闲云隐市','四名干员在场时，每秒1.5%生命与元素回复','保留原火墙方向和20%清除敌方子弹']}),
+});
+export const COOPERATIVE_CARD_ROLES=Object.freeze({
+  char_4134_cetsyr:{line:'workshop',produces:['sustain'],consumes:[],roles:['direct','buffOthers','aura']},
+  char_4202_haruka:{line:'workshop',produces:['sustain','displacement'],consumes:['sustain'],roles:['direct']},
+  char_245_cello:{line:'workshop',produces:['element'],consumes:[],roles:['buffOthers','aura']},
+  char_1020_reed2:{line:'workshop',produces:['sustain'],consumes:['sustain','kill'],roles:['direct']},
+  char_4056_titi:{line:'workshop',produces:['control'],consumes:['control'],roles:['direct','control','aura']},
+  char_2025_shu:{line:'workshop',produces:['sustain','displacement'],consumes:['sustain'],roles:['direct','buffOthers','aura']},
+  char_2026_yu:{line:'workshop',produces:['element','sustain'],consumes:['block'],roles:['aura']},
+});
+const pair=(a,av,at,b,bv,bt)=>[{key:a,value:av,text:at,sourceKind:'skill'},{key:b,value:bv,text:bt,sourceKind:'talent'}];
+export const COOPERATIVE_MODULES=Object.freeze({
+  char_4134_cetsyr:pair('pulses',8,'生命重分配与再生提升至8轮。','protect',.15,'萨卡兹伤害降低提升至15%。'),
+  char_4202_haruka:pair('uses',8,'强化浮泡积存提升至8枚。','popHeal',.4,'浮泡破裂治疗提升至40%。'),
+  char_245_cello:pair('uses',8,'自由探戈强化次数提升至8。','amp',.3,'精神逆构基础凋亡加成提升至30%。'),
+  char_1020_reed2:pair('pulses',8,'积存灼痕燃烧提升至8轮。','share',.7,'映耀分享治疗量提升至70%。'),
+  char_4056_titi:pair('wakes',8,'梦醒爆发积存提升至8次。','aspd',28,'勇气报偿攻速提升至28。'),
+  char_2025_shu:pair('returns',8,'离离枯荣回返次数提升至8。','harvestUses',8,'采穗强化攻击次数提升至8。'),
+  char_2026_yu:pair('uses',12,'每次施放火墙补充提升至12次。','burn',.15,'穿墙灼燃损伤提升至15%攻击。'),
+});
+export const COOPERATIVE_INNATES=Object.freeze({
+  char_4134_cetsyr:['原扩大范围内按总生命／总上限比例重分配生命，不凭空生成生命；90%攻击再生、100%自身生命鼓舞及3枚轨道微尘保留，鼓舞改为受击次数。'],
+  char_4202_haruka:['夏末游鳞保留原扩大治疗范围、155%治疗、60%庇护、4秒浮空与其间每秒80%法伤；原普通30%浮泡与破裂25%治疗保留。'],
+  char_245_cello:['自由探戈分别选择生命、攻击、防御最高的其他干员，属性强化改为次数积存；保留原范围哀歌、0.2秒停顿及精神逆构同类最高值。'],
+  char_1020_reed2:['生命火种保留2目标、灼痕20%虚弱和30%法术脆弱、每秒60%法伤与原1.7格传染爆炸；重复施放增加燃烧轮数，不刷新覆盖未完成输出。'],
+  char_4056_titi:['旧日绽放保留2目标、非沉睡目标入睡、全场醒来或眠杀传睡、原睡眠时长增伤与濒死友军睡至回满生命；技能窗口转换为可积存的梦醒和庇护次数。'],
+  char_2025_shu:['离离枯荣保留原x-2攻击兼治疗、十字播种、70再生10%庇护、2格回返以及敌人踏播种后25%攻击／25攻速；持续窗口改为可积存的回返与强化次数。'],
+  char_2026_yu:['灶里乾坤：本场生命、攻击、防御+110%，再次施放只补火墙次数。火墙穿过自身并垂直朝向；跨墙攻击附加10%攻击力灼燃损伤，20%概率清除敌方远程攻击。'],
+});

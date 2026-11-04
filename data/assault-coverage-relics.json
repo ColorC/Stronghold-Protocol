@@ -1,0 +1,966 @@
+{
+  "schema": "assault-relic-coverage/v2",
+  "metadata": {
+    "source": "data/assault-design/collectibles.json",
+    "implementation": "server/sim/content/assault/relics.js",
+    "runImplementation": "shared/assault/relic-rules.js",
+    "closed": true,
+    "partialReasons": [],
+    "registeredRelics": 72,
+    "registeredEffects": 90,
+    "completeEffects": 90,
+    "partialEffects": 0,
+    "latestEvidenceReview": "All 22 formerly partial source rows now have targeted value and consumer assertions: redeploy timing, AoE deployment damage, summon stat effects and owner/range boundaries, profession penetration/kill-heal, acquisition economy and battle start/end cross effects. Full combination-space coverage remains open.",
+    "verificationScope": "All 90 declared source effect rows: numeric consumers, native triggers, target and lifecycle boundaries, and representative interactions. Full-mode integration and browser delivery are tracked separately in the active plan.",
+    "remainingCombinationScope": "Arbitrary cross-relic permutations are not exhaustively enumerated; this finite source-effect closure does not claim exhaustive state-space testing."
+  },
+  "relics": [
+    {
+      "id": "cold-frostsignal",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-cold-behavior.test.mjs: cold-frostsignal emits one native status per adjacent kill and native cold converts to frozen",
+          "behavior": "击倒一名敌人后，其八邻内所有敌人各获得一次 6 秒寒冷。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "cold-frozenhusk",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-cold-behavior.test.mjs: cold-frozenhusk refreshes one native shell, consumes it once, and clears it on redeploy",
+          "behavior": "受击后 5 秒内下一次普通攻击附加一次 2 秒寒冷。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "cold-triumphhorn",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-cold-behavior.test.mjs: cold-triumphhorn doubles successful cold and frozen instances but not immune targets",
+          "behavior": "每次成功施加寒冷或冻结时，该次持续时间翻倍。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "cold-cabaretsinger",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-cold-behavior.test.mjs: cold-cabaretsinger deals exactly one arts hit and one-second pause per successful cold",
+          "behavior": "每次成功施加寒冷附带一次 60% 攻击力法术伤害与 1 秒停顿。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "cold-niflheimr",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-cold-behavior.test.mjs: cold-niflheimr applies one exact cold to each real attack and survives redeploy; ordinary native healing never applies the hostile frost edge to allies",
+          "behavior": "全队普通攻击附加 1 秒寒冷，攻击间隔提高 15%，持续整场战斗。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "cold-mirrorarchive",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-cold-behavior.test.mjs: cold-mirrorarchive counts successful cold applications, resets at three, and does not recurse from frozen",
+          "behavior": "每次成功施加寒冷累积 1 层寒潮，最多 3 层。",
+          "evidenceKind": "nativeBehavior"
+        },
+        {
+          "index": 1,
+          "status": "complete",
+          "test": "relic-cold-behavior.test.mjs: cold-mirrorarchive counts successful cold applications, resets at three, and does not recurse from frozen",
+          "behavior": "寒潮满 3 层时对全体敌人施加 3 秒冻结并清空寒潮。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "redeploy-spring",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "four actual deployed allies each receive 5% layers; 0.95^4 total real redeploy multiplier, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "满足条件时每次部署叠 1 层，每层使再部署等待时间 -5%，最多 4 层。"
+        }
+      ]
+    },
+    {
+      "id": "redeploy-newedict",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "real retreat consumes a 0.5 pending multiplier after the independent 0.65 persistent modifier; skill redeploy does not consume, later entry regrants, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "特种部署后其下一次再部署等待时间减半。"
+        }
+      ]
+    },
+    {
+      "id": "redeploy-vanguardrally",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "actual deployment halves only the longest-waiting ally; second deployment independently halves the next longest, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "先锋部署时，等待最久的一名友军再部署等待时间减半。"
+        }
+      ]
+    },
+    {
+      "id": "redeploy-specialstill",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "special deployed operator has exact 0.65 multiplier and repeated redeploy does not compound, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "特种部署后其再部署等待时间 -35%，持续整场战斗。"
+        }
+      ]
+    },
+    {
+      "id": "redeploy-brokenblade",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relics.test.mjs: first natural entry, pending DP entry, skill redeploy, goal adjacency, and high ground use native state; brokenblade asserts native 0.8 max HP/current HP scaling and 0.5 redeploy multiplier",
+          "behavior": "开局全队最大生命 -20% 且当前生命按比例，再部署等待时间 -50%。"
+        },
+        {
+          "index": 1,
+          "status": "complete",
+          "test": "relics.test.mjs: brokenblade skillRedeploy uses the real redeploy path and asserts the native two-second invulnerability buff",
+          "behavior": "每次再部署后该干员获得 2 秒无敌。"
+        }
+      ]
+    },
+    {
+      "id": "redeploy-airdrop",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "battle-start operator receives native 0.5 redeploy stat; actual deployment causes exactly 3×ATK physical damage to selected enemy and 8-neighbor, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "开局全体干员再部署等待时间 -50%。"
+        },
+        {
+          "index": 1,
+          "status": "complete",
+          "test": "two native adjacent enemies each take exact 3×ATK from one deployment; relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "每次部署对随机 1 名敌人及其八邻造成 300% 攻击力物理伤害。"
+        }
+      ]
+    },
+    {
+      "id": "ammo-charsetglossary",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-ammo-element-behavior.test.mjs: ammo ledger drives charset, anthology, collar, and exact native net reloads",
+          "behavior": "弹药首次降到 30% 时补充最大弹药的 30%，每战最多两次。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "ammo-holycollar",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-ammo-element-behavior.test.mjs: ammo ledger drives charset, anthology, collar, and exact native net reloads",
+          "behavior": "远程干员装填后攻击力 +15%，持续 5 秒，可刷新。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "ammo-carvedplate",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-ammo-element-behavior.test.mjs: ammo skill start, native hits, stack cap, clear, and per-unit attack speed are exact",
+          "behavior": "弹药技能期间每次命中叠 1 层攻击力 +2%，最多 30 层，技能结束清空。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "ammo-thousandforms",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-ammo-element-behavior.test.mjs: ammo skill start, native hits, stack cap, clear, and per-unit attack speed are exact",
+          "behavior": "开启弹药技能时攻击速度 +100，持续 15 秒。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "ammo-anthology",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-ammo-element-behavior.test.mjs: ammo ledger drives charset, anthology, collar, and exact native net reloads",
+          "behavior": "弹药首次降到 30% 时补充最大弹药的 50% 并派发装填事件，每战最多三次。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "ammo-fireworkhand",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-ammo-element-behavior.test.mjs: firework uses the native archetype, bound RNG, four-neighbor splash, and no recursive hit chain",
+          "behavior": "指定职业每次命中 25% 概率追加 200% 攻击力四邻物理伤害。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "element-voile",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-ammo-element-behavior.test.mjs: element auras use native target stats, direct damage types, and late enemy/allied entry",
+          "behavior": "全场敌人法术受伤 +10%、元素受伤 +50%，新入场敌人同样生效。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "element-wotuncle",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-ammo-element-behavior.test.mjs: element auras use native target stats, direct damage types, and late enemy/allied entry",
+          "behavior": "远程单位元素损伤承受 -40%。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "element-catastrophe",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-ammo-element-behavior.test.mjs: element auras use native target stats, direct damage types, and late enemy/allied entry",
+          "behavior": "全场敌人法术受伤 +20%、元素受伤 +100%。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "element-ameng",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-ammo-element-behavior.test.mjs: native element gauge burst applies exact burst modifiers, refreshes vulnerability, and grants afterglow",
+          "behavior": "敌人元素爆发伤害 +100%。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "element-riverblessing",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-ammo-element-behavior.test.mjs: native element gauge burst applies exact burst modifiers, refreshes vulnerability, and grants afterglow",
+          "behavior": "指定元素爆发伤害 +50%。",
+          "evidenceKind": "nativeBehavior"
+        },
+        {
+          "index": 1,
+          "status": "complete",
+          "test": "relic-ammo-element-behavior.test.mjs: native element gauge burst applies exact burst modifiers, refreshes vulnerability, and grants afterglow",
+          "behavior": "爆发后敌人元素损伤承受 +25%，持续 3 秒。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "element-houndremedy",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-ammo-element-behavior.test.mjs: hound remedy suppresses the triggering native apoptosis DOT after its attack-speed buff expires",
+          "behavior": "我方爆发后免持续伤害并获 +50 攻速 8 秒，可刷新。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "summon-minorbattle",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "isolated native Ling summon receives exactly +50% ATK; relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "辅助干员的召唤物攻击力 +50%。"
+        }
+      ]
+    },
+    {
+      "id": "summon-ledger",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "summon actual 12-DP native token costs exactly 2 DP (10 discount), relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "召唤物/装置/战术道具部署费用 -10，最低 0。"
+        }
+      ]
+    },
+    {
+      "id": "summon-derivative",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "isolated native Ling summon receives exact +30% ATK, +30% max HP and +30 ASPD; relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "召唤物生命 +30%、攻击 +30%、攻速 +30。"
+        }
+      ]
+    },
+    {
+      "id": "summon-arcticpack",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "actual adjacent ally receives min(2,remaining skill SP) and owner current ATK×20% heal; separate deployed distant ally receives neither, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "四邻存活友军各实际入账最多2技力，溢出不计收益。"
+        },
+        {
+          "index": 1,
+          "status": "complete",
+          "test": "second real summon entry caps healing at ally max HP; relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "四邻存活友军各回复装置主人当前攻击力20%的生命；不是原生固定生命数值，不额外乘五。"
+        }
+      ]
+    },
+    {
+      "id": "summon-poeticrelic",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "five real summon entry cases verify owner DP refund, global six-net-refund cap (twelve DP total), full-DP zero net, UID idempotence, and unchanged stock/field caps, summon-relic-income.test.mjs",
+          "behavior": "每个召唤 UID 最多领取一次净返还：每次 2 点部署点数，整场最多 6 次（最多 12 点）；满点数时净返还为 0 但仍领取 UID，召唤库存和场上上限不变。"
+        }
+      ]
+    },
+    {
+      "id": "summon-windfeather",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relics.test.mjs: wind feather follows the last actual summon exit and preserves a foreign owner aura",
+          "behavior": "召唤物生命 +30%、攻击 +30%。",
+          "evidenceKind": "nativeBehavior"
+        },
+        {
+          "index": 1,
+          "status": "complete",
+          "test": "relics.test.mjs: wind feather follows the last actual summon exit and preserves a foreign owner aura",
+          "behavior": "召唤物在场时其所属干员攻击力 +60%，只保留一层。",
+          "evidenceKind": "nativeBehavior"
+        },
+        {
+          "index": 2,
+          "status": "complete",
+          "test": "relics.test.mjs: wind feather follows the last actual summon exit and preserves a foreign owner aura",
+          "behavior": "该干员的召唤物全部退场后移除主人攻击力加成。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "heal-mercenarypolicy",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-heal-block-behavior.test.mjs: mercenary policy applies native shelter to late allies and creates no heal/shield gain",
+          "behavior": "全队获得 10% 庇护减伤。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "heal-scaleshell",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-heal-block-behavior.test.mjs: scaleshell and pharmacon use exact native layer counts, break once per layer, and refresh on redeploy",
+          "behavior": "远程单位部署获 3 层护盾，每层 15% 最大生命（至少 1）。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "heal-pharmacon",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-heal-block-behavior.test.mjs: scaleshell and pharmacon use exact native layer counts, break once per layer, and refresh on redeploy",
+          "behavior": "全体部署获 2 层护盾，每层 12% 最大生命（至少 1）。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "heal-sanctuary",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-heal-block-behavior.test.mjs: sanctuary is high-ground-only, absorbs damage without healing, and refreshes one shield",
+          "behavior": "高台部署获一层 100% 最大生命屏障，可刷新。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "heal-lakeshield",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-heal-block-behavior.test.mjs: lakeshield requires an opening native shield and does not activate from a late shield",
+          "behavior": "开场已有护盾时，全队最大生命 +60%。",
+          "evidenceKind": "nativeBehavior"
+        },
+        {
+          "index": 1,
+          "status": "complete",
+          "test": "relic-heal-block-behavior.test.mjs: lakeshield requires an opening native shield and does not activate from a late shield",
+          "behavior": "开场已有护盾时，全队额外获得 1 层 15% 最大生命护盾。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "heal-kingform",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-heal-block-behavior.test.mjs: kingform applies the max-HP cost, original-max shield, exact net healing, and post-shield damage",
+          "behavior": "开局全队最大生命 -40%，当前生命按比例，最低 1。",
+          "evidenceKind": "nativeBehavior"
+        },
+        {
+          "index": 1,
+          "status": "complete",
+          "test": "relic-heal-block-behavior.test.mjs: kingform applies the max-HP cost, original-max shield, exact net healing, and post-shield damage",
+          "behavior": "开局全队获得等于原最大生命 80% 的护盾。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "block-wallchild",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-heal-block-behavior.test.mjs: wallchild uses exact Chebyshev-eight adjacency and leaves the two-away unit unchanged",
+          "behavior": "蓝目标点八邻内干员阻挡 +2、最大生命 +50%。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "block-pickflower",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-heal-block-behavior.test.mjs: pickflower adds melee deployment cost and stats, excludes ranged units, and does not stack on skill redeploy",
+          "behavior": "近战干员部署费用 +3，最低 0。",
+          "evidenceKind": "nativeBehavior"
+        },
+        {
+          "index": 1,
+          "status": "complete",
+          "test": "relic-heal-block-behavior.test.mjs: pickflower adds melee deployment cost and stats, excludes ranged units, and does not stack on skill redeploy",
+          "behavior": "近战干员阻挡 +1、防御 +50%。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "block-unyielding",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-heal-block-behavior.test.mjs: unyielding changes native damage only at two blocked enemies and applies the reduction per hit",
+          "behavior": "近卫干员阻挡数 +1。",
+          "evidenceKind": "nativeBehavior"
+        },
+        {
+          "index": 1,
+          "status": "complete",
+          "test": "relic-heal-block-behavior.test.mjs: unyielding changes native damage only at two blocked enemies and applies the reduction per hit",
+          "behavior": "阻挡 2 名及以上敌人时受伤 -20%。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "block-tempfortress",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-heal-block-behavior.test.mjs: tempfortress has exact native values, refreshes to fifteen seconds, and expires completely",
+          "behavior": "重装部署后 15 秒内攻击 +100%、防御 +100%、阻挡 +1。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "block-spikehand",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-heal-block-behavior.test.mjs: spikehand damages each actual blocked enemy once per native second using current DEF",
+          "behavior": "指定重装职业每秒对每个阻挡目标造成 100% 防御力法术伤害。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "block-loyalty",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-heal-block-behavior.test.mjs: loyalty heals only for actual net HP at three blocks and stops after the native blocker count falls below three",
+          "behavior": "阻挡 3 名及以上敌人时每秒回复 150 生命。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "pierce-newedict",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-cycle-pierce.test.mjs: pierce-newedict grants one sniper mark, including skill damage, with native failure boundaries; pierce-newedict distinguishes ordinary free redeploy from typed skill redeploy",
+          "behavior": "狙击部署后下一次伤害无视 50% 防御。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "pierce-altar",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "ten separate native winning run battles each settle and reach exactly ten permanent stacks, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "每场胜利后全队攻击与防御永久 +5%，最多 10 层。"
+        }
+      ]
+    },
+    {
+      "id": "pierce-rendhand",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "source-selected Dreadnought physical damage uses exact 70% defense ignore against 100 DEF, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "指定职业造成伤害时无视目标 70% 防御。"
+        }
+      ]
+    },
+    {
+      "id": "pierce-rockhand",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "source-selected Reaper physical damage uses exact 70% defense ignore; native kill path grants exact additional 2.5% max HP over no-relic kill-heal control, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "指定职业造成伤害时无视目标 70% 防御。"
+        },
+        {
+          "index": 1,
+          "status": "complete",
+          "test": "kill heal assertion uses real victim death and compared control, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "指定职业击杀敌人后回复 2.5% 最大生命。"
+        }
+      ]
+    },
+    {
+      "id": "pierce-hunterinsight",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "real physical hit ignores 50% DEF, real arts hit ignores 50% RES, both apply native 0.5s pause, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "我方造成伤害时无视 50% 防御与 50% 法抗，并停顿目标 0.5 秒。"
+        }
+      ]
+    },
+    {
+      "id": "pierce-breederseed",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "two deployed allies each receive exact 35% DEF ignore, 35% RES ignore and 0.65 damage-taken multiplier, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "开局全队获得双 35% 穿透与 35% 庇护。"
+        }
+      ]
+    },
+    {
+      "id": "cycle-oldcoin",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-cycle-pierce.test.mjs: oldcoin and Elysee are additive capped opening grants and never repeat on natural redeploy",
+          "behavior": "开局全队获得 6 点初始技力，按净入账且不递归开技能。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "cycle-elysee",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-cycle-pierce.test.mjs: oldcoin and Elysee are additive capped opening grants and never repeat on natural redeploy",
+          "behavior": "开局全队获得 8 点初始技力，按净入账。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "cycle-ecaz",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-cycle-pierce.test.mjs: Ecaz consumes its per-unit guard on the first resolved skill even when that reward caps SP",
+          "behavior": "每名干员首次技能结算后获得 30 点技力。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "cycle-fortunecookie",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-cycle-pierce.test.mjs: Fortune Cookie selects two actual owners once, pauses while absent, and resumes only for those UIDs",
+          "behavior": "开局随机 2 名干员每秒额外获得 0.8 技力，持续整场。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "cycle-everflow",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-cycle-pierce.test.mjs: Everflow adds four genuine profession-scoped layers, remains per-unit, and survives redeploy",
+          "behavior": "指定职业每完成一次技能使用叠 1 层，每层 +0.5/秒，最多 4 层。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "cycle-royalliqueur",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-cycle-pierce.test.mjs: Royal Liqueur selects original attack and hurt recovery while every Assault skill uses its current runtime",
+          "behavior": "攻击/受击回复型技能每 1.5 秒回 1 点技力。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "econ-oldcoins",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "real chooseRelic reward action adds exactly 10 gold and records once-per-run claim, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "获得时立即获得 10 金币，整局仅一次。"
+        }
+      ]
+    },
+    {
+      "id": "econ-scrapmedal",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "native victory settlement grants exactly +20% base technology XP against no-relic control, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "战斗胜利科技经验 +20%（按基础经验）。"
+        }
+      ]
+    },
+    {
+      "id": "econ-friendship",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "native victory settlement grants exactly +30% base gold against no-relic control, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "战斗胜利金币掉落 +30%。"
+        }
+      ]
+    },
+    {
+      "id": "econ-leithmedal",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "native victory settlement grants exactly +30% base technology XP against no-relic control, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "战斗胜利科技经验 +30%。"
+        }
+      ]
+    },
+    {
+      "id": "econ-rings",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "native victory settlement grants exactly +50% base gold against no-relic control, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "战斗胜利金币掉落 +50%。"
+        }
+      ]
+    },
+    {
+      "id": "econ-flawlessjade",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "real chooseRelic reward action adds exactly 25 gold and records once-per-run claim, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "获得时立即获得 25 金币，整局仅一次。"
+        }
+      ]
+    },
+    {
+      "id": "cross-bundle",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "real token attack/maxHP/ASPD modifiers and summon-cost floor are asserted on positive-ATK Ling token",
+          "behavior": "召唤物部署费用 -5，最低 0。"
+        },
+        {
+          "index": 1,
+          "status": "complete",
+          "test": "cross-bundle attack interval multiplier reaches native Unit.s.bat (0.75×) and real Battle AI produces more attacks during the same window than a no-relic token control, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "召唤物攻击间隔缩短 25%、攻击 +30%；无原生召唤物再部署等待的本模式将原等待效果转译为攻击节奏。"
+        }
+      ]
+    },
+    {
+      "id": "cross-chivalry",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "prepareAssaultBattle carries hour-start gold 39 as seven Chivalry stacks; created native Battle operator has exactly +35 ASPD versus compiled trained source stats, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "每 5 金币全队攻速 +5，最多 8 层，每时段重算。"
+        }
+      ]
+    },
+    {
+      "id": "cross-artinstall",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "real acquisition action restores exactly 7 run life",
+          "behavior": "获得时回复 7 点行动生命。"
+        },
+        {
+          "index": 1,
+          "status": "complete",
+          "test": "real battle settlement restores exactly 1 life with initial life one below cap",
+          "behavior": "每场战斗结束额外回复 1 点行动生命。"
+        }
+      ]
+    },
+    {
+      "id": "cross-cloverfossil",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-rules.test.mjs: cloverfossil appends one real weighted reward option and consumes the queue marker once",
+          "behavior": "战斗胜利收藏品候选 +1，权重与携带上限不变。"
+        }
+      ]
+    },
+    {
+      "id": "cross-icefire",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relic-ammo-element-behavior.test.mjs: ice-fire aura separately scales real enemy gauge and burst HP damage, including late spawns",
+          "behavior": "敌人元素损伤承受 +75%、元素爆发伤害 +75%，新敌人继承。",
+          "evidenceKind": "nativeBehavior"
+        }
+      ]
+    },
+    {
+      "id": "cross-lancepro",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "native victory settlement grants exactly +3 gold",
+          "behavior": "战斗胜利额外 +3 金币。"
+        },
+        {
+          "index": 1,
+          "status": "complete",
+          "test": "actual refresh quote is exactly one cheaper than matching control, repeated refresh does not accumulate",
+          "behavior": "商店刷新费 -1，最低 1 金币。"
+        }
+      ]
+    },
+    {
+      "id": "cross-houndcoffee",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "battle-start team receives exact 1.3 max HP/ATK; exactly one current enemy is doubled and later spawn is not selected, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "全队生命 +30%、攻击 +30%，当前生命按比例。"
+        },
+        {
+          "index": 1,
+          "status": "complete",
+          "test": "random initial enemy gets 2× max HP exactly once, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "开局随机 1 名敌人生命 +100%。"
+        }
+      ]
+    },
+    {
+      "id": "cross-everlight",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "ranged first entrant is skipped; first real ground entrant gets 1.5 ATK, 0.5 element intake, native RESIST and the buff is removed on retreat, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "首名地面干员攻击 +50%、抵抗、元素损伤承受 -50%，退场即结束。"
+        }
+      ]
+    },
+    {
+      "id": "cross-shadow",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "real target gets +2 block, ×1.5 DEF and ×1.5 max HP; real paid deployment refunds exactly half its paid DP, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "最右侧待部署干员阻挡 +2、防御 +50%、最大生命 +50%。"
+        },
+        {
+          "index": 1,
+          "status": "complete",
+          "test": "DP refund equals half actual deployment cost on native deploy, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "持有 shadow 的干员部署时返还本次费用的 50% 部署点数。"
+        }
+      ]
+    },
+    {
+      "id": "leader-svash2-frostsigil",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "first owner has exact 0.7 redeploy multiplier; native forced attack applies 1s COLD and retreat removes the complete effect, relic-redeploy-summon-cross-behavior.test.mjs",
+          "behavior": "首名部署干员再部署等待 -30%，普攻附加 1 秒寒冷，退场即结束。"
+        }
+      ]
+    },
+    {
+      "id": "leader-ironmn-workshopkey",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relics.test.mjs: real summon death removes owner-scoped wind-feather aura and workshop uses the real owner ledger",
+          "behavior": "白铁起步专属。白铁出战时免费生成一个工坊修复台，与其支援装置共享场上容量。每2.5秒对范围内最近出口的一个敌人造成白铁当前攻击力150%的物理伤害；每5秒为四邻友军各回复500生命。修复台生命为白铁最大生命的75%，不阻挡。"
+        }
+      ]
+    },
+    {
+      "id": "leader-angel2-oldmagazine",
+      "effects": [
+        {
+          "index": 0,
+          "status": "complete",
+          "test": "relics.test.mjs: real Assault ammo protocol drives ammo relics without a synthetic ammo field",
+          "behavior": "开局该干员获得 6 发旧弹匣弹药。"
+        },
+        {
+          "index": 1,
+          "status": "complete",
+          "test": "relics.test.mjs: real Assault ammo protocol drives ammo relics without a synthetic ammo field",
+          "behavior": "每次命中消耗 1 发旧弹匣并追加 40% 攻击力伤害。"
+        }
+      ]
+    }
+  ]
+}

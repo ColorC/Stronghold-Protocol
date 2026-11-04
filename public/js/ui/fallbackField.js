@@ -22,12 +22,15 @@
 import { render } from '../../vendor/preact.module.js';
 import { html, TierChip } from './components.js';
 import { GEO } from '../../../shared/constants.js';
+import { damageEventMark } from '../../../shared/protocol.js';
 import { chessAvatarUrl, itemIconUrl, tokenAvatarUrl, enemyIconUrl } from './assetUrls.js';
-import { tileKey, hasFlag, UF, penPlacement, PEN, fieldTile } from './gameLogic.js';
-import { CRIT_FONT_SCALE, CRIT_SCALE, CRIT_Y, POPUP_ROWS, lerpKeys, popupAlpha, popupPosition, popupWaypoints } from '../render/dmgNumbers.js';
+import { tileKey, hasFlag, UF, penPlacement, PEN, fieldTile, ownStandIn, ownDiyRecord } from './gameLogic.js';
+import { numberTier } from '../render/dmgNumbers.js';
+import { t } from '../../../shared/i18n.js';
+import { normalizeStaticFloors, normalizeDynamicFloors, resonanceFloorTileIndex, resonanceFloorStyle } from '../render/resonanceFloors.js';
 
 const DRAG_PX = 6;
-const DMG_TTL = 1500;
+const DMG_TTL = 900;
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
 /** Avatar URL for a UnitInfo `avatar` asset id (chars / E2 / tokens / enemies). */
@@ -60,6 +63,36 @@ export function fallbackTileClass(stage, row, col) {
   return 'floor';
 }
 
+function floorOverlayStyle(kind, alpha = 0.34) {
+  const style = resonanceFloorStyle(kind);
+  const color = Number(style.color) >>> 0;
+  return `background-image:linear-gradient(rgba(${(color >> 16) & 255},${(color >> 8) & 255},${color & 255},${Math.min(alpha, style.alpha)}),rgba(${(color >> 16) & 255},${(color >> 8) & 255},${color & 255},${Math.min(alpha, style.alpha)}));box-shadow:inset 0 0 0 1px rgba(${(Number(style.line) >>> 16) & 255},${(Number(style.line) >>> 8) & 255},${Number(style.line) & 255},.75)`;
+}
+
+/**
+ * The simplified board's floating label for one event, or null when that event draws no digits.
+ * Official mode keeps only a marked red integer (including 0) and a yellow MISS. The slot stays above the unit;
+ * the random offset of the Pixi numbers is not repeated here [ASSUMED].
+ * @param {any[]} e
+ * @param {{ damageNumbers?: boolean, officialDamageNumbers?: boolean }} settings
+ * @returns {{ id: any, text: string, type: string }|null}
+ */
+export function fallbackFloat(e, settings) {
+  if (!settings?.damageNumbers || !Array.isArray(e)) return null;
+  if (settings.officialDamageNumbers === true) {
+    if (e[0] === 'fx' && e[1] === 'dodge' && e[4] && e[4].num === 'm') return { id: e[4].id, text: 'MISS', type: 'miss' };
+    if (damageEventMark(e) !== 'r') return null;
+    const amount = Math.round(Number(e[2]) || 0);
+    if (!Number.isFinite(amount) || amount < 0) return null;
+    return { id: e[1], text: String(amount), type: 'crit' };
+  }
+  if (e[0] !== 'dmg' && e[0] !== 'heal') return null;
+  const amount = Math.round(Number(e[2]) || 0);
+  if (amount <= 0) return null;
+  const type = e[0] === 'heal' ? 'heal' : (e[3] === 'arts' ? 'arts' : e[3] === 'true' ? 'true' : 'phys');
+  return { id: e[1], text: e[0] === 'heal' ? `+${amount}` : String(amount), type };
+}
+
 /**
  * Create the DOM fallback view.
  * @param {HTMLElement} host
@@ -77,8 +110,9 @@ export function createFallbackView(host, opts = {}) {
   const st = {
     stage: null, camera: 'prep', rect: { ...GEO.NORMAL_RECT }, side: 'L', deployField: 'normal',
     mode: 'prep', priv: null, editable: false, canPlace: null,
-    field: null, units: new Map(), snapUnits: new Map(), highlight: new Map(), hlGroups: new Map(), held: new Map(), dirs: new Map(),
-    drag: null, hoverTarget: null, floats: [], critMarks: [], settings: { damageNumbers: true, ...(opts.settings || {}) },
+    field: null, staticFloors: [], dynamicFloors: [], floorTime: 0, floorTiles: new Map(),
+    units: new Map(), snapUnits: new Map(), highlight: new Map(), hlGroups: new Map(), held: new Map(), dirs: new Map(),
+    drag: null, hoverTarget: null, floats: [], settings: { damageNumbers: true, officialDamageNumbers: false, ...(opts.settings || {}) },
     size: { w: 0, h: 0 }, destroyed: false, pen: [],
   };
 
@@ -126,12 +160,22 @@ export function createFallbackView(host, opts = {}) {
     const mm = m();
     if (p.kind === 'item') return itemIconUrl(mm, lookup('items', p.id));
     if (p.kind === 'token') return tokenAvatarUrl(mm, p.id);
-    return chessAvatarUrl(mm, lookup('chess', p.id));
+    const chess = lookup('chess', p.id);
+    return chessAvatarUrl(mm, ownSi(chess) || ownDiy(chess) || chess);
+  }
+  /** 0.2.0 补位: the player's own piece of a chess it does not own is its stand-in, bench and board alike (render/app.js pieceInfo) */
+  function ownSi(chess) {
+    return chess ? ownStandIn(chess, st.priv, dataStore?.get?.('backups') ?? null) : null;
+  }
+  /** 0.2.0 自选编队: the player's own piece of a DIY slot it filled is its operator (gameLogic ownDiyRecord) */
+  function ownDiy(chess) {
+    return chess ? ownDiyRecord(chess, st.priv, { chess: dataStore?.get?.('chess') ?? null, backups: dataStore?.get?.('backups') ?? null }) : null;
   }
   function pieceName(p) {
-    if (p.kind === 'item') return lookup('items', p.id)?.name || '道具';
-    if (p.kind === 'token') return lookup('tokens', p.id)?.name || '召唤物';
-    return lookup('chess', p.id)?.name || '干员';
+    if (p.kind === 'item') return lookup('items', p.id)?.name || t('道具');
+    if (p.kind === 'token') return lookup('tokens', p.id)?.name || t('召唤物');
+    const chess = lookup('chess', p.id);
+    return (ownSi(chess) || ownDiy(chess) || chess)?.name || t('干员');
   }
 
   function Piece({ p, x, y, L, area }) {
@@ -139,6 +183,7 @@ export function createFallbackView(host, opts = {}) {
     const dragging = st.drag?.uid === p.uid && st.drag.moved;
     const golden = !!p.golden;
     const tier = p.tier || lookup('chess', p.id)?.tier || lookup('items', p.id)?.tier;
+    const resonanceStar = Number.isInteger(Number(p.resonanceStar)) && Number(p.resonanceStar) >= 1 && Number(p.resonanceStar) <= 3 ? Number(p.resonanceStar) : 0;
     const dir = st.dirs.get(p.uid) || (typeof p.dir === 'string' ? p.dir.toUpperCase() : 'RIGHT');
     const wedge = (area === 'board' || st.held.has(p.uid)) && p.kind !== 'item';
     return html`<div class=${cx('ff-piece', `ff-piece--${p.kind}`, golden && 'is-golden', dragging && 'is-lifted', st.editable && 'is-draggable', area === 'temp' && 'is-temp', wedge && `ff-dir--${dir.toLowerCase()}`)}
@@ -148,6 +193,7 @@ export function createFallbackView(host, opts = {}) {
         title=${pieceName(p)}>
       <div class="ff-piece__art">${src ? html`<img src=${src} alt="" draggable=${false} />` : html`<span>${[...pieceName(p)][0]}</span>`}</div>
       ${tier && p.kind !== 'token' ? html`<${TierChip} tier=${tier} golden=${golden} size="sm" class="ff-piece__tier" />` : null}
+      ${p.kind === 'chess' && resonanceStar ? html`<b aria-label=${`${resonanceStar}星`} style="position:absolute;right:2%;top:0;color:#ffe17a;font-size:calc(var(--tile) * .16);line-height:1;text-shadow:0 1px 3px #000;pointer-events:none">${'★'.repeat(resonanceStar)}</b>` : null}
       ${p.kind === 'chess' && Array.isArray(p.items) && p.items.length ? html`<div class="ff-piece__items">${p.items.slice(0, 2).map((it) => html`<i key=${it.uid}></i>`)}</div>` : null}
       ${p.kind === 'token' && p.count > 1 ? html`<b class="ff-piece__count">×${p.count}</b>` : null}
       ${wedge ? html`<i class="ff-piece__dir" aria-hidden="true"></i>` : null}
@@ -239,6 +285,7 @@ export function createFallbackView(host, opts = {}) {
     const px = (x - st.rect.c0 + 0.5) * L.tile;
     const py = (st.rect.r1 - y + 0.5) * L.tile;
     const enemy = info.side === 'enemy';
+    const resonanceStar = Number.isInteger(Number(info.resonanceStar)) && Number(info.resonanceStar) >= 1 && Number(info.resonanceStar) <= 3 ? Number(info.resonanceStar) : 0;
     const size = info.boss ? L.tile * 1.3 : L.tile * 0.86;
     const src = unitArt(m(), info);
     const dead = anim === 4;
@@ -250,6 +297,7 @@ export function createFallbackView(host, opts = {}) {
         onPointerDown=${(e) => { if (e.button === 0) emit('pieceClick', { unitId: id, uid: info.uid ?? null, unit: info, button: 0, clientX: e.clientX, clientY: e.clientY }); }}
         onContextMenu=${(e) => { e.preventDefault(); emit('pieceClick', { unitId: id, uid: info.uid ?? null, unit: info, button: 2, clientX: e.clientX, clientY: e.clientY }); }}>
       <div class="ff-unit__art">${src ? html`<img src=${src} alt="" draggable=${false} />` : html`<span>${[...(info.name || '?')][0]}</span>`}</div>
+      ${!enemy && resonanceStar ? html`<b aria-label=${`${resonanceStar}星`} style="position:absolute;right:0;top:0;color:#ffe17a;font-size:calc(var(--tile) * .16);line-height:1;text-shadow:0 1px 3px #000;pointer-events:none">${'★'.repeat(resonanceStar)}</b>` : null}
       <div class="ff-unit__bars"><i class="hp" style=${`width:${hpPct}%`}></i>${!enemy && spMax > 0 ? html`<i class="sp" style=${`width:${spPct}%`}></i>` : null}</div>
     </div>`;
   }
@@ -294,7 +342,7 @@ export function createFallbackView(host, opts = {}) {
     });
     return html`<div class="ff-board ff-board--pen" style=${`left:${left}px;top:${top}px;width:${bw}px;height:${tile * rows}px;--tile:${tile}px`}>
       ${cells}${figs}
-      ${models.length ? null : html`<p class="ff-pen__empty">暂无敌方情报</p>`}
+      ${models.length ? null : html`<p class="ff-pen__empty">${t('暂无敌方情报')}</p>`}
     </div>`;
   }
 
@@ -311,10 +359,15 @@ export function createFallbackView(host, opts = {}) {
         let hl = st.highlight.get(k);
         for (const g of st.hlGroups.values()) if (g.tiles.has(k)) hl = g.name;
         const hov = st.hoverTarget?.area === 'board' && st.hoverTarget.row === row && st.hoverTarget.col === col ? dropState(st.hoverTarget) : null;
+        const key = `${row},${col}`;
+        const floorState = st.mode === 'battle' ? st.floorTiles.get(key) : null;
+        const floor = floorState?.dynamic.at(-1);
+        const floorStyle = floor ? floorOverlayStyle(floor.kind, floor.style.alpha)
+          : floorState?.static ? floorOverlayStyle('snow', 0.3) : '';
         tiles.push(html`<div key=${k} class=${cx('ff-tile', `ff-tile--${tileClass(row, col)}`, hl && `is-${hl}`, hov && `is-hover-${hov}`)}
           data-drop="board" data-row=${row} data-col=${col}
           onPointerDown=${(e) => { if (e.button === 0) emit('tileClick', { row, col, button: 0, clientX: e.clientX, clientY: e.clientY }); }}
-          style=${`transform:translate(${p.x}px,${p.y}px);width:${L.tile}px;height:${L.tile}px`}></div>`);
+          style=${`transform:translate(${p.x}px,${p.y}px);width:${L.tile}px;height:${L.tile}px;${floorStyle}`}></div>`);
       }
     }
     const pieces = [];
@@ -322,6 +375,18 @@ export function createFallbackView(host, opts = {}) {
     const now = performance.now();
     if (st.mode === 'prep' && st.priv) {
       const heldPos = (p) => { const t = st.held.get(p.uid); return t ? tilePos(L, t.row, t.col) : null; };
+      for (const u of Array.isArray(st.priv.prepMapChars) ? st.priv.prepMapChars : []) {
+        if (!u || !Number.isInteger(u.x) || !Number.isInteger(u.y) || typeof u.defId !== 'string') continue;
+        const pos = tilePos(L, u.y, u.x);
+        const src = tokenAvatarUrl(m(), u.defId);
+        pieces.push(html`<div key=${`map:${u.uid}`} class="ff-piece ff-piece--token ff-piece--map-char"
+            style=${`transform:translate(${pos.x}px,${pos.y}px);width:${L.tile}px;height:${L.tile}px`}
+            onPointerDown=${(e) => { if (e.button === 0) emit('pieceClick', { unit: u, unitId: null, uid: u.uid, prepMapChar: true, button: 0, clientX: e.clientX, clientY: e.clientY }); }}
+            onContextMenu=${(e) => { e.preventDefault(); emit('pieceClick', { unit: u, unitId: null, uid: u.uid, prepMapChar: true, button: 2, detail: true, clientX: e.clientX, clientY: e.clientY }); }}
+            title=${u.name || u.defId}>
+          <div class="ff-piece__art">${src ? html`<img src=${src} alt="" draggable=${false} />` : html`<span>${[...(u.name || '?')][0]}</span>`}</div>
+        </div>`);
+      }
       for (const p of Array.isArray(st.priv.board) ? st.priv.board : []) {
         if (!p || !Number.isInteger(p.row)) continue;
         const pos = heldPos(p) || tilePos(L, p.row, p.col);
@@ -352,30 +417,7 @@ export function createFallbackView(host, opts = {}) {
       if (!s) return null;
       const px = (s[1] - r.c0 + 0.5) * L.tile;
       const py = (r.r1 - s[2] + 0.5) * L.tile - L.tile * 0.4;
-      const ref = (el) => {
-        if (!el || f.animation || typeof el.animate !== 'function') return;
-        const row = POPUP_ROWS[f.motion] || POPUP_ROWS.damage;
-        const times = new Set([0, row.total, ...Array.from({ length: 10 }, (_, i) => row.move * (i + 1) / 10)]);
-        const critScale = f.motion === 'crit' ? CRIT_SCALE : [[0, 1]];
-        const critY = f.motion === 'crit' ? CRIT_Y : [[0, 0]];
-        const alpha = f.motion === 'crit' ? [[0, 0], [0.016667, 1], [0.433333, 1], [0.75, 0]] : [[0, 1], [0.25, 0.9], [0.5, 0]];
-        for (const [t] of [...critScale, ...critY, ...alpha]) times.add(t);
-        const frames = [...times].sort((a, b) => a - b).map((t) => {
-          const elapsed = Math.max(0, t - f.delay);
-          const [dx, dy] = popupPosition(f.path, elapsed, f.direction);
-          const criticalY = f.motion === 'crit' ? lerpKeys(CRIT_Y, elapsed) : 0;
-          const scale = f.rowScale * (f.motion === 'crit' ? CRIT_FONT_SCALE * lerpKeys(CRIT_SCALE, elapsed) : 1);
-          return {
-            offset: t / row.total,
-            left: `${px + (f.path.ox + dx / 56) * L.tile}px`,
-            top: `${py - (f.path.oy + dy / 56 + criticalY / 56) * L.tile}px`,
-            opacity: popupAlpha(f.motion === 'crit', elapsed),
-            transform: `translate(-50%,0) scale(${scale})`,
-          };
-        });
-        f.animation = el.animate(frames, { duration: row.total * 1000, fill: 'forwards' });
-      };
-      return html`<span key=${f.key} ref=${ref} class=${`ff-float ff-float--${f.type}`} style=${`left:${px}px;top:${py}px;font-size:.16rem`}>${f.text}</span>`;
+      return html`<span key=${f.key} class=${`ff-float ff-float--${f.type} ff-float--${f.tier}`} style=${`left:${px}px;top:${py}px`}>${f.text}</span>`;
     }) : null;
     const d = st.drag;
     const ghost = d?.moved ? (() => {
@@ -386,7 +428,7 @@ export function createFallbackView(host, opts = {}) {
     })() : null;
     if (st.camera === 'pen') { render(html`${penView()}<div class="ff-badge">SIMPLIFIED VIEW</div>`, root); return; }
     render(html`<div class=${cx('ff-board', `ff-board--${st.mode}`, `ff-cam--${st.camera}`)} style=${`left:${L.left}px;top:${L.top}px;width:${L.bw}px;height:${L.bh}px;--tile:${L.tile}px`}>
-      ${st.mode === 'prep' ? html`<div class="ff-hand-label" style=${`top:${(L.rows + 0.18) * L.tile}px`}><span>整备区</span><i></i></div>` : null}
+      ${st.mode === 'prep' ? html`<div class="ff-hand-label" style=${`top:${(L.rows + 0.18) * L.tile}px`}><span>${t('整备区')}</span><i></i></div>` : null}
       ${tiles}${hand}${units}${pieces}${floats}
     </div>${ghost}
     <div class="ff-badge">SIMPLIFIED VIEW</div>`, root);
@@ -399,7 +441,6 @@ export function createFallbackView(host, opts = {}) {
 
   const view = {
     kind: 'fallback',
-    setReplayPaused(paused) { host.classList.toggle('sp-replay-paused', !!paused); return true; },
     setStage(stage) { st.stage = stage || null; schedule(); },
     setCamera(kind, o = {}) {
       st.camera = kind || 'prep';
@@ -426,6 +467,10 @@ export function createFallbackView(host, opts = {}) {
     enterBattle(field) {
       st.mode = 'battle';
       st.field = field || null;
+      st.staticFloors = normalizeStaticFloors(field?.resonanceFloors);
+      st.dynamicFloors = [];
+      st.floorTime = 0;
+      st.floorTiles = resonanceFloorTileIndex(st.staticFloors, st.dynamicFloors, st.floorTime);
       // a scouted teammate's prep board brings their pen; a real battle empties it
       st.pen = field?.prep && Array.isArray(field.nextEnemies) ? field.nextEnemies : [];
       st.units.clear();
@@ -441,6 +486,9 @@ export function createFallbackView(host, opts = {}) {
     pushSnapshot(snap) {
       if (st.mode !== 'battle' || !snap || !Array.isArray(snap.units)) return;
       if (st.field && snap.fieldId && st.field.fieldId && snap.fieldId !== st.field.fieldId) return;
+      st.dynamicFloors = normalizeDynamicFloors(snap.resonanceFloors);
+      st.floorTime = Number.isFinite(snap.t) ? snap.t : st.floorTime;
+      st.floorTiles = resonanceFloorTileIndex(st.staticFloors, st.dynamicFloors, st.floorTime);
       const seen = new Set();
       for (const t of snap.units) {
         if (!Array.isArray(t) || t.length < 9) continue;
@@ -460,32 +508,14 @@ export function createFallbackView(host, opts = {}) {
         if (e[0] === 'spawn' && e[1] && e[1].id != null) {
           st.units.set(e[1].id, e[1]);
           if (!st.snapUnits.has(e[1].id)) st.snapUnits.set(e[1].id, [e[1].id, e[1].x, e[1].y, e[1].maxHp, e[1].maxHp, 0, 0, 0, 6]);
-        } else if (e[0] === 'fx' && e[1] === 'crit') {
-          const x = Number(e[2]), y = Number(e[3]);
-          const target = [...st.snapUnits.values()].map((s) => ({ s, d: Math.hypot(s[1] - x, s[2] - y) })).sort((a, b) => a.d - b.d)[0];
-          if (target && target.d <= 0.75) {
-            const found = [...st.floats].reverse().find((f) => f.id === target.s[0] && Math.abs(now - f.at) < 1 && f.motion !== 'heal');
-            if (found) {
-              found.animation?.cancel(); found.animation = null; found.motion = 'crit'; found.text += '!';
-              found.rowScale = POPUP_ROWS.crit.scale[1]; found.path = popupWaypoints('crit', found.seed);
-            } else st.critMarks.push({ id: target.s[0], at: now });
-          }
-        } else if ((e[0] === 'dmg' || e[0] === 'heal') && st.settings.damageNumbers) {
-          const amount = Math.round(Number(e[2]) || 0);
-          if (amount <= 0) continue;
-          const type = e[0] === 'heal' ? 'heal' : (e[3] === 'arts' ? 'arts' : e[3] === 'true' ? 'true' : 'phys');
-          const target = st.snapUnits.get(e[1]);
-          const mark = e[0] === 'dmg' ? st.critMarks.findIndex((m) => m.at === now && m.id === e[1]) : -1;
-          const crit = mark >= 0;
-          if (crit) st.critMarks.splice(mark, 1);
-          const motion = e[0] === 'heal' ? 'heal' : crit ? 'crit' : 'damage';
-          const attacker = st.units.get(e[4]) || st.snapUnits.get(e[4]);
-          const attackerX = Array.isArray(attacker) ? attacker[1] : attacker?.x;
-          const direction = attacker && target ? Math.sign(target[1] - attackerX) || 1 : 1;
-          const seed = st.floatSeq + 1 + (Number(e[1]) || 0) * 31;
+        } else if (st.floats.length < 60) {
+          const spec = fallbackFloat(e, st.settings);
+          if (!spec) continue;
+          const amount = Math.round(Number(e[2]) || 0), type = spec.type;
+          // size by the hit's share of the unit's max HP (render/dmgNumbers.js tiers, docs/damage-numbers.md)
+          const tier = st.settings.officialDamageNumbers ? null : numberTier(amount, Number(st.snapUnits.get(e[1])?.[4]) || Number(st.units.get(e[1])?.maxHp) || 0, type);
           st.floatSeq = (st.floatSeq | 0) + 1;
-          st.floats.push({ key: `f${st.floatSeq}`, id: e[1], text: e[0] === 'heal' ? `+${amount}` : `${amount}${crit ? '!' : ''}`, type, motion,
-            rowScale: POPUP_ROWS[motion].scale?.[1] ?? 1, direction, delay: 0, seed, path: popupWaypoints(motion, seed), at: now });
+          st.floats.push({ key: `f${st.floatSeq}`, ...spec, tier, at: now });
         }
       }
       schedule();
@@ -522,6 +552,14 @@ export function createFallbackView(host, opts = {}) {
     pieceScreenRect(uid) {
       const el = root.querySelector(`[data-uid="${Number(uid)}"]`);
       return el ? el.getBoundingClientRect() : null;
+    },
+    /** Match the engine's client hit-test for DOM-originating drags (equipment → exact unit). */
+    pieceAtClient(clientX, clientY) {
+      if (st.destroyed || !Number.isFinite(clientX) || !Number.isFinite(clientY)) return null;
+      const el = document.elementFromPoint(clientX, clientY)?.closest?.('.ff-piece[data-uid]');
+      if (!el || !root.contains(el)) return null;
+      const uid = Number(el.dataset.uid);
+      return Number.isFinite(uid) ? { uid, area: el.closest('.ff-hand') ? 'hand' : 'board' } : null;
     },
     /** Client geometry of a tile: centre, px per tile, corners (board tiles and 整备区 slots of the prep layout). */
     tileScreen(row, col) {

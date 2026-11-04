@@ -2,11 +2,11 @@
 // Conventions of the tier-4 kits: ../shared/tier4.js; kit contract and rules: ../README.md.
 
 import { COLS } from '../../../constants.js';
-import { applyDamageIncrease } from '../../../../../shared/damageIncrease.js';
 import { bodyInKeys } from '../../../body.js';
 import { absoluteRangeKeys, sortEnemyTargets } from '../../../targeting.js';
 import { isHpLoss } from '../../../damage.js';
 import { num, tbb, whileDeployed, toggleBuff, skillActive, isSel, alt, withDefaults } from '../shared/tier4.js';
+import { applyDamageIncrease } from '../../../../../shared/damageIncrease.js';
 import { hypot } from '../../../detmath.js';
 
 const LINE = Object.freeze(Array.from({ length: COLS }, (_, i) => Object.freeze([0, i])));

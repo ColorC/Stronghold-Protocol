@@ -38,7 +38,7 @@ export default {
           battle.removeBuff(unit, CAMOU_KEY);
           unit.mem.vulpisKill = false;
           const dp = num(bb.cost, 0);
-          if (dp > 0) { battle.addDp(unit.ownerId, dp); fx(battle, 'dp', unit, { n: dp }); }
+          if (dp > 0) { battle.addDp(unit.ownerId, dp, { sourceUnitId: unit.id }); fx(battle, 'dp', unit, { n: dp }); }
           battle.addBuff(unit, { key: 'skill:vulpis_aspd', mods: { aspd: aspd0 } });
           unit.mem.vulpisDur = skill.timeLeft;
         },
@@ -61,7 +61,7 @@ export default {
           attack: { onHit({ battle, unit, target }) {
             if (target && target.alive) battle.dealDamage(unit, target, { amount: unit.s.atk * num(s.bb.extra_damage_ratio), type: 'arts', isSkill: true, tags: ['skill', 'vulpisPunish'] });
             const dp = num(s.bb.cost, 0);
-            if (dp > 0) { battle.addDp(unit.ownerId, dp); fx(battle, 'dp', unit, { n: dp }); }
+            if (dp > 0) { battle.addDp(unit.ownerId, dp, { sourceUnitId: unit.id }); fx(battle, 'dp', unit, { n: dp }); }
           } },
         }),
         skchr_vulpis_2: (s) => { // 坠刃拷问 — air units too (PRTS 备注 "※可对空"); data trigger SKILL_RANGE (its 3-12 range)
@@ -71,7 +71,7 @@ export default {
             kind: instantKindOf(s),
             onStart({ battle, unit }) {
               const dp = num(s.bb.cost, 0);
-              if (dp > 0) { battle.addDp(unit.ownerId, dp); fx(battle, 'dp', unit, { n: dp }); }
+              if (dp > 0) { battle.addDp(unit.ownerId, dp, { sourceUnitId: unit.id }); fx(battle, 'dp', unit, { n: dp }); }
               const list = enemiesOn(battle, unit, gridKeys(grid ?? unit.rangeGrid, unit), n);
               for (const e of list) {
                 const was = !!e.findBuff('sluggish'); // "若敌人已经处于停顿状态" (before this cast)
@@ -94,8 +94,9 @@ export default {
           battle.on('damaged', (ctx) => {
             const e = ctx.target;
             if (busy || ctx.source !== unit || e.side !== 'enemy' || ctx.type === 'element' || ctx.dmg?.tags?.includes('vulpisHunt')) return;
-            const t = marks.get(e.id);
-            if (t == null) { marks.set(e.id, battle.time); return; }
+            let t = marks.get(e.id);
+            // PRTS talent remarks: the first damage instance also receives the arts addition.
+            if (t == null) { t = battle.time; marks.set(e.id, t); }
             if (battle.time - t <= num(t0.interval, 10) + 1e-9 && e.alive) {
               busy = true;
               // PRTS 备注 "伤害类型为法术附加伤害": tag addition (no 叙拉古 6 roll)
@@ -111,7 +112,7 @@ export default {
           const regen = num(t1['vulpis_t_2[heal][interval].hp_recovery_per_sec_by_max_hp_ratio'], 0);
           battle.on('tick', (ctx) => {
             if (!alive(unit)) return;
-            if (bonus > 0 && isLeader(battle, unit, 'vulpisDp')) battle.addDp(unit.ownerId, battle.flags.dpPerSec * ctx.dt * bonus);
+            if (bonus > 0 && isLeader(battle, unit, 'vulpisDp')) battle.addDp(unit.ownerId, battle.flags.dpPerSec * ctx.dt * bonus, { sourceUnitId: unit.id });
             const on = battle.time - unit.lastHitAt >= quiet && regen > 0;
             const has = !!unit.findBuff('talent:vulpis_regen');
             if (on && !has) battle.addBuff(unit, { key: 'talent:vulpis_regen', mods: { hpRegenRatio: regen } });

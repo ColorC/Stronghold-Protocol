@@ -7,6 +7,7 @@
 //   * FX atlas (one base texture ⇒ particles batch / fit a ParticleContainer),
 //   * status icons, tier chips, backdrop gradients,
 //   * HUD rings: the element discs of the element gauge row and the redeploy countdown ring (hudRings / ringArc),
+//     and the ring's labels (downLabel: one rasterised Text per label, shared by every ring),
 //   * avatar-in-rarity-diamond composites (cached per unit asset id) for the Spine fallback.
 // Everything procedural is deterministic (seeded noise) and generated lazily on first use. Requires
 // globalThis.PIXI and a DOM canvas at call time (never at import time).
@@ -1061,7 +1062,7 @@ export function statusTexture(key) {
 
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI'];
 let _chips = null;
-// 'roman' (the original game) | 'pips' (卫戍协议：工坊: createFieldView({ tierChips: 'pips' }), set per mount)
+// 'roman' (the original game) | 'pips' (卫戍协议：工坊) | 'color' (共鸣 fee tag) | 'base' (共鸣 ground ring), set per mount
 let _chipLook = 'roman';
 // pip colour per tier (theme.css --tier-1..6)
 const PIP = ['', '#b4b4b4', '#f2f2f2', '#34e6b2', '#34b8d8', '#f8bf00', '#ff8a1a'];
@@ -1095,11 +1096,33 @@ function drawPipChip(c, x, y, w, h, t, gold) {
   }
 }
 
+function drawColorChip(c, x, y, w, h, t, gold) {
+  roundRect(c, x + 3, y + 3, w - 6, h - 6, 7);
+  const color = ({1:'#777d7a',2:'#57ad72',3:'#4286c8',4:'#986bcb',5:'#d3a53d',6:'#d86643'})[t] || '#777d7a';
+  c.fillStyle = color;
+  c.fill();
+  c.lineWidth = 2.5;
+  c.strokeStyle = c.fillStyle;
+  c.stroke();
+}
+
 function drawChips(c, w, h) {
   c.clearRect(0, 0, w * 7, h * 2);
   for (let g = 0; g < 2; g++) for (let t = 1; t <= 6; t++) {
     const x = t * w, y = g * h;
     if (_chipLook === 'pips') { c.save(); drawPipChip(c, x, y, w, h, t, !!g); c.restore(); continue; }
+    if (_chipLook === 'stars') {
+      c.save();c.beginPath();c.arc(x+w/2,y+h/2,h*.44,0,Math.PI*2);
+      c.fillStyle='#111c1d';c.fill();c.lineWidth=1.5;c.strokeStyle=g?'#ffd56b':'#99adab';c.stroke();
+      for(const [px,py]of chipPips(t,44,36)) {
+        const radius=t>3?4.5:5.5;c.beginPath();
+        for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,r=i%2?radius*.45:radius;
+          const sx=x+10+px+Math.cos(a)*r,sy=y+4+py+Math.sin(a)*r;if(i)c.lineTo(sx,sy);else c.moveTo(sx,sy);}
+        c.closePath();c.fillStyle=g?'#ffd56b':'#f3dea2';c.fill();
+      }
+      c.restore();continue;
+    }
+    if (_chipLook === 'color') { c.save(); drawColorChip(c, x, y, w, h, t, !!g); c.restore(); continue; }
     c.save();
     roundRect(c, x + 3, y + 3, w - 6, h - 6, 7);
     const grad = c.createLinearGradient(0, y, 0, y + h);
@@ -1150,12 +1173,12 @@ export function refreshTierChips() {
 }
 
 /**
- * The chips' look for the field view being mounted: 'roman' (default, the original game) or 'pips'. A change redraws
+ * The tier presentation for the field view being mounted. A change redraws
  * the atlas in place, so chips already handed out follow.
- * @param {'roman'|'pips'} look
+ * @param {'roman'|'pips'|'stars'|'color'|'base'} look
  */
 export function setTierChipLook(look) {
-  const next = look === 'pips' ? 'pips' : 'roman';
+  const next = ['pips','stars','color','base'].includes(look) ? look : 'roman';
   if (next === _chipLook) return;
   _chipLook = next;
   refreshTierChips();
@@ -1470,4 +1493,34 @@ export function ringArc(frac) {
   let k = Math.round(f * RING_STEPS);
   if (k === 0 && f > 0) k = 1;
   return r.arcs[k];
+}
+
+/** Redeploy-ring label style (the seconds left, "DP", "!"); `fill` is set per label. */
+export const DOWN_LABEL_STYLE = Object.freeze({ fontFamily: 'Bender, Oxanium, "Noto Sans SC", sans-serif', fontSize: 32, fontWeight: '700', fill: '#ffffff', stroke: '#0b0f0e', strokeThickness: 6 });
+const _downLabels = new Map();
+
+/**
+ * The texture of a redeploy-ring label: one rasterised PIXI.Text per (label, fill, resolution), shared by every ring
+ * that shows it (render/units.js _updateDownRing draws it as a Sprite, anchor 0.5). A ring's own Text re-rasterised its
+ * canvas and re-uploaded its texture on every change, once a second per knocked-out operator, though rings mostly show the
+ * same few numbers; the shared one is drawn once and kept, the same pixels. At most 80 counts (the longest respawn in
+ * chess.json) + "DP" + "!" per resolution, ≈ 2.5 MB at resolution 2.
+ */
+export function downLabel(label, fill, resolution = 1) {
+  const key = `${label}|${fill}|${resolution}`;
+  let t = _downLabels.get(key);
+  if (!t) {
+    t = new (PIXI().Text)(label, { ...DOWN_LABEL_STYLE, fill });
+    t.resolution = resolution;
+    t.updateText(false);
+    _downLabels.set(key, t);
+  }
+  return t.texture;
+}
+
+/** Redraw the shared ring labels in place (web fonts that landed after some were drawn); their textures stay the same. */
+export function refreshDownLabels() {
+  for (const t of _downLabels.values()) {
+    try { t.updateText(false); } catch { /* keep the old glyphs */ }
+  }
 }

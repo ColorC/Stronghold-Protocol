@@ -7,13 +7,13 @@
     powershell -ExecutionPolicy Bypass -File scripts\install-service-windows.ps1 -Restart    # 更新代码后重启
     powershell -ExecutionPolicy Bypass -File scripts\install-service-windows.ps1 -Stop
     powershell -ExecutionPolicy Bypass -File scripts\install-service-windows.ps1 -Uninstall  # 删除任务和防火墙规则
-  做的事：写入 scripts\service.env.cmd（node.exe 路径、PORT、HOST、SP_COMBAT、SP_VERIFY）→ 注册计划任务
-  「StrongholdProtocol」（开机时以 SYSTEM 身份运行 scripts\run-server.cmd，无需登录；进程退出 5 秒后自动重启；
+  做的事：写入 scripts\service.env.ps1（node.exe 路径、PORT、HOST、SP_COMBAT、SP_VERIFY）→ 注册计划任务
+  「StrongholdProtocol」（开机时以 SYSTEM 身份运行 scripts\run-server.ps1，无需登录；进程退出 5 秒后自动重启；
   日志 logs\server.log）→ 添加入站防火墙规则「Stronghold Protocol」（TCP 端口，专用/域网络；-AllowPublicNetwork 也放行公用网络）。
 #>
 param(
   [int]$Port = 3000,
-  [string]$BindHost = '0.0.0.0',
+  [string]$BindHost = '::',
   [ValidateSet('client', 'server')][string]$Combat = 'client',
   [ValidateSet('off', 'sample', 'all')][string]$Verify = 'off',
   [string]$TaskName = 'StrongholdProtocol',
@@ -30,8 +30,8 @@ $ErrorActionPreference = 'Continue'
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
 $Root = Split-Path -Parent $PSScriptRoot
 $RuleName = 'Stronghold Protocol'
-$EnvFile = Join-Path $PSScriptRoot 'service.env.cmd'
-$Runner = Join-Path $PSScriptRoot 'run-server.cmd'
+$EnvFile = Join-Path $PSScriptRoot 'service.env.ps1'
+$Runner = Join-Path $PSScriptRoot 'run-server.ps1'
 $Log = Join-Path $Root 'logs\server.log'
 
 function Test-Admin {
@@ -40,9 +40,9 @@ function Test-Admin {
 }
 
 function Stop-ServerProcesses {
-  # the task runs cmd.exe (run-server.cmd, a restart loop) → node.exe: stop the loop first, then its children
-  $runners = @(Get-CimInstance Win32_Process -Filter "Name='cmd.exe'" -ErrorAction SilentlyContinue |
-    Where-Object { $_.CommandLine -like '*run-server.cmd*' })
+  # the task runs powershell.exe (run-server.ps1, a restart loop) → node.exe: stop the loop first, then its children
+  $runners = @(Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -like '*run-server.ps1*' })
   foreach ($r in $runners) {
     $children = @(Get-CimInstance Win32_Process -Filter "ParentProcessId=$($r.ProcessId)" -ErrorAction SilentlyContinue)
     Stop-Process -Id $r.ProcessId -Force -ErrorAction SilentlyContinue
@@ -59,7 +59,7 @@ function Show-Status {
   }
   $p = $Port
   if (Test-Path $EnvFile) {
-    $m = Select-String -Path $EnvFile -Pattern 'set "PORT=(\d+)"' | Select-Object -First 1
+    $m = Select-String -Path $EnvFile -Pattern "PORT = '(\d+)'" | Select-Object -First 1
     if ($m) { $p = [int]$m.Matches[0].Groups[1].Value }
   }
   try {
@@ -99,7 +99,7 @@ try {
     Stop-ServerProcesses
     & netsh advfirewall firewall delete rule name="$RuleName" | Out-Null
     if (Test-Path $EnvFile) { Remove-Item $EnvFile -Force }
-    Write-Host '已删除计划任务、防火墙规则和 scripts\service.env.cmd。' -ForegroundColor Green
+    Write-Host '已删除计划任务、防火墙规则和 scripts\service.env.ps1。' -ForegroundColor Green
     exit 0
   }
   if ($Stop -or $Restart) {
@@ -128,21 +128,22 @@ try {
   & $nodeExe tools\setup.mjs --quiet
   if ($LASTEXITCODE -ne 0) { throw 'setup 失败，请先解决上面的问题（node tools\doctor.mjs 可诊断）。' }
 
+  $q = { param($v) "'" + ([string]$v -replace "'", "''") + "'" }
   @(
-    '@rem Written by scripts\install-service-windows.ps1 - re-run it to change these values.',
-    "set `"NODE_EXE=$nodeExe`"",
-    "set `"PORT=$Port`"",
-    "set `"HOST=$BindHost`"",
-    "set `"SP_COMBAT=$Combat`"",
-    "set `"SP_VERIFY=$Verify`""
-  ) | Set-Content -Path $EnvFile -Encoding Oem -ErrorAction Stop
+    '# Written by scripts\install-service-windows.ps1 - re-run it to change these values.',
+    "`$env:NODE_EXE = $(& $q $nodeExe)",
+    "`$env:PORT = $(& $q $Port)",
+    "`$env:HOST = $(& $q $BindHost)",
+    "`$env:SP_COMBAT = $(& $q $Combat)",
+    "`$env:SP_VERIFY = $(& $q $Verify)"
+  ) | Set-Content -Path $EnvFile -Encoding UTF8 -ErrorAction Stop
 
   if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
     Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
     Stop-ServerProcesses
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
   }
-  $action = New-ScheduledTaskAction -Execute 'cmd.exe' -Argument "/d /c `"`"$Runner`"`"" -WorkingDirectory $Root
+  $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$Runner`"" -WorkingDirectory $Root
   $trigger = New-ScheduledTaskTrigger -AtStartup
   $trigger.Delay = 'PT20S'   # give the network a moment after boot
   $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
@@ -162,8 +163,10 @@ try {
   Start-ScheduledTask -TaskName $TaskName -ErrorAction Stop
   Start-Sleep -Seconds 4
   Show-Status
-  Write-Host "`n朋友访问地址（局域网）："
-  & $nodeExe tools\doctor.mjs --port $Port | Select-String -Pattern 'http://\d' | ForEach-Object { Write-Host "  $($_.Line.Trim())" }
+  Write-Host "`n朋友访问地址（局域网 / IPv6，方括号不能少）："
+  # doctor prints a full URL. An IPv6 literal is bracketed, so a pattern that requires a digit right after http://
+  # would drop it. Keep every http:// line; the rest of the report is classification text.
+  & $nodeExe tools\doctor.mjs --port $Port | Select-String -Pattern 'http://' | ForEach-Object { Write-Host "  $($_.Line.Trim())" }
   Write-Host "`n停止：-Stop   重启：-Restart   状态：-Status   卸载：-Uninstall   日志：$Log"
 } catch {
   Write-Host "`n出错：$($_.Exception.Message)" -ForegroundColor Red

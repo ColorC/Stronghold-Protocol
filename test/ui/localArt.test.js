@@ -23,7 +23,7 @@ const manifest = {
     'ui/battle': { img_chess_level_3: { path: '/assets/local/ui/battle/img_chess_level_3.png', w: 45, h: 45 } },
   },
 };
-// what server/index.js serves when data/local-assets.json is absent
+// what the server (server/http/static.js) serves when data/local-assets.json is absent
 const EMPTY_LOCAL = { version: 1, source: 'none', count: 0, groups: {} };
 
 let mode = 'ok';         // data/local-assets.json: 'ok' (the manifest above) | 'empty' (the server's stand-in) | 'missing' (404)
@@ -159,7 +159,8 @@ describe('emotes and 玩法说明 pages: local art first, then the mirror copy (
     // the viewer shows exactly that: the image stage for a URL, the tips stage otherwise (never the old blank notice)
     const src = readFileSync(path.join(ROOT, 'public/js/ui/guide.js'), 'utf8');
     assert.match(src, /const stage = guideStage\(cur, failed\)/);
-    assert.match(src, /: html`<div class="guide__stage guide__stage--text"><\$\{TipsFallback\} \/><\/div>`\}/);
+    assert.ok(src.includes('cur?.content ?? html`<${TipsFallback} />`'), 'a page without an image renders the native tips fallback');
+    assert.ok(src.includes("data.get('config')?.tips") && src.includes('tips.map((t, i)'), 'the fallback reads and renders the official tips');
     assert.ok(!src.includes('该页面暂时无法显示'), 'no blank notice left');
   });
 

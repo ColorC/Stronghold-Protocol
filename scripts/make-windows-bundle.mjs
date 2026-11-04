@@ -7,7 +7,7 @@
 //   node\node.exe            官方 Windows x64 便携版 Node（使用固定官方发布版本）
 //   node\LICENSE-node.txt    Node 自己的许可证（和 node.exe 一起从官方 zip 里取出来）
 //   app\                     游戏本体：**只收 git 跟踪的文件** + 生产依赖 + 素材，离线可玩
-//   启动游戏.exe             启动器（scripts/windows/launcher.cs）：app\scripts\launch.mjs --workshop [--no-setup]
+//   启动游戏.exe             启动器（scripts/windows/launcher.cs）：app\scripts\launch.mjs --assault [--no-setup]
 //   README-开箱即用.md       给玩家看的说明（含非官方 / 严禁盈利 / 素材版权声明）
 //   LICENSE / NOTICE.md / THIRD-PARTY-NOTICES.md
 //
@@ -30,7 +30,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { workshopIco } from './windows/icon.mjs';
+import { productIco } from './windows/icon.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const IS_WIN = process.platform === 'win32';
@@ -54,11 +54,11 @@ const ASSET_DIRS = ['public/assets', 'public/fonts', 'public/vendor'];
 
 /**
  * 留在源码仓库、不放进玩家运行包的跟踪文件：开发页面、测试夹具、CI 配置、启动器与安装包的源码、
- * 从源码目录启动用的 start-windows 脚本，以及开机自启服务（install-service-windows.ps1 → run-server.cmd，
+ * 从源码目录启动用的 start-windows 脚本，以及开机自启服务（install-service-windows.ps1 → run-server.ps1，
  * 只用于源码部署，docs/DEPLOY.md §1.4）。
  */
-const SKIP_TRACKED = ['test/', 'public/dev/', '.github/', 'scripts/windows/', 'scripts/start-windows.bat', 'scripts/start-windows.ps1',
-  'scripts/install-service-windows.ps1', 'scripts/run-server.cmd'];
+const SKIP_TRACKED = ['test/', 'public/dev/', '.github/', 'scripts/windows/', 'scripts/start-windows.ps1',
+  'scripts/install-service-windows.ps1', 'scripts/run-server.ps1'];
 
 /** 发给玩家的包（zip / msi / exe）里任何时候都不放批处理：启动只用 启动游戏.exe。 */
 const BATCH_FILE = /\.(bat|cmd)$/i;
@@ -132,7 +132,7 @@ const HELP = `node scripts/make-windows-bundle.mjs — 生成 Windows 开箱即�
   开机自启服务脚本只留在源码仓库，产物里出现任何 .bat / .cmd 打包即失败。
   完整包会在存在本地棋盘贴图时附上 data/local-assets.json；轻量包不复制本机资源和清单。
 
-  启动游戏.exe 运行 app\\scripts\\launch.mjs --workshop 进入工坊（启动器源码 scripts/windows/launcher.cs，
+  启动游戏.exe 运行 app\\scripts\\launch.mjs --assault 进入进击（启动器源码 scripts/windows/launcher.cs，
   用 Windows 自带的 .NET Framework csc.exe 编译，因此只能在 Windows 上打包）。
   完整包附加 --no-setup；轻量包保留首次启动的资源准备步骤。
   安装包（msi / 安装程序 exe）：node scripts/make-windows-installers.mjs（docs/WINDOWS.md）。
@@ -427,7 +427,7 @@ async function extractPortableNode(bundleNodeDir, version, zipPath) {
 }
 
 /**
- * 数字版本号：0.3.0-workshop.1 → 0.3.0.1。启动器 exe 的文件版本和 MSI 的 ProductVersion 都只认四段数字；
+ * 数字版本号：0.4.0-assault.1 → 0.4.0.1。启动器 exe 的文件版本和 MSI 的 ProductVersion 都只认四段数字；
  * 预发布序号放进第四段（MSI 升级比较只看前三段，安装包因此允许同版本升级，见 scripts/windows/installer.wxs）。
  * @param {string} version package.json 的 version
  */
@@ -485,10 +485,10 @@ export async function compileLauncher(outExe, { launchArgs, version }) {
   const tmp = await fsp.mkdtemp(path.join(os.tmpdir(), 'sp-launcher-'));
   try {
     const buildInfo = path.join(tmp, 'BuildInfo.cs');
-    const icon = path.join(tmp, 'workshop.ico');
+    const icon = path.join(tmp, 'assault.ico');
     const exe = path.join(tmp, 'launcher.exe');
     await fsp.writeFile(buildInfo, launcherBuildInfo({ launchArgs, version }), 'utf8');
-    await fsp.writeFile(icon, workshopIco());
+    await fsp.writeFile(icon, productIco());
     const r = spawnSync(csc, ['/nologo', '/target:exe', '/optimize+', '/codepage:65001', `/win32icon:${icon}`, `/out:${exe}`,
       LAUNCHER_SOURCE, buildInfo], { stdio: ['ignore', 'inherit', 'inherit'], windowsHide: true });
     if (r.error || r.status !== 0) throw new Error(`csc.exe 编译启动器失败（${r.error ? r.error.message : `退出码 ${r.status}`}）：${LAUNCHER_SOURCE}`);
@@ -527,17 +527,17 @@ export function bundleReadme({ version, withNode, lite = false }) {
     ? `node\\node.exe            便携版 Node ${version}（官方 x64）
 node\\LICENSE-node.txt    Node 自己的许可证（MIT）
 app\\                    游戏本体：server / shared / public${lite ? '（首次启动获取资源）' : '（完整资源）'} / data / scripts / tools
-启动游戏.exe             启动器：app\\scripts\\launch.mjs --workshop${lite ? '' : ' --no-setup'}
+启动游戏.exe             启动器：app\\scripts\\launch.mjs --assault${lite ? '' : ' --no-setup'}
 README-开箱即用.md       本文件
 LICENSE / NOTICE.md / THIRD-PARTY-NOTICES.md`
     : `app\\                    游戏本体：server / shared / public${lite ? '（首次启动获取资源）' : '（完整资源）'} / data / scripts / tools
-启动游戏.exe             启动器：app\\scripts\\launch.mjs --workshop${lite ? '' : ' --no-setup'}
+启动游戏.exe             启动器：app\\scripts\\launch.mjs --assault${lite ? '' : ' --no-setup'}
 README-开箱即用.md       本文件
 LICENSE / NOTICE.md / THIRD-PARTY-NOTICES.md
 
 （没有 node\\ 这一层：本包不带便携版 Node，请自行安装 Node 22/24 LTS）`;
 
-  const title = lite ? '卫戍协议：工坊 · Windows 轻量包' : '卫戍协议：工坊 · Windows 完整包';
+  const title = lite ? '卫戍协议：进击 · Windows 轻量包' : '卫戍协议：进击 · Windows 完整包';
   const firstRun = lite
     ? `首次启动需要联网获取游戏资源和字体，窗口会显示下载进度；中断后再次双击会继续下载。资源下载完成后可以离线游玩。没有本地《明日方舟》客户端资源时，棋盘使用 2D。`
     : `公开资源和依赖已包含在包内，不需要首次下载。没有本地《明日方舟》客户端资源时，棋盘使用 2D，部分图标和模型使用替代样式。`;
@@ -569,8 +569,8 @@ ${noticePoints({ lite }).map((p) => `> - ${p}`).join('\n')}
 连别人的服务器 不需要这个包，直接用浏览器打开对方的网址就行
 \`\`\`
 
-浏览器会打开工坊入口 \`/independent.html\`。原版盟约入口是 \`/index.html\`。
-工坊对局自动保存；原版盟约建房后可把同盟密钥或房间链接发给朋友。
+浏览器会打开进击入口 \`/assault.html\`。同一服务器上，原版盟约入口是 \`/index.html\`，工坊入口是 \`/independent.html\`。
+进击与工坊的对局自动保存；原版盟约建房后可把同盟密钥或房间链接发给朋友。
 第一次开服时 Windows 防火墙可能弹窗，需要局域网访问时允许专用网络。
 
 
@@ -580,7 +580,7 @@ ${noticePoints({ lite }).map((p) => `> - ${p}`).join('\n')}
 ${tree}
 \`\`\`
 
-工坊对局的存档保存在 \`%LOCALAPPDATA%\\Stronghold-Protocol-Workshop\`（窗口第一行会显示完整路径），
+进击和工坊的存档保存在 \`%LOCALAPPDATA%\\Stronghold-Protocol-Assault\`（窗口第一行会显示完整路径），
 解压新版本到别的文件夹也能接着玩；浏览器还会记住当前对局与昵称。
 
 卸载＝直接删掉整个文件夹（不写注册表、不放系统目录）。不再需要存档时，再删掉上面的存档目录。
@@ -687,7 +687,7 @@ async function main() {
   }
 
   // 6) 启动器：用 Windows 自带的 csc.exe 编译，启动参数编进 exe（轻量包保留资源准备步骤）
-  const launchArgs = ['--workshop', ...(o.lite ? [] : ['--no-setup'])];
+  const launchArgs = ['--assault', ...(o.lite ? [] : ['--no-setup'])];
   const version = JSON.parse(await fsp.readFile(path.join(ROOT, 'package.json'), 'utf8')).version;
   const launcher = await compileLauncher(path.join(out, LAUNCHER_NAME), { launchArgs, version });
   console.log(`  · 启动器 ${LAUNCHER_NAME}（${launchArgs.join(' ')}，版本 ${version}）：${MB(launcher.bytes)}，编译器 ${launcher.csc}`);

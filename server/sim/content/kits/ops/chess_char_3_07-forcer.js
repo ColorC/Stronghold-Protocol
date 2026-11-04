@@ -63,7 +63,7 @@ export default {
         battle.on('deploy', (ctx) => {
           // ranged position = not a ground tile (a high tile, or a platform that elevates it: unit.ground false)
           if (ctx.unit !== unit || ctx.initial || unit.ground) return;
-          battle.addDp(unit.ownerId, unit.base.cost * num(tb.value));
+          battle.addDp(unit.ownerId, unit.base.cost * num(tb.value), { sourceUnitId: unit.id });
           fx(battle, 'dp', unit, { n: unit.base.cost * num(tb.value) });
         }, { owner: unit });
       };

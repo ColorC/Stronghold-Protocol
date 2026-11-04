@@ -12,10 +12,27 @@ import { stampFear } from '../fear.js';
 export class BattleStatus {
   addBuff(unit, b) {
     if (!unit || (!unit.alive && !b.allowDead)) return null;
+    if (this._hooks.buffAdding) {
+      const clone = { ...b, ...(b.mods && typeof b.mods === 'object' ? { mods: { ...b.mods } } : null) };
+      const ctx = { unit, buff: clone, source: b.source ?? null };
+      this.emit('buffAdding', ctx);
+      b = ctx.buff;
+    }
     const buff = makeBuff(b);
     const gainedShieldLayers = (layers, active) => {
       const n = Math.max(0, Number(layers) || 0);
+      if (n > 0 && this.assaultStrict) this.assaultRuntime.publish('shieldGained', {
+        source: b.source ?? null, sourceUid: b.source?.uid ?? b.source?.id ?? null,
+        target: unit, targetUid: unit.uid ?? unit.id, amount: n, shieldKind: 'layers',
+      }, { sourceUid: b.source?.uid ?? b.source?.id ?? null });
       if (n > 0 && this._hooks.shieldLayersGained) this.emit('shieldLayersGained', { unit, layers: n, buff: active, source: b.source ?? null });
+    };
+    const gainedShield = (amount, active) => {
+      const n = Math.max(0, Number(amount) || 0);
+      if (n > 0 && this.assaultStrict) this.assaultRuntime.publish('shieldGained', {
+        source: b.source ?? null, sourceUid: b.source?.uid ?? b.source?.id ?? null,
+        target: unit, targetUid: unit.uid ?? unit.id, amount: n, shieldKind: 'hp', buff: active,
+      }, { sourceUid: b.source?.uid ?? b.source?.id ?? null });
     };
     const list = unit.buffs;
     let idx = -1;
@@ -39,12 +56,13 @@ export class BattleStatus {
           old.duration = Math.max(old.duration, buff.duration);
           if (buff.mods) old.mods = buff.mods;
           if (buff.flags) old.flags = buff.flags;
-          if (buff.shield > old.shield) old.shield = buff.shield;
+          if (buff.shield > old.shield) { gainedShield(buff.shield - old.shield, old); old.shield = buff.shield; }
           if (buff.shieldHits > old.shieldHits) { const gained = buff.shieldHits - old.shieldHits; old.shieldHits = buff.shieldHits; gainedShieldLayers(gained, old); }
           unit.markDirty();
           return old;
         default:
           gainedShieldLayers(Number(buff.shieldHits ?? 0) - Number(old.shieldHits ?? 0), buff);
+          gainedShield(Number(buff.shield ?? 0) - Number(old.shield ?? 0), buff);
           list[idx] = buff;
           unit.markDirty();
           return buff;
@@ -59,6 +77,7 @@ export class BattleStatus {
     }
     list.push(buff);
     gainedShieldLayers(buff.shieldHits, buff);
+    gainedShield(buff.shield, buff);
     unit.markDirty();
     if (buff.visible || buff.status) {
       const key = buff.status ?? buff.key;
@@ -126,11 +145,15 @@ export class BattleStatus {
         const regen = u.s.hpRegen;
         if (regen > 0 && u.hp < u.s.maxHp) {
           u._regenAcc = (u._regenAcc ?? 0) + regen * dt;
+          if (this._hooks.healingAmount) u._regenAbilitySeconds = (u._regenAbilitySeconds ?? 0) + dt;
           if (u._regenAcc >= 1 || u.hp + u._regenAcc >= u.s.maxHp) {
-            this.heal(u, u, u._regenAcc, { self: true, silent: true, regen: true });
+            const opts = { self: true, silent: true, regen: true };
+            if (this._hooks.healingAmount) opts.regenSeconds = u._regenAbilitySeconds ?? 0;
+            this.heal(u, u, u._regenAcc, opts);
             u._regenAcc = 0;
+            if (this._hooks.healingAmount) u._regenAbilitySeconds = 0;
           }
-        }
+        } else if (this._hooks.healingAmount) u._regenAbilitySeconds = 0;
       }
     }
   }
@@ -176,7 +199,10 @@ export class BattleStatus {
     // units already levitated — a hovering 近地悬浮 enemy is WALK in its data, so it can be levitated (no 浮空强化 in this mode)
     if (key === 'levitate' && ((target.motion === 'FLY' && !target.s.flags.groundbind) || target.s.flags.levitate)) return false;
     if (this._hooks.beforeStatus) {
-      const c = this.emit('beforeStatus', { source: opts.source ?? null, target, status: key, duration, value, cancel: false });
+      const c = this.emit('beforeStatus', {
+        source: opts.source ?? null, target, status: key, duration, value, cancel: false,
+        ...(this.assaultStrict ? { attackId: opts.attackId ?? null, skillId: opts.skillId ?? opts.source?.skill?.evSkillId ?? null } : null),
+      });
       if (c.cancel || !target.alive) return false;
       const d = Number(c.duration);
       if (d === Infinity || (Number.isFinite(d) && d > 0)) duration = d;
@@ -214,6 +240,12 @@ export class BattleStatus {
       // 到的地方永控」). A 敌方 cold (on an operator) keeps the old rule: PRTS 「…施加的敌方寒冷会变为敌方冻结」 names no pairing.
       if (froze && target.side === 'enemy') {
         this.removeBuff(target, 'cold');
+        if (this.assaultStrict && this._hooks.assaultColdApplied) this.emit('assaultColdApplied', {
+          source: opts.source ?? null, target, status: 'cold', duration, value,
+          entered: false, convertedTo: 'freeze', instanceConsumed: true,
+          attackId: opts.attackId ?? null, skillId: opts.skillId ?? opts.source?.skill?.evSkillId ?? null,
+          sourceClass: opts.sourceClass ?? 'status',
+        });
         return true;
       }
     }
@@ -221,12 +253,12 @@ export class BattleStatus {
     let entered = true;
     if (opts.reenter !== true) for (const b of target.buffs) if ((b.status ?? b.key) === key) { entered = false; break; }
     if (tpl.palsy) {
-      this.addBuff(target, { ...palsyBuff(value ?? 1), duration, source });
+      this.addBuff(target, { ...palsyBuff(value ?? 1), key: opts.instanceKey ?? 'palsy', refresh: opts.refresh ?? 'stack', duration, source });
     } else if (tpl.valued != null && typeof tpl.mods === 'function' && opts.refresh == null) {
       this._applyValuedStatus(target, key, tpl, duration, value ?? tpl.valued, source, opts.stackAs);
     } else {
       const mods = tpl.enemyOnlyMods && target.side !== 'enemy' ? null : typeof tpl.mods === 'function' ? tpl.mods(value) : (tpl.mods || null);
-      const b = this.addBuff(target, { key, duration, refresh: opts.refresh ?? 'extend', mods, flags: tpl.flags || null, status: key, visible: true, source });
+      const b = this.addBuff(target, { key: opts.instanceKey ?? key, duration, refresh: opts.refresh ?? 'extend', mods, flags: tpl.flags || null, status: key, visible: true, source });
       if (tpl.attract && b) this._setAttractPoint(target, b, opts.point ?? value, source);
       // 恐惧: the hit position and the source's position of every application (fear.js — the fan of reachable tiles)
       if (key === 'fear' && b && target.side === 'enemy') stampFear(this, target, b, source);
@@ -234,7 +266,10 @@ export class BattleStatus {
     const f = tpl.flags;
     if (f && target.side === 'enemy' && (f.levitate || f.unblockable || f.fear || f.sleep)) this._unblock(target);
     if (f && target.side === 'ally' && f.noBlock) this.releaseBlocked(target);
-    if (this._hooks.statusApplied) this.emit('statusApplied', { source, target, status: key, duration, value, entered });
+    if (this._hooks.statusApplied) this.emit('statusApplied', {
+      source, target, status: key, duration, value, entered,
+      ...(this.assaultStrict ? { attackId: opts.attackId ?? null, skillId: opts.skillId ?? source?.skill?.evSkillId ?? null, sourceClass: opts.sourceClass ?? (opts.force ? 'forcedStatus' : 'status') } : null),
+    });
     return true;
   }
 

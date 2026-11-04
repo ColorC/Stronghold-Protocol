@@ -1,0 +1,1720 @@
+{
+  "schema": "assault-card-coverage/v1",
+  "group": "ranged-mid",
+  "count": 25,
+  "implementation": "server/sim/content/assault/cards/ranged-mid.js",
+  "status": "complete",
+  "pending": [],
+  "behaviorTest": "test/assault/cards-ranged-mid.test.mjs",
+  "tokens": {
+    "token_10011_beewax_oblisk": "tokenBuilder: block count and owner-bound lifecycle",
+    "token_10004_otter_motter": "tokenBuilder: blocked-enemy attack-speed reduction and owner recycle path",
+    "token_10006_vodfox_doll": "tokenBuilder: timed owner-area attack/defense reduction",
+    "token_10041_cathy_catsld": "tokenBuilder: owner-selected barrier and five-second refill timer"
+  },
+  "implemented": {
+    "char_346_aosta": {
+      "skillHandler": "skillAosta",
+      "skillEffects": [
+        "skill:0 damage phys",
+        "skill:1 bind",
+        "skill:2 periodic arts bleed"
+      ],
+      "retainedTalents": [
+        "talent:unblockedAttackBleed"
+      ],
+      "modePassives": [
+        "mode:unblockedBindSp"
+      ],
+      "modules": {
+        "uniequip_002_aosta": {
+          "star3": "bleed +0.06 and bind +0.3",
+          "star4": "star3 effects plus bleed duration +1"
+        }
+      },
+      "assertions": [
+        "real bind, damage, periodic dot and three-success SP cap"
+      ]
+    },
+    "char_002_amiya": {
+      "skillHandler": "skillAmiya",
+      "skillEffects": [
+        "skill:0 seeded true-damage burst",
+        "skill:1 self stun"
+      ],
+      "retainedTalents": [],
+      "modePassives": [
+        "mode:attackHitSp",
+        "mode:killSp"
+      ],
+      "modules": {
+        "uniequip_002_amiya": {
+          "star3": "+1 burst hit and +2 kill SP",
+          "star4": "star3 effects plus self-stun duration 2s"
+        }
+      },
+      "assertions": [
+        "seeded target selection, true damage, SP events and stun"
+      ]
+    },
+    "char_306_leizi": {
+      "skillHandler": "skillLeizi",
+      "skillEffects": [
+        "skill:0 arts chain",
+        "skill:1 slow per chain hit"
+      ],
+      "retainedTalents": [
+        "talent:unblockedAttackMultiplier"
+      ],
+      "modePassives": [
+        "mode:chainHitSp"
+      ],
+      "modules": {
+        "uniequip_002_leizi": {
+          "star3": "+1 chain target and +0.1 scale",
+          "star4": "star3 effects plus slow duration 0.8s"
+        }
+      },
+      "assertions": [
+        "real chain target cap, slow and three-success SP cap"
+      ]
+    },
+    "char_344_beewax": {
+      "skillHandler": "skillBeewax",
+      "skillEffects": [
+        "skill:0 real oblisk summon",
+        "skill:1 area arts impact",
+        "skill:2 impact stun"
+      ],
+      "retainedTalents": [],
+      "modePassives": [
+        "mode:skillGapSelfRegen"
+      ],
+      "modules": {
+        "uniequip_002_beewax": {
+          "star3": "blast radius +1 and gap heal +0.01",
+          "star4": "star3 effects plus blocker +1"
+        }
+      },
+      "assertions": [
+        "native token deployment, blast, stun and token owner lifecycle"
+      ]
+    },
+    "char_373_lionhd": {
+      "skillHandler": "skillLionhead",
+      "skillEffects": [
+        "skill:0 arts all-range hit",
+        "skill:1 timed res reduction"
+      ],
+      "retainedTalents": [],
+      "modePassives": [
+        "mode:inRangeEnemyAtk"
+      ],
+      "modules": {
+        "uniequip_002_lionhd": {
+          "star3": "magic resistance reduction +0.05 and SkillRuntime charge capacity +1",
+          "star4": "star3 effects plus resistance-reduction duration 8s"
+        }
+      },
+      "assertions": [
+        "live range count, arts hit and typed res reduction",
+        "baseline comparison for module resistance reduction and star-four duration",
+        "module charge-capacity +1 verified for stars 3 and 4"
+      ]
+    },
+    "char_341_sntlla": {
+      "skillHandler": "skillSntlla",
+      "skillEffects": [
+        "skill:0 selected range cells",
+        "skill:1 eight-neighbor arts hit and cold"
+      ],
+      "retainedTalents": [],
+      "modePassives": [
+        "mode:twentySecondAtk"
+      ],
+      "modules": {
+        "uniequip_002_sntlla": {
+          "star3": "cell count +1 and cold 1.5s",
+          "star4": "star3 effects plus impact scale +0.15"
+        }
+      },
+      "assertions": [
+        "COLS-correct cell conversion, splash damage and cold"
+      ]
+    },
+    "char_4031_liesel": {
+      "skillHandler": "skillLiesel",
+      "skillEffects": [
+        "skill:0 up-to-three arts hits",
+        "skill:1 six/eight-second burn"
+      ],
+      "retainedTalents": [],
+      "modePassives": [
+        "mode:threeTargetAttackMultiplier"
+      ],
+      "modules": {
+        "uniequip_002_liesel": {
+          "star3": "skill scale +0.1 and burn +0.05",
+          "star4": "star3 effects plus burn duration 8s"
+        }
+      },
+      "assertions": [
+        "real burn ticks and multi-target attack profile"
+      ]
+    },
+    "char_388_mint": {
+      "skillHandler": "skillMint",
+      "skillEffects": [
+        "skill:0 pull toward owner",
+        "skill:1 arts hit"
+      ],
+      "retainedTalents": [],
+      "modePassives": [
+        "mode:adjacentAllyDefense"
+      ],
+      "modules": {
+        "uniequip_002_mint": {
+          "star3": "pull distance +1 and defense aura +0.03",
+          "star4": "star3 effects plus target cap 3"
+        }
+      },
+      "assertions": [
+        "real pull target and arts damage"
+      ]
+    },
+    "char_446_aroma": {
+      "skillHandler": "skillAroma",
+      "skillEffects": [
+        "skill:0 non-levitated target levitate",
+        "skill:1 landing arts damage"
+      ],
+      "retainedTalents": [],
+      "modePassives": [
+        "mode:firstAttackPerEnemy"
+      ],
+      "modules": {
+        "uniequip_002_aroma": {
+          "star3": "landing scale +0.15 and levitate +0.5s",
+          "star4": "star3 effects plus first-hit multiplier +0.05"
+        }
+      },
+      "assertions": [
+        "delayed landing damage only after levitate expires"
+      ]
+    },
+    "char_4013_kjera": {
+      "skillHandler": "skillKjera",
+      "skillEffects": [
+        "skill:0 two/three funnel arts hits",
+        "skill:1 seeded cold chance"
+      ],
+      "retainedTalents": [],
+      "modePassives": [
+        "mode:terrainAttack"
+      ],
+      "modules": {
+        "uniequip_002_kjera": {
+          "star3": "funnel count +1 and cold chance +0.05",
+          "star4": "star3 effects plus cold 3s"
+        }
+      },
+      "assertions": [
+        "seeded chance and COLS-correct terrain scan"
+      ]
+    },
+    "char_4040_rockr": {
+      "skillHandler": "skillRockr",
+      "skillEffects": [
+        "skill:0 timed overload aspd/attack buff",
+        "skill:1 end stun"
+      ],
+      "retainedTalents": [],
+      "modePassives": [
+        "mode:fifteenSecondAttackStack"
+      ],
+      "modules": {
+        "uniequip_002_rockr": {
+          "star3": "funnel cap +0.2 and stack cap +1",
+          "star4": "star3 effects plus end stun 1s"
+        }
+      },
+      "assertions": [
+        "timed overload, owner timer and end stun"
+      ]
+    },
+    "char_4054_malist": {
+      "skillHandler": "skillMalist",
+      "skillEffects": [
+        "skill:0 two arts hits"
+      ],
+      "retainedTalents": [
+        "talent:insightCrit"
+      ],
+      "modePassives": [
+        "mode:normalAttackSp"
+      ],
+      "modules": {
+        "uniequip_002_malist": {
+          "star3": "per-hit scale +0.15 and crit +0.05",
+          "star4": "star3 effects plus crit stack cap +1"
+        }
+      },
+      "assertions": [
+        "real double-hit damage and normal-attack SP path"
+      ]
+    },
+    "char_242_otter": {
+      "skillHandler": "skillOtter",
+      "skillEffects": [
+        "skill:0 each configured token area arts blast",
+        "skill:1 per-hit stun",
+        "skill:2 return summon"
+      ],
+      "retainedTalents": [
+        "talent:tokenBlockAspdDown"
+      ],
+      "modePassives": [
+        "mode:recycleSp"
+      ],
+      "modules": {
+        "uniequip_002_otter": {
+          "star3": "blast +50% and stock +1",
+          "star4": "star3 effects plus recycle SP 1.5"
+        }
+      },
+      "assertions": [
+        "independent token blasts, real return event and SP refund"
+      ]
+    },
+    "char_145_prove": {
+      "skillHandler": "skillProve",
+      "skillEffects": [
+        "skill:0 low-hp physical execute",
+        "skill:1 missing-hp step bonus"
+      ],
+      "retainedTalents": [
+        "talent:frontProc"
+      ],
+      "modePassives": [
+        "mode:belowHalfAttack"
+      ],
+      "modules": {
+        "uniequip_002_prove": {
+          "star3": "threshold 90% and step bonus +0.05",
+          "star4": "star3 effects plus kill SP doubled"
+        }
+      },
+      "assertions": [
+        "below-threshold target selection and kill SP"
+      ]
+    },
+    "char_4211_snhunt": {
+      "skillHandler": "skillSnhunt",
+      "skillEffects": [
+        "skill:0 moving/stationary double physical hit",
+        "skill:1 beast all-range physical hit and cold"
+      ],
+      "retainedTalents": [],
+      "modePassives": [
+        "mode:beastColdSp",
+        "mode:beastDispatch"
+      ],
+      "modules": {
+        "uniequip_002_snhunt": {
+          "star3": "double hit +0.15 and beast cold +0.5",
+          "star4": "star3 effects plus stationary +0.15"
+        }
+      },
+      "assertions": [
+        "stationary branch, beast hit, cold and SP event"
+      ]
+    },
+    "char_174_slbell": {
+      "skillHandler": "skillSlbell",
+      "skillEffects": [
+        "skill:0 all-range cold"
+      ],
+      "retainedTalents": [
+        "talent:ownColdResDown"
+      ],
+      "modePassives": [
+        "mode:teamColdSp",
+        "mode:selfColdResDown"
+      ],
+      "modules": {
+        "uniequip_002_slbell": {
+          "star3": "cold +0.5 and SP +0.25",
+          "star4": "star3 effects plus res-down duration 7s"
+        }
+      },
+      "assertions": [
+        "successful cold event, SP and res reduction"
+      ]
+    },
+    "char_254_vodfox": {
+      "skillHandler": "skillVodfox",
+      "skillEffects": [
+        "skill:0 real doll summon",
+        "skill:1 owner-area atk/def reduction"
+      ],
+      "retainedTalents": [
+        "talent:dollDebuff"
+      ],
+      "modePassives": [
+        "mode:lowHpFragile",
+        "mode:dollKillSp"
+      ],
+      "modules": {
+        "uniequip_002_vodfox": {
+          "star3": "radius +1 and fragile +0.05",
+          "star4": "star3 effects plus doll life +5s"
+        }
+      },
+      "assertions": [
+        "native doll deployment, timed aura and owner event"
+      ]
+    },
+    "char_4079_haini": {
+      "skillHandler": "skillHaini",
+      "skillEffects": [
+        "skill:0 up-to-four/five arts hits"
+      ],
+      "retainedTalents": [],
+      "modePassives": [
+        "mode:nonEliteEntryFragile",
+        "mode:skillHitSp"
+      ],
+      "modules": {
+        "uniequip_002_haini": {
+          "star3": "target cap +1 and fragile +0.03",
+          "star4": "star3 effects plus skill-hit SP cap +1"
+        }
+      },
+      "assertions": [
+        "non-elite filtering and successful-hit SP"
+      ]
+    },
+    "char_4032_provs": {
+      "skillHandler": "skillProvs",
+      "skillEffects": [
+        "skill:0 all-range arts hit",
+        "skill:1 slow",
+        "skill:2 silence",
+        "skill:3 timed self aspd"
+      ],
+      "retainedTalents": [
+        "talent:kasimirAllyAspd"
+      ],
+      "modePassives": [
+        "mode:silenceSlowSp"
+      ],
+      "modules": {
+        "uniequip_002_provs": {
+          "star3": "duration +2s and aspd +10",
+          "star4": "star3 effects plus slow depth +0.1"
+        }
+      },
+      "assertions": [
+        "slow, silence, self aspd and SP event"
+      ]
+    },
+    "char_4122_grabds": {
+      "skillHandler": "skillGrabds",
+      "skillEffects": [
+        "skill:0 up-to-three/four sleep",
+        "skill:1 timed self aspd"
+      ],
+      "retainedTalents": [],
+      "modePassives": [
+        "mode:normalHitAspd",
+        "mode:wildSlow"
+      ],
+      "modules": {
+        "uniequip_002_grabds": {
+          "star3": "target cap +1 and duration +2s",
+          "star4": "star3 effects plus wild slow +0.2"
+        }
+      },
+      "assertions": [
+        "sleep status, timed aspd and wildlife branch"
+      ]
+    },
+    "char_4162_cathy": {
+      "skillHandler": "skillCathy",
+      "skillEffects": [
+        "skill:0 real support-device summon and selected shield",
+        "skill:1 timed self hp/def buff"
+      ],
+      "retainedTalents": [
+        "talent:deviceBarrierRefill"
+      ],
+      "modePassives": [
+        "mode:unhitDeviceRefill"
+      ],
+      "modules": {
+        "uniequip_002_cathy": {
+          "star3": "initial barrier +0.03 and refill +0.01/s",
+          "star4": "star3 effects plus max deploy +1"
+        }
+      },
+      "assertions": [
+        "derived device identity, selected target barrier and refill timer"
+      ]
+    },
+    "char_4045_heidi": {
+      "skillHandler": "skillHeidi",
+      "skillEffects": [
+        "skill:0 all-range ally def/hp buff",
+        "skill:1 one-second heal ticks"
+      ],
+      "retainedTalents": [],
+      "modePassives": [
+        "mode:teamDefense",
+        "mode:teamHasteSp"
+      ],
+      "modules": {
+        "uniequip_002_heidi": {
+          "star3": "def +0.1 and hp +0.05",
+          "star4": "star3 effects plus haste +0.1"
+        }
+      },
+      "assertions": [
+        "real ally buff, periodic heal and SP haste"
+      ]
+    },
+    "char_4019_ncdeer": {
+      "skillHandler": "skillNcdeer",
+      "skillEffects": [
+        "skill:0 ally heal",
+        "skill:1 direct dmgTakenMul protection",
+        "skill:2 self ranged dodge"
+      ],
+      "retainedTalents": [],
+      "modePassives": [
+        "mode:lowHpProtection"
+      ],
+      "modules": {
+        "uniequip_002_ncdeer": {
+          "star3": "heal x1.15 and protection +0.03",
+          "star4": "star3 effects plus duration +2s"
+        }
+      },
+      "assertions": [
+        "shield-after-damage protection is a typed real buff, not an unknown status"
+      ]
+    },
+    "char_103_angel": {
+      "skillHandler": "skillAngel",
+      "skillEffects": [
+        "skill:0 five/six physical arrow hits",
+        "skill:1 flying-hit SP"
+      ],
+      "retainedTalents": [
+        "talent:attackSpeed"
+      ],
+      "modePassives": [
+        "mode:deploymentBlessing"
+      ],
+      "modules": {
+        "uniequip_002_angel": {
+          "star3": "arrow +0.1 and air SP cap +1",
+          "star4": "star3 effects plus air per-hit +0.05"
+        },
+        "uniequip_003_angel": {
+          "star3": "blessing count +1 and extra hit +1",
+          "star4": "star3 effects plus blessing attack +0.02"
+        }
+      },
+      "assertions": [
+        "multi-hit damage, flying SP and deployment blessing"
+      ]
+    },
+    "char_332_archet": {
+      "skillHandler": "skillArchet",
+      "skillEffects": [
+        "skill:0 up-to-two/three targets and three/four hits",
+        "skill:1 timed self attack buff"
+      ],
+      "retainedTalents": [
+        "talent:shieldBreakSp"
+      ],
+      "modePassives": [
+        "mode:sniperIntervalSp"
+      ],
+      "modules": {
+        "uniequip_002_archet": {
+          "star3": "arrow +0.1 and range +1",
+          "star4": "star3 effects plus self attack +0.05"
+        },
+        "uniequip_003_archet": {
+          "star3": "interval -0.3",
+          "star4": "star3 effects plus SP 1.5"
+        },
+        "uniequip_004_archet": {
+          "star3": "target cap +1",
+          "star4": "star3 effects plus hit +1"
+        }
+      },
+      "assertions": [
+        "multi-target multi-hit skill, self buff and sniper interval SP"
+      ]
+    }
+  },
+  "moduleAudit": [
+    {
+      "charId": "char_346_aosta",
+      "moduleId": "uniequip_002_aosta",
+      "effectHandling": "三星解锁：流血每秒倍率+0.06，束缚持续+0.3秒；四星加强：流血+0.06、束缚+0.3秒且非阻挡目标流血持续时间+1秒。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Aosta module compares its bleed rate, bind duration, and four-star extra tick against the no-module baseline",
+        "effects": [
+          {
+            "effect": "bleed ratio +0.06 measured as actual attack-scaled true Battle damage",
+            "testName": "Aosta module compares its bleed rate, bind duration, and four-star extra tick against the no-module baseline",
+            "status": "complete"
+          },
+          {
+            "effect": "bind duration +0.3s vs same-rank no-module baseline",
+            "testName": "Aosta module compares its bleed rate, bind duration, and four-star extra tick against the no-module baseline",
+            "status": "complete"
+          }
+        ]
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Aosta module compares its bleed rate, bind duration, and four-star extra tick against the no-module baseline",
+        "effects": [
+          {
+            "effect": "bleed ratio +0.06 measured as actual attack-scaled true Battle damage",
+            "testName": "Aosta module compares its bleed rate, bind duration, and four-star extra tick against the no-module baseline",
+            "status": "complete"
+          },
+          {
+            "effect": "bind duration +0.3s vs same-rank no-module baseline",
+            "testName": "Aosta module compares its bleed rate, bind duration, and four-star extra tick against the no-module baseline",
+            "status": "complete"
+          },
+          {
+            "effect": "bleed duration +1s vs same-rank no-module baseline",
+            "testName": "Aosta module compares its bleed rate, bind duration, and four-star extra tick against the no-module baseline",
+            "status": "complete"
+          }
+        ]
+      },
+      "supersededBy": [
+        "assault_mod_char_346_aosta_0",
+        "assault_mod_char_346_aosta_1"
+      ]
+    },
+    {
+      "charId": "char_002_amiya",
+      "moduleId": "uniequip_002_amiya",
+      "effectHandling": "三星解锁：真伤连发次数+1，击杀回技+2；四星加强：连发+1、击杀回技+2且自我晕眩缩短至2秒。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Amiya module produces the translated extra burst hit and four-star self-stun duration; Amiya module adds exactly two kill SP at both advanced stars",
+        "effects": [
+          {
+            "effect": "+1 true-damage burst hit at rank-scaled damage",
+            "testName": "Amiya module produces the translated extra burst hit and four-star self-stun duration",
+            "status": "complete"
+          },
+          {
+            "effect": "+2 ranked kill SP",
+            "testName": "Amiya module adds exactly two kill SP at both advanced stars",
+            "status": "complete"
+          }
+        ]
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Amiya module produces the translated extra burst hit and four-star self-stun duration; Amiya module adds exactly two kill SP at both advanced stars",
+        "effects": [
+          {
+            "effect": "+1 true-damage burst hit at rank-scaled damage",
+            "testName": "Amiya module produces the translated extra burst hit and four-star self-stun duration",
+            "status": "complete"
+          },
+          {
+            "effect": "+2 ranked kill SP",
+            "testName": "Amiya module adds exactly two kill SP at both advanced stars",
+            "status": "complete"
+          },
+          {
+            "effect": "self stun exactly 2 seconds",
+            "testName": "Amiya module produces the translated extra burst hit and four-star self-stun duration",
+            "status": "complete"
+          }
+        ]
+      },
+      "supersededBy": [
+        "assault_mod_char_002_amiya_0",
+        "assault_mod_char_002_amiya_1"
+      ]
+    },
+    {
+      "charId": "char_306_leizi",
+      "moduleId": "uniequip_002_leizi",
+      "effectHandling": "三星解锁：连锁最多目标+1，每跳倍率+10%；四星加强：目标+1、每跳+10%且停顿延长至0.8秒。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Leizi advanced module adds exactly 0.1 attack scale at stars three and four; every advanced module at stars three and four is selected, cast, and stepped in Battle",
+        "effects": [
+          {
+            "effect": "skill damage scale +0.1 over same-star no-module baseline",
+            "status": "complete",
+            "testName": "Leizi advanced module adds exactly 0.1 attack scale at stars three and four"
+          },
+          {
+            "effect": "chain target cap +1",
+            "status": "complete",
+            "testName": "Leizi module raises the real chain target cap by one over the same-star baseline"
+          }
+        ],
+        "remainingEffects": [],
+        "reason": "damage scale, chain cap and star-four slow duration have real exact assertions"
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Leizi advanced module adds exactly 0.1 attack scale at stars three and four; Leizi advanced module star three and four apply their distinct numeric slow durations; every advanced module at stars three and four is selected, cast, and stepped in Battle",
+        "effects": [
+          {
+            "effect": "skill damage scale +0.1 over same-star no-module baseline",
+            "status": "complete",
+            "testName": "Leizi advanced module adds exactly 0.1 attack scale at stars three and four"
+          },
+          {
+            "effect": "chain target cap +1",
+            "status": "complete",
+            "testName": "Leizi module raises the real chain target cap by one over the same-star baseline"
+          },
+          {
+            "effect": "slow duration exactly 0.8s",
+            "status": "complete",
+            "testName": "Leizi advanced module star three and four apply their distinct numeric slow durations"
+          }
+        ],
+        "remainingEffects": [],
+        "reason": "damage scale, chain cap and star-four slow duration have real exact assertions"
+      },
+      "supersededBy": [
+        "assault_mod_char_306_leizi_0",
+        "assault_mod_char_306_leizi_1"
+      ]
+    },
+    {
+      "charId": "char_344_beewax",
+      "moduleId": "uniequip_002_beewax",
+      "effectHandling": "三星解锁：方尖塔落地伤害半径+1格、回血+1%/秒；四星加强：半径+1格、回血+1%/秒且方尖塔阻挡数+1。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "every advanced module at stars three and four is selected, cast, and stepped in Battle",
+        "effects": [
+          {
+            "effect": "oblisk area radius +1",
+            "status": "complete",
+            "testName": "Beewax module expands its real impact radius by one tile"
+          },
+          {
+            "effect": "skill-gap healing +0.01 max HP per second",
+            "status": "complete",
+            "testName": "Beewax module adds one percent max-HP healing per second during the skill gap"
+          }
+        ],
+        "remainingEffects": [],
+        "reason": "radius target boundary plus per-star healing and blocker effects are accounted for"
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Beewax module adds one percent max-HP healing per second during the skill gap; Beewax star-four module adds one blocker over the baseline oblisk",
+        "effects": [
+          {
+            "effect": "oblisk area radius +1",
+            "status": "complete",
+            "testName": "Beewax module expands its real impact radius by one tile"
+          },
+          {
+            "effect": "skill-gap healing +0.01 max HP per second",
+            "status": "complete",
+            "testName": "Beewax module adds one percent max-HP healing per second during the skill gap"
+          },
+          {
+            "effect": "oblisk block count +1 over baseline",
+            "status": "complete",
+            "testName": "Beewax star-four module adds one blocker over the baseline oblisk"
+          }
+        ],
+        "remainingEffects": [],
+        "reason": "radius target boundary plus per-star healing and blocker effects are accounted for"
+      },
+      "supersededBy": [
+        "assault_mod_char_344_beewax_0",
+        "assault_mod_char_344_beewax_1"
+      ]
+    },
+    {
+      "charId": "char_373_lionhd",
+      "moduleId": "uniequip_002_lionhd",
+      "effectHandling": "三星解锁：减抗幅度额外+5%，积存上限+1；四星加强：减抗+5%、积存上限+1且减抗持续延长至8秒。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Lionhead module compares source resistance reduction and star-four eight-second duration to baseline; multi-charge ranged fixed skills use SkillRuntime storage and translated module capacity",
+        "effects": [
+          {
+            "effect": "magic resistance reduction +0.05",
+            "status": "complete",
+            "testName": "Lionhead module compares source resistance reduction and star-four eight-second duration to baseline"
+          },
+          {
+            "effect": "SkillRuntime charge capacity +1",
+            "status": "complete",
+            "testName": "multi-charge ranged fixed skills use SkillRuntime storage and translated module capacity"
+          }
+        ]
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Lionhead module compares source resistance reduction and star-four eight-second duration to baseline; multi-charge ranged fixed skills use SkillRuntime storage and translated module capacity",
+        "effects": [
+          {
+            "effect": "magic resistance reduction +0.05",
+            "status": "complete",
+            "testName": "Lionhead module compares source resistance reduction and star-four eight-second duration to baseline"
+          },
+          {
+            "effect": "SkillRuntime charge capacity +1",
+            "status": "complete",
+            "testName": "multi-charge ranged fixed skills use SkillRuntime storage and translated module capacity"
+          },
+          {
+            "effect": "resistance-reduction duration 8s",
+            "status": "complete",
+            "testName": "Lionhead module compares source resistance reduction and star-four eight-second duration to baseline"
+          }
+        ]
+      },
+      "supersededBy": [
+        "assault_mod_char_373_lionhd_0",
+        "assault_mod_char_373_lionhd_1"
+      ]
+    },
+    {
+      "charId": "char_341_sntlla",
+      "moduleId": "uniequip_002_sntlla",
+      "effectHandling": "三星解锁：冰凌数量+1，寒冷持续延长至1.5秒；四星加强：冰凌+1、寒冷1.5秒且八邻伤害倍率+15%。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Sntlla module compares selected cell count, cold duration, and four-star impact scale to baseline",
+        "effects": [
+          {
+            "effect": "+1 selected cell vs no-module rank baseline",
+            "testName": "Sntlla module compares selected cell count, cold duration, and four-star impact scale to baseline",
+            "status": "complete"
+          },
+          {
+            "effect": "cold duration 1.5s vs no-module 1s",
+            "testName": "Sntlla module compares selected cell count, cold duration, and four-star impact scale to baseline",
+            "status": "complete"
+          }
+        ]
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Sntlla module compares selected cell count, cold duration, and four-star impact scale to baseline",
+        "effects": [
+          {
+            "effect": "+1 selected cell vs no-module rank baseline",
+            "testName": "Sntlla module compares selected cell count, cold duration, and four-star impact scale to baseline",
+            "status": "complete"
+          },
+          {
+            "effect": "cold duration 1.5s vs no-module 1s",
+            "testName": "Sntlla module compares selected cell count, cold duration, and four-star impact scale to baseline",
+            "status": "complete"
+          },
+          {
+            "effect": "impact scale +0.15 vs no-module rank baseline",
+            "testName": "Sntlla module compares selected cell count, cold duration, and four-star impact scale to baseline",
+            "status": "complete"
+          }
+        ]
+      },
+      "supersededBy": [
+        "assault_mod_char_341_sntlla_0",
+        "assault_mod_char_341_sntlla_1"
+      ]
+    },
+    {
+      "charId": "char_4031_liesel",
+      "moduleId": "uniequip_002_liesel",
+      "effectHandling": "三星解锁：灼烧每秒倍率+5%，群伤倍率+10%；四星加强：灼烧+5%、群伤+10%且灼烧持续延长至8秒。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Liesel module compares real splash scale, burn rate, and star-four burn duration against baseline",
+        "effects": [
+          {
+            "effect": "灼烧每秒倍率+5%，群伤倍率+10%",
+            "status": "complete",
+            "testName": "Liesel module compares real splash scale, burn rate, and star-four burn duration against baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Liesel module compares real splash scale, burn rate, and star-four burn duration against baseline",
+        "effects": [
+          {
+            "effect": "灼烧+5%、群伤+10%且灼烧持续延长至8秒。",
+            "status": "complete",
+            "testName": "Liesel module compares real splash scale, burn rate, and star-four burn duration against baseline"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4031_liesel_0",
+        "assault_mod_char_4031_liesel_1"
+      ]
+    },
+    {
+      "charId": "char_388_mint",
+      "moduleId": "uniequip_002_mint",
+      "effectHandling": "三星解锁：拖拽距离+1格，四邻防御光环+3%；四星加强：拖拽+1格、光环+3%且拖拽目标上限提升至3名。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Mint module compares live pull distance, four-neighbor DEF aura, and star-four target cap",
+        "effects": [
+          {
+            "effect": "拖拽距离+1格，四邻防御光环+3%",
+            "status": "complete",
+            "testName": "Mint module compares live pull distance, four-neighbor DEF aura, and star-four target cap"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Mint module compares live pull distance, four-neighbor DEF aura, and star-four target cap",
+        "effects": [
+          {
+            "effect": "拖拽+1格、光环+3%且拖拽目标上限提升至3名。",
+            "status": "complete",
+            "testName": "Mint module compares live pull distance, four-neighbor DEF aura, and star-four target cap"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_388_mint_0",
+        "assault_mod_char_388_mint_1"
+      ]
+    },
+    {
+      "charId": "char_446_aroma",
+      "moduleId": "uniequip_002_aroma",
+      "effectHandling": "三星解锁：本次技能伤害倍率+15%，命中目标浮空0.5秒；四星保留效果，首次普攻增伤额外+0.05。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Aroma advanced module adds 0.15 landing scale and half-second levitation at both stars",
+        "effects": [
+          {
+            "effect": "落地伤害倍率+15%，浮空持续+0.5秒",
+            "status": "complete",
+            "testName": "Aroma advanced module adds 0.15 landing scale and half-second levitation at both stars"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Aroma advanced module adds 0.15 landing scale and half-second levitation at both stars",
+        "effects": [
+          {
+            "effect": "落地+15%、浮空+0.5秒且首击增伤倍率额外+0.05。",
+            "status": "complete",
+            "testName": "Aroma advanced module adds 0.15 landing scale and half-second levitation at both stars"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_446_aroma_0",
+        "assault_mod_char_446_aroma_1"
+      ]
+    },
+    {
+      "charId": "char_4013_kjera",
+      "moduleId": "uniequip_002_kjera",
+      "effectHandling": "三星解锁：浮游单元+1，寒冷概率+5%；四星加强：单元+1、寒冷概率+5%且寒冷持续延长至3秒。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Kjera module raises the live cold-proc threshold by five points and star four extends a successful proc",
+        "reason": "Actual statusApplied cold applications compare same-seed baseline and selected chances; star four also asserts its three-second duration.",
+        "effects": [
+          {
+            "status": "complete",
+            "testName": "Kjera module adds exactly one real funnel unit at both advanced stars",
+            "effect": "浮游单元+1"
+          },
+          {
+            "status": "complete",
+            "testName": "Kjera module raises the live cold-proc threshold by five points and star four extends a successful proc",
+            "effect": "寒冷概率+5%"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Kjera module raises the live cold-proc threshold by five points and star four extends a successful proc",
+        "reason": "Actual statusApplied cold applications compare same-seed baseline and selected chances; star four also asserts its three-second duration.",
+        "effects": [
+          {
+            "status": "complete",
+            "testName": "Kjera module adds exactly one real funnel unit at both advanced stars",
+            "effect": "浮游单元+1"
+          },
+          {
+            "status": "complete",
+            "testName": "Kjera module raises the live cold-proc threshold by five points and star four extends a successful proc",
+            "effect": "寒冷概率+5%、持续延长至3秒"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4013_kjera_0",
+        "assault_mod_char_4013_kjera_1"
+      ]
+    },
+    {
+      "charId": "char_4040_rockr",
+      "moduleId": "uniequip_002_rockr",
+      "effectHandling": "三星解锁：本次浮游单元伤害倍率+0.2，站场叠层上限+1；四星本次自身晕眩缩短至1秒。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Rockr overload feeds its module cap into the compiled funnel damage path and restores it on expiry",
+        "reason": "Actual compiled values and selected targets are compared with the same-star baseline through Battle behavior and lifecycle.",
+        "effects": [
+          {
+            "testName": "Rockr overload feeds its module cap into the compiled funnel damage path and restores it on expiry",
+            "status": "complete",
+            "effect": "站场叠层上限+1"
+          },
+          {
+            "testName": "Rockr overload feeds its module cap into the compiled funnel damage path and restores it on expiry",
+            "status": "complete",
+            "effect": "过载单元上限额外+0.2倍"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Rockr overload feeds its module cap into the compiled funnel damage path and restores it on expiry",
+        "reason": "Actual compiled values and selected targets are compared with the same-star baseline through Battle behavior and lifecycle.",
+        "effects": [
+          {
+            "testName": "Rockr overload feeds its module cap into the compiled funnel damage path and restores it on expiry",
+            "status": "complete",
+            "effect": "站场叠层上限+1且过载结束自晕缩短至1秒"
+          },
+          {
+            "testName": "Rockr overload feeds its module cap into the compiled funnel damage path and restores it on expiry",
+            "status": "complete",
+            "effect": "过载单元上限额外+0.2倍"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4040_rockr_0",
+        "assault_mod_char_4040_rockr_1"
+      ]
+    },
+    {
+      "charId": "char_4054_malist",
+      "moduleId": "uniequip_002_malist",
+      "effectHandling": "三星解锁：双重射击每发倍率+15%，暴击概率+5%；四星加强：每发+15%、暴击概率+5%且积存上限+1。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Malist module adds its compiled per-hit multiplier to both real skill hits; Malist module moves the real critical/SP threshold from 25 to 30 percent; multi-charge ranged fixed skills use SkillRuntime storage and translated module capacity",
+        "effects": [
+          {
+            "effect": "每发技能倍率+0.15且暴击率+0.05",
+            "status": "complete",
+            "testName": "Malist module adds its compiled per-hit multiplier to both real skill hits; Malist module moves the real critical/SP threshold from 25 to 30 percent; multi-charge ranged fixed skills use SkillRuntime storage and translated module capacity"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Malist module adds its compiled per-hit multiplier to both real skill hits; Malist module moves the real critical/SP threshold from 25 to 30 percent; multi-charge ranged fixed skills use SkillRuntime storage and translated module capacity",
+        "effects": [
+          {
+            "effect": "每发技能倍率+0.15且暴击率+0.05",
+            "status": "complete",
+            "testName": "Malist module adds its compiled per-hit multiplier to both real skill hits; Malist module moves the real critical/SP threshold from 25 to 30 percent; multi-charge ranged fixed skills use SkillRuntime storage and translated module capacity"
+          },
+          {
+            "effect": "积存上限+1",
+            "status": "complete",
+            "testName": "Malist module adds its compiled per-hit multiplier to both real skill hits; Malist module moves the real critical/SP threshold from 25 to 30 percent; multi-charge ranged fixed skills use SkillRuntime storage and translated module capacity"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4054_malist_0",
+        "assault_mod_char_4054_malist_1"
+      ]
+    },
+    {
+      "charId": "char_242_otter",
+      "moduleId": "uniequip_002_otter",
+      "effectHandling": "三星解锁：爆炸倍率+50%，水獭携带上限+1；四星加强：爆炸+50%、上限+1且回收每只返还技力提升至1.5点。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Otter advanced module multiplies a real single-device blast by 1.5 at stars three and four; Otter return refund stays 1 SP at star three and becomes 1.5 SP at star four",
+        "effects": [
+          {
+            "effect": "爆炸倍率+50%，水獭携带上限+1",
+            "status": "complete",
+            "testName": "Otter advanced module multiplies a real single-device blast by 1.5 at stars three and four; Otter return refund stays 1 SP at star three and becomes 1.5 SP at star four"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Otter advanced module multiplies a real single-device blast by 1.5 at stars three and four; Otter return refund stays 1 SP at star three and becomes 1.5 SP at star four",
+        "effects": [
+          {
+            "effect": "爆炸+50%、上限+1且回收每只返还技力提升至1.5点。",
+            "status": "complete",
+            "testName": "Otter advanced module multiplies a real single-device blast by 1.5 at stars three and four; Otter return refund stays 1 SP at star three and becomes 1.5 SP at star four"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_242_otter_0",
+        "assault_mod_char_242_otter_1"
+      ]
+    },
+    {
+      "charId": "char_145_prove",
+      "moduleId": "uniequip_002_prove",
+      "effectHandling": "三星解锁：残血阈值放宽至90%生命，每档加成+5%；四星加强：阈值90%、每档+5%且击杀回技翻倍。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Prove module compares the expanded execute threshold, per-deficit damage, and doubled kill SP",
+        "effects": [
+          {
+            "effect": "残血阈值放宽至90%生命，每档加成+5%",
+            "status": "complete",
+            "testName": "Prove module compares the expanded execute threshold, per-deficit damage, and doubled kill SP"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Prove module compares the expanded execute threshold, per-deficit damage, and doubled kill SP",
+        "effects": [
+          {
+            "effect": "阈值90%、每档+5%且击杀回技翻倍。",
+            "status": "complete",
+            "testName": "Prove module compares the expanded execute threshold, per-deficit damage, and doubled kill SP"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_145_prove_0",
+        "assault_mod_char_145_prove_1"
+      ]
+    },
+    {
+      "charId": "char_4211_snhunt",
+      "moduleId": "uniequip_002_snhunt",
+      "effectHandling": "三星解锁：两连击倍率+15%，裂云兽寒冷+0.5秒；四星加强：两连击+15%、寒冷+0.5秒且对非移动倍率额外+15%。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Snhunt module compares real two-hit coefficients for moving and stationary targets",
+        "reason": "Real two-hit damage and beast cold application are compared with the no-module baseline for the selected star.",
+        "effects": [
+          {
+            "effect": "两连击倍率+0.15（移动及非移动目标）",
+            "status": "complete",
+            "testName": "Snhunt module compares real two-hit coefficients for moving and stationary targets"
+          },
+          {
+            "effect": "裂云兽寒冷+0.5秒",
+            "status": "complete",
+            "testName": "Snhunt module extends the actual beast cold application by half a second at both stars"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Snhunt module compares real two-hit coefficients for moving and stationary targets",
+        "reason": "Real two-hit damage and beast cold application are compared with the no-module baseline for the selected star.",
+        "effects": [
+          {
+            "effect": "两连击倍率+0.15，静止目标倍率额外×1.15",
+            "status": "complete",
+            "testName": "Snhunt module compares real two-hit coefficients for moving and stationary targets"
+          },
+          {
+            "effect": "裂云兽寒冷+0.5秒",
+            "status": "complete",
+            "testName": "Snhunt module extends the actual beast cold application by half a second at both stars"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4211_snhunt_0",
+        "assault_mod_char_4211_snhunt_1"
+      ]
+    },
+    {
+      "charId": "char_174_slbell",
+      "moduleId": "uniequip_002_slbell",
+      "effectHandling": "三星解锁：寒冷持续+0.5秒，充能每点数额+0.25；四星加强：寒冷+0.5秒、充能+0.25且施加减抗延长至7秒。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Slbell module compares cold duration, team SP, and four-star resistance-down lifetime in Battle",
+        "reason": "Actual cold status, SP gain and resistance-down duration are numerically compared with the same-star baseline.",
+        "effects": [
+          {
+            "effect": "寒冷持续+0.5秒，充能每点数额+0.25",
+            "status": "complete",
+            "testName": "Slbell module compares cold duration, team SP, and four-star resistance-down lifetime in Battle"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Slbell module compares cold duration, team SP, and four-star resistance-down lifetime in Battle",
+        "reason": "Actual cold status, SP gain and resistance-down duration are numerically compared with the same-star baseline.",
+        "effects": [
+          {
+            "effect": "寒冷+0.5秒、充能+0.25且施加减抗延长至7秒。",
+            "status": "complete",
+            "testName": "Slbell module compares cold duration, team SP, and four-star resistance-down lifetime in Battle"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_174_slbell_0",
+        "assault_mod_char_174_slbell_1"
+      ]
+    },
+    {
+      "charId": "char_254_vodfox",
+      "moduleId": "uniequip_002_vodfox",
+      "effectHandling": "三星解锁：娃娃影响半径+1格，残血脆弱+5%；四星加强：半径+1格、脆弱+5%且娃娃寿命延长5秒。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Vodfox module reaches the additional doll tile and extends its real debuff lifetime",
+        "reason": "Actual compiled values and selected targets are compared with the same-star baseline through Battle behavior and lifecycle.",
+        "effects": [
+          {
+            "effect": "娃娃影响半径+1格，残血脆弱+5%",
+            "status": "complete",
+            "testName": "Vodfox module reaches the additional doll tile and extends its real debuff lifetime"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Vodfox module reaches the additional doll tile and extends its real debuff lifetime",
+        "reason": "Actual compiled values and selected targets are compared with the same-star baseline through Battle behavior and lifecycle.",
+        "effects": [
+          {
+            "effect": "半径+1格、脆弱+5%且娃娃寿命延长5秒。",
+            "status": "complete",
+            "testName": "Vodfox module reaches the additional doll tile and extends its real debuff lifetime"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_254_vodfox_0",
+        "assault_mod_char_254_vodfox_1"
+      ]
+    },
+    {
+      "charId": "char_4079_haini",
+      "moduleId": "uniequip_002_haini",
+      "effectHandling": "三星解锁：齐射目标上限+1，非精英脆弱+3%；四星加强：目标上限+1、脆弱+3%且命中回技上限+1。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Haini module compares live volley cap, fragile value, and four-star hit-SP ceiling",
+        "reason": "Actual compiled values and selected targets are compared with the same-star baseline through Battle behavior and lifecycle.",
+        "effects": [
+          {
+            "effect": "齐射目标上限+1，非精英脆弱+3%",
+            "status": "complete",
+            "testName": "Haini module compares live volley cap, fragile value, and four-star hit-SP ceiling"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Haini module compares live volley cap, fragile value, and four-star hit-SP ceiling",
+        "reason": "Actual compiled values and selected targets are compared with the same-star baseline through Battle behavior and lifecycle.",
+        "effects": [
+          {
+            "effect": "目标上限+1、脆弱+3%且命中回技上限+1。",
+            "status": "complete",
+            "testName": "Haini module compares live volley cap, fragile value, and four-star hit-SP ceiling"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4079_haini_0",
+        "assault_mod_char_4079_haini_1"
+      ]
+    },
+    {
+      "charId": "char_4032_provs",
+      "moduleId": "uniequip_002_provs",
+      "effectHandling": "三星解锁：本次技能倍率+0.1并沉默目标2秒；四星停顿强度从0.8提高到0.9。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Provs module increases real silence lifetime and skill ASPD, with the four-star slow-depth bonus",
+        "reason": "Actual statusApplied durations/slow values and the self ASPD buff are compared against the same-star baseline.",
+        "effects": [
+          {
+            "effect": "沉默持续+2秒，技能后攻速+10%",
+            "status": "complete",
+            "testName": "Provs module increases real silence lifetime and skill ASPD, with the four-star slow-depth bonus"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Provs module increases real silence lifetime and skill ASPD, with the four-star slow-depth bonus",
+        "reason": "Actual statusApplied durations/slow values and the self ASPD buff are compared against the same-star baseline.",
+        "effects": [
+          {
+            "effect": "沉默+2秒、攻速+10%且停顿深度+0.1。",
+            "status": "complete",
+            "testName": "Provs module increases real silence lifetime and skill ASPD, with the four-star slow-depth bonus"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4032_provs_0",
+        "assault_mod_char_4032_provs_1"
+      ]
+    },
+    {
+      "charId": "char_4122_grabds",
+      "moduleId": "uniequip_002_grabds",
+      "effectHandling": "三星解锁：本次技能额外命中1名目标，命中后使存活目标沉睡2秒；四星保留效果并强化野生动物停顿0.2秒。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Grabds module adds a real sleep target, strengthens duration, and deepens wildlife slow at star four",
+        "reason": "Real Battle sleep targets and buff duration are compared at both stars; wildlife slow confirms the additional 0.2 is restricted to star four.",
+        "effects": [
+          {
+            "effect": "沉睡目标上限+1，强化持续+2秒",
+            "status": "complete",
+            "testName": "Grabds module adds a real sleep target, strengthens duration, and deepens wildlife slow at star four"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Grabds module adds a real sleep target, strengthens duration, and deepens wildlife slow at star four",
+        "reason": "Real Battle sleep targets and buff duration are compared at both stars; wildlife slow confirms the additional 0.2 is restricted to star four.",
+        "effects": [
+          {
+            "effect": "目标+1、持续+2秒且野生动物停顿额外+0.2秒。",
+            "status": "complete",
+            "testName": "Grabds module adds a real sleep target, strengthens duration, and deepens wildlife slow at star four"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4122_grabds_0",
+        "assault_mod_char_4122_grabds_1"
+      ]
+    },
+    {
+      "charId": "char_4162_cathy",
+      "moduleId": "uniequip_002_cathy",
+      "effectHandling": "三星解锁：装置屏障初始比例+3%，补充速度+1%/秒；四星加强：初始比例+3%、补充+1%/秒且装置部署上限+1。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Cathy module adds 3% initial shield and 0.01 max-HP refill per eligible device tick at both stars",
+        "effects": [
+          {
+            "effect": "initial shield ratio +0.03 vs rank baseline",
+            "status": "complete",
+            "testName": "Cathy module adds 3% initial shield and 0.01 max-HP refill per eligible device tick at both stars"
+          },
+          {
+            "effect": "shield refill rate +0.01 max HP/s",
+            "status": "complete",
+            "testName": "Cathy module adds 3% initial shield and 0.01 max-HP refill per eligible device tick at both stars"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Cathy module adds 3% initial shield and 0.01 max-HP refill per eligible device tick at both stars",
+        "effects": [
+          {
+            "effect": "initial shield ratio exactly 0.25 at rank four",
+            "status": "complete",
+            "testName": "Cathy module adds 3% initial shield and 0.01 max-HP refill per eligible device tick at both stars"
+          },
+          {
+            "effect": "shield refill rate +0.01 max HP/s",
+            "status": "complete",
+            "testName": "Cathy module adds 3% initial shield and 0.01 max-HP refill per eligible device tick at both stars"
+          },
+          {
+            "effect": "device field cap +1 over baseline",
+            "status": "complete",
+            "testName": "Cathy module adds 3% initial shield and 0.01 max-HP refill per eligible device tick at both stars"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4162_cathy_0",
+        "assault_mod_char_4162_cathy_1"
+      ]
+    },
+    {
+      "charId": "char_4045_heidi",
+      "moduleId": "uniequip_002_heidi",
+      "effectHandling": "三星解锁：鼓舞防御+10%、生命上限+5%；四星加强：鼓舞防御+10%、生命上限+5%且回技光环+0.1/秒。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Heidi module strengthens skill stats by 10% DEF and 5% HP; star four adds 0.1 SP/s aura",
+        "effects": [
+          {
+            "effect": "鼓舞防御+10%、生命上限+5%",
+            "status": "complete",
+            "testName": "Heidi module strengthens skill stats by 10% DEF and 5% HP; star four adds 0.1 SP/s aura"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Heidi module strengthens skill stats by 10% DEF and 5% HP; star four adds 0.1 SP/s aura",
+        "effects": [
+          {
+            "effect": "鼓舞防御+10%、生命上限+5%且回技光环+0.1/秒。",
+            "status": "complete",
+            "testName": "Heidi module strengthens skill stats by 10% DEF and 5% HP; star four adds 0.1 SP/s aura"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4045_heidi_0",
+        "assault_mod_char_4045_heidi_1"
+      ]
+    },
+    {
+      "charId": "char_4019_ncdeer",
+      "moduleId": "uniequip_002_ncdeer",
+      "effectHandling": "三星解锁：治疗量+15%，庇护+3%；四星加强：治疗+15%、庇护+3%且庇护持续延长2秒。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Ncdeer module compares real healing, damage taken, and star-four protection lifetime",
+        "effects": [
+          {
+            "effect": "治疗量+15%，庇护+3%",
+            "status": "complete",
+            "testName": "Ncdeer module compares real healing, damage taken, and star-four protection lifetime"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Ncdeer module compares real healing, damage taken, and star-four protection lifetime",
+        "effects": [
+          {
+            "effect": "治疗+15%、庇护+3%且庇护持续延长2秒。",
+            "status": "complete",
+            "testName": "Ncdeer module compares real healing, damage taken, and star-four protection lifetime"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_4019_ncdeer_0",
+        "assault_mod_char_4019_ncdeer_1"
+      ]
+    },
+    {
+      "charId": "char_103_angel",
+      "moduleId": "uniequip_002_angel",
+      "effectHandling": "三星解锁：本次每发倍率+0.1；三发全部命中空中目标时回复1点技力，每次施放最多回复1点；四星攻击空中目标时每发再+0.05。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Angel first module adds 0.10 per arrow and star four adds 0.05 per flying-target arrow; Angel air-return bonus counts actual successful arrow hits once per cast, including shield absorption",
+        "effects": [
+          {
+            "effect": "每发倍率+0.10",
+            "status": "complete",
+            "testName": "Angel first module adds 0.10 per arrow and star four adds 0.05 per flying-target arrow; Angel air-return bonus counts actual successful arrow hits once per cast, including shield absorption"
+          },
+          {
+            "effect": "对空回技上限+1",
+            "status": "complete",
+            "testName": "Angel first module adds 0.10 per arrow and star four adds 0.05 per flying-target arrow; Angel air-return bonus counts actual successful arrow hits once per cast, including shield absorption"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Angel first module adds 0.10 per arrow and star four adds 0.05 per flying-target arrow; Angel air-return bonus counts actual successful arrow hits once per cast, including shield absorption",
+        "effects": [
+          {
+            "effect": "每发倍率+0.10",
+            "status": "complete",
+            "testName": "Angel first module adds 0.10 per arrow and star four adds 0.05 per flying-target arrow; Angel air-return bonus counts actual successful arrow hits once per cast, including shield absorption"
+          },
+          {
+            "effect": "攻击空中单位时每发再+0.05",
+            "status": "complete",
+            "testName": "Angel first module adds 0.10 per arrow and star four adds 0.05 per flying-target arrow; Angel air-return bonus counts actual successful arrow hits once per cast, including shield absorption"
+          },
+          {
+            "effect": "对空回技上限+1",
+            "status": "complete",
+            "testName": "Angel first module adds 0.10 per arrow and star four adds 0.05 per flying-target arrow; Angel air-return bonus counts actual successful arrow hits once per cast, including shield absorption"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_103_angel_0",
+        "assault_mod_char_103_angel_1"
+      ]
+    },
+    {
+      "charId": "char_103_angel",
+      "moduleId": "uniequip_003_angel",
+      "effectHandling": "三星解锁：本次连射增加1发，保留祝福扩散+1；四星祝福攻击加成额外+0.02。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Angel second module adds one real volley hit and star four adds 2% to the retained blessing",
+        "effects": [
+          {
+            "effect": "祝福扩散人数+1，连射次数+1",
+            "status": "complete",
+            "testName": "Angel second module adds one real volley hit and star four adds 2% to the retained blessing"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Angel second module adds one real volley hit and star four adds 2% to the retained blessing",
+        "effects": [
+          {
+            "effect": "扩散+1、连射+1且祝福攻击加成额外+2%。",
+            "status": "complete",
+            "testName": "Angel second module adds one real volley hit and star four adds 2% to the retained blessing"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_103_angel_0",
+        "assault_mod_char_103_angel_1"
+      ]
+    },
+    {
+      "charId": "char_332_archet",
+      "moduleId": "uniequip_002_archet",
+      "effectHandling": "三星解锁：本次每发倍率+0.1、施放距离+1格；四星本次最终倍率再乘1.05。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Archet second module adds 0.10 per arrow, one skill-range cell, and star-four +5% attack",
+        "reason": "Actual Battle test asserts selected module against same-star no-module baseline with numeric hit, timing, range, or target-count deltas.",
+        "effects": [
+          {
+            "effect": "三连击每发倍率+10%，攻击距离再+1格",
+            "status": "complete",
+            "testName": "Archet second module adds 0.10 per arrow, one skill-range cell, and star-four +5% attack"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Archet second module adds 0.10 per arrow, one skill-range cell, and star-four +5% attack",
+        "reason": "Actual Battle test asserts selected module against same-star no-module baseline with numeric hit, timing, range, or target-count deltas.",
+        "effects": [
+          {
+            "effect": "每发+10%、距离+1格且技能后攻击加成+5%。",
+            "status": "complete",
+            "testName": "Archet second module adds 0.10 per arrow, one skill-range cell, and star-four +5% attack"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_332_archet_0",
+        "assault_mod_char_332_archet_1"
+      ]
+    },
+    {
+      "charId": "char_332_archet",
+      "moduleId": "uniequip_003_archet",
+      "effectHandling": "三星解锁：狙击回技间隔-0.3秒；四星加强：间隔-0.3秒且回技量每间隔改为1.5点。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Archet third module interval grants sniper SP 0.3s earlier, with star-four amount 1.5",
+        "reason": "Actual Battle test asserts selected module against same-star no-module baseline with numeric hit, timing, range, or target-count deltas.",
+        "effects": [
+          {
+            "effect": "狙击回技间隔-0.3秒",
+            "status": "complete",
+            "testName": "Archet third module interval grants sniper SP 0.3s earlier, with star-four amount 1.5"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Archet third module interval grants sniper SP 0.3s earlier, with star-four amount 1.5",
+        "reason": "Actual Battle test asserts selected module against same-star no-module baseline with numeric hit, timing, range, or target-count deltas.",
+        "effects": [
+          {
+            "effect": "间隔-0.3秒且回技量每间隔改为1.5点。",
+            "status": "complete",
+            "testName": "Archet third module interval grants sniper SP 0.3s earlier, with star-four amount 1.5"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_332_archet_0",
+        "assault_mod_char_332_archet_1"
+      ]
+    },
+    {
+      "charId": "char_332_archet",
+      "moduleId": "uniequip_004_archet",
+      "effectHandling": "三星解锁：本次弹射终点额外增加1名（最多6名），每个终点至少结算1发；四星首目标额外发射1箭。",
+      "star3": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Archet fourth module raises each triple-hit target cap by one and star four adds a fourth hit",
+        "reason": "Actual Battle test asserts selected module against same-star no-module baseline with numeric hit, timing, range, or target-count deltas.",
+        "effects": [
+          {
+            "effect": "三连击每次目标数+1",
+            "status": "complete",
+            "testName": "Archet fourth module raises each triple-hit target cap by one and star four adds a fourth hit"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "star4": {
+        "status": "complete",
+        "testFile": "test/assault/cards-ranged-mid.test.mjs",
+        "testName": "Archet fourth module raises each triple-hit target cap by one and star four adds a fourth hit",
+        "reason": "Actual Battle test asserts selected module against same-star no-module baseline with numeric hit, timing, range, or target-count deltas.",
+        "effects": [
+          {
+            "effect": "目标数+1且连击次数+1。",
+            "status": "complete",
+            "testName": "Archet fourth module raises each triple-hit target cap by one and star four adds a fourth hit"
+          }
+        ],
+        "remainingEffects": []
+      },
+      "supersededBy": [
+        "assault_mod_char_332_archet_0",
+        "assault_mod_char_332_archet_1"
+      ]
+    }
+  ],
+  "inventorySourceRevision": "59cefd35d625e31a8642f391e057b2c74866da86",
+  "inventoryScope": "Current compiled parameter inventory and existing named test declarations; test execution and current effect acceptance come from the gameplay validation receipt. Historical module subeffect labels are not new execution proof."
+}

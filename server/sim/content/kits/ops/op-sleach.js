@@ -64,9 +64,11 @@ const S1 = 'skcom_assist_cost[3]';
 const S2 = 'skchr_sleach_2';
 const S3 = 'skchr_sleach_3';
 /** The flag's area: its tile and the 8 around it (the client's x-4 auras of 不退之旗 and of S3's flag / strike). */
-const X4 = Object.freeze([[1, -1], [1, 0], [1, 1], [0, -1], [0, 0], [0, 1], [-1, -1], [-1, 0], [-1, 1]]);
+export const X4 = Object.freeze([[1, -1], [1, 0], [1, 1], [0, -1], [0, 0], [0, 1], [-1, -1], [-1, 0], [-1, 1]]);
 /** S3's strike lands this long after the throw (PRTS 备注 "约1s延迟"; projectile_chr_sleach_s3_2 `_lifeTime` 1). */
 export const FLAG_FLIGHT = 1;
+/** Native S3 ground-target range (the compiled skill range replaces this fallback per kit). */
+export const R21 = Object.freeze([[2, 0], [1, 0], [1, 1], [0, 0], [0, 1], [0, 2], [-1, 0], [-1, 1], [-2, 0]]);
 /** Refresh period / lifetime of the flag's tile effects while a unit stands in their area. */
 const AURA_IV = 0.2;
 const AURA_DUR = 0.35;
@@ -108,7 +110,7 @@ function dpOverTime({ total, step = 1, iv, first = iv }) {
       while (d.t + 1e-9 >= d.next && d.given + step <= total + 1e-9) {
         d.given += step;
         d.next += iv;
-        battle.addDp(unit.ownerId, step);
+        battle.addDp(unit.ownerId, step, { sourceUnitId: unit.id });
       }
     },
     end(battle, unit, reason) {
@@ -138,7 +140,7 @@ function s2Tile(battle, unit, grid) {
  * S3's target tile (PRTS 军旗索敌逻辑): ground tiles of the 2-1 only — the tile of the selectable ground enemy ranked first
  * (her targeting order: the highest 仇恨), else the free ground tile of the range nearest to it, else her own tile.
  */
-function s3Tile(battle, unit, grid) {
+export function s3Tile(battle, unit, grid) {
   const keys = absoluteRangeKeys(grid, unit.tileR, unit.tileC, unit.dir, 0);
   const ground = (r, c) => battle.grid.inRect(r, c) && battle.grid.isLow(r, c);
   const foes = battle.enemiesInKeys(keys, unit, GROUND).filter((e) => !e.isFlying);
@@ -167,7 +169,7 @@ export default {
     const b1 = bbOf(chess, S1), b2 = bbOf(chess, S2), b3 = bbOf(chess, S3);
     const s2 = skillRec(chess, S2), s3 = skillRec(chess, S3);
     const X1 = s2?.rangeGrid ?? [[2, 0], [1, -1], [1, 0], [1, 1], [0, -2], [0, -1], [0, 0], [0, 1], [0, 2], [-1, -1], [-1, 0], [-1, 1], [-2, 0]];
-    const R21 = s3?.rangeGrid ?? [[2, 0], [1, 0], [1, 1], [0, 0], [0, 1], [0, 2], [-1, 0], [-1, 1], [-2, 0]];
+    const R21_GRID = s3?.rangeGrid ?? R21;
 
     const dp1 = dpOverTime({ total: num(b1.value), step: num(b1.cost, 1), iv: num(b1.interval, 0.44) });
     const dp2 = dpOverTime({ total: num(b2.value), step: num(b2['sleach_s_2[cost].cost'], 1), iv: num(b2['sleach_s_2[cost].interval'], 0.75) });
@@ -233,7 +235,7 @@ export default {
           onStart({ battle, unit }) {
             const cost = num(b3.cost);
             if (cost > 0) { battle.addDp(unit.ownerId, cost); battle.fx('dp', { x: unit.x, y: unit.y, n: cost, id: unit.id }); }
-            const [r, c] = s3Tile(battle, unit, R21);
+            const [r, c] = s3Tile(battle, unit, R21_GRID);
             const seq = (unit.mem.sleachThrow ?? 0) + 1;
             unit.mem.sleachThrow = seq;
             unit.mem.sleachFlag = { r, c, s3: true };

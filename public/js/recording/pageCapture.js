@@ -36,7 +36,7 @@ export function selectionSnapshot(doc = globalThis.document, win = globalThis.wi
 
 /** Attach lossless rrweb DOM events plus compact, replayable interaction and text-selection records. */
 export function startPageCapture({ rrweb = globalThis.rrweb, emit, doc = globalThis.document, win = globalThis.window,
-  sampling = { mousemove: 80, mouseInteraction: true, scroll: 150, input: 'last' }, selectionDelayMs = 0 } = {}) {
+  sampling = { mousemove: 80, mouseInteraction: true, scroll: 150, input: 'last' }, selectionDelayMs = 0, checkoutEveryNms = 30000 } = {}) {
   if (typeof emit !== 'function') throw new TypeError('page capture requires emit(event)');
   const stops = [];
   const listen = (target, type, handler, options) => {
@@ -107,7 +107,7 @@ export function startPageCapture({ rrweb = globalThis.rrweb, emit, doc = globalT
   listen(doc, 'selectionchange', scheduleSelection);
 
   const rrwebStop = rrweb?.record?.({
-    emit: (event) => emit('rrweb', event), checkoutEveryNms: 30000, recordCanvas: false, sampling,
+    emit: (event) => emit('rrweb', event), checkoutEveryNms, recordCanvas: false, sampling,
     maskAllInputs: false,
     maskInputOptions: { password: true },
     slimDOMOptions: { script: true, comment: true, headFavicon: true, headWhitespace: true, headMetaDesc: true, headMetaSocial: true, headMetaRobots: true, headMetaHttpEquiv: true, headMetaAuthorship: true, headMetaVerification: true },

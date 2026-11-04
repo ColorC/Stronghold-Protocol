@@ -87,6 +87,7 @@ describe('dev hook', () => {
   test('useFieldView clears globalThis.__SP_VIEW__ when it destroys the view', () => {
     const src = readFileSync(new URL('../../public/js/ui/fieldHost.js', import.meta.url), 'utf8');
     const cleanup = src.slice(src.indexOf('return () => {', src.indexOf('export function useFieldView')));
-    assert.match(cleanup.slice(0, 600), /globalThis\.__SP_VIEW__ === viewRef\.current\) globalThis\.__SP_VIEW__ = null/);
+    // (共鸣's field host keeps the mounted view in `mountedView`; the clean-up is the same)
+    assert.match(cleanup.slice(0, 900), /globalThis\.__SP_VIEW__ === (?:viewRef\.current|mountedView)\) globalThis\.__SP_VIEW__ = null/);
   });
 });

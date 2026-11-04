@@ -39,6 +39,7 @@ const S2 = 'skchr_siege_2';
 const S3 = 'skchr_siege_3';
 /** The four tiles around her and her own (talent / skill range x-5) when the data carries no grid. */
 const X5 = Object.freeze([[1, 0], [0, -1], [0, 0], [0, 1], [-1, 0]]);
+export { X5 as SIEGE_S2_RANGE };
 
 const bbOf = (chess, id) => skillRec(chess, id)?.bb ?? {};
 /** A 【先锋】 operator (summons are never 【先锋】 operators). */
@@ -67,7 +68,7 @@ export default {
           kind: 'instant', trigger: 'SP_FULL',
           onStart({ battle, unit }) {
             const n = num(b1.cost);
-            battle.addDp(unit.ownerId, n);
+            battle.addDp(unit.ownerId, n, { sourceUnitId: unit.id });
             battle.fx('dp', { x: unit.x, y: unit.y, n, id: unit.id });
           },
         },
@@ -77,7 +78,7 @@ export default {
           attack: { atkScale: num(b2.atk_scale, 1) },
           onStart({ battle, unit }) {
             const n = num(b2.cost);
-            battle.addDp(unit.ownerId, n);
+            battle.addDp(unit.ownerId, n, { sourceUnitId: unit.id });
             battle.fx('dp', { x: unit.x, y: unit.y, n, id: unit.id });
             battle.fx('aoe', { x: unit.x, y: unit.y, radius: 1, id: unit.id, skill: 'siege:hammer' });
           },

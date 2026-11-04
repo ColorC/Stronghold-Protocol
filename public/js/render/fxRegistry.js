@@ -20,6 +20,7 @@
 // register() returns the function that removes the entry again (a key keeps a stack: the previous entry comes back).
 
 import { registerBuiltinFx } from './fxRecipes.js';
+import { damageEventMark } from '../../../shared/protocol.js';
 
 export const FX_CHANNELS = Object.freeze(['atk', 'dmg', 'heal', 'skill', 'die', 'deploy', 'fx']);
 /** Resolution order, most specific first (each layer: the event's kind, then '*'); the default is kind '*' of 'kind'. */
@@ -153,7 +154,7 @@ export const fxCue = Object.freeze({
     const isSkill = flag(o.isSkill);
     return {
       kind: type, view: view || null, amount, type, src: src || null, melee: o.melee === true, attacker: o.attacker || null,
-      attackId: evId(o.attackId), isSkill, unit: src || o.attacker || null, useSkill: isSkill === true,
+      attackId: evId(o.attackId), isSkill, mark: o.mark === 'r' ? 'r' : null, unit: src || o.attacker || null, useSkill: isSkill === true,
     };
   },
   heal(view, amount) { return { kind: 'heal', view: view || null, amount, unit: view || null, useSkill: false }; },
@@ -225,8 +226,11 @@ export class FxCues {
   /** Battle reset / a new field. */
   reset() { this._melee.clear(); this._attacks.clear(); }
 
-  /** 'atk' (src / tgt: the views, null when unknown). */
-  atk(e, src, tgt, now) {
+  /**
+   * 'atk' (src / tgt: the views, null when unknown). `official`: the official effects layer drew this attack
+   * (render/vfx/wiring.js attack / chain) — the cue says so and the recipes skip the procedural shot.
+   */
+  atk(e, src, tgt, now, official = false) {
     const kind = e[3];
     if ((kind === 'none' || !kind) && tgt && src) this._melee.set(tgt.id, { src, t: now });
     const attackId = evId(e[4]), isSkill = flag(e[5]);
@@ -235,24 +239,60 @@ export class FxCues {
       this._attacks.set(attackId, isSkill);
       if (this._attacks.size > MAX_ATTACKS) this._attacks.delete(this._attacks.keys().next().value);
     }
-    this.system.play('atk', fxCue.atk(src, tgt, kind, { attackId, isSkill }));
+    const cue = fxCue.atk(src, tgt, kind, { attackId, isSkill });
+    if (official) cue.official = true;
+    this.system.play('atk', cue);
   }
 
-  /** 'dmg' on `view` (its view; nothing without one). */
-  dmg(e, view, now) {
+  /**
+   * 'dmg' on `view` (its view; nothing without one). `officialFor(src)`: whether the official effects layer stands for
+   * this damage from the attacker the melee pairing found (render/vfx/wiring.js damage) — the numbers stay.
+   */
+  dmg(e, view, now, officialFor = null) {
     if (!view) return;
     const m = this._melee.get(view.id);
     let src = null;
     if (m && now - m.t < MELEE_PAIR_S) { src = m.src; this._melee.delete(view.id); }
-    const attackerId = evId(e[4]), attackId = evId(e[5]);
+    const attackerId = e[4] === 'r' ? null : evId(e[4]), attackId = evId(e[5]);
     const attacker = attackerId != null ? this.view(attackerId) || null : null;
     const isSkill = attackId != null && attackId !== 0 && this._attacks.has(attackId) ? this._attacks.get(attackId) : null;
-    this.system.play('dmg', fxCue.dmg(view, Number(e[2]) || 0, e[3], src, { melee: !!src, attacker, attackId, isSkill }));
+    const cue = fxCue.dmg(view, Number(e[2]) || 0, e[3], src, { melee: !!src, attacker, attackId, isSkill, mark: damageEventMark(e) });
+    const official = typeof officialFor === 'function' ? !!officialFor(src) : false;
+    if (official) cue.official = true;
+    this.system.play('dmg', cue);
   }
 
-  heal(e, view) { if (view) this.system.play('heal', fxCue.heal(view, Number(e[2]) || 0)); }
-  skill(e, view) { if (view) this.system.play('skill', fxCue.skill(view, !!e[2], { skillId: e[3] })); }
-  die(view) { if (view) this.system.play('die', fxCue.die(view)); }
-  deploy(view) { if (view) this.system.play('deploy', fxCue.deploy(view)); }
-  fx(e) { this.system.play('fx', fxCue.fx(e[1], Number(e[2]), Number(e[3]), e[4])); }
+  heal(e, view, official = false) {
+    if (!view) return;
+    const cue = fxCue.heal(view, Number(e[2]) || 0);
+    if (official) cue.official = true;
+    this.system.play('heal', cue);
+  }
+
+  skill(e, view, official = false) {
+    if (!view) return;
+    const cue = fxCue.skill(view, !!e[2], { skillId: e[3] });
+    if (official) cue.official = true;
+    this.system.play('skill', cue);
+  }
+
+  die(view, official = false) {
+    if (!view) return;
+    const cue = fxCue.die(view);
+    if (official) cue.official = true;
+    this.system.play('die', cue);
+  }
+
+  deploy(view, official = false) {
+    if (!view) return;
+    const cue = fxCue.deploy(view);
+    if (official) cue.official = true;
+    this.system.play('deploy', cue);
+  }
+
+  fx(e, official = false) {
+    const cue = fxCue.fx(e[1], Number(e[2]), Number(e[3]), e[4]);
+    if (official) cue.official = true;
+    this.system.play('fx', cue);
+  }
 }

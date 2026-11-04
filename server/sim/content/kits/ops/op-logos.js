@@ -68,7 +68,7 @@ const tileOf = (p) => {
 const enemyShots = (battle) => (battle.projectiles?.list ?? []).filter((p) => p && p.source && p.source.side === 'enemy');
 
 /** 延异视阈: slow the enemy projectiles on `unit`'s range, restore those that left it. */
-function slowShots(battle, unit, scale) {
+export function slowShots(battle, unit, scale) {
   const set = unit.rangeKeySet;
   for (const p of enemyShots(battle)) {
     let s = SLOWED.get(p);
@@ -85,7 +85,7 @@ function slowShots(battle, unit, scale) {
 }
 
 /** 延异视阈 ends: clear the enemy projectiles on the range (unless disarmed / knocked out), release the rest. */
-function endShots(battle, unit, clear) {
+export function endShots(battle, unit, clear) {
   const set = unit.rangeKeySet;
   let n = 0;
   if (clear && set && battle.projectiles) {

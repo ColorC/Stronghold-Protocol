@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <title>进击 · 本局回放</title>
+  <link rel="icon" href="./icons/app.svg" type="image/svg+xml" sizes="any" />
+  <link rel="stylesheet" href="./fonts/fonts.css" />
+  <link rel="stylesheet" href="vendor/rrweb.css" />
+  <link rel="stylesheet" href="css/assault-recording.css" />
+  <script defer src="vendor/rrweb.umd.js"></script>
+  <script type="module" src="js/assault/replay.js"></script>
+</head>
+<body class="ar-replay">
+  <main class="ar-replay__shell">
+    <header class="ar-replay__head"><a href="assault.html">返回游戏</a><h1>本局回放</h1><p id="status" role="status">正在载入记录…</p></header>
+    <section class="ar-replay__screen" aria-label="回放画面">
+      <div id="stage" class="ar-replay__stage"></div>
+      <div id="caption" class="ar-replay__caption" hidden></div>
+    </section>
+    <nav class="ar-replay__controls" aria-label="回放控制">
+      <button id="play" type="button">播放</button><input id="timeline" type="range" min="0" max="1" value="0" step="0.05" aria-label="回放进度" />
+      <time id="clock">00:00 / 00:00</time><label><input id="captions" type="checkbox" checked />字幕</label>
+    </nav>
+  </main>
+</body>
+</html>

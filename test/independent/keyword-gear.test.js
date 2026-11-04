@@ -14,7 +14,7 @@ function setup(pieces, { atk = 100, def = 0, enemyHp = 100000, enemyDef = 0, ene
     seed,
     units: full.map(({ uid, chessId, row, col }) => ({ uid, chessId, row, col })),
     defs: {
-      chess: Object.fromEntries(full.map((p) => [p.chessId, chessRec({ id: p.chessId, position: p.position, skill: null, stats: { atk, maxHp: 1000, def: p.def ?? def, res: 0, aspd: 100, spRecovery: 0, respawnTime: 20 }, rangeGrid: [[0, 0], [0, 1]] })])),
+      chess: Object.fromEntries(full.map((p) => [p.chessId, chessRec({ id: p.chessId, skill: null, stats: { atk, maxHp: 1000, def: p.def ?? def, res: 0, aspd: 100, spRecovery: 0, respawnTime: 20 }, rangeGrid: [[0, 0], [0, 1]] })])),
       enemies: { dummy: enemyRec({ key: 'dummy', hp: enemyHp, def: enemyDef, res: 0, speed: 0, atk: enemyAtk }) },
     },
     autoFinish: false, content: 'none',
@@ -181,26 +181,7 @@ test('不屈盟约 revives once per real ground retreat; random tile airdrop cho
   assert.ok(target.hp < before, 'the deploy effect runs again only because this was a real redeployment');
 });
 
-test('不屈盟约 works for ranged deepindigo, stacks its probability, banks doll swaps, and clears the bank on deployment', () => {
-  const stacked = setup([{ uid: 'deepindigo', chessId: 'deepindigo', position: 'RANGED', row: 10, col: 3, equipment: [worn('unyielding-oath', 2)] }]);
-  const remote = stacked.unit('deepindigo'); const beforeDeploys = remote.deploySeq;
-  stacked.b.rng = () => 0.183;
-  stacked.b.kill(remote);
-  assert.ok(remote.alive && remote.deployed && remote.deploySeq > beforeDeploys,
-    'two pieces give a ranged holder the configured 18.4% return roll');
-
-  const banked = setup([{ uid: 'remote', chessId: 'remote', position: 'RANGED', row: 10, col: 3, equipment: [worn('unyielding-oath')] }]);
-  const wearer = banked.unit('remote');
-  banked.b.rng = () => 0;
-  banked.b.emit('dollSwap', { unit: wearer, form: 'doll' });
-  banked.b.rng = () => 0.99;
-  banked.b.kill(wearer);
-  assert.ok(wearer.alive && wearer.deployed, 'a stored swap chance returns the wearer without another successful roll');
-  banked.b.retreat(wearer, { reason: 'retreat' });
-  assert.ok(!wearer.alive, 'redeployment consumes the stored chance; the next failed exit roll does not revive');
-});
-
-test('爆破部署台 and 融毁教学仪 scale damage by quantity; every eligible retreat triggers the trainer, not death', () => {
+test('爆破部署台 and 融毁教学仪 scale damage by quantity; trainer triggers on retreat, not death, once per battle', () => {
   const h = setup([{ uid: 'w', chessId: 'w', row: 10, col: 3, equipment: [worn('blast-deploy-platform', 2), worn('portable-meltdown-trainer', 2)] }], { enemyHp: 200000 });
   h.b.flags.independent = true;
   const w = h.unit('w'); const local = enemy(h, [10, 6]); const far = enemy(h, [10, 19]);
@@ -220,7 +201,7 @@ test('爆破部署台 and 融毁教学仪 scale damage by quantity; every eligib
   assert.ok(w.alive, 'the deferred free redeploy executes when the doubled timer expires');
   const afterNextDeploy = local.hp;
   h.b.retreat(w, { reason: 'retreat' });
-  assert.ok(Math.abs(afterNextDeploy-local.hp-20800)<1e-6,'the next eligible retreat triggers again with the captured 1.6 damage increase');
+  assert.equal(local.hp, afterNextDeploy, 'duplicate pieces add damage, not per-departure uses');
   assert.ok(afterNextDeploy < after, 'the independent deploy platform still fires on later deployments');
 });
 

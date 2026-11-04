@@ -2,8 +2,8 @@
 // Conventions of the tier-6 kits: ../shared/tier6.js; kit contract and rules: ../README.md.
 
 import { bodyInKeys } from '../../../body.js';
-import { applyDamageIncrease } from '../../../../../shared/damageIncrease.js';
 import { num, tbb, live, elementDmg } from '../shared/tier6.js';
+import { applyDamageIncrease } from '../../../../../shared/damageIncrease.js';
 
 // ------------------------------------------------------------------------------------------------------------------
 // 妮芙 chess_char_6_10 (本源术师, hidden tier-6 entry) — S2 怵然震爆; 失魂; 窥心钥; module 心声

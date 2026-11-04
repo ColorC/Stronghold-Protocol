@@ -1,18 +1,15 @@
-import { hypot } from '../../detmath.js';
 import { weaknessType, WEAKNESS_PRIORITY } from '../garrisons/battle.js';
 import { frontOf } from '../../dir.js';
 import { nativeBodyStats, nativeRecord, tavernFactions } from '../../../../shared/independentRules.js';
 import { loadoutRecord } from '../../../../shared/loadoutRecord.js';
-import { levelBodyStats } from '../../../../shared/independentGrowth.js';
 import { mitigate } from '../../damage.js';
+import { hypot } from '../../detmath.js';
 import { installKeywordGear } from './keywordGear.js';
 import { validateAllyConditionStats } from '../../../modes/independent/native.js';
 import { INDEPENDENT_BADGE_STATS, independentBadgeMod } from '../../../../shared/independentBadgeStats.js';
 import { applyDamageIncrease } from '../../../../shared/damageIncrease.js';
 import { installWarband } from './warband.js';
 import { WARBAND_BEHAVIORS } from '../../../../shared/warbandSchema.js';
-import { hasDarkmoonDeploymentPayload, installDarkmoonCombat } from './darkmoonCombat.js';
-import { findSummonTile, tokenCanEngageAt } from '../tokens.js';
 
 // temporary combat traits (2026-10-07, installTemporaryNativeRules)
 // 干员特质 v4 (2026-10-07, 方舟化) adds: aura 在场光环 · rangeDebuff 攻击范围内敌人状态 · statusOnHit 命中上状态 · healedBuff 被治疗者
@@ -21,8 +18,8 @@ const TEMPORARY_BEHAVIORS = new Set(['battleStartBuff', 'deployBuff', 'skillStar
   'aura', 'rangeDebuff', 'statusOnHit', 'healedBuff', 'onKillSp', 'markSpread', 'blockRetaliate', 'allyConditionStats']);
 const BEHAVIORS = new Set([
   'badgeThresholdStat', 'staticStats', 'conditionalDamage', 'weakDamage', 'eventProduction',
-  'deployWindowStats', 'startDerivedStats',
-, 'badgeAmplifier', 'productionMultiplier', ...TEMPORARY_BEHAVIORS,...WARBAND_BEHAVIORS.filter(x=>x!=='factionReaction')]);
+  'deployWindowStats', 'startDerivedStats', 'badgeAmplifier', 'productionMultiplier', ...TEMPORARY_BEHAVIORS,
+  ...WARBAND_BEHAVIORS.filter((x) => x !== 'factionReaction')]);
 const STAT_MODS = Object.freeze({
   attackFlat: 'atkFlat', attackPercent: 'atkPct', attackSpeedFlat: 'aspd',
   maxHpFlat: 'hpFlat', maxLifeFlat: 'hpFlat', maxHpPercent: 'hpPct', maxLifePercent: 'hpPct', defenseFlat: 'defFlat', defenceFlat: 'defFlat', defensePercent: 'defPct',
@@ -31,9 +28,8 @@ const STAT_MODS = Object.freeze({
   hpRecoveryPerSecond: 'hpRegen', spRecoveryPerSecond: 'spRecoveryFlat', naturalSkillRecoveryFlat: 'spRecoveryFlat',
   artsResistanceFlat: 'resFlat', lifeRecoveryFlat: 'hpRegen', spRecovery: 'spRecoveryFlat',
   initialSkillPointsFlat: 'initialSkillPoints', normalAttackDamagePercent: 'normalAttackDamageBonus',
-  healingDealtPercent: 'healingDealtMul', spRecovery: 'spRecoveryFlat', resistance: 'resFlat', tauntLevel: 'taunt',
-  taunt: 'taunt', initialSp: 'initialSkillPoints', maxLifePercent: 'hpPct', maxHpPercent: 'hpPct',
-  attackSpeedFlat: 'aspd', defenceFlat: 'defFlat', defenseFlat: 'defFlat', artsDamageReduction: 'artsReduction',
+  healingDealtPercent: 'healingDealtMul', resistance: 'resFlat', tauntLevel: 'taunt',
+  taunt: 'taunt', initialSp: 'initialSkillPoints', artsDamageReduction: 'artsReduction',
   skillCostInitialPercent: 'initialSkillPointsPercent',
   // short names the temporary combat traits use
   atkPct: 'atkPct', aspd: 'aspd', defPct: 'defPct', spRegen: 'spRecoveryFlat', damageTakenPercent: 'dmgTakenMul', damageTakenPct: 'dmgTakenMul',
@@ -190,19 +186,6 @@ function sumBadgeMods(catalog, entries, baseStats = {}, boost = () => 1, preserv
   return { mods, counts };
 }
 
-/** Permanent native body plus worn equipment, without deployment/skill/temporary combat buffs. */
-export function independentPermanentStats(piece, catalog, state = {}) {
-  const grown = { ...piece, ...(state.growthMode === 'levels' ? { growthMode:'levels' } : {}) };
-  const fullBase = nativeBodyStats({ ...grown, bodyPenaltyApplied:false }, catalog);
-  const body = nativeBodyStats(grown, catalog);
-  const boost = id => (state.playerEffects || []).filter(x => x.type === 'badgeBoost' && (!x.badgeIds || x.badgeIds.includes(id)))
-    .reduce((m,x) => m * Number(x.multiplier || 1),1);
-  const { mods } = sumBadgeMods(catalog,equipmentFor(grown,catalog),fullBase,boost,!!piece.bodyPenaltyApplied);
-  return { ...body,
-    atk:Math.max(0,(Number(body.atk||0)+Number(mods.atkFlat||0))*(1+Number(mods.atkPct||0))+Number(mods.atkFinal||0)),
-    maxHp:Math.max(1,(Number(body.maxHp||1)+Number(mods.hpFlat||0))*(1+Number(mods.hpPct||0))) };
-}
-
 function splitBattleMods(mods, unit) {
   const buffs = { ...mods };
   const initialSp = Number(buffs.initialSkillPoints || 0);
@@ -310,10 +293,10 @@ function traitBuff(battle, target, key, mods, duration) {
   if (!Object.keys(mods).length) return;
   battle.addBuff(target, timed ? { key, duration: Number(duration), refresh: 'replace', mods } : { key, mods, persist: true, refresh: 'replace' });
 }
-function grantShieldLayers(battle, target, layers) {
+function grantShieldLayers(battle, target, layers, cap = 2) {
   const key = `independent:equipmentShield:${target.uid}`;
   const have = Number(target.findBuff(key)?.shieldHits ?? 0);
-  const total = have + layers;
+  const total = Math.min(cap, have + layers);
   if (total > have) battle.addBuff(target, { key, shieldHits: total, duration: Infinity, persist: true, allowDead: true, refresh: 'replace' });
 }
 // 弱点伤害 handed out by a trait (宴): the operators marked here deal weakness damage for the rest of the battle
@@ -437,8 +420,8 @@ function installTemporaryNativeRules(battle, unit, piece, catalog, rules) {
             return true;
           });
           const unique = [...new Map(matched.map((u) => [u.uid, u])).values()];
-          const count = p.countBy === 'factions' ? new Set(unique.flatMap((u) => tavernFactions(piecesByUid(battle, u.uid), catalog))).size
-            : p.countBy === 'professions' ? new Set(unique.map((u) => nativeRecord(piecesByUid(battle, u.uid), catalog)?.profession).filter(Boolean)).size : unique.length;
+          const count = Math.min(p.maxCount, p.countBy === 'factions' ? new Set(unique.flatMap((u) => tavernFactions(piecesByUid(battle, u.uid), catalog))).size
+            : p.countBy === 'professions' ? new Set(unique.map((u) => nativeRecord(piecesByUid(battle, u.uid), catalog)?.profession).filter(Boolean)).size : unique.length);
           if (count === lastCount) return;
           lastCount = count;
           if (count) traitBuff(battle, unit, key, statMods(p.stats, count), 'battle');
@@ -577,11 +560,11 @@ function installTemporaryNativeRules(battle, unit, piece, catalog, rules) {
       case 'allyDownStacks': {
         // every `every` other operators of ours that fall this battle add a stack, up to maxStacks
         let fallen = 0;
-        const every = Math.max(1, Number(p.every ?? 1));
+        const every = Math.max(1, Number(p.every ?? 1)); const max = Math.max(1, Number(p.maxStacks ?? 1));
         battle.on('death', ({ unit: who }) => {
           if (!who || who === unit || who.side !== 'ally' || who.kind !== 'op' || who.ownerId !== unit.ownerId || !unit.alive) return;
           fallen++;
-          const stacks = Math.floor(fallen / every);
+          const stacks = Math.min(max, Math.floor(fallen / every));
           // the stacks go to the trait's targets (itself unless it names others), counted again for whoever stands now
           if (stacks > 0) for (const t of traitTargets(battle, unit, p.targets ?? 'self')) traitBuff(battle, t, `${key}:${t.uid}`, statMods(p.stats, stacks), 'battle');
         }, { owner: unit });
@@ -589,8 +572,10 @@ function installTemporaryNativeRules(battle, unit, piece, catalog, rules) {
       }
       case 'onDown': {
         // on 'dollSwap': 替身与本体切换时 (either way) instead of 被击倒时
+        let left = Number(p.perBattle ?? 1);
         battle.on(p.on === 'dollSwap' ? 'dollSwap' : 'death', ({ unit: who }) => {
-          if (who !== unit) return;
+          if (who !== unit || left <= 0) return;
+          left--;
           if (p.blast) {
             const radius = Number(p.blast.radius ?? 1); const type = p.blast.type ?? 'arts';
             for (const e of battle.enemies) if (e.alive && e.deployed !== false && tileDistance(e, unit) <= radius) battle.dealDamage(unit, e, { amount: unit.s.atk * Number(p.blast.atkPct ?? 0), type, tags: ['independentTrait'] });
@@ -614,7 +599,7 @@ function installTemporaryNativeRules(battle, unit, piece, catalog, rules) {
       }
       case 'shieldAllies':
         // battle start (on 'deploy': every time it is deployed, redeploys too): `count` of the targets (wearing the fewest
-        // layers first, then left to right) get the configured `layers`.
+        // layers first, then left to right) get `layers`, 2 at most
         (p.on === 'deploy' ? (fn) => onDeployOf(battle, unit, fn) : (fn) => battle.on('battleStart', fn, { owner: unit }))(() => {
           const list = traitTargets(battle, unit, p.targets ?? 'all').filter((t) => !p.excludeSelf || t !== unit)
             .sort((a, b) => Number(a.findBuff(`independent:equipmentShield:${a.uid}`)?.shieldHits ?? 0) - Number(b.findBuff(`independent:equipmentShield:${b.uid}`)?.shieldHits ?? 0) || a.homeC - b.homeC || a.homeR - b.homeR);
@@ -784,7 +769,6 @@ function adjacentInDirection(owner, actor, direction) {
 }
 
 function getActor(event, trigger) {
-  if (trigger === 'dodge' || trigger === 'damaged') return event.target ?? null;
   if (trigger === 'skillStart' || trigger === 'skillEnd' || trigger === 'deploy' || trigger === 'dollSwap' || trigger === 'ammoUsed' || trigger === 'heal') return event.unit ?? event.source ?? null;
   if (trigger === 'shieldLayersGained' || trigger === 'shieldLayersBroken') return event.unit ?? null;
   if (trigger === 'kill') return event.killer ?? null;
@@ -944,14 +928,20 @@ function filterMatches(battle, rule, event, actor, owner) {
 
 function createRewardEmitter(battle) {
   const rewards = [];
-  const emit = ({ id, quantity, origin, sourceUid, copied = false }) => {
+  const used = new Map();
+  const emit = ({ id, quantity, origin, sourceUid, cap = null, copied = false }) => {
     if (!id || !Number.isFinite(Number(quantity))) throw new Error(`invalid independent battle reward ${id}`);
     if (Number(quantity) <= 0) return 0;
-    const allowed = Number(quantity);
+    const key = `${origin}:${sourceUid}:${id}:${copied ? 'copied' : 'base'}`;
+    const current = used.get(key) ?? 0;
+    const allowed = cap == null ? Number(quantity) : Math.max(0, Math.min(Number(quantity), Number(cap) - current));
+    if (allowed <= 0) return 0;
+    // a production doubler on the field (native productionMultiplier) multiplies what is handed out; caps count the base
     const given = allowed * Math.max(1, Number(battle.independentProductionFactor) || 1);
     const merged = rewards.find((r) => r.id === id && r.origin === origin && r.sourceUid === sourceUid && !!r.copied === !!copied);
     if (merged) merged.quantity += given;
     else rewards.push({ id, quantity: given, origin, sourceUid, ...(copied ? { copied: true } : {}) });
+    used.set(key, current + allowed);
     return allowed;
   };
   battle.independentRewards = rewards;
@@ -990,6 +980,8 @@ function installProductionRule(battle, owner, rule, origin, sourceId, emit) {
     if (trigger === 'nativeProduction' && (event.copied || event.replay)) return;
     if (p.excludeCopy && (event.copied || event.replay)) return;
     const eventCount = Number(owner.mem.independentState.counters[`${countKey}:events`] || 0);
+    if (p.firstOnly && eventCount > 0) return;
+    if (p.firstN != null && eventCount >= Number(p.firstN)) return;
     if (Number(p.probability) > 0 && battle.rng() >= Number(p.probability)) return;
     // Hit-negating shields expose layer counts, not just callback counts. This lets
     // independent eventProduction express e.g. one badge per five native or gear
@@ -1024,7 +1016,14 @@ function installProductionRule(battle, owner, rule, origin, sourceId, emit) {
         const selected = ids.includes(chosen) ? chosen : ids[0];
         if (output.id !== selected) continue;
       }
-      const allowed = emit({ id: output.id, quantity, origin, sourceUid: owner.uid, copied: !!p.copyOutputFromEvent || !!p.requiresPlayerChoice });
+      if (p.maxPerBattle != null && !p.capPerOutput) {
+        const producedKey = `${countKey}:produced`;
+        const produced = Number(owner.mem.independentState.counters[producedKey] || 0);
+        quantity = Math.max(0, Math.min(quantity, Number(p.maxPerBattle) - produced));
+        if (quantity > 0) owner.mem.independentState.counters[producedKey] = produced + quantity;
+      }
+      const cap = p.capPerOutput ?? p.maxPerBattle;
+      const allowed = emit({ id: output.id, quantity, origin, sourceUid: owner.uid, cap, copied: !!p.copyOutputFromEvent || !!p.requiresPlayerChoice });
       if (allowed > 0) producedOutputs.push({ id: output.id, quantity: allowed });
     }
     if (p.armedBy && producedOutputs.length) armed--;
@@ -1044,15 +1043,8 @@ function installNativeCombat(battle, catalog, pieces, emit) {
     const rules = rulesOf(catalog, piece.chessId);
     // Unit.base already reflects the selected native skill/module loadout. Preserve it before
     // applying a handover penalty so badge percentages never shrink with the inherited body.
-    const nativeRecordForStats = nativeRecord(piece, catalog);
-    if (piece.growthMode === 'levels') {
-      const original = loadoutRecord(nativeRecordForStats, piece)?.stats ?? nativeRecordForStats?.stats;
-      const grown = levelBodyStats(piece, catalog);
-      for (const field of ['atk', 'maxHp', 'def', 'res']) {
-        unit.base[field] += Number(grown[field] || 0) - Number(original?.[field] || 0);
-      }
-    }
     const nativeBaseStats = { ...unit.base };
+    const nativeRecordForStats = nativeRecord(piece, catalog);
     const rawNativeStats = loadoutRecord(nativeRecordForStats, piece)?.stats ?? nativeRecordForStats?.stats ?? {};
     for (const [field, aliases] of Object.entries({
       atk: ['atk', 'attack'], maxHp: ['maxHp', 'maxHP'], def: ['def', 'defense'], aspd: ['aspd', 'attackSpeed'], spRecovery: ['spRecovery', 'spRecoveryPerSec'],
@@ -1063,7 +1055,7 @@ function installNativeCombat(battle, catalog, pieces, emit) {
     unit.mem.independentState = { counters: {}, active: true, preferences: structuredClone(piece.nativeState?.preferences ?? {}) };
     if (piece.bodyPenaltyApplied) {
       const record = nativeRecord(piece, catalog);
-      const before = levelBodyStats(piece, catalog, record);
+      const before = loadoutRecord(record, piece)?.stats ?? record?.stats;
       const after = nativeBodyStats(piece, catalog);
       if (!before || !after) throw new Error(`bodyPenaltyApplied piece ${piece.uid} lacks native base stats`);
       for (const [field, statKey] of [['atk', 'atk'], ['maxHp', 'maxHp']]) {
@@ -1115,16 +1107,9 @@ function installNativeCombat(battle, catalog, pieces, emit) {
   }
 }
 
-function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries, emit, itemIdValue, instanceKey = null, instanceIndex = null) {
+function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries, emit, itemIdValue) {
   const behavior = rule?.behavior;
   const p = rule?.params ?? {};
-  const ownEntry = Number.isInteger(instanceIndex) ? entries[instanceIndex]
-    : entries.find((entry) => instanceKey != null && entry.item?.uid === instanceKey)
-    || entries.find((entry) => entry.sourceId === itemIdValue || entry.id === itemIdValue);
-  const stackCount = Math.max(1, Number(ownEntry?.item?.quantity) || 1);
-  const matchingEntries = entries.filter((entry) => entry.sourceId === itemIdValue || entry.id === itemIdValue);
-  const totalCopies = matchingEntries.reduce((sum, entry) => sum + Math.max(1, Number(entry.item?.quantity) || 1), 0);
-  const isFirstInstance = !Number.isInteger(instanceIndex) || matchingEntries.indexOf(ownEntry) === 0;
   if (!behavior || !rule.trigger) throw new Error(`combatEquipment ${itemIdValue} has an invalid effect descriptor`);
   if (behavior === 'eventProduction') {
     installProductionRule(battle, unit, rule, 'equipment', itemIdValue, emit);
@@ -1168,9 +1153,16 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     if (value != null && Number(value) !== 0) mergeMods(mods, modFromStat(stat, value));
     return mods;
   };
+  const cooldownReady = (key, cd = 0) => {
+    const prev = Number(unit.mem[key] ?? -Infinity);
+    if (battle.time < prev + cd) return false;
+    unit.mem[key] = battle.time;
+    return true;
+  };
   if (behavior === 'disarmOnHit' || behavior === 'silenceOnHit' || behavior === 'slowOnHit') {
+    const cooldown = Number(p.cooldownSeconds ?? 0);
     const duration = Number(p.durationSeconds ?? 0);
-    if (!(duration > 0)) throw new Error(`combatEquipment ${itemIdValue}:${behavior} has invalid duration`);
+    if (!(duration > 0 && cooldown >= 0)) throw new Error(`combatEquipment ${itemIdValue}:${behavior} has invalid duration/cooldown`);
     if (p.groundOnly && unit.def?.position !== 'MELEE') return;
     const mainTargets = new Map();
     battle.on('beforeAttack', ({ attacker, targets, isSkill }) => {
@@ -1181,6 +1173,7 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
       const mainTargetId = mainTargets.get(dmg?.attackId);
       if (source !== unit || target?.side !== 'enemy' || !(amount > 0) || target.id !== mainTargetId) return;
       mainTargets.delete(dmg.attackId);
+      if (!cooldownReady(`independentGearCd:${itemIdValue}`, cooldown)) return;
       // 战栗维式重锤 (gear v4): the same path with 战栗 instead of 无法普通攻击
       if (behavior === 'disarmOnHit') applyEquipmentStatus(battle, unit, target, p.status ?? 'disarm', { duration });
       else if (behavior === 'silenceOnHit') applyEquipmentStatus(battle, unit, target, 'silence', { duration });
@@ -1198,12 +1191,13 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
   if (behavior === 'eventStats' || behavior === 'gainBattleStats') {
     if (!hasTag(p.requiresTag)) return;
     const stats = p.stats ?? (p.attackPercent != null ? { attackPercent: p.attackPercent } : p.attackSpeedFlat != null ? { attackSpeedFlat: p.attackSpeedFlat } : {});
+    const maxStacks = Number(p.maxStacks ?? p.maxAttackSpeed ?? Infinity);
     let stacks = 0;
     const trigger = behavior === 'gainBattleStats' ? null : rule.trigger;
     let lastActivation = null;
     if (behavior === 'gainBattleStats') {
       const gained = Number(stateCounter(battle, piece, 'gainedThisPrep') ?? stateCounter(battle, piece, 'gained') ?? 0);
-      const amount = gained * Number(p.attackSpeedPerGain ?? 0);
+      const amount = Math.min(maxStacks, gained * Number(p.attackSpeedPerGain ?? 0));
       if (amount) battle.addBuff(unit, { key: `independent:gear:${itemIdValue}`, mods: { aspd: amount }, persist: true, allowDead: true });
       return;
     }
@@ -1220,7 +1214,7 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
       if (sourceEvent === 'damaged' && event.target !== unit) return;
       if (sourceEvent === 'deploy' && event.unit !== unit) return;
       const key = `independentGearStacks:${itemIdValue}`;
-      stacks++;
+      stacks = Math.min(maxStacks, stacks + 1);
       const resolved = {};
       for (const [stat, value] of Object.entries(stats)) {
         const scalar = Number(value);
@@ -1238,7 +1232,7 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
       if (deployed !== unit) return;
       const ownFactions = tavernFactions(piece, catalog);
       const shared = battle.allyUnits.filter((ally) => ally !== unit && ally.kind === 'op' && ally.deployed && tavernFactions(piecesFor(battle, ally.uid), catalog).some((tag) => ownFactions.includes(tag))).length;
-      const amount = Number(p.base ?? 0) + shared * Number(p.perSharedFactionAlly ?? 0);
+      const amount = Number(p.base ?? 0) + Math.min(Number(p.maxBonus ?? Infinity), shared * Number(p.perSharedFactionAlly ?? 0));
       if (amount > 0) unit.skill?.gainSp(amount, 'independentEquipment');
     }, { owner: unit });
     return;
@@ -1254,8 +1248,10 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     return;
   }
   if (behavior === 'lethalGuard') {
+    let uses = 0;
     battle.on('fatal', (ctx) => {
-      if (ctx.unit !== unit) return;
+      if (ctx.unit !== unit || uses >= Number(p.perBattle ?? 1)) return;
+      uses++;
       ctx.prevented = true;
       ctx.unit.hp = Math.max(Number(p.minimumHp ?? 1), ctx.unit.hp);
       if (Number(p.durationSeconds) > 0) battle.addBuff(unit, { key: `independent:lethalGuard:${itemIdValue}`, duration: Number(p.durationSeconds), flags: { invulnerable: true }, allowDead: true });
@@ -1263,13 +1259,14 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     return;
   }
   if (behavior === 'deployFirstHitStatus') {
+    let used = 0;
     // perDeploy (谢拉格冰爪, gear v4): how many of the first normal attacks after each deployment carry the status
     const perDeploy = Math.max(1, Math.floor(Number(p.perDeploy ?? 1)));
     let armed = 0;
     const pendingTargets = new Map();
     if (p.resetOnDeploy) battle.on('deploy', ({ unit: deployed }) => { if (deployed === unit) armed = perDeploy; }, { owner: unit });
     battle.on('beforeAttack', ({ attacker, targets: attackTargets, isSkill }) => {
-      if (attacker !== unit || isSkill) return;
+      if (attacker !== unit || isSkill || used >= Number(p.maxPerBattle ?? Infinity)) return;
       pendingTargets.set(battle._attackSeq + 1, attackTargets?.[0]?.id ?? null);
     }, { owner: unit });
     battle.on('damaged', ({ source, target, amount, dmg }) => {
@@ -1277,15 +1274,17 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
       if (source !== unit || !(amount > 0) || !target || !pendingTargets.has(attackId)) return;
       const mainTargetId = pendingTargets.get(attackId);
       pendingTargets.delete(attackId);
-      if (armed <= 0 || target.id !== mainTargetId) return;
-      applyEquipmentStatus(battle, unit, target, p.status, { duration: Number(p.durationSeconds ?? 0) });
+      if (armed <= 0 || target.id !== mainTargetId || used >= Number(p.maxPerBattle ?? Infinity)) return;
+      if (applyEquipmentStatus(battle, unit, target, p.status, { duration: Number(p.durationSeconds ?? 0) })) used++;
       armed--;
     }, { owner: unit });
     return;
   }
   if (behavior === 'firstDamageStatus') {
+    let used = false;
     battle.on('damaged', ({ target, amount }) => {
-      if (target !== unit || !(amount > 0)) return;
+      if (target !== unit || !(amount > 0) || used) return;
+      used = true;
       battle.applyStatus(unit, p.status, { source: unit, duration: Number(p.durationSeconds ?? 0), force: true });
     }, { owner: unit });
     return;
@@ -1316,10 +1315,12 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     return;
   }
   if (behavior === 'lastBulletRefund') {
+    let used = 0;
     battle.on('ammoUsed', ({ unit: actor, skill }) => {
-      if (actor !== unit || !skill) return;
+      if (actor !== unit || !skill || used >= Number(p.maxPerBattle ?? Infinity)) return;
       const threshold = Number(p.thresholdRemaining ?? 1);
       if (Number(skill.ammoLeft ?? 0) > threshold) return;
+      used++;
       const amount = Math.max(Number(p.minimum ?? 1), Math.floor(Number(skill.ammoMax ?? skill.ammo ?? 0) * Number(p.initialAmmoRatio ?? 0)));
       if (amount > 0) skill.addAmmo(amount);
     }, { owner: unit });
@@ -1346,6 +1347,7 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
   }
   if (behavior === 'countedHealShield') {
     let count = 0;
+    let nextAt = 0;
     let lastHealGroup = null;
     battle.on('heal', (ctx) => {
       const target = ctx.target;
@@ -1359,19 +1361,23 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
         lastHealGroup = group;
       }
       count++;
-      if (count < Number(p.counterEvery ?? 1)) return;
+      if (count < Number(p.counterEvery ?? 1) || battle.time < nextAt) return;
       count = 0;
+      nextAt = battle.time + Number(p.cooldownSeconds ?? 0);
+      const shieldTotal = (target?.buffs ?? []).filter((buff) => buff.key?.startsWith('independent:equipmentShield:') || buff.key?.startsWith('independent:countedHealShield:')).reduce((sum, buff) => sum + Math.max(0, Number(buff.shieldHits) || 0), 0);
       const shieldKey = `independent:countedHealShield:${unit.uid}:${itemIdValue}`;
       const current = target?.findBuff(shieldKey)?.shieldHits ?? 0;
-      const charges = Math.max(0, Number(p.shieldCharges ?? 1));
+      const charges = Math.min(Number(p.shieldCharges ?? 1), Math.max(0, 2 - shieldTotal));
       if (charges > 0) battle.addBuff(target, { key: shieldKey, shieldHits: current + charges, duration: Infinity, persist: true });
     }, { owner: unit });
     return;
   }
   if (behavior === 'singleRevive') {
+    let used = false;
     let restoring = false;
     battle.on('death', ({ unit: dead, reason }) => {
-      if (dead !== unit || reason !== 'killed' || restoring) return;
+      if (dead !== unit || reason !== 'killed' || used) return;
+      used = true;
       restoring = true;
       unit.respawnAt = battle.time + Number(p.delaySeconds ?? 0);
     }, { owner: unit });
@@ -1387,7 +1393,11 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     // damageType (造成法术伤害时: every hit of that type, no counting)
     const duration = Number(p.durationSeconds ?? 0);
     const radius = Number(p.radius ?? 0);
+    const cooldown = Number(p.cooldownSeconds ?? 0);
+    if (!Number.isFinite(cooldown) || cooldown < 0) throw new Error(`combatEquipment ${itemIdValue}: countedStatus needs a nonnegative cooldownSeconds`);
     const apply = (target) => {
+      // Stored on the wearer and keyed by this gear's native source id: redeployment cannot refresh it.
+      if (!cooldownReady(`independentCountedStatusCd:${itemIdValue}`, cooldown)) return;
       const list = radius > 0 ? battle.enemies.filter((e) => liveEnemy(e) && tileDistance(e, target) <= radius) : [target];
       for (const t of list) gearStatus(battle, unit, t, p.status, duration, p.value, itemIdValue);
     };
@@ -1481,6 +1491,7 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     return;
   }
   if (behavior === 'damageReductionAndRetaliation') {
+    let nextRetaliation = 0;
     battle.on('hit', ({ source, target, dmg }) => {
       if (target !== unit || source?.side !== 'enemy' || !dmg) return;
       if (!(dmg.amount > 0)) return;
@@ -1500,7 +1511,7 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
         const wanted = Math.max(Math.min(Number(p.minimumDamage ?? 1), currentFinal), currentFinal - Number(p.flatReduction ?? 0));
         dmg.mul *= wanted / currentFinal;
       }
-      if (hasTag(p.requiresTag)) {
+      if (hasTag(p.requiresTag) && battle.time >= nextRetaliation) {
           let ratio = Number(p.retaliationAttackPercent ?? 0);
           const paired = p.pairedSourceId && ownPair(p.pairedSourceId);
           if (paired && p.pairedMultiplier != null) ratio *= Number(p.pairedMultiplier);
@@ -1510,6 +1521,7 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
               ? battle.enemies.filter((e) => e !== source && liveEnemy(e) && tileDistance(e, source) <= Number(p.pairedSplashRadius)) : [];
             for (const e of [source, ...splash]) battle.dealDamage(unit, e, { amount: unit.s.atk * ratio, type: 'arts', tags: ['independentEquipment'] });
           }
+          nextRetaliation = battle.time + Number(p.retaliationCooldownSeconds ?? 0);
       }
     }, { owner: unit });
     return;
@@ -1537,13 +1549,17 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
   }
   if (behavior === 'skillRecovery') {
     if (!hasTag(p.requiresTag)) return;
+    let fired = false;
+    let pairedStartCount = 0;
     battle.on('skillEnd', ({ unit: actor }) => {
-      if (actor !== unit) return;
+      if (actor !== unit || (p.firstOnly && fired)) return;
+      fired = true;
       if (Number(p.sp) > 0) unit.skill?.gainSp(Number(p.sp), 'independentEquipment');
     }, { owner: unit });
     if (ownPair(p.pairedSourceId) && Number(p.teamSpPerSkillStart) > 0) {
       battle.on('skillStart', ({ unit: actor }) => {
-        if (actor.ownerId !== unit.ownerId) return;
+        if (actor.ownerId !== unit.ownerId || pairedStartCount >= Number(p.pairedSkillStartCap ?? Infinity)) return;
+        pairedStartCount++;
         for (const ally of battle.allyUnits) if (ally.kind === 'op' && ally.ownerId === unit.ownerId) ally.skill?.gainSp(Number(p.teamSpPerSkillStart), 'independentEquipment');
       }, { owner: unit });
     }
@@ -1571,40 +1587,16 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
   }
   if (behavior === 'stealthBreakDamage') {
     if (!hasTag(p.requiresTag)) return;
-    if (!isFirstInstance) return;
     const paired = ownPair(p.pairedSourceId);
     let hadStealth = false;
     let armed = false;
     let procs = 0;
-    let stealthAttackBonus = 0;
-    const rampKey = `independent:stealthAttackRamp:${unit.uid}:${itemIdValue}`;
     const procCap = Number(p.pairedProcMaxPerBattle ?? Infinity);
-    const awardGrowth = () => battle.grantTemporaryBadgeGrowth?.(unit, { sourceId: itemIdValue, sourceKey: itemIdValue, attackUnits: totalCopies });
-    const isStealthed = () => !!(unit.s.flags.stealth || unit.findBuff('stealth'));
-    const syncStealthTransition = () => {
-      const hasStealth = isStealthed();
-      if (hasStealth && !hadStealth) {
-        hadStealth = true;
-        awardGrowth();
-      } else if (!hasStealth && hadStealth) {
-        hadStealth = false;
-        armed = true;
-        awardGrowth();
-      }
-    };
-    battle.on('independentStealthEntered', ({ unit: who }) => { if (who === unit) syncStealthTransition(); }, { owner: unit });
-    battle.on('independentStealthExited', ({ unit: who }) => {
-      if (who !== unit) return;
-      syncStealthTransition();
-    }, { owner: unit });
-    battle.on('tick', ({ dt }) => {
+    battle.on('tick', () => {
       if (!unit.alive || !unit.deployed) { hadStealth = false; return; }
-      syncStealthTransition();
-      const hasStealth = isStealthed();
-      if (hasStealth) {
-        stealthAttackBonus = Math.min(Number(p.maxAttackBonus ?? 1) * totalCopies, stealthAttackBonus + Number(p.attackBonusPerSecond ?? 0.02) * totalCopies * Number(dt || 0));
-        if (stealthAttackBonus > 0) battle.addBuff(unit, { key: rampKey, mods: { atkPct: stealthAttackBonus }, persist: true, allowDead: true, refresh: 'replace' });
-      }
+      const hasStealth = !!(unit.s.flags.stealth || unit.findBuff('stealth'));
+      if (hasStealth) hadStealth = true;
+      else if (hadStealth) { armed = true; hadStealth = false; }
     }, { owner: unit });
     battle.on('hit', ({ source, target, dmg }) => {
       if (source !== unit || !unit.alive || !unit.deployed || !armed || !dmg || dmg.isSkill || isGearDamage(dmg)) return;
@@ -1612,12 +1604,10 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
       // gear v4: the attack stuns its target instead of hitting harder
       if (Number(p.stunSeconds) > 0 && target?.side === 'enemy') applyEquipmentStatus(battle, unit, target, 'stun', { duration: Number(p.stunSeconds) });
       if (paired && procs < procCap) {
-        battle.dealDamage(unit, target, { amount: unit.s.atk * Number(p.trueDamageAttackRatio ?? 0) * totalCopies, type: 'true', tags: ['independentEquipment'] });
+        battle.dealDamage(unit, target, { amount: unit.s.atk * Number(p.trueDamageAttackRatio ?? 0), type: 'true', tags: ['independentEquipment'] });
         procs++;
       }
       armed = false;
-      battle.removeBuff(unit, rampKey);
-      stealthAttackBonus = 0;
     }, { owner: unit });
     return;
   }
@@ -1676,7 +1666,7 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     battle.on('battleStart', () => {
       const [frontR, frontC] = frontOf(unit.homeR, unit.homeC, unit.dir);
       const front = battle.allyUnits.find((candidate) => candidate.kind === 'op' && candidate.ownerId === unit.ownerId && candidate.homeR === frontR && candidate.homeC === frontC && candidate !== unit && !candidate.removed);
-      const frontPiece = front && pieces.find((x) => x.uid === front.uid);
+      const frontPiece = front && piecesByUid(battle, front.uid);
       const stacks = Math.floor((badgeCountFor(entries, p.badgeIds) + (frontPiece ? badgeCountFor(equipmentFor(frontPiece, catalog), p.badgeIds) : 0)) / every);
       const mods = {};
       if (Number.isFinite(Number(p.attackSpeedFlatPerStack))) mods.aspd = stacks * Number(p.attackSpeedFlatPerStack);
@@ -1690,6 +1680,7 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
   // (design extraGear inheritable: false). Damage they deal is tagged independentEquipment and starts nothing again.
   if (behavior === 'ricochet' || behavior === 'splash') {
     const ratio = Number(p.atkPercent ?? 0); const radius = Number(p.radius ?? 0);
+    const bounces = behavior === 'ricochet' ? Math.max(1, Math.floor(Number(p.bounces ?? 1))) : 0;
     if (!(ratio > 0 && radius > 0)) throw new Error(`combatEquipment ${itemIdValue}:${behavior} needs atkPercent and radius`);
     const mains = mainTargetTracker(battle, unit);
     battle.on('damaged', ({ source, target, amount, dmg }) => {
@@ -1705,7 +1696,7 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
       }
       // 弹射: to the nearest enemy not yet hit by this attack, within the radius of the one before
       const hit = new Set([target]); let from = target;
-      while (true) {
+      for (let n = 0; n < bounces; n++) {
         let next = null;
         for (const e of battle.enemies) if (!hit.has(e) && live(e) && tileDistance(e, from) <= radius && (!next || tileDistance(e, from) < tileDistance(next, from))) next = e;
         if (!next) break;
@@ -1716,13 +1707,15 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     return;
   }
   if (behavior === 'healAllyOnDamage') {
-    const ratio = Number(p.damagePercent ?? 0); const radius = Number(p.radius ?? 0);
-    if (!(ratio > 0 && radius > 0)) throw new Error(`combatEquipment ${itemIdValue}:healAllyOnDamage needs damagePercent and radius`);
+    const ratio = Number(p.damagePercent ?? 0); const radius = Number(p.radius ?? 0); const cooldown = Number(p.cooldownSeconds ?? 0);
+    if (!(ratio > 0 && radius > 0 && cooldown >= 0)) throw new Error(`combatEquipment ${itemIdValue}:healAllyOnDamage needs damagePercent, radius, cooldownSeconds`);
+    let next = -Infinity;
     battle.on('damaged', ({ source, target, amount, dmg }) => {
-      if (source !== unit || target?.side !== 'enemy' || !(amount > 0) || dmg?.tags?.includes('independentEquipment')) return;
+      if (source !== unit || target?.side !== 'enemy' || !(amount > 0) || dmg?.tags?.includes('independentEquipment') || battle.time < next) return;
       // a random hurt ally around the wearer (not the wearer itself)
       const hurt = battle.allyUnits.filter((a) => a !== unit && a.alive && a.deployed && a.kind !== 'device' && a.hp < a.s.maxHp && tileDistance(a, unit) <= radius);
       if (!hurt.length) return;
+      next = battle.time + cooldown;
       // targets (gear v4 param): that many different hurt allies, each healed the share
       for (let n = Math.max(1, Math.floor(Number(p.targets ?? 1))); n > 0 && hurt.length; n--) {
         const pick = hurt.splice(Math.floor(battle.rng() * hurt.length), 1)[0];
@@ -1749,7 +1742,7 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     factionGear(battle).guards.push({ unit, pct, keys: wearerKeys(battle, unit) });
     return;
   }
-  if (installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, itemIdValue, { ownPair, hasTag, stackCount, totalCopies, isFirstInstance, instanceKey })) return;
+  if (installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, itemIdValue, { ownPair, hasTag, cooldownReady })) return;
   throw new Error(`unimplemented independent combatEquipment behavior ${behavior} (${itemIdValue})`);
 }
 
@@ -1757,7 +1750,7 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
  * 特殊战斗装备 第四版 (2026-10-07; user: 「做就做呗」): the new behaviors. Returns false for a behavior it does not know.
  * Damage they deal is tagged independentEquipment, so no other piece starts again from it.
  */
-function installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, itemIdValue, { ownPair, hasTag, stackCount = 1, totalCopies = 1, isFirstInstance = true, instanceKey = null }) {
+function installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, itemIdValue, { ownPair, hasTag, cooldownReady }) {
   const gearHit = (target, amount, type) => battle.dealDamage(unit, target, { amount, type, tags: GEAR_TAGS });
   const sameType = (dmg) => (dmg?.type === 'arts' ? 'arts' : dmg?.type === 'true' ? 'true' : 'phys');
   // the damage a normal attack's hit carried before the target's own defences: what 穿透 / 处置预案 deal again
@@ -1778,25 +1771,14 @@ function installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, i
       }
       const ratio = Number(p.atkPercent);
       if (!(ratio > 0)) throw new Error(`combatEquipment ${itemIdValue}: elementOnHit needs atkPercent`);
-      const scaledRatio = Number(p.perAdditionalAtkPercent) > 0
-        ? ratio + Math.max(0, totalCopies - 1) * Number(p.perAdditionalAtkPercent)
-        : ratio * stackCount;
-      if (Number(p.perAdditionalAtkPercent) > 0 && !isFirstInstance) return true;
-      normalHits(battle, unit, (target) => { if (target.alive) battle.dealDamage(unit, target, { type: 'element', element: p.element, amount: unit.s.atk * scaledRatio, tags: GEAR_TAGS }); });
-      return true;
-    }
-    case 'temporaryGrowthOnElementBurst': {
-      if (!isFirstInstance) return true;
-      battle.on('elementBurst', ({ source, target }) => {
-        if (source !== unit || target?.side !== 'enemy') return;
-        battle.grantTemporaryBadgeGrowth?.(unit, { sourceId: itemIdValue, sourceKey: itemIdValue, attackUnits: totalCopies });
-      }, { owner: unit });
+      normalHits(battle, unit, (target) => { if (target.alive) battle.dealDamage(unit, target, { type: 'element', element: p.element, amount: unit.s.atk * ratio, tags: GEAR_TAGS }); });
       return true;
     }
     case 'knockbackOnHit': {
-      // 击退 the main target of every normal attack with 力度 `force` (0 小力, 1 中力).
+      // 击退 the main target of a normal attack with 力度 `force` (0 小力, 1 中力), once per cooldown
+      const cd = Number(p.cooldownSeconds ?? 0);
       normalHits(battle, unit, (target) => {
-        if (!target.alive) return;
+        if (!target.alive || !cooldownReady(`independentGearCd:${itemIdValue}`, cd)) return;
         battle.push(target, Number(p.force ?? 1), { from: unit });
       });
       return true;
@@ -1894,16 +1876,10 @@ function installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, i
       // 每次部署时获得隐匿，首次普通攻击后解除 (its own buff: a talent's 隐匿 stays)
       const key = `independent:gearStealth:${itemIdValue}`;
       battle.on('deploy', ({ unit: who }) => {
-        if (who !== unit) return;
-        const entering = !unit.findBuff(key);
-        battle.addBuff(unit, { key, status: 'stealth', flags: { stealth: true }, duration: Infinity, refresh: 'replace', source: unit });
-        if (entering) battle.emit('independentStealthEntered', { unit, sourceId: itemIdValue });
-      // Stealth growth belongs to the family emblem; the outfit only grants stealth.
+        if (who === unit) battle.addBuff(unit, { key, status: 'stealth', flags: { stealth: true }, duration: Infinity, refresh: 'replace', source: unit });
       }, { owner: unit });
       battle.on('attack', ({ attacker, isSkill }) => {
-        if (attacker !== unit || isSkill || !unit.findBuff(key)) return;
-        battle.removeBuff(unit, key);
-        battle.emit('independentStealthExited', { unit, sourceId: itemIdValue });
+        if (attacker === unit && !isSkill && unit.findBuff(key)) battle.removeBuff(unit, key);
       }, { owner: unit, priority: -10 });
       return true;
     }
@@ -1943,30 +1919,24 @@ function installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, i
       return true;
     }
     case 'summonOnDeploy': {
-      // 每次实际部署均提出召唤请求；没有可接敌位置时保留请求，直到敌人进入合法目标范围。
+      // 每场首次部署时，在相邻空位放下召唤物（攻击力与最大生命值为携带者的一定比例，阻挡1名敌人，存在一段时间）
+      let left = Number(p.perBattle ?? 1);
       battle.on('deploy', ({ unit: who }) => {
-        if (who !== unit) return;
-        const seq = unit.deploySeq;
+        if (who !== unit || left <= 0) return;
+        left--;
         let made = 0;
-        const id=p.tokenId ?? 'token_10015_dusk_drgn';
-        const sourceDef=battle.tokenDef(id,unit);
-        const def=sourceDef?{...sourceDef,stats:{...sourceDef.stats}}:{id,name:'召唤物',position:'MELEE',rangeGrid:[[0,0]],stats:{atk:unit.s.atk,maxHp:unit.s.maxHp,blockCnt:Number(p.blockCnt??1)}};
-        const ratio = Number(p.statRatio ?? 0.5);
-        def.stats={...def.stats,atk:unit.s.atk*ratio,maxHp:Math.max(1,unit.s.maxHp*ratio),blockCnt:Number(p.blockCnt??1)};
-        const deploy = () => {
-          if (!unit.alive || !unit.deployed || unit.deploySeq !== seq) return true;
-          while(made<Number(p.count??1)) {
-          const cell=findSummonTile(battle,unit,'near',{allBoard:true,melee:def.position!=='RANGED',canUseTile:(r,c)=>tokenCanEngageAt(battle,unit,def,r,c)});
-          if(!cell)break;
-          const token = battle.spawnToken(unit, id, cell[0], cell[1], {
-            anySource: true, kit: { skill: null },
-            def, stats: { atk: def.stats.atk, maxHp: def.stats.maxHp, blockCnt: def.stats.blockCnt },
+        const steps = [[0, 1], [1, 0], [-1, 0], [0, -1]];
+        for (const [dr, dc] of steps) {
+          if (made >= Number(p.count ?? 1)) break;
+          const r = unit.tileR + dr, c = unit.tileC + dc;
+          if (!battle.grid.inRect(r, c) || battle.isReservedTile(r, c) || !battle.grid.isLow(r, c) || !battle.grid.groundPassable(r, c, true)) continue;
+          const ratio = Number(p.statRatio ?? 0.5);
+          const token = battle.spawnToken(unit, p.tokenId ?? 'token_10015_dusk_drgn', r, c, {
+            anySource: true, kit: { skill: null }, duration: Number(p.durationSeconds ?? 20),
+            stats: { atk: unit.s.atk * ratio, maxHp: Math.max(1, unit.s.maxHp * ratio), blockCnt: Number(p.blockCnt ?? 1) },
           });
-          if (token) made++; else break;
-          }
-          return made >= Number(p.count ?? 1);
-        };
-        if(!deploy())battle.every(0.1,deploy,{owner:unit});
+          if (token) made++;
+        }
       }, { owner: unit });
       return true;
     }
@@ -1982,23 +1952,20 @@ function installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, i
       return true;
     }
     case 'skillRecast': {
-      // 萨尔贡黄沙罗盘: every completed skill recasts while the wearer remains deployed.
+      // 萨尔贡黄沙罗盘: the first `recasts` skills of the battle start again for free as soon as they end; paired with
+      // 萨尔贡行军浓茶, each skill the wearer starts gives the other 萨尔贡 operators on the field SP (至多 pairedSkillStartCap 次)
       if (!hasTag(p.requiresTag)) return true;
-      let queued = false, recasting = false;
+      let left = Number(p.recasts ?? 1);
       battle.on('skillEnd', ({ unit: who, reason }) => {
-        if (who !== unit || queued || recasting || reason === 'death' || !unit.alive || !unit.deployed) return;
-        queued = true;
-        battle.after(0, () => {
-          queued = false;
-          if (!unit.alive || !unit.deployed || unit.skill?.active) return;
-          recasting = true;
-          try { unit.skill?.activate('independentEquipment', { free: true }); }
-          finally { recasting = false; }
-        }, { owner: unit });
+        if (who !== unit || left <= 0 || reason === 'death' || !unit.alive || !unit.deployed) return;
+        left--;
+        battle.after(0, () => { if (unit.alive && unit.deployed && !unit.skill?.active) unit.skill?.activate('independentEquipment', { free: true }); }, { owner: unit });
       }, { owner: unit });
       if (ownPair(p.pairedSourceId) && Number(p.teamSpPerSkillStart) > 0) {
+        let given = 0;
         battle.on('skillStart', ({ unit: who }) => {
-          if (who !== unit) return;
+          if (who !== unit || given >= Number(p.pairedSkillStartCap ?? Infinity)) return;
+          given++;
           for (const ally of battle.allyUnits) {
             if (ally === unit || ally.kind !== 'op' || ally.ownerId !== unit.ownerId || !ally.alive || !ally.deployed) continue;
             if (tavernFactions(piecesFor(battle, ally.uid), catalog).includes(p.requiresTag)) ally.skill?.gainSp(Number(p.teamSpPerSkillStart), 'independentEquipment');
@@ -2046,7 +2013,7 @@ function installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, i
         gearHit(shot, unit.s.atk * Number(p.atkPercent ?? 1), type);
         if (bounce) {
           const hit = new Set([shot]); let from = shot;
-          while (true) {
+          for (let n = 0; n < Math.max(1, Number(bounce.bounces ?? 1)); n++) {
             let next = null;
             for (const e of battle.enemies) if (!hit.has(e) && liveEnemy(e) && tileDistance(e, from) <= Number(bounce.radius ?? 2) && (!next || tileDistance(e, from) < tileDistance(next, from))) next = e;
             if (!next) break;
@@ -2116,12 +2083,12 @@ function installEquipmentMechanisms(battle, catalog, pieces, emit) {
     // 工程部节拍校准器: every 「每发动N次普通攻击」 counter of the wearer advances this much per normal attack
     unit.mem.independentCountStep = Math.max(1, ...ownedEntries.filter((e) => e.kind === 'equipment' && e.rec.mechanism === 'combatEquipment')
       .flatMap((e) => (e.rec.params?.effects ?? []).filter((x) => x.behavior === 'counterAccelerator').map((x) => Number(x.params?.countPerAttack) || 1)));
-    const shieldCharges = ownedEntries.filter((e) => e.kind === 'equipment' && e.rec.mechanism === 'equipmentShield')
+    const shieldCharges = Math.min(2, ownedEntries.filter((e) => e.kind === 'equipment' && e.rec.mechanism === 'equipmentShield')
       .reduce((sum, e) => {
         const n = Number(e.rec.params?.charges);
         if (!(n > 0)) throw new Error(`equipmentShield ${e.id} needs params.charges`);
         return sum + n;
-      }, 0);
+      }, 0));
     if (shieldCharges > 0) {
       unit.mem.independentEquipmentShield = shieldCharges;
       battle.addBuff(unit, { key: `independent:equipmentShield:${unit.uid}`, shieldHits: shieldCharges, duration: Infinity, persist: true, allowDead: true });
@@ -2147,9 +2114,10 @@ function installEquipmentMechanisms(battle, catalog, pieces, emit) {
         case 'healingCapacitor': {
           const ratio = Number(p.thresholdMaxHpRatio);
           const damageRatio = Number(p.damageRatio);
-          if (!(ratio > 0 && damageRatio > 0) || p.damageType !== 'arts') throw new Error(`healingCapacitor ${e.id} has invalid params`);
+          const cooldown = Number(p.cooldownSeconds);
+          if (!(ratio > 0 && damageRatio > 0 && cooldown >= 0) || p.damageType !== 'arts') throw new Error(`healingCapacitor ${e.id} has invalid params`);
           const key = `independentCapacitor:${unit.uid}`;
-          unit.mem[key] = { stored: 0 };
+          unit.mem[key] = { stored: 0, nextAt: 0 };
           battle.on('heal', (ctx) => {
             if (ctx.target !== unit || !ctx.source || ctx.source === unit || ctx.source.side !== 'ally') return;
             if (ctx.opts?.self || ctx.opts?.independentOrigin) return;
@@ -2158,8 +2126,9 @@ function installEquipmentMechanisms(battle, catalog, pieces, emit) {
             const s = unit.mem[key];
             s.stored += effective;
             const threshold = unit.s.maxHp * ratio;
-            if (s.stored < threshold) return;
+            if (s.stored < threshold || battle.time < s.nextAt) return;
             s.stored -= threshold;
+            s.nextAt = battle.time + cooldown;
             for (const enemy of battle.enemies) {
               if (!enemy.alive || !enemy.deployed) continue;
               const dist = Math.abs(Math.round(enemy.y) - Math.round(unit.y)) + Math.abs(Math.round(enemy.x) - Math.round(unit.x));
@@ -2203,7 +2172,7 @@ function installEquipmentMechanisms(battle, catalog, pieces, emit) {
               const { steam, ...own } = effect.params;
               effect = { ...effect, params: e.steamBoost ? { ...own, ...steam } : own };
             }
-            installEquipmentCombatRule(battle, catalog, unit, piece, effect, ownedEntries, emit, e.sourceId ?? e.id, e.item?.uid ?? `${e.id}:${ownedEntries.indexOf(e)}`, ownedEntries.indexOf(e));
+            installEquipmentCombatRule(battle, catalog, unit, piece, effect, ownedEntries, emit, e.sourceId ?? e.id);
           }
           break;
         }
@@ -2220,23 +2189,16 @@ function installEquipmentMechanisms(battle, catalog, pieces, emit) {
       else if (rec.mechanism === 'prepEndForge') {
         // Prep-phase forging is deliberately handled by the independent prep transaction.
         if (!Array.isArray(p.outputs)) throw new Error(`prepEndForge attachment ${id} has invalid outputs`);
-      } else if (rec.mechanism === 'darkmoonSourceAttachment') {
-        const sourceId = attachment.state?.sourceId;
-        if (p.sourceIdRequired !== true || sourceId !== 'BOT_312' || !hasDarkmoonDeploymentPayload(sourceId)) {
-          throw new Error(`darkmoonSourceAttachment ${id} has unsupported source ${sourceId ?? '(missing)'}`);
-        }
-        // installDarkmoonCombat consumes the validated BOT_312 source from this attachment below.
       } else throw new Error(`unimplemented independent attachment mechanism ${rec.mechanism ?? id}`);
     }
   }
   installKeywordGear(battle, { catalog, pieces });
 }
 
-function installEvents(battle, catalog, pieces, emit, state) {
+function installEvents(battle, catalog, pieces, emit) {
   installNativeCombat(battle, catalog, pieces, emit);
   installEquipmentMechanisms(battle, catalog, pieces, emit);
   installWarband(battle,{catalog,pieces});
-  installDarkmoonCombat(battle,{catalog,pieces,state});
 }
 
 /** Install the isolated battle-only mechanics for a real Battle instance. */
@@ -2256,5 +2218,5 @@ export function installIndependentBattle(battle, { catalog, state } = {}) {
   battle.independentProductionFactor = 1 + Math.max(0, ...pieces.filter((p) => fielded.has(p.uid))
     .flatMap((p) => rulesOf(catalog, p.chessId).filter((r) => r.behavior === 'productionMultiplier').map((r) => Number(r.params?.extra) || 0)));
   const emit = createRewardEmitter(battle);
-  installEvents(battle, catalog, pieces, emit, state);
+  installEvents(battle, catalog, pieces, emit);
 }

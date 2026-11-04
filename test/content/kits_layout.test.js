@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { KIT_FILES, TIER_KITS, KITS, STANDIN_KIT_FILES, STANDIN_KITS, OPERATOR_KIT_FILES, OPERATOR_KITS, GENERIC_KIT_CHARS, KITTED_CHARS } from '../../server/sim/content/kits/index.js';
+import { KIT_FILES, TIER_KITS, KITS, STANDIN_KIT_FILES, STANDIN_KITS, OPERATOR_KIT_FILES, OPERATOR_KITS, NATIVE_KITS, GENERIC_KIT_CHARS, KITTED_CHARS } from '../../server/sim/content/kits/index.js';
 import { KITS as CONTENT_KITS } from '../../server/sim/content/index.js';
 import { diyRecord } from '../../shared/diy.js';
 import { normalizeChess } from '../../server/sim/simdata.js';
@@ -85,11 +85,11 @@ test('a kit file <chessId>-<codename>.js registers the kit of <chessId>_a (coden
   }
 });
 
-test('the registry is the tier groups in KIT_FILES order, then the stand-ins, then the 自选 operators, one key per file; content/index.js serves the same object', () => {
-  assert.deepEqual(Object.keys(KITS), [...TIER_KITS.flatMap((t) => Object.keys(t)), ...Object.keys(STANDIN_KITS), ...Object.keys(OPERATOR_KITS)]);
-  assert.equal(Object.keys(KITS).length, KIT_FILES.flat().length + STANDIN_KIT_FILES.length + OPERATOR_KIT_FILES.length, 'one key per file, none twice');
-  for (const [key, builder] of Object.entries(KITS)) assert.equal(CONTENT_KITS[key], builder, `upstream kit retained: ${key}`);
-  assert.ok(Object.isFrozen(CONTENT_KITS), 'the combined Workshop registry is immutable');
+test('the registry is the tier groups in KIT_FILES order, then the stand-ins, then the 自选 operators, one key per file, then the 工坊 native imports; content/index.js serves the same object', () => {
+  assert.deepEqual(Object.keys(KITS), [...TIER_KITS.flatMap((t) => Object.keys(t)), ...Object.keys(STANDIN_KITS), ...Object.keys(OPERATOR_KITS), ...Object.keys(NATIVE_KITS)]);
+  assert.equal(Object.keys(KITS).length - Object.keys(NATIVE_KITS).length, KIT_FILES.flat().length + STANDIN_KIT_FILES.length + OPERATOR_KIT_FILES.length, 'one key per file, none twice');
+  assert.ok(Object.keys(NATIVE_KITS).length > 0 && Object.keys(NATIVE_KITS).every((id) => id.startsWith('chess_native_')), 'the native imports keep their own ids (共鸣 only)');
+  assert.equal(CONTENT_KITS, KITS);
 });
 
 test('kit files stay browser-safe and deterministic: no Node-only or server-only import, no clock, no Math.random', () => {

@@ -1,13 +1,13 @@
+import { N_ } from '../../../shared/i18n.js';
 // Badge descriptions shown in the workshop mirror the battle adapter's semantic badge IDs.
 const TEXT = Object.freeze({
-  damage: ['造成伤害（与技能和天赋同区加算）', 0.02],
-  precision: ['原生基础攻击力白值', 0.02], agility: ['原生基础攻击速度', 0.02],
-  vitality: ['原生基础最大生命白值', 0.03], defense: ['原生基础防御白值', 0.02],
-  assault: ['攻击力', 0.02], recovery: ['自然技力回复', 0.02], arcane: ['受到的法术伤害减免', 0.005],
-  foresight: ['当前所选技能初始技力（按该技能技力需求计算）', 0.02], miracle: ['物理与法术闪避概率各', 0.01],
-  investor: ['每秒回复原生基础最大生命的', 0.001], unyielding: ['原生基础最大生命白值（旧存档徽章）', 0.03],
-  harmony: ['造成的治疗量', 0.01], coordination: ['受到的物理与法术伤害减免各', 0.005],
-  solitary: ['再部署时间减免', 0.01], mastery: ['普通攻击伤害', 0.01],
+  precision: [N_('原生基础攻击力白值'), 0.02], agility: [N_('原生基础攻击速度'), 0.02],
+  vitality: [N_('原生基础最大生命白值'), 0.03], defense: [N_('原生基础防御白值'), 0.02],
+  assault: [N_('攻击力'), 0.02], recovery: [N_('自然技力回复'), 0.02], arcane: [N_('受到的法术伤害减免'), 0.005],
+  foresight: [N_('当前所选技能初始技力（按该技能技力需求计算）'), 0.02], miracle: [N_('物理与法术闪避概率各'), 0.01],
+  investor: [N_('每秒回复原生基础最大生命的'), 0.001], unyielding: [N_('原生基础最大生命白值（旧存档徽章）'), 0.03],
+  harmony: [N_('造成的治疗量'), 0.01], coordination: [N_('受到的物理与法术伤害减免各'), 0.005],
+  solitary: [N_('再部署时间减免'), 0.01], mastery: [N_('普通攻击伤害'), 0.01],
 });
 
 const fmt = (n) => String(Number(n.toFixed(4)));

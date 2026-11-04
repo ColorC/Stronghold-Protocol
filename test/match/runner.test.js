@@ -28,7 +28,7 @@ function fakeNet() {
   return n;
 }
 
-function rig({ hidden = false } = {}) {
+function rig({ hidden = false, loadSim = async () => ({ spec: specMod, ds: DS }) } = {}) {
   let t = 1000;
   const frames = [];
   const intervals = [];
@@ -42,7 +42,7 @@ function rig({ hidden = false } = {}) {
     caf: () => {},
     setInterval: (fn) => { intervals.push(fn); return intervals.length; },
     clearInterval: () => {},
-    loadSim: async () => ({ spec: specMod, ds: DS }),
+    loadSim,
     logger: { error() {}, warn() {}, info() {}, debug() {} },
   });
   const feed = { snaps: [], evs: [], fields: [] };
@@ -66,6 +66,28 @@ function rig({ hidden = false } = {}) {
   };
   return r;
 }
+
+test('Resonance dataPatch in native b.start is consumed by the real createBattleFromSpec data source', async () => {
+  const start = realStart(7302);
+  const simSpec = {
+    ...specMod,
+    createBattleFromSpec(spec, ds, opts) {
+      return specMod.createBattleFromSpec(spec, ds, opts);
+    },
+  };
+  const r = rig({ loadSim: async () => ({ spec: simSpec, ds: DS }) });
+  const injected = {
+    chess: { resonance_probe: { chessId: 'resonance_probe', name: 'Probe', stats: { hp: 1, atk: 1, def: 0, res: 0, interval: 1, block: 0, moveSpeed: 1, range: 1 } } },
+    tokens: { resonance_token: { tokenId: 'resonance_token', name: 'Probe Token' } },
+  };
+  r.net.emit('b.start', { ...start, spec: { ...start.spec, flags: { ...start.spec.flags, resonance: { ...(start.spec.flags?.resonance || {}), dataPatch: injected } } } });
+  await r.settle();
+  const battle = r.runner._entries.get(start.battleId)?.battle;
+  assert.ok(battle, 'the b.start built a real native Battle');
+  assert.equal(battle.data.rawChess('resonance_probe')?.name, 'Probe', 'the season chess record is installed in the battle data source');
+  assert.equal(battle.data.rawToken('resonance_token')?.name, 'Probe Token', 'the season summon token is installed in the battle data source');
+  r.runner.dispose();
+});
 
 /** A real b.start of round 2 (a board with operators) from a client-combat match. */
 function realStart(seed = 7301) {
@@ -217,6 +239,12 @@ test('boss field: the local pool follows b.pool (server hp − unacknowledged lo
   assert.ok(last.bossDmg <= pool.cum);
   assert.ok(last.by && typeof last.by === 'object');
   assert.equal(typeof last.leaks, 'number');
+  // the per-player split of the leak LP (the server holds the result's leaked lists to it, Match._bossLeaksAgree): the
+  // leaks of every player of the field, never more than the field's LP cost (leader effects make up the rest)
+  assert.ok(last.leaksBy && typeof last.leaksBy === 'object', 'boss progress carries leaksBy');
+  assert.deepEqual(Object.keys(last.leaksBy).sort(), start.spec.players.map((p) => p.playerId).sort());
+  assert.ok(Object.values(last.leaksBy).every((n) => Number.isFinite(n) && n >= 0));
+  assert.ok(Object.values(last.leaksBy).reduce((a, b) => a + b, 0) <= last.leaks + 1e-9);
   r.net.emit('b.pool', { hp: pool.maxHp * 0.5, max: pool.maxHp, teamLp: 20, acked: { [start.fieldId]: pool.cum } });
   assert.ok(Math.abs(pool.hp - pool.maxHp * 0.5) < 1e-6, 'server hp when everything is acknowledged');
   r.runner.dispose();
@@ -432,8 +460,10 @@ test('live unit stats (user playtest #4 item 7): unitStats(id) reads the battle 
   assert.equal(got.interval, Math.round(s.interval * 100) / 100);
   assert.equal(got.blockCnt, s.blockCnt);
   assert.equal(got.hp, Math.round(ally.hp));
-  assert.equal(got.base.atk, Math.round(ally.base.atk));
-  assert.equal(got.base.maxHp, Math.round(ally.base.maxHp));
+  // the unit's own numbers: its base with its 练度 (0.2.2: the match states 精英2 Lv.60 by default — ×1.1)
+  assert.equal(ally.cultivate, 3);
+  assert.equal(got.base.atk, Math.round(ally.base.atk * ally.cultMul.atk));
+  assert.equal(got.base.maxHp, Math.round(ally.base.maxHp * ally.cultMul.hp));
   assert.equal(r.runner.unitStats(ally.id, start.fieldId)?.id, ally.id, 'on the named field');
   assert.equal(r.runner.unitStats(ally.id, 'n:someone_else'), null, 'another field: nothing');
   assert.equal(r.runner.unitStats(999999), null, 'unknown unit');
@@ -450,6 +480,9 @@ test('live unit stats (user playtest #4 item 7): unitStats(id) reads the battle 
   ally.items = ['chess_item_6_09_e_a', 'chess_item_1_01_e_a'];
   const op = r.runner.ownerOps(ally.ownerId, start.fieldId).find((o) => o.defId === ally.defId);
   assert.deepEqual(op, { kind: 'op', ownerId: ally.ownerId, defId: ally.defId, items: ['chess_item_6_09_e_a', 'chess_item_1_01_e_a'] });
+  assert.deepEqual(r.runner.ownerEquipment(ally.ownerId, start.fieldId).find((o) => o.uid === ally.uid), {
+    uid: ally.uid, unitId: ally.id, items: ['chess_item_6_09_e_a', 'chess_item_1_01_e_a'],
+  }, 'live equipped-item overlays use the current battle unit and stable owner UID');
   ally.items = [];
   assert.deepEqual(r.runner.ownerOps(ally.ownerId, start.fieldId).find((o) => o.defId === ally.defId), { kind: 'op', ownerId: ally.ownerId, defId: ally.defId });
   ally.items = saved;

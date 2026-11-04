@@ -67,8 +67,9 @@ export async function buildFonts(fontsDir, log = console.log) {
     }
     files[f.name] = entry;
     const srcs = [];
-    if (entry.woff2) srcs.push(`url('${entry.woff2}') format('woff2')`);
-    srcs.push(`url('${entry.original}') format('${f.ext === 'ttf' ? 'truetype' : 'opentype'}')`);
+    // Resolve next to fonts.css so the same native faces work under a submode's URL prefix.
+    if (entry.woff2) srcs.push(`url('./${f.name}.woff2') format('woff2')`);
+    srcs.push(`url('./${f.name}.${f.ext}') format('${f.ext === 'ttf' ? 'truetype' : 'opentype'}')`);
     faces.push(`@font-face {\n  font-family: '${f.family}';\n  font-style: ${f.style};\n  font-weight: ${f.weight};\n` +
       `  font-display: swap;\n  src: ${srcs.join(',\n       ')};\n}`);
   }

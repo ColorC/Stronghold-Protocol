@@ -1,0 +1,2058 @@
+{
+  "schema": "assault-cards-coverage/v2",
+  "group": "support",
+  "implementation": "server/sim/content/assault/cards/synergy-support.js",
+  "inventorySourceRevision": "27c1b8e77189054b6da0bd77300c24c036c856c1",
+  "inventoryScope": "Current compiled synergy cards and the named tests that cover them; test execution comes from the gameplay validation receipt.",
+  "cards": {
+    "char_240_wyvern": {
+      "format": "synergy",
+      "name": "香草",
+      "testFiles": [
+        "test/assault/synergy-support.test.mjs"
+      ],
+      "evidenceTests": [
+        "香草：每次冲锋号令独立获得费用并刷新35%攻击姿态，并缩短其他先锋再部署",
+        "香草：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "skillStart"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "dpReceived"
+        },
+        {
+          "index": 4,
+          "kind": "growth",
+          "event": "dpReceived"
+        }
+      ]
+    },
+    "char_290_vigna": {
+      "format": "synergy",
+      "name": "红豆",
+      "testFiles": [
+        "test/assault/synergy-support.test.mjs"
+      ],
+      "evidenceTests": [
+        "红豆：部署时（含原地再部署）接下来 3 次攻击必定触发蛮力穿刺（攻击力 +110%）；之后 10% 几率",
+        "红豆：10-23改写后，两次即时结算与进阶模组均生效",
+        "红豆：击倒敌人时获得 1 费用并为相邻干员充能 1；其他干员使敌人晕眩/战栗时本场攻击力 +4%（每 1 秒一次）",
+        "红豆：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "attack"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "kill"
+        },
+        {
+          "index": 4,
+          "kind": "stack",
+          "event": "statusApplied:stun|tremble"
+        },
+        {
+          "index": 5,
+          "kind": "growth",
+          "event": "eliteKill"
+        }
+      ]
+    },
+    "char_151_myrtle": {
+      "format": "synergy",
+      "name": "桃金娘",
+      "testFiles": [
+        "test/assault/synergy-support.test.mjs"
+      ],
+      "evidenceTests": [
+        "桃金娘：部署时（含原地再部署）获得 4 费用，你的先锋干员回复 10% 最大生命",
+        "桃金娘：10-23改写后，两次即时结算与进阶模组均生效",
+        "桃金娘：固有机制与成长限制",
+        "桃金娘：模组「私人收藏」技能期间阻挡数变为 0、身前 1 名干员阻挡数 +1；你的先锋干员每秒回复 33 生命"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "skillStart"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "skillStart"
+        },
+        {
+          "index": 4,
+          "kind": "talent",
+          "event": "aura"
+        }
+      ]
+    },
+    "char_181_flower": {
+      "format": "synergy",
+      "name": "调香师",
+      "testFiles": [
+        "test/assault/synergy-support-2.test.mjs"
+      ],
+      "evidenceTests": [
+        "调香师：10-23改写后，两次即时结算与进阶模组均生效",
+        "调香师：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "redeploy"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "skillStart"
+        }
+      ]
+    },
+    "char_385_finlpp": {
+      "format": "synergy",
+      "name": "清流",
+      "testFiles": [
+        "test/assault/synergy-support-2.test.mjs"
+      ],
+      "evidenceTests": [
+        "清流：固有机制与成长限制",
+        "清流：治疗目标后使其获得 4 秒抵抗，被治疗的其他干员充能 1（每名干员每 6 秒一次）；别的医疗干员治疗不触发"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "heal"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "skillStart"
+        }
+      ]
+    },
+    "char_199_yak": {
+      "format": "synergy",
+      "name": "角峰",
+      "testFiles": [
+        "test/assault/synergy-support-4.test.mjs"
+      ],
+      "evidenceTests": [
+        "角峰：10-23改写后，两次即时结算与进阶模组均生效",
+        "角峰：你的其他干员使敌人寒冷或冻结时充能 1（每 2 秒一次）；你的其他谢拉格干员施放技能时本场防御 +3%"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "statusApplied:cold|freeze"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "skillStart"
+        }
+      ]
+    },
+    "char_150_snakek": {
+      "format": "synergy",
+      "name": "蛇屠箱",
+      "testFiles": [
+        "test/assault/synergy-support-4.test.mjs"
+      ],
+      "evidenceTests": [
+        "蛇屠箱：10-23改写后，两次即时结算与进阶模组均生效",
+        "蛇屠箱：模组「超强棒球套装」阻挡敌人时防御力 +20%"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "blocked"
+        },
+        {
+          "index": 3,
+          "kind": "growth",
+          "event": "blocked"
+        }
+      ]
+    },
+    "char_381_bubble": {
+      "format": "synergy",
+      "name": "泡泡",
+      "testFiles": [
+        "test/assault/synergy-support-4.test.mjs"
+      ],
+      "evidenceTests": [
+        "泡泡：部署时周围敌人更容易攻击此干员 5 秒；“挨打” 停止攻击、防御 +120%、嘲讽，受到攻击对攻击者造成 50% 防御力的物理伤害",
+        "泡泡：尖刺盾 敌人攻击此干员后攻击力 -8% 并战栗 2 秒（模组 -12%）；你的其他干员使敌人战栗时本场防御 +3%"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "damageTaken"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "statusApplied:tremble"
+        }
+      ]
+    },
+    "char_196_sunbr": {
+      "format": "synergy",
+      "name": "古米",
+      "testFiles": [
+        "test/assault/synergy-support-4.test.mjs"
+      ],
+      "evidenceTests": [
+        "古米：部署时治疗生命最低的 2 名干员 100%；备用军粮 治疗周围 2 名干员 210%（需要有人受伤）；被此干员治疗的其他干员防御 +15% 5 秒；模组 低于 50% +15%",
+        "古米：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "heal"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "static"
+        },
+        {
+          "index": 4,
+          "kind": "growth",
+          "event": "statusApplied:stun"
+        }
+      ]
+    },
+    "char_128_plosis": {
+      "format": "synergy",
+      "name": "白面鸮",
+      "testFiles": [
+        "test/assault/synergy-support-2.test.mjs"
+      ],
+      "evidenceTests": [
+        "白面鸮：10-23改写后，两次即时结算与进阶模组均生效",
+        "白面鸮：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "aura"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "redeploy"
+        }
+      ]
+    },
+    "char_4163_rosesa": {
+      "format": "synergy",
+      "name": "瑰盐",
+      "testFiles": [
+        "test/assault/synergy-support-2.test.mjs"
+      ],
+      "evidenceTests": [
+        "瑰盐：部署时攻击范围内干员受到治疗 +17%，10 秒；上佳的应急药呀 治疗范围内生命最低者 240%（需要有人受伤）",
+        "瑰盐：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "heal"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "skillStart"
+        }
+      ]
+    },
+    "char_102_texas": {
+      "format": "synergy",
+      "name": "德克萨斯",
+      "testFiles": [
+        "test/assault/synergy-support.test.mjs"
+      ],
+      "evidenceTests": [
+        "德克萨斯：部署时获得 2 费用；剑雨 获得 12 费用，对周围所有敌人造成 2 次 200% 法术伤害并晕眩 3 秒",
+        "德克萨斯：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "redeploy|deployed"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "statusApplied:stun"
+        }
+      ]
+    },
+    "char_349_chiave": {
+      "format": "synergy",
+      "name": "贾维",
+      "testFiles": [
+        "test/assault/synergy-support-6.test.mjs"
+      ],
+      "evidenceTests": [
+        "贾维：部署时在前方召唤机械爪（45 秒）；火焰剥离 获得 10 费用、周围敌人 350% 法术伤害、法抗 -20% 8 秒（需要敌人）；模组 机械爪 +20%、退场时法术伤害",
+        "贾维：你的其他干员的召唤物出现时该干员当前再部署时间 -2 秒（每 4 秒一次），本场攻击与防御 +3%"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "summonSpawned"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "summonSpawned"
+        }
+      ]
+    },
+    "char_496_wildmn": {
+      "format": "synergy",
+      "name": "野鬃",
+      "testFiles": [
+        "test/assault/synergy-pilot.test.mjs"
+      ],
+      "evidenceTests": [
+        "野鬃：被动技能，每次部署与原地再部署立即发动骑枪刺击（攻击速度 +135，30 秒）；不能被别的效果施放",
+        "野鬃：每次部署或再部署，你的近卫干员当前再部署时间 -2 秒；你的其他干员再部署时本场攻击力 +3%，不封顶",
+        "野鬃：模组「长枪替补套装」此干员再部署时间 -2 秒，击倒敌人后获得 2 费用"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "deployed"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "deployed"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "redeploy"
+        }
+      ]
+    },
+    "char_401_elysm": {
+      "format": "synergy",
+      "name": "极境",
+      "testFiles": [
+        "test/assault/synergy-support.test.mjs"
+      ],
+      "evidenceTests": [
+        "极境：10-23改写后，两次即时结算与进阶模组均生效",
+        "极境：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "skillStart"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "kill"
+        }
+      ]
+    },
+    "char_4119_wanqin": {
+      "format": "synergy",
+      "name": "万顷",
+      "testFiles": [
+        "test/assault/synergy-support.test.mjs"
+      ],
+      "evidenceTests": [
+        "万顷：固有机制与成长限制",
+        "万顷：10-23改写后，两次即时结算与进阶模组均生效"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "aura"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "skillStart"
+        }
+      ]
+    },
+    "char_497_ctable": {
+      "format": "synergy",
+      "name": "晓歌",
+      "testFiles": [
+        "test/assault/synergy-support.test.mjs"
+      ],
+      "evidenceTests": [
+        "晓歌：被动技能，每次部署与原地再部署发动观火（攻击力 +100%，15 秒），期间每次攻击获得 1 费用",
+        "晓歌：此干员再部署时其他罗德岛干员当前再部署时间 -2 秒；其他干员再部署时本局永久攻击力 +1%；万全 未阻挡攻速 +14 / 阻挡攻击 +14%（模组 20）"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "deployed"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "redeploy"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "static"
+        },
+        {
+          "index": 4,
+          "kind": "growth",
+          "event": "redeploy"
+        }
+      ]
+    },
+    "char_4017_puzzle": {
+      "format": "synergy",
+      "name": "谜图",
+      "testFiles": [
+        "test/assault/synergy-support.test.mjs"
+      ],
+      "evidenceTests": [
+        "谜图：部署时攻击范围内 1 名生命为满的敌人移速 -50% 3.5 秒；关键线索 300% 物理伤害并获得 3 费用（需要敌人）",
+        "谜图：攻击命中生命为满的敌人时攻击力提升至 135% 并充能 2（自扳机，对标 Revolver）；其他维多利亚部署或再部署时为其充能 2；模组 命中满血敌人减速"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "attack"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "redeploy|deployed"
+        }
+      ]
+    },
+    "char_108_silent": {
+      "format": "synergy",
+      "name": "赫默",
+      "testFiles": [
+        "test/assault/synergy-support-2.test.mjs"
+      ],
+      "evidenceTests": [
+        "赫默：部署时投放医疗无人机（召唤物，10 秒，治疗周围干员）；医疗无人机 16 秒、每次治疗 100% 攻击力，重新投放替换旧的",
+        "赫默：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "summonSpawned"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "skillStart"
+        }
+      ]
+    },
+    "char_171_bldsk": {
+      "format": "synergy",
+      "name": "华法琳",
+      "testFiles": [
+        "test/assault/synergy-support-2.test.mjs"
+      ],
+      "evidenceTests": [
+        "华法琳：10-23改写后，两次即时结算与进阶模组均生效",
+        "华法琳：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "kill"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "loseHp"
+        }
+      ]
+    },
+    "char_4196_reckpr": {
+      "format": "synergy",
+      "name": "录武官",
+      "testFiles": [
+        "test/assault/synergy-support-2.test.mjs"
+      ],
+      "evidenceTests": [
+        "录武官：部署时范围内干员攻击速度 +16，10 秒；触类旁通 治疗 170% 并额外治疗 1 名干员（需要有人受伤）",
+        "录武官：攻击范围内的其他干员施放技能时充能 2、攻击速度 +16 持续 12 秒，本场治疗量 +3%；范围外不算；模组 充能 3"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "skillStart"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "skillStart"
+        }
+      ]
+    },
+    "char_4114_harold": {
+      "format": "synergy",
+      "name": "哈洛德",
+      "testFiles": [
+        "test/assault/synergy-support-2.test.mjs"
+      ],
+      "evidenceTests": [
+        "哈洛德：部署时移除范围内干员 50% 攻击力的元素损伤；重症优先 攻击速度 +100，元素损伤过半的目标回复 250%；模组 治疗同时回复 60% 攻击力的元素损伤",
+        "哈洛德：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "redeploy|deployed"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "elementBurst:any"
+        }
+      ]
+    },
+    "char_494_vendla": {
+      "format": "synergy",
+      "name": "刺玫",
+      "testFiles": [
+        "test/assault/synergy-support-2.test.mjs"
+      ],
+      "evidenceTests": [
+        "刺玫：部署时范围内生命上限最高的干员获得 30% 最大生命的护盾；荆藤庇荫 攻击力 +80%，该干员更容易受到攻击，它受到攻击时对攻击者造成 50% 法术伤害并治疗它",
+        "刺玫：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "aura"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "shieldGained"
+        }
+      ]
+    },
+    "char_4139_papyrs": {
+      "format": "synergy",
+      "name": "莎草",
+      "testFiles": [
+        "test/assault/synergy-support-3.test.mjs"
+      ],
+      "evidenceTests": [
+        "莎草：部署时范围内干员获得 22% 攻击力的屏障 8 秒；巧思乍现 治疗 200% 攻击力、博览古卷屏障提升至 200%（需要有人受伤）",
+        "莎草：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "static"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "shieldBroken"
+        },
+        {
+          "index": 4,
+          "kind": "stack",
+          "event": "skillStart"
+        }
+      ]
+    },
+    "char_4222_taraxa": {
+      "format": "synergy",
+      "name": "风絮",
+      "testFiles": [
+        "test/assault/synergy-support-3.test.mjs"
+      ],
+      "evidenceTests": [
+        "风絮：部署时治疗范围内生命最低的 2 名干员 100%；扶风起 起飞 15 秒、攻击力 +120%、额外治疗 1 名，治疗目标时周围 2 名干员 50% 攻击力",
+        "风絮：范围内飞行的干员获得 14% 庇护、阻挡数 +1；其他干员阻挡空中敌人时充能 2（每 3 秒一次）；其他干员使敌人浮空/失重时本场攻击力 +3%"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "blockedAir"
+        },
+        {
+          "index": 4,
+          "kind": "stack",
+          "event": "statusApplied:levitate|weightless"
+        }
+      ]
+    },
+    "char_107_liskam": {
+      "format": "synergy",
+      "name": "雷蛇",
+      "testFiles": [
+        "test/assault/synergy-support-4.test.mjs"
+      ],
+      "evidenceTests": [
+        "雷蛇：部署时抵挡下一次伤害；充能防御 抵挡下一次伤害、防御 +100% 8 秒；受到攻击时为自身与周围 1 名其他干员充能 1（每 1 秒一次）",
+        "雷蛇：周围 4 格的其他干员施放技能时本场防御 +3%、法抗 +1；模组 范围内敌人隐匿失效，战术防御 60% 几率额外充能 1"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "damageTaken"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "skillStart"
+        }
+      ]
+    },
+    "char_4137_udflow": {
+      "format": "synergy",
+      "name": "深巡",
+      "testFiles": [
+        "test/assault/synergy-support-4.test.mjs"
+      ],
+      "evidenceTests": [
+        "深巡：10-23改写后，两次即时结算与进阶模组均生效",
+        "深巡：攻击使目标 3 秒内每秒受到 100 点法术伤害并附带 10% 攻击力的神经损伤；其他阿戈尔击倒敌人时本场攻击 +8%；模组 隐匿失效"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "static"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "kill"
+        }
+      ]
+    },
+    "char_4207_branch": {
+      "format": "synergy",
+      "name": "折桠",
+      "testFiles": [
+        "test/assault/synergy-support-4.test.mjs"
+      ],
+      "evidenceTests": [
+        "折桠：10-23改写后，两次即时结算与进阶模组均生效",
+        "折桠：相邻干员受到攻击时充能 0.5（每 1 秒一次）；其他干员回复任一干员生命时本场防御 +1%（每 2 秒），不屈者仍不能被友方治疗；其他干员使敌人战栗/晕眩时本局永久生命上限 +1%（每 2 秒）"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "damageTaken"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "heal"
+        },
+        {
+          "index": 4,
+          "kind": "growth",
+          "event": "statusApplied:tremble|stun"
+        }
+      ]
+    },
+    "char_431_ashlok": {
+      "format": "synergy",
+      "name": "灰毫",
+      "testFiles": [
+        "test/assault/synergy-support-4.test.mjs"
+      ],
+      "evidenceTests": [
+        "灰毫：10-23改写后，两次即时结算与进阶模组均生效",
+        "灰毫：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "static"
+        },
+        {
+          "index": 3,
+          "kind": "growth",
+          "event": "redeploy|deployed"
+        }
+      ]
+    },
+    "char_4148_philae": {
+      "format": "synergy",
+      "name": "菲莱",
+      "testFiles": [
+        "test/assault/synergy-support-4.test.mjs"
+      ],
+      "evidenceTests": [
+        "菲莱：部署时清除自身元素损伤并获得 20% 最大生命的屏障；冥河诅咒 停止攻击、生命上限 +50%，受到攻击时周围地面敌人 200% 法术伤害并附带凋亡损伤（每 2 秒一次），期间受到元素损伤则攻击 +100%",
+        "菲莱：受到的元素损伤 -18%，受到凋亡损伤时充能 2；其他干员引发凋亡损伤爆发时充能 3；模组 阻挡敌人时自身造成的元素损伤 +15%"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "damageTaken"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "elementBurst:necrosis"
+        }
+      ]
+    },
+    "char_112_siege": {
+      "format": "synergy",
+      "name": "推进之王",
+      "testFiles": [
+        "test/assault/synergy-support-6.test.mjs"
+      ],
+      "evidenceTests": [
+        "推进之王：部署时周围敌人 150% 物理伤害并浮空 1 秒；跃空锤 四周所有敌人 340% 并获得 3 费用（需要敌人）；周围四格内有敌人倒下时充能 2（自扳机，对标 Critical Core）",
+        "推进之王：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "death"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "aura"
+        },
+        {
+          "index": 4,
+          "kind": "grant",
+          "event": "aura"
+        },
+        {
+          "index": 5,
+          "kind": "growth",
+          "event": "eliteKill"
+        }
+      ]
+    },
+    "char_222_bpipe": {
+      "format": "synergy",
+      "name": "风笛",
+      "testFiles": [
+        "test/assault/synergy-support.test.mjs"
+      ],
+      "evidenceTests": [
+        "风笛：部署时为其他先锋充能 3；其他先锋部署或再部署时此干员充能 3；高效冲击 220% 两次（需要敌人）",
+        "风笛：精密填弹 31% 几率攻击力提升至 130% 并额外攻击 1 个目标；其他维多利亚施放技能时本场攻击力 +2%；模组 击倒后获得 2 费用"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "static"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "redeploy|deployed"
+        },
+        {
+          "index": 4,
+          "kind": "stack",
+          "event": "skillStart"
+        }
+      ]
+    },
+    "char_4026_vulpis": {
+      "format": "synergy",
+      "name": "忍冬",
+      "testFiles": [
+        "test/assault/synergy-support-6.test.mjs"
+      ],
+      "evidenceTests": [
+        "忍冬：部署时获得迷彩直到首次施放技能；小施惩戒 额外 290% 法术伤害并获得 1 费用（需要敌人）；蓄势 费用回复 +10%，4 秒未受伤时每秒回复 5% 最大生命",
+        "忍冬：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "attack"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "static"
+        },
+        {
+          "index": 4,
+          "kind": "stack",
+          "event": "kill"
+        }
+      ]
+    },
+    "char_479_sleach": {
+      "format": "synergy",
+      "name": "琴柳",
+      "testFiles": [
+        "test/assault/synergy-support-6.test.mjs"
+      ],
+      "evidenceTests": [
+        "琴柳：部署时在前方放置军旗（周围 8 格干员攻速 +15、敌人攻速 -15）；光辉旗帜 获得 10 费用，军旗掷向地面敌人 300% 物理伤害并晕眩 3.5 秒，之后 10 秒周围敌人停顿并受到 30% 脆弱",
+        "琴柳：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "redeploy|deployed"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "kill"
+        }
+      ]
+    },
+    "char_420_flamtl": {
+      "format": "synergy",
+      "name": "焰尾",
+      "testFiles": [
+        "test/assault/synergy-support-6.test.mjs"
+      ],
+      "evidenceTests": [
+        "焰尾：部署时获得 3 费用、闪避下一次物理攻击；“红松林” 获得 13 费用、周围 6 名敌人 2 次 240% 并晕眩 0.5 秒、范围内干员 50% 物理闪避 10 秒",
+        "焰尾：你的卡西米尔干员 28% 物理闪避；其他卡西米尔部署或再部署时获得 3 费用并充能 3；其他干员闪避时本场攻击 +2%（每 1 秒一次）；模组 闪避后下次攻击 120% 二连击"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "aura"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "redeploy|deployed"
+        },
+        {
+          "index": 4,
+          "kind": "stack",
+          "event": "dodge"
+        }
+      ]
+    },
+    "char_427_vigil": {
+      "format": "synergy",
+      "name": "伺夜",
+      "testFiles": [
+        "test/assault/synergy-support-6.test.mjs"
+      ],
+      "evidenceTests": [
+        "伺夜：部署时召唤 2 只狼影，此后每 23 秒 +1（至多 3 只）；领袖的呼唤 获得 7 费用并增加 1 只",
+        "伺夜：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "static"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "summonDied"
+        },
+        {
+          "index": 4,
+          "kind": "growth",
+          "event": "kill"
+        }
+      ]
+    },
+    "char_249_mlyss": {
+      "format": "synergy",
+      "name": "缪尔赛思",
+      "testFiles": [
+        "test/assault/synergy-support-6.test.mjs"
+      ],
+      "evidenceTests": [
+        "缪尔赛思：部署时召唤流形（召唤物）；其他干员再部署时流形改为复制该干员并立即刷新（每 8 秒一次）；浅层非熵适应 获得 15 费用、此干员与流形攻击 +50% 15 秒",
+        "缪尔赛思：你的莱茵生命干员部署费用 -2；其他莱茵生命施放技能时本场流形攻击 +3%；模组 流形复制莱茵生命干员时该干员部署或再部署时充能 10"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "redeploy"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "static"
+        },
+        {
+          "index": 4,
+          "kind": "stack",
+          "event": "skillStart"
+        }
+      ]
+    },
+    "char_1045_svash2": {
+      "format": "synergy",
+      "name": "凛御银灰",
+      "testFiles": [
+        "test/assault/synergy-support-6.test.mjs"
+      ],
+      "evidenceTests": [
+        "凛御银灰：部署时你的其他干员中再部署计时剩余最长的 1 名当前再部署时间 -20% 并充能 4；御敌的锋锐 前方 6 名敌人 400% 物理伤害、寒冷 6 秒、隐匿失效（需要敌人）",
+        "凛御银灰：每次发动你的其他谢拉格当前再部署时间 -3 秒，其他干员下次部署或再部署时以其攻击力施放一次本技能的范围效果（最多 2 次）；其他干员再部署时加速此干员 3 秒",
+        "凛御银灰：雪境先驱 你的谢拉格干员免疫冻结、防御 +100、每秒回复 2.5% 最大生命，在场 15 秒后翻倍，并可以阻挡空中敌人"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "redeploy"
+        },
+        {
+          "index": 4,
+          "kind": "talent",
+          "event": "aura"
+        },
+        {
+          "index": 5,
+          "kind": "grant",
+          "event": "aura"
+        }
+      ]
+    },
+    "char_4087_ines": {
+      "format": "synergy",
+      "name": "伊内丝",
+      "testFiles": [
+        "test/assault/synergy-support-6.test.mjs"
+      ],
+      "evidenceTests": [
+        "伊内丝：被动技能，每次部署与再部署发动独影归途：攻击 +160% 16 秒，收回影哨（沿线伤害）后放下新影哨，期间每对一名敌人造成伤害获得 1 费用",
+        "伊内丝：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "deployed"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "redeploy"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "static"
+        },
+        {
+          "index": 4,
+          "kind": "growth",
+          "event": "kill"
+        }
+      ]
+    },
+    "char_4042_lumen": {
+      "format": "synergy",
+      "name": "流明",
+      "testFiles": [
+        "test/assault/synergy-support-3.test.mjs"
+      ],
+      "evidenceTests": [
+        "流明：部署时解除范围内干员的异常状态并治疗 80%；沛霖 治疗 3 名干员 300% 并解除异常；治疗的目标获得 4 秒抵抗（高于 75% 时 6 秒）",
+        "流明：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "static"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "statusApplied:anyOnAlly"
+        },
+        {
+          "index": 4,
+          "kind": "stack",
+          "event": "skillStart"
+        }
+      ]
+    },
+    "char_1016_agoat2": {
+      "format": "synergy",
+      "name": "纯烬艾雅法拉",
+      "testFiles": [
+        "test/assault/synergy-support-3.test.mjs"
+      ],
+      "evidenceTests": [
+        "纯烬艾雅法拉：部署时范围内干员回复 100% 攻击力的元素损伤；云霭荫佑 治疗 250%，生成 20 秒损伤屏障吸收 900% 攻击力的元素损伤",
+        "纯烬艾雅法拉：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "static"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "elementBurst:any"
+        },
+        {
+          "index": 4,
+          "kind": "stack",
+          "event": "elementBurst:any"
+        }
+      ]
+    },
+    "char_1020_reed2": {
+      "format": "synergy",
+      "name": "焰影苇草",
+      "testFiles": [
+        "test/assault/synergy-support-3.test.mjs"
+      ],
+      "evidenceTests": [
+        "焰影苇草：部署时范围内 1 名敌人受到灼痕（攻击力 -22%、法术脆弱 32%，6 秒）；枯荣共息 2 名地面干员获得火球，每 1.5 秒伤害附近敌人并治疗该干员",
+        "焰影苇草：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "static"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "static"
+        },
+        {
+          "index": 4,
+          "kind": "stack",
+          "event": "elementBurst:burn"
+        }
+      ]
+    },
+    "char_4056_titi": {
+      "format": "synergy",
+      "name": "缇缇",
+      "testFiles": [
+        "test/assault/synergy-support-3.test.mjs"
+      ],
+      "evidenceTests": [
+        "缇缇：部署时范围内 1 名敌人沉睡 3 秒；旧日绽放 攻击力 +180%、同时攻击 2 名，攻击非沉睡目标使其沉睡 5 秒，期间敌人醒来时受到 350% 法术伤害并使周围 1 名敌人沉睡",
+        "缇缇：可以攻击沉睡的敌人；攻击被其他干员束缚/晕眩/冻结/停顿的敌人额外 31% 法术伤害；沉睡中的敌人每秒受到 42%；其他干员使敌人沉睡时充能 3；萨尔贡施放技能时本场攻速 +2"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "attack"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "statusApplied:sleep"
+        },
+        {
+          "index": 4,
+          "kind": "stack",
+          "event": "skillStart"
+        }
+      ]
+    },
+    "char_4179_monstr": {
+      "format": "synergy",
+      "name": "Mon3tr",
+      "testFiles": [
+        "test/assault/synergy-support-3.test.mjs"
+      ],
+      "evidenceTests": [
+        "Mon3tr：固有机制与成长限制",
+        "Mon3tr：策略：超压链接 治疗 220% 并在 5 名干员间跳跃；此干员治疗时被治疗的其他干员攻击速度 +22 持续 10 秒；模组 治疗重构体时额外一次不衰减的跳跃"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "heal"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "skillStart"
+        }
+      ]
+    },
+    "char_136_hsguma": {
+      "format": "synergy",
+      "name": "星熊",
+      "testFiles": [
+        "test/assault/synergy-support-5.test.mjs"
+      ],
+      "evidenceTests": [
+        "星熊：10-23改写后，两次即时结算与进阶模组均生效",
+        "星熊：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "static"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "aura"
+        },
+        {
+          "index": 4,
+          "kind": "grant",
+          "event": "aura"
+        },
+        {
+          "index": 5,
+          "kind": "growth",
+          "event": "blockedAir"
+        }
+      ]
+    },
+    "char_202_demkni": {
+      "format": "synergy",
+      "name": "塞雷娅",
+      "testFiles": [
+        "test/assault/synergy-support-3.test.mjs"
+      ],
+      "evidenceTests": [
+        "塞雷娅：部署时治疗周围所有干员 80% 并为被治疗的其他干员充能 1；药物配置 治疗周围所有干员 160%（需要有人受伤）；每次回复其他干员生命时为其充能 1",
+        "塞雷娅：其他干员施放技能时本局永久攻击力与防御力 +0.4%；模组 精神回复充能 2（莱茵生命 3），治疗生命低于 50% 的干员 +15%"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "heal"
+        },
+        {
+          "index": 3,
+          "kind": "growth",
+          "event": "skillStart"
+        }
+      ]
+    },
+    "char_423_blemsh": {
+      "format": "synergy",
+      "name": "瑕光",
+      "testFiles": [
+        "test/assault/synergy-support-5.test.mjs"
+      ],
+      "evidenceTests": [
+        "瑕光：部署时所在格内的地面敌人沉睡 8 秒；光芒涌动 280% 物理伤害并治疗周围 1 名干员 170%；可以攻击沉睡的敌人，攻击力提升至 144%；其他干员使敌人沉睡时充能 1",
+        "瑕光：剑盾骑士 在场时你的其他干员的受击回复技能攻击时也回复 1 技力；模组 你的其他卡西米尔部署或再部署时充能 3"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "statusApplied:sleep"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "aura"
+        }
+      ]
+    },
+    "char_2025_shu": {
+      "format": "synergy",
+      "name": "黍",
+      "testFiles": [
+        "test/assault/synergy-support-5.test.mjs"
+      ],
+      "evidenceTests": [
+        "黍：部署时给所在地块播种（每秒回复 60、12% 庇护）；化被草木 恢复周围生命不足一半的 1 名干员 180%；治疗干员时对其与周围四格播种",
+        "黍：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "static"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "aura"
+        },
+        {
+          "index": 4,
+          "kind": "talent",
+          "event": "skillStart"
+        },
+        {
+          "index": 5,
+          "kind": "growth",
+          "event": "skillStart"
+        }
+      ]
+    },
+    "char_311_mudrok": {
+      "format": "synergy",
+      "name": "泥岩",
+      "testFiles": [
+        "test/assault/synergy-support-5.test.mjs"
+      ],
+      "evidenceTests": [
+        "泥岩：部署时获得 1 层护盾，每 9 秒 +1 层（最多 3 层），每层破裂时恢复 24% 最大生命（模组：额外充能 2）",
+        "泥岩：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "static"
+        },
+        {
+          "index": 3,
+          "kind": "growth",
+          "event": "skillStart"
+        },
+        {
+          "index": 4,
+          "kind": "stack",
+          "event": "shieldBroken"
+        }
+      ]
+    },
+    "char_4065_judge": {
+      "format": "synergy",
+      "name": "斥罪",
+      "testFiles": [
+        "test/assault/synergy-support-5.test.mjs"
+      ],
+      "evidenceTests": [
+        "斥罪：部署时获得 55% 生命上限的屏障；其他干员击倒敌人时屏障 +10%（不超过 300%）；荆棘环身 拥有自身屏障时受到攻击对攻击者造成 56% 法术伤害（模组 61%）",
+        "斥罪：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "kill"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "damageTaken"
+        },
+        {
+          "index": 4,
+          "kind": "grant",
+          "event": "aura"
+        },
+        {
+          "index": 5,
+          "kind": "growth",
+          "event": "kill"
+        }
+      ]
+    },
+    "char_416_zumama": {
+      "format": "synergy",
+      "name": "森蚺",
+      "testFiles": [
+        "test/assault/synergy-support-5.test.mjs"
+      ],
+      "evidenceTests": [
+        "森蚺：10-23改写后，两次即时结算与进阶模组均生效",
+        "森蚺：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "blocked"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "static"
+        },
+        {
+          "index": 4,
+          "kind": "stack",
+          "event": "statusApplied:stun"
+        },
+        {
+          "index": 5,
+          "kind": "growth",
+          "event": "statusApplied:stun"
+        }
+      ]
+    },
+    "char_4039_horn": {
+      "format": "synergy",
+      "name": "号角",
+      "testFiles": [
+        "test/assault/synergy-support-5.test.mjs"
+      ],
+      "evidenceTests": [
+        "号角：部署时照明榴弹 150% 物理伤害并留下 8 秒照明区域；照明榴弹 280% 物理伤害、溅射扩大、照明区域（需要敌人）；照明区域内你的维多利亚干员可以阻挡空中敌人",
+        "号角：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "aura"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "damageTaken"
+        },
+        {
+          "index": 4,
+          "kind": "grant",
+          "event": "aura"
+        },
+        {
+          "index": 5,
+          "kind": "stack",
+          "event": "blockedAir"
+        },
+        {
+          "index": 6,
+          "kind": "growth",
+          "event": "eliteKill"
+        }
+      ]
+    },
+    "char_1034_jesca2": {
+      "format": "synergy",
+      "name": "涤火杰西卡",
+      "testFiles": [
+        "test/assault/synergy-support-5.test.mjs"
+      ],
+      "evidenceTests": [
+        "涤火杰西卡：部署时在相邻格放置机动盾牌（召唤物，55 秒），此干员与身后的干员防御 +18%；饱和迸射 装填 20 发、攻击 +310%、防御 +80%，盾牌存在时立即发射炮弹晕眩 6 秒",
+        "涤火杰西卡：机动盾牌受到伤害时 65% 几率充能 1；你的其他干员消耗弹药时本场攻击 +0.5%（每 1 秒一次）；模组 盾牌受击缩短其再部署时间"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "damageTaken"
+        },
+        {
+          "index": 3,
+          "kind": "stack",
+          "event": "ammoUsed"
+        }
+      ]
+    },
+    "char_4194_rmixer": {
+      "format": "synergy",
+      "name": "信仰搅拌机",
+      "testFiles": [
+        "test/assault/synergy-support-5.test.mjs"
+      ],
+      "evidenceTests": [
+        "信仰搅拌机：部署时为你的其他拉特兰装填 2 发；铳骑主考官 三连击 190% 并为周围另一名弹药技能中的拉特兰装填 1 发；每次造成伤害 10 秒内防御 +30、攻速 +3（最多 3 层）",
+        "信仰搅拌机：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "hit"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "static"
+        },
+        {
+          "index": 4,
+          "kind": "growth",
+          "event": "ammoUsed"
+        }
+      ]
+    },
+    "char_2026_yu": {
+      "format": "synergy",
+      "name": "余",
+      "testFiles": [
+        "test/assault/synergy-support-5.test.mjs"
+      ],
+      "evidenceTests": [
+        "余：10-23改写后，两次即时结算与进阶模组均生效",
+        "余：固有机制与成长限制"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "static"
+        },
+        {
+          "index": 4,
+          "kind": "talent",
+          "event": "skillStart"
+        },
+        {
+          "index": 5,
+          "kind": "stack",
+          "event": "elementBurst:burn"
+        }
+      ]
+    },
+    "char_220_grani": {
+      "format": "synergy",
+      "name": "格拉尼",
+      "testFiles": [
+        "test/assault/synergy-support-6.test.mjs"
+      ],
+      "evidenceTests": [
+        "格拉尼：10-23改写后，两次即时结算与进阶模组均生效",
+        "格拉尼：攻击被其他干员浮空或失重的敌人时攻击力提升至 150%；其他先锋闪避时本场防御 +1%（每 1 秒一次）；模组 击倒后获得 2 费用"
+      ],
+      "lines": [
+        {
+          "index": 0,
+          "kind": "deploy",
+          "event": "deployed"
+        },
+        {
+          "index": 1,
+          "kind": "skill",
+          "event": "skillReady"
+        },
+        {
+          "index": 2,
+          "kind": "talent",
+          "event": "aura"
+        },
+        {
+          "index": 3,
+          "kind": "talent",
+          "event": "attack"
+        },
+        {
+          "index": 4,
+          "kind": "stack",
+          "event": "dodge"
+        }
+      ]
+    }
+  }
+}

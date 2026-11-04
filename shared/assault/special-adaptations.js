@@ -1,0 +1,81 @@
+import { authoredCard as card, pct } from './core-adaptations.js';
+
+export const SPECIAL_ADAPTATIONS=Object.freeze({
+  char_4155_talr:card(1,'B','medium',20,4,v=>[
+    `支付${v.costDP}费用，束缚周围4名敌人${v.bind}秒，各${v.hits}击${pct(v.scale)}%。`,
+    `每累计花费${v.every}费用，相邻干员积存1次未阻挡目标增伤。`,
+  ],{values:{costDP:25,bind:8,hits:6,scale:1.6,every:6,bonus:.2},sourceTalent:0,tags:['未阻挡目标增伤20%','保留行商特性费用消耗']}),
+  char_4151_tinman:card(1,'A','medium',20,1,v=>[
+    `投掷炼金单元：${v.seconds}轮${pct(v.scale)}%法伤、${pct(v.heal)}%再生。`,
+    `单元内地面敌人受到的持续伤害+${pct(v.dotBonus)}%。`,
+  ],{values:{seconds:15,scale:1.1,heal:.25,radius:2,dotBonus:.2},sourceTalent:1,tags:['可储存2次','不同炼金单元独立结算']}),
+  char_4191_tippi:card(1,'B','medium',20,1,v=>[
+    `受伤害前触发：原范围${v.rounds}轮三连射，各${pct(v.scale)}%物伤。`,
+    `自身或相邻干员${v.quiet}秒未受伤害，闪避下一次物理或法术伤害。`,
+  ],{values:{rounds:3,scale:1.5,quiet:9,flight:3},sourceTalent:0,
+    tags:['触发时闪避本次物理或法术伤害','积存3次起飞攻击，期间可阻挡2名飞行敌人']}),
+  char_1033_swire2:card(2,'C','medium',20,99,v=>[
+    '本场攻击二连击，击杀得金币；再施放投出所有金币。',
+    `行商每次付费得金币，攻击+${pct(v.growth)}%，最多${v.cap}层。`,
+  ],{values:{scale:1.5,force:1,growth:.04,cap:8,purse:10,saveDP:5,saveHP:.7},sourceTalent:0,
+    tags:['金币上限10，每枚随机攻击前方150%物伤并推开','保留破财消灾，费用逐次翻倍']}),
+  char_474_glady:card(2,'B','slow',30,1,v=>[
+    `束缚远处1名敌人，周围${v.hits}轮${pct(v.scale)}%法伤并向漩涡拖拽。`,
+    `深海猎人每秒再生${pct(v.regen)}%生命，受海怪物理法伤−${pct(v.protect)}%。`,
+  ],{values:{hits:6,scale:1.3,bind:9,slow:.5,force:2,radius:1.5,regen:.025,protect:.25,weight:3,crit:1.3},sourceTalent:0,
+    tags:['结束将周围敌人拖拽至面前','保留对重量不超过3的敌人攻击130%']}),
+  char_437_mizuki:card(2,'B','slow',30,99,v=>[
+    `原扩大范围${v.hits}轮${pct(v.scale)}%物伤，额外法伤晕眩最低生命3名。`,
+    `友军每累计束缚${v.every}次，立即追加一次创伤性癔症。`,
+  ],{values:{hits:6,scale:2.5,arts:.5,stun:1,loss:.12,every:3,bonus:.1},sourceTalent:0,
+    tags:['每轮命中少于3名流失12%最大生命','保留反移情与原生双闪避','天赋额外目标2，加原1名，共3名']}),
+  char_1023_ghost2:card(2,'B','slow',35,99,v=>[
+    `连击所有阻挡目标${v.hits}次${pct(v.scale)}%物伤，积存${v.uses}次生命强化。`,
+    `替身周围减速${pct(v.slow)}%、每秒${pct(v.dot)}%法伤，友军拖拽也结算1次。`,
+  ],{values:{hits:6,scale:3.6,extra:.7,loss:.03,hp:2,uses:4,slow:.4,dot:.4,teamHP:.2},sourceTalent:0,
+    tags:['目标生命比例不低于自身时额外70%物伤，否则流失3%生命','保留深海猎人生命+20%与原20秒替身']}),
+  char_4232_hbound:card(1,'A','medium',24,1,v=>[
+    `落点${v.seconds}轮${pct(v.scale)}%法伤；重敌减速${pct(v.slow)}%、追加${pct(v.heavy)}%。`,
+    `单元内地面敌人命中率−${pct(v.miss)}%，重敌改为−${pct(v.heavyMiss)}%。`,
+  ],{values:{seconds:35,scale:.2,heavy:1.8,slow:.7,weight:3,radius:2,miss:.09,heavyMiss:.13},sourceTalent:0,
+    tags:['不同炼金单元独立结算']}),
+  char_4000_jnight:card(null,'C',null,null,99,v=>[
+    `部署后${v.seconds}秒，范围内空中敌人获得${pct(v.fragile)}%脆弱。`,
+    `友军每累计击倒${v.every}名空中敌人，为相邻狙击充能${v.charge}。`,
+  ],{values:{seconds:10,fragile:.1,every:2,charge:4,taunt:-1},sourceTalent:0,nativeDeploy:true,passive:true,
+    sourceTraitId:'character_table.json#/char_4000_jnight/talents/0',tags:['范围内远程位友军更不易成为攻击目标','保留原极长再部署时间']}),
+});
+export const SPECIAL_CARD_ROLES=Object.freeze({
+  char_4155_talr:{line:'workshop',produces:['control','economy'],consumes:['economy'],roles:['direct','control','buffOthers']},
+  char_4151_tinman:{line:'workshop',produces:['sustain'],consumes:[],roles:['direct']},
+  char_4191_tippi:{line:'redeploy',produces:[],consumes:[],roles:['direct','aura']},
+  char_1033_swire2:{line:'redeploy',produces:['economy','displacement'],consumes:['economy','kill'],roles:['direct','selfGrowth']},
+  char_474_glady:{line:'redeploy',produces:['control','displacement','sustain'],consumes:[],roles:['direct','control','aura']},
+  char_437_mizuki:{line:'redeploy',produces:['control'],consumes:['control'],roles:['direct','control']},
+  char_1023_ghost2:{line:'workshop',produces:[],consumes:['displacement'],roles:['direct','aura']},
+  char_4232_hbound:{line:'workshop',produces:[],consumes:[],roles:['direct']},
+  char_4000_jnight:{line:'redeploy',produces:['deployment'],consumes:['kill'],roles:['feed','deploy']},
+});
+const pair=(a,av,at,b,bv,bt)=>[{key:a,value:av,text:at,sourceKind:'skill'},{key:b,value:bv,text:bt,sourceKind:'talent'}];
+export const SPECIAL_MODULES=Object.freeze({
+  char_4155_talr:pair('hits',8,'缝线缠身提升至8轮。','every',4,'每累计花费4费用积存一次增伤。'),
+  char_4151_tinman:pair('scale',1.4,'大拉里每轮伤害提升至140%。','dotBonus',.3,'凋敝魂灵持续伤害加成提升至30%。'),
+  char_4191_tippi:pair('rounds',4,'紧急赶场提升至4轮三连射。','quiet',7,'工作指南准备时间缩短至7秒。'),
+  char_1033_swire2:pair('scale',2,'千金一掷每枚伤害提升至200%。','growth',.06,'大买家每层攻击提升至6%。'),
+  char_474_glady:pair('hits',8,'碎漩狂舞提升至8轮。','regen',.035,'深海猎人每秒再生提升至3.5%。'),
+  char_437_mizuki:pair('hits',8,'镜花水月提升至8轮。','every',2,'每累计2次友军束缚追加癔症。'),
+  char_1023_ghost2:pair('hits',8,'生存的重压提升至8次。','dot',.55,'拥抱自我法伤提升至55%。'),
+  char_4232_hbound:pair('heavy',2.2,'重敌每轮额外伤害提升至220%。','heavyMiss',.18,'重敌命中率降低提升至18%。'),
+  char_4000_jnight:pair('fragile',.15,'正义助威空中脆弱提升至15%。','charge',6,'击倒空中敌人连线充能提升至6。').map(m=>({...m,sourceKind:'talent'})),
+});
+export const SPECIAL_INNATES=Object.freeze({
+  char_4155_talr:['缝线缠身支付原25费用后完整结算6轮160%物伤及8秒束缚；谨慎择客保留对未被自身阻挡目标20%增伤。'],
+  char_4151_tinman:['大拉里作用半径2格，共15轮、可储存2次；投掷后攻击变化不影响已有装置。再生不受禁疗和治疗倍率影响。'],
+  char_4191_tippi:['紧急赶场只在伤害到来且技能就绪时触发，物理法伤闪避；起飞用可积存攻击次数维持，期间释放地面阻挡并可阻挡2名飞行敌人。'],
+  char_1033_swire2:['千金一掷首次进入本场二连击状态并得1金币，后续施放只把现有金币投向原前方2-4范围；保留行商付费金币、最多8层攻击与原破财消灾。'],
+  char_474_glady:['碎漩狂舞保留远处单目标束缚、周围六轮法伤与拖拽、结束向自身拖拽；阿戈尔的波涛仅对深海猎人生效，弱肉强食保留重量条件。'],
+  char_437_mizuki:['镜花水月主攻击仍命中原扩大范围内所有敌人；原天赋额外目标2与基础1合计3，附加法术伤害和1秒晕眩，少于3敌人逐轮流失生命。'],
+  char_1023_ghost2:['生存的重压攻击全部阻挡目标、保留生命比例分支与3%流失，生命+200%按受击次数积存；替身不普攻，周围地面减速与法伤，队伍深海猎人生命+20%。'],
+  char_4232_hbound:['座浅保留半径2、35轮、重量至少3的70%减速及180%额外法伤，潜水作业的两档命中降低保留。'],
+  char_4000_jnight:['正义骑士号没有原作主动技能，按部署天赋和原再部署时间运行；10秒空中脆弱与范围内远程位友军降低受击优先级保留。'],
+});

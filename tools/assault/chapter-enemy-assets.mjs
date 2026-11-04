@@ -1,0 +1,31 @@
+// Add only the new chapter enemies through the existing asset plan/downloader.
+import fs from 'node:fs';
+import path from 'node:path';
+import { buildPlan } from '../assets/plan.mjs';
+import { indexAudio } from '../assets/audio.mjs';
+import { cachedJson } from '../assets/cache.mjs';
+import { RAW } from '../assets/sources.mjs';
+import { Downloader } from '../assets/downloader.mjs';
+import { processModels } from '../assets/spine.mjs';
+import { collectLeaves, downloadLeaves, resolveTemplate } from '../assets/manifest.mjs';
+const root='E:/WindowsWorkspace/webworks/apps/stronghold-protocol';
+const runtime=JSON.parse(fs.readFileSync('data/assault-runtime.json','utf8'));
+const ids=Object.values(runtime.auxiliaryEnemies).filter(e=>e.assaultChapter).map(e=>e.key);
+const modelsData=await cachedJson({cacheFile:path.join(root,'.cache/ark-models/models_data.json'),url:RAW.arkModels+'models_data.json',timeoutMs:30000});
+const plan=buildPlan({assets07:{},ops03:{},enemies05:{},maps05:{},audio:indexAudio({}),modelsData,voiceJp:false,extraEnemyIds:ids});
+const template={enemies:Object.fromEntries(ids.map(id=>[id,plan.template.enemies[id]]))};
+const refs=new Set();const walk=x=>{if(!x||typeof x!=='object')return;if(x.model)refs.add(x.model);for(const v of Object.values(x))walk(v);};walk(template);
+const models=new Map([...plan.models].filter(([key])=>refs.has(key)));
+const assets=path.join(root,'public/assets');
+const dl=new Downloader({root:assets,ledgerPath:path.join(root,'.omni/tmp/assault/synergy-build/fb-1023/enemy-assets-ledger.json'),
+  concurrency:6,retries:2,timeoutMs:15000,keepExisting:true,proxyPrefix:''});
+await dl.loadLedger();
+const spine=await processModels(models,{root:assets,dl,cachePath:path.join(root,'.omni/tmp/assault/synergy-build/fb-1023/enemy-spine-cache.json'),writable:rel=>dl.written.has(rel)});
+await downloadLeaves(collectLeaves(template),dl,assets,'chapter enemy portraits');
+const resolved=resolveTemplate(template,{root:assets,spine:spine.entries});
+const missing=ids.filter(id=>!resolved.value.enemies[id]?.spine||!resolved.value.enemies[id]?.icon);
+if(missing.length)throw Error(`Chapter enemies missing their own model/icon: ${missing.join(', ')}`);
+const manifest=JSON.parse(fs.readFileSync('data/assault-assets.json','utf8'));
+manifest.assets.enemies={...(manifest.assets.enemies??{}),...resolved.value.enemies};
+fs.writeFileSync('data/assault-assets.json',JSON.stringify(manifest,null,2)+'\n');
+console.log(JSON.stringify({status:'pass',enemies:ids.length,models:models.size,downloadedBytes:dl.totals.bytesDownloaded}));

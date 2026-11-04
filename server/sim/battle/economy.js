@@ -5,10 +5,28 @@
 import { layerGainRoom } from '../../../shared/constants.js';
 
 export class BattleEconomy {
-  addDp(playerId, n) {
+  /**
+   * `opts`: the 进击 source class as a string ('grant', 'natural', 'assault' …), or `{ source, sourceUnitId,
+   * sourceClass }` — `source` / `sourceUnitId` name the producer on the `dpGained` event (共鸣 pacts count the DP an
+   * operator produces), `sourceClass` is the 进击 class (default 'grant').
+   */
+  addDp(playerId, n, opts = 'grant') {
     const ps = this.getPlayer(playerId);
     if (!ps || !Number.isFinite(n)) return 0;
+    const sourceClass = typeof opts === 'string' ? opts : (opts?.sourceClass ?? 'grant');
+    const source = typeof opts === 'string' ? 'addDp' : (opts?.source ?? 'addDp');
+    const sourceUnitId = typeof opts === 'string' ? null : (opts?.sourceUnitId ?? null);
+    const before = ps.dp;
     ps.dp = Math.max(0, Math.min(this.flags.dpMax, ps.dp + n));
+    const received = Math.max(0, ps.dp - before);
+    const spent = Math.max(0, before - ps.dp);
+    if (received > 0 && this._hooks.dpGained) this.emit('dpGained', { playerId, amount: received, source, ...(sourceUnitId == null ? {} : { sourceUnitId }) });
+    if (this.assaultStrict && received > 0) {
+      this.assaultRuntime.publish('dpReceived', { target: ps, targetUid: playerId, amount: received, sourceClass });
+    }
+    if (this.assaultStrict && spent > 0) {
+      this.assaultRuntime.publish('dpSpent', { target: ps, targetUid: playerId, amount: spent, sourceClass });
+    }
     return ps.dp;
   }
 

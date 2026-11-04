@@ -1,4 +1,5 @@
-export const DEFAULT_MEDIA_OPTIONS = Object.freeze({ maxDimension: 3840, fps: 30, videoBitsPerSecond: 40_000_000, timesliceMs: 1000 });
+// Long edge 1280, 24 fps, 900 kbps VP8: the recorded canvas is a structured replay's picture layer, not a master copy.
+export const DEFAULT_MEDIA_OPTIONS = Object.freeze({ maxDimension: 1280, fps: 24, videoBitsPerSecond: 900_000, timesliceMs: 2000 });
 
 const bounded = (value, fallback, min, max) => {
   if (value == null || String(value).trim() === '') return fallback;
@@ -9,9 +10,9 @@ const bounded = (value, fallback, min, max) => {
 export function resolveMediaOptions(searchParams, defaults = DEFAULT_MEDIA_OPTIONS) {
   const params = searchParams instanceof URLSearchParams ? searchParams : new URLSearchParams(searchParams || '');
   return {
-    maxDimension: bounded(params.get('recordMax'), defaults.maxDimension, 320, 3840),
+    maxDimension: bounded(params.get('recordMax'), defaults.maxDimension, 320, 2560),
     fps: bounded(params.get('recordFps'), defaults.fps, 5, 60),
-    videoBitsPerSecond: bounded(params.get('recordBitrate'), defaults.videoBitsPerSecond, 16_000_000, 64_000_000),
+    videoBitsPerSecond: bounded(params.get('recordBitrate'), defaults.videoBitsPerSecond, 200_000, 48_000_000),
     timesliceMs: bounded(params.get('recordChunkMs'), defaults.timesliceMs, 1000, 15_000),
   };
 }

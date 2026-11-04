@@ -50,6 +50,7 @@ export class BattleHooks {
       if (!list.length) delete this._hooks[name];
     }
     for (const s of this._sched) if (s.owner === owner) s.cancelled = true;
+    this.assaultRuntime?.offOwner(owner);
   }
 
   hasHook(name) { return !!this._hooks[name]; }
@@ -182,6 +183,7 @@ export class BattleHooks {
         try { this.forceEnd('timeout'); } catch { this._hardFinish('timeout'); }
       }
     }
+    if (this.assaultStrict) throw e instanceof Error ? e : new Error(String(e));
   }
 
   _internalError(label, e) { this._handlerError('internal:' + label, null, e, true); }

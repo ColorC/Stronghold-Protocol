@@ -1,0 +1,181 @@
+{
+  "schema": "stronghold.source-reference/v1",
+  "version": "19.2.0.68600",
+  "dataCommit": "cb9444afd722a16112745e5510ec191d8c813c07",
+  "lobbyReference": {
+    "version": "Battlegrounds 19.2.0.68600",
+    "build": 68600,
+    "dataCommit": "cb9444afd722a16112745e5510ec191d8c813c07",
+    "date": "2020-12-15",
+    "fixedLobbyTribes": [
+      "BEAST",
+      "DRAGON",
+      "ELEMENTAL",
+      "MECHANICAL",
+      "PIRATE"
+    ],
+    "neutralIncluded": true,
+    "excludedLobbyTribes": [
+      "DEMON",
+      "MURLOC"
+    ],
+    "amalgadonExcluded": "BGS_069",
+    "explicitlyExcludedNeutralDemonDependent": [
+      "BGS_004",
+      "BGS_002",
+      "CFM_610"
+    ],
+    "subsetMethod": "race-only inclusion plus explicit card-text inference for the three Demon-dependent neutral cards; no subset-tag claim",
+    "poolSource": "https://github.com/HearthSim/hsdata/blob/cb9444afd722a16112745e5510ec191d8c813c07/CardDefs.xml",
+    "sourceNormalGolden": "https://api.hearthstonejson.com/v1/68600/enUS/cards.json",
+    "sourceNamesZhCN": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+    "sourcePoolSize": 127,
+    "raceOnlyAfterAmalgadon": 104,
+    "selectedCandidateCount": 101,
+    "tierCounts": {
+      "1": 11,
+      "2": 19,
+      "3": 21,
+      "4": 18,
+      "5": 18,
+      "6": 14
+    },
+    "raceOnlyBeforeTargetSpecificExclusions": 105
+  },
+  "archetypes": [
+    {
+      "name": "叙拉古退场与召唤",
+      "faction": "叙拉古",
+      "sourceTribe": "BEAST",
+      "sourceIds": [
+        "CFM_316",
+        "BGS_017",
+        "BGS_021",
+        "BGS_078",
+        "FP1_031",
+        "BGS_018",
+        "LOOT_078"
+      ],
+      "chain": "伺夜退场召唤狼群，波登可和铃兰强化新召唤的叙拉古单位；贾维重放荒芜拉普兰德的退场全队增益，巫恋增加退场次数，拉普兰德负责溅射输出。",
+      "operators": [
+        "伺夜",
+        "波登可",
+        "铃兰",
+        "贾维",
+        "巫恋",
+        "荒芜拉普兰德",
+        "拉普兰德"
+      ],
+      "neutralOperators": [
+        "波登可",
+        "巫恋"
+      ]
+    },
+    {
+      "name": "卡西米尔护盾与成长",
+      "faction": "卡西米尔",
+      "sourceTribe": "DRAGON",
+      "sourceIds": [
+        "BGS_034",
+        "ICC_029",
+        "BGS_067",
+        "BGS_036",
+        "BGS_038",
+        "BGS_041",
+        "BGS_040"
+      ],
+      "chain": "白金带护盾与复生，灰毫在整备结束时增强攻击，瑕光利用护盾破裂获得临时成长；玛恩纳按在场卡西米尔数量持续成长，流星提供定向成长，耀骑士临光把每次招募联动转为阵营永久成长，圣聆初雪退场为卡西米尔补盾。",
+      "operators": [
+        "白金",
+        "灰毫",
+        "瑕光",
+        "玛恩纳",
+        "流星",
+        "耀骑士临光",
+        "圣聆初雪"
+      ],
+      "neutralOperators": [
+        "圣聆初雪"
+      ]
+    },
+    {
+      "name": "哥伦比亚召唤回收",
+      "faction": "哥伦比亚",
+      "sourceTribe": "MECHANICAL",
+      "sourceIds": [
+        "BGS_071",
+        "BOT_218",
+        "BOT_537",
+        "EX1_556",
+        "BGS_012",
+        "BOT_312",
+        "GVG_027"
+      ],
+      "chain": "雷蛇从新召唤的哥伦比亚支援获得攻击和护盾；罗宾、多萝西、松果与赫默补充支援单位，缪尔赛思召回最早倒下单位的原始幻影，白面鸮在整备结束时强化其他哥伦比亚干员。",
+      "operators": [
+        "雷蛇",
+        "罗宾",
+        "多萝西",
+        "松果",
+        "缪尔赛思",
+        "赫默",
+        "白面鸮"
+      ],
+      "neutralOperators": [
+        "缪尔赛思"
+      ]
+    },
+    {
+      "name": "维多利亚采购与攻击",
+      "faction": "维多利亚",
+      "sourceTribe": "PIRATE",
+      "sourceIds": [
+        "BGS_049",
+        "BGS_081",
+        "BGS_056",
+        "BGS_047",
+        "BGS_072",
+        "BGS_080",
+        "BGS_061"
+      ],
+      "chain": "格拉尼售出提供采购资金，白铁在购买维多利亚时返金，洛洛按维多利亚购买获得永久成长；号角强化其他维多利亚攻击者，维娜·维多利亚的攻击联动强化全队，风笛提供连击与超杀增益，刺玫退场召唤立即攻击的支援。",
+      "operators": [
+        "格拉尼",
+        "洛洛",
+        "号角",
+        "维娜·维多利亚",
+        "白铁",
+        "风笛",
+        "刺玫"
+      ],
+      "neutralOperators": []
+    },
+    {
+      "name": "炎国商店与招募成长",
+      "faction": "炎",
+      "sourceTribe": "ELEMENTAL",
+      "sourceIds": [
+        "BGS_116",
+        "BGS_120",
+        "BGS_127",
+        "BGS_104",
+        "BGS_100",
+        "BGS_124",
+        "BGS_121"
+      ],
+      "chain": "清流补充免费刷新，风絮和小满响应炎国购买成长；安洁莉娜永久强化商店中的炎国干员，重岳按买入干员科技向指定友方授予成长，黍按本局已招募炎国数量增强自身，令退场召唤炎国原型并把原始复制加入整备区。",
+      "operators": [
+        "清流",
+        "风絮",
+        "小满",
+        "安洁莉娜",
+        "重岳",
+        "黍",
+        "令"
+      ],
+      "neutralOperators": [
+        "安洁莉娜"
+      ]
+    }
+  ]
+}

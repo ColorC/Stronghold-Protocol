@@ -133,7 +133,7 @@ export function createDragController(hooks) {
   const emit = (name, payload) => { try { h.emit(name, payload); } catch (err) { console.error('[drag] listener failed', err); } };
   const draggable = (piece) => !!piece && piece.draggable !== false && piece.uid != null;
   const tileAt = (x, y) => { try { return h.pickTile(x, y); } catch { return null; } };
-  const pieceAt = (x, y) => { try { return h.hitPiece(x, y); } catch { return null; } };
+  const pieceAt = (x, y, advanceCycle = false) => { try { return h.hitPiece(x, y, advanceCycle); } catch { return null; } };
   const overCanvas = (cx, cy) => { try { return h.isOverCanvas ? h.isOverCanvas(cx, cy) !== false : true; } catch { return true; } };
 
   function setHoverTile(tile) {
@@ -201,7 +201,7 @@ export function createDragController(hooks) {
     /** e: { pointerId, pointerType, button, x, y (canvas CSS px), clientX, clientY } */
     pointerDown(e) {
       if (st) return false; // one pointer at a time
-      const piece = pieceAt(e.x, e.y);
+      const piece = pieceAt(e.x, e.y, true);
       if (!piece) { setHoverTile(tileAt(e.x, e.y)); return false; }
       if (e.button === 2) {
         emit('pieceClick', { uid: piece.uid, piece, button: 2, detail: true, clientX: e.clientX, clientY: e.clientY });

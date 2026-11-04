@@ -1,3 +1,4 @@
+import { t } from '../../../shared/i18n.js';
 // 卫戍协议：工坊 HTTP client (server/modes/independent/http.js). Paths are relative to the page, so the same build
 // works on the local server (/independent.html) and behind the Workshop gateway (/stronghold/independent.html).
 // The display catalog is fetched once; actions ask for the state only (`catalog: false`).
@@ -9,17 +10,17 @@ async function call(path, init = {}) {
   try {
     response = await fetch(new URL(path, base()), { credentials: 'same-origin', ...init, headers: { 'content-type': 'application/json', ...(init.headers || {}) } });
   } catch {
-    return { ok: false, status: 0, error: { code: 'NETWORK', message: '连接中断，请检查网络后重试' } };
+    return { ok: false, status: 0, error: { code: 'NETWORK', message: t('连接中断，请检查网络后重试') } };
   }
   let body = null;
   try { body = await response.json(); } catch { /* an empty or non-JSON answer */ }
-  if (!body) return { ok: false, status: response.status, error: { code: 'BAD_RESPONSE', message: '服务器没有返回有效内容' } };
+  if (!body) return { ok: false, status: response.status, error: { code: 'BAD_RESPONSE', message: t('服务器没有返回有效内容') } };
   return { ...body, status: response.status };
 }
 
 const serverApi = {
   catalog: () => call('catalog'),
-  create: ({ seed, difficulty, roundLimit, growthMode = 'levels' }) => call('sessions', { method: 'POST', body: JSON.stringify({ seed, difficulty, roundLimit, growthMode }) }),
+  create: ({ seed, difficulty, roundLimit }) => call('sessions', { method: 'POST', body: JSON.stringify({ seed, difficulty, roundLimit }) }),
   load: (id) => call(`sessions/${encodeURIComponent(id)}?catalog=0`),
   act: (id, expectedRevision, action) => call(`sessions/${encodeURIComponent(id)}/actions`, { method: 'POST', body: JSON.stringify({ expectedRevision, action, catalog: false }) }),
   async replay(id, round) {
@@ -28,15 +29,6 @@ const serverApi = {
       return response.ok ? await response.json() : null;
     } catch { return null; }
   },
-  recordingStart(sessionId, recordingId, viewport, surface = 'independent') { return call('recordings/start', { method: 'POST', body: JSON.stringify({ sessionId: sessionId || null, recordingId, viewport, surface }) }); },
-  recordingEvents(id, events, keepalive = false) { return call(`recordings/${encodeURIComponent(id)}/events`, { method: 'POST', keepalive, body: JSON.stringify({ events }) }); },
-  recordingMedia(id, seq, blob, startedAt, timeMs) {
-    return fetch(new URL(`recordings/${encodeURIComponent(id)}/media/${seq}`, base()), { method: 'POST', credentials: 'same-origin',
-      headers: { 'content-type': 'application/octet-stream', 'x-media-mime-type': blob.type || 'video/webm', 'x-media-started-at': String(startedAt), 'x-media-time-ms': String(timeMs) }, body: blob })
-      .then(async (response) => ({ ...(await response.json()), status: response.status }));
-  },
-  recordingStop(id, mediaCapture = {}) { return call(`recordings/${encodeURIComponent(id)}/stop`, { method: 'POST', body: JSON.stringify(mediaCapture) }); },
-  recordingLoad(id) { return call(`recordings/${encodeURIComponent(id)}`); },
 };
 
 let worker;
@@ -45,7 +37,7 @@ let nextRequest = 0;
 const pending = new Map();
 const rawStates = new Map();
 
-function resetWorker(error = '本地引擎启动失败') {
+function resetWorker(error = t('本地引擎启动失败')) {
   const current = worker;
   worker = null;
   workerReady = null;
@@ -62,7 +54,7 @@ function getWorker() {
   const instance = new Worker(new URL('/js/independent/client-worker.js', globalThis.location.href), { type: 'module', name: 'independent-session-engine' });
   worker = instance;
   workerReady = new Promise((resolve, reject) => {
-    const timer = setTimeout(() => { resetWorker('本地引擎启动超时'); reject(new Error('本地引擎启动超时')); }, 30000);
+    const timer = setTimeout(() => { resetWorker(t('本地引擎启动超时')); reject(new Error('本地引擎启动超时')); }, 30000);
     instance.addEventListener('message', ({ data }) => {
       if (data?.type === 'ready') { clearTimeout(timer); resolve(instance); return; }
       const item = pending.get(data?.requestId);
@@ -73,7 +65,7 @@ function getWorker() {
     });
     instance.addEventListener('error', (event) => {
       clearTimeout(timer);
-      resetWorker(event.message || '本地引擎启动失败');
+      resetWorker(event.message || t('本地引擎启动失败'));
       reject(new Error(event.message || '本地引擎启动失败'));
     });
   });
@@ -85,13 +77,13 @@ async function engine(op, args) {
     const instance = await getWorker();
     return await new Promise((resolve) => {
       const requestId = ++nextRequest;
-      const timer = setTimeout(() => { pending.delete(requestId); resetWorker('本地引擎操作超时'); resolve({ ok: false, error: { code: 'WORKER', message: '本地引擎操作超时' } }); }, 120000);
+      const timer = setTimeout(() => { pending.delete(requestId); resetWorker(t('本地引擎操作超时')); resolve({ ok: false, error: { code: 'WORKER', message: t('本地引擎操作超时') } }); }, 120000);
       pending.set(requestId, { resolve, timer });
       try { instance.postMessage({ requestId, op, args }); }
-      catch (error) { pending.delete(requestId); clearTimeout(timer); resolve({ ok: false, error: { code: 'WORKER', message: error?.message || '本地引擎无法接收操作' } }); }
+      catch (error) { pending.delete(requestId); clearTimeout(timer); resolve({ ok: false, error: { code: 'WORKER', message: error?.message || t('本地引擎无法接收操作') } }); }
     });
   } catch (error) {
-    return { ok: false, error: { code: 'WORKER', message: error?.message || '本地引擎启动失败' } };
+    return { ok: false, error: { code: 'WORKER', message: error?.message || t('本地引擎启动失败') } };
   }
 }
 
@@ -99,7 +91,7 @@ async function restore(rawState) {
   return engine('restore', { rawState });
 }
 
-const serverError = (response, fallback = '存档没有保存') => response?.error || { code: 'BAD_RESPONSE', message: fallback };
+const serverError = (response, fallback = t('存档没有保存')) => response?.error || { code: 'BAD_RESPONSE', message: fallback };
 function topLevelChanges(current, next) {
   const changes = {};
   for (const [key, value] of Object.entries(next)) {
@@ -117,7 +109,7 @@ const clientApi = {
     const created = await engine('create', options);
     if (!created.ok) return { ...created, status: 422 };
     const saved = await call('sessions', { method: 'POST', body: JSON.stringify({ rawState: created.rawState }) });
-    if (!saved.ok) return { ok: false, status: saved.status || 422, error: serverError(saved, '无法保存新的一局') };
+    if (!saved.ok) return { ok: false, status: saved.status || 422, error: serverError(saved, t('无法保存新的一局')) };
     rawStates.set(saved.id, created.rawState);
     return { ok: true, status: saved.status || 201, id: saved.id, state: created.state };
   },
@@ -136,7 +128,7 @@ const clientApi = {
       if (!loaded.ok) return loaded;
       current = rawStates.get(id);
     }
-    if (expectedRevision !== current.revision) return { ok: false, status: 409, state: (await restore(current)).state, error: { code: 'REVISION', message: '对局已更新，请重试当前操作' } };
+    if (expectedRevision !== current.revision) return { ok: false, status: 409, state: (await restore(current)).state, error: { code: 'REVISION', message: t('对局已更新，请重试当前操作') } };
     const changed = await engine('act', { rawState: current, action });
     if (!changed.ok) return { ...changed, status: 422 };
     const saved = await call(`sessions/${encodeURIComponent(id)}/checkpoint`, {
@@ -161,11 +153,6 @@ const clientApi = {
     const { loadClientReplay } = await import('./client-replays.js');
     return loadClientReplay(id, round);
   },
-  recordingStart: (...args) => serverApi.recordingStart(...args),
-  recordingEvents: (...args) => serverApi.recordingEvents(...args),
-  recordingMedia: (...args) => serverApi.recordingMedia(...args),
-  recordingStop: (...args) => serverApi.recordingStop(...args),
-  recordingLoad: (...args) => serverApi.recordingLoad(...args),
 };
 
 export const executionMode = new URL(globalThis.location?.href || 'http://localhost/').searchParams.get('execution') === 'client' ? 'client' : 'server';

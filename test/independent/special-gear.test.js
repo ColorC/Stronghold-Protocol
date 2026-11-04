@@ -15,16 +15,9 @@ const GEAR = {
   'test:vulnerable': gear('test:vulnerable', 'factionVulnerable', { damagePercent: 0.2, durationSeconds: 5 }),
   'test:guard': gear('test:guard', 'factionGuard', { damageReduction: 0.3 }),
 };
-// Keep source factions for equipment targeting, while removing these operators'
-// unrelated workshop traits and source adapters from isolated equipment cases.
+const catalog = { ...baseCatalog, equipment: { ...baseCatalog.equipment, ...GEAR } };
+// 普罗旺斯 and 德克萨斯 are 叙拉古, 隐现 is 拉特兰, 跃跃 and 深靛 have no faction; none of them has a combat trait (干员表 v3)
 const OPS = { provence: 'chess_char_1_07_a', texas: 'chess_char_1_08_a', lateran: 'chess_char_1_01_a', loner: 'chess_char_1_09_a', loner2: 'chess_char_1_17_a' };
-const isolatedOperators = { ...baseCatalog.operators };
-for (const id of [OPS.provence, OPS.texas]) {
-  const op = isolatedOperators[id], sourceRefs = { ...op.sourceRefs };
-  delete sourceRefs.darkmoon19_2;
-  isolatedOperators[id] = { ...op, sourceRefs, nativeTrait: { ...op.nativeTrait, effect: { prep: [], combat: [] } } };
-}
-const catalog = { ...baseCatalog, operators: isolatedOperators, equipment: { ...baseCatalog.equipment, ...GEAR } };
 
 function setup(pieces) {
   const chess = {};
@@ -42,15 +35,6 @@ function setup(pieces) {
   return h;
 }
 const lost = (e) => e.s.maxHp - e.hp;
-
-test('equipment-only fixture keeps Syrian faction matching but has no embedded operator deployment source', () => {
-  for (const id of [OPS.provence, OPS.texas]) {
-    const op = catalog.operators[id];
-    assert.ok(op.nativeFactionTags.includes('叙拉古'));
-    assert.equal(op.sourceRefs.darkmoon19_2, undefined);
-    assert.deepEqual(op.nativeTrait.effect.combat, []);
-  }
-});
 
 test('弹射: an attack bounces from its main target to the nearest enemy, then on, within the radius each time', () => {
   const h = setup([{ uid: 'w', chessId: OPS.loner, row: 10, col: 3, equipment: [{ id: 'test:ricochet' }] }]);
@@ -76,7 +60,7 @@ test('溅射: every other enemy within the radius of the main target takes a sha
   assert.ok(Math.abs(lost(main) - 100) < 1e-6);
 });
 
-test('造成伤害时治疗周围随机友军: each damage event heals a hurt ally nearby; the wearer never', () => {
+test('造成伤害时治疗周围随机友军: a hurt ally nearby gets a share of the damage, once per cooldown; the wearer never', () => {
   const h = setup([
     { uid: 'w', chessId: OPS.loner, row: 10, col: 3, equipment: [{ id: 'test:heal' }] },
     { uid: 'ally', chessId: OPS.loner2, row: 10, col: 2 },
@@ -90,10 +74,10 @@ test('造成伤害时治疗周围随机友军: each damage event heals a hurt al
   assert.equal(w.hp, 500);
   assert.equal(far.hp, 500);
   h.b.forceAttack(w, [e]);
-  assert.equal(ally.hp, 600, 'the next damage event heals again without a synthetic cooldown');
+  assert.equal(ally.hp, 550, 'still cooling down');
   h.run(1.1);
   h.b.forceAttack(w, [e]);
-  assert.ok(ally.hp>600,'later attack events continue to heal');
+  assert.equal(ally.hp, 600);
 });
 
 test('盟约脆弱: an enemy the wearer hit takes more damage from its faction only, for a while', () => {

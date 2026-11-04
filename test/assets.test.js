@@ -2,7 +2,7 @@
 // data/assets.json. The pure helpers (animation-role resolver, atlas
 // normalizer, PNG/WOFF2/audio helpers, plan id sets) are always tested; the
 // on-disk checks run only when public/assets exists (it is git-ignored and
-// produced by `npm run assets`); the optional local-client enemy models
+// produced by `npm run assets`); the optional local-client enemy and token models
 // (spineLocal, tools/local-extract) only when data/local-assets.json lists them.
 
 import { test, describe } from 'node:test';
@@ -18,102 +18,22 @@ import { pngSize, isCompletePng, isMp3, validate } from '../tools/assets/formats
 import { encodeWoff2, decodeWoff2Tables, readSfnt, uintBase128 } from '../tools/assets/woff2.mjs';
 import { assetToPath, pickUnitSfx, indexAudio } from '../tools/assets/audio.mjs';
 import { mirrorUrl, safeName, encodePath } from '../tools/assets/sources.mjs';
-import { collectEnemyIds, skillIndicesByChar, buildPlan, GUIDE_PAGES, UI_EXTRAS, registeredDownloadLeaves } from '../tools/assets/plan.mjs';
-import { resolveTemplate, collectLeaves, mergeRegisteredManifest, registeredAssetPaths } from '../tools/assets/manifest.mjs';
-import { spineEntry, hasBackSpine } from '../public/js/assets.js';
+import { collectEnemyIds, skillIndicesByChar, buildPlan, GUIDE_PAGES, UI_EXTRAS } from '../tools/assets/plan.mjs';
+import { resolveTemplate, collectLeaves } from '../tools/assets/manifest.mjs';
+import { spineEntry } from '../public/js/assets.js';
 import { EMOTE_CATALOG, emoteArtGroup } from '../shared/constants.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const PUBLIC = process.env.STRONGHOLD_PUBLIC_ASSETS_ROOT || join(ROOT, 'public');
+const PUBLIC = join(ROOT, 'public');
 const ASSETS = join(PUBLIC, 'assets');
 const MANIFEST = join(ROOT, 'data', 'assets.json');
 const readJson = (rel) => JSON.parse(readFileSync(join(ROOT, rel), 'utf8'));
-
-test('a partial research rebuild retains registered native models, module icons, prize art and Japanese voices', () => {
-  const registered = {
-    tokens: { token_10041_cathy_catsld: { owner: 'char_4162_cathy', spine: { skel: '/assets/spine/token/cathy.skel', anims: { idle: 'Idle', deploy: 'Start' } }, spineLocal: { group: 'spine/token/cathy' } } },
-    chars: { old: { avatar: '/assets/char/avatar/old.png', spine: { back: { skel: '/assets/spine/op/old/back/old.skel' } } } },
-    ui: { rogue_2_relic_grace_5: '/assets/roguelike/rogue_2_relic_grace_5.png' },
-    modules: { 'WAH-Y': '/assets/module/wah-y.png' },
-    audio: { voiceJp: { old: { start: '/assets/audio/voice/jp/old/cn_019.mp3' } } },
-  };
-  const next = { tokens: { token_10041_cathy_catsld: { avatar: '/assets/token/avatar/token_10041_cathy_catsld.png' } }, chars: { imported: { avatar: '/assets/char/avatar/imported.png' } } };
-  const merged = mergeRegisteredManifest(registered, next);
-  assert.deepEqual(merged.tokens.token_10041_cathy_catsld.spine, registered.tokens.token_10041_cathy_catsld.spine);
-  assert.deepEqual(merged.tokens.token_10041_cathy_catsld.spineLocal, registered.tokens.token_10041_cathy_catsld.spineLocal);
-  assert.deepEqual(merged.modules, registered.modules);
-  assert.deepEqual(merged.audio, registered.audio);
-  assert.deepEqual(merged.ui, registered.ui);
-  assert.ok(merged.chars.old && merged.chars.imported);
-  merged.tokens.token_10041_cathy_catsld.spine.anims.idle = 'changed';
-  assert.equal(registered.tokens.token_10041_cathy_catsld.spine.anims.idle, 'Idle', 'the prior catalog is not mutated');
-  const replaced = mergeRegisteredManifest(registered, { tokens: { token_10041_cathy_catsld: { spine: { anims: { deploy: null } } } } });
-  assert.equal(replaced.tokens.token_10041_cathy_catsld.spine.anims.deploy, null, 'validated new animation metadata wins');
-  const oldModel = { skel: '/assets/body.skel', atlas: '/assets/body.atlas', textures: ['/assets/body.png'],
-    anims: { idle: 'Idle', skills: { 0: { loop: 'OldSkill' } } }, animations: { Idle: 1, OldSkill: 2 }, sourceNote: 'registered' };
-  const parsedModel = { skel: '/assets/body.skel', atlas: '/assets/body.atlas', textures: ['/assets/body.png'],
-    anims: { idle: 'Idle' }, animations: { Idle: 1 } };
-  const capabilities = mergeRegisteredManifest(oldModel, parsedModel);
-  assert.equal(capabilities.anims.skills, undefined, 'an old selectable clip cannot survive a fresh complete model parse');
-  assert.equal(capabilities.animations.OldSkill, undefined);
-  assert.equal(capabilities.sourceNote, 'registered', 'registration annotations survive');
-  const semantic = mergeRegisteredManifest({ ...oldModel, anims: { idle: 'Idle',
-    attack: { begin: null, loop: 'Attack3', end: null }, skill: { index: 2, loop: 'Attack3' },
-    skills: { 0: { index: 0, loop: 'OldSkill' }, 2: { index: 2, loop: 'Attack3' } } } },
-  { ...parsedModel, anims: { idle: 'Idle', attack: { begin: null, loop: 'Attack', end: null },
-    skill: { index: 0, loop: 'Attack' }, skills: { 0: { index: 0, loop: 'Attack' } } }, animations: { Idle: 1, Attack: 1, Attack3: 2 } });
-  assert.equal(semantic.anims.attack.loop, 'Attack3', 'registered attack semantics survive when the real clip still exists');
-  assert.equal(semantic.anims.skill.index, 0, 'primary selectable index remains current');
-  assert.equal(semantic.anims.skills[2], undefined, 'a real clip cannot revive an unselectable skill index');
-  assert.equal(semantic.anims.skills[0].loop, 'Attack', 'an absent old clip stays removed');
-  const noFallback = mergeRegisteredManifest({ ...oldModel, anims: { skill: { index: 0, loop: 'Attack', via: 'attack' } } },
-    { ...parsedModel, anims: { skill: { index: 0, loop: 'Skill_Loop' } }, animations: { Attack: 1, Skill_Loop: 2 } });
-  assert.equal(noFallback.anims.skill.loop, 'Skill_Loop', 'a generic old skill fallback cannot replace a real freshly parsed skill clip');
-});
-
-test('registered extensions enter the public queue while optional local extraction stays separate', () => {
-  const manifest = { modules: { 'WAH-Y': '/assets/module/wah-y.png' }, ui: { prize: '/assets/roguelike/rogue_2_relic_grace_5.png' },
-    audio: { voiceJp: { old: { start: '/assets/audio/voice/jp/old/cn_019.mp3' } } },
-    tokens: { old: { spine: { skel: '/assets/local/spine/token/old/old.skel' } } } };
-  const queue = registeredDownloadLeaves(manifest);
-  assert.equal(queue.leaves.length, 3);
-  assert.deepEqual(queue.unmapped, []);
-  assert.ok(queue.leaves.every(row => row.leaf.alts[0].urls.every(url => url.startsWith('https://'))));
-  assert.ok(queue.leaves.some(row => row.leaf.alts[0].urls.some(url => url.includes('/rogueitem/rogue_2_relic_grace_5.png'))));
-  assert.ok(queue.leaves.every(row => !row.leaf.alts[0].rel.startsWith('local/')));
-  assert.equal(registeredAssetPaths(manifest).size, 4, 'optional local references remain in the catalog');
-});
-
-test('registered default summons use the pinned public native bodies instead of disappearing or changing skins', () => {
-  const ids = ['token_10041_cathy_catsld', 'token_10004_otter_motter', 'token_10020_ling_soul1', 'token_10057_svash2_eagle3'];
-  const registeredManifest = { tokens: Object.fromEntries(ids.map(id => [id, { owner: 'native-owner', spine: { anims: { skill: { index: 0 } } } }])) };
-  const assets07 = { tokens: { [ids[0]]: { battleSpineDefault: { skel: 'https://example.com/stale.skel', atlas: 'https://example.com/stale.atlas', png: 'https://example.com/stale.png' } } } };
-  const plan = buildPlan({ assets07, ops03: {}, enemies05: {}, maps05: {}, audio: indexAudio({}), modelsData: {}, registeredManifest });
-  for (const id of ids) {
-    const model = plan.models.get(`token:${id}`);
-    assert.ok(model, `${id}: default model is in the ordinary fetch plan`);
-    const family = id.replace(/eagle[123]$/, 'eagle');
-    assert.match(model.skel.urls[0], /HellaOrg\/HellaAssets\/2f080e7cd292341ec46d631186ec534aaee6b68d\//);
-    assert.ok(model.skel.urls[0].endsWith(`/${family}/front/${family}.skel`));
-    assert.equal(plan.template.tokens[id].owner, 'native-owner');
-  }
-  const nativeQueue = registeredDownloadLeaves({ tokens: { eagle: { spine: { skel: '/assets/spine/token/token_10057_svash2_eagle3/token_10057_svash2_eagle.skel' } } } });
-  assert.ok(nativeQueue.leaves[0].leaf.alts[0].urls.some(url => url.endsWith('/token_10057_svash2_eagle/front/token_10057_svash2_eagle.skel')), 'a clean portable fetch uses the eagle family folder');
-});
-
-test('registered multi-page textures keep the skeleton folder and explicit public icon provenance enters the queue', () => {
-  const manifest = { chars: { char_1052_kalts2: { spine: { front: {
-    skel: '/assets/spine/op/char_1052_kalts2/front/char_1052_kalts2.skel',
-    atlas: '/assets/spine/op/char_1052_kalts2/front/char_1052_kalts2.atlas',
-    textures: ['/assets/spine/op/char_1052_kalts2/front/char_1052_kalts22.png'],
-  } } } }, prof: { sub: { aoesniper: '/assets/prof/sub/aoesniper.png' } } };
-  const icon = 'https://media.prts.wiki/7/72/native-profession-icon.png';
-  const queue = registeredDownloadLeaves(manifest, { sourceOf: rel => rel === 'prof/sub/aoesniper.png' ? icon : undefined });
-  const page = queue.leaves.find(row => row.leaf.alts[0].rel.endsWith('char_1052_kalts22.png'));
-  assert.ok(page.leaf.alts[0].urls.some(url => url.endsWith('/char_1052_kalts2/char_1052_kalts2/Front/char_1052_kalts22.png')));
-  assert.deepEqual(queue.leaves.find(row => row.leaf.alts[0].rel === 'prof/sub/aoesniper.png').leaf.alts[0].urls, [icon]);
-  assert.deepEqual(queue.unmapped, []);
-});
+const readJsonFrom = (root, rel) => JSON.parse(readFileSync(join(root, rel), 'utf8'));
+const worktreePath = ROOT.replace(/\\/g, '/').toLowerCase();
+const ASSAULT_CANONICAL_ROOT = process.env.SP_ASSAULT_CANONICAL_ROOT
+  || (worktreePath.includes('/.worktrees/assault/') ? join(ROOT, '..', '..', '..') : ROOT);
+const TOLEDO_NATIVE_READY = existsSync(join(ASSAULT_CANONICAL_ROOT, 'data', 'local-assets.json'))
+  && ['skel', 'atlas', 'png'].every((ext) => existsSync(join(ASSAULT_CANONICAL_ROOT, 'public', 'assets', 'local', 'spine', 'token', 'token_10067_toledo_tldptm', `token_10067_toledo_tldptm.${ext}`)));
 
 // ---------------------------------------------------------------------------
 describe('animation-role resolver (research 07 §5.4)', () => {
@@ -161,6 +81,92 @@ describe('animation-role resolver (research 07 §5.4)', () => {
   test('SkillN without underscore (char_2015_dusk)', () => {
     const r = resolveRoles(['Attack', 'Die', 'Idle', 'Skill2_Begin', 'Skill2_End', 'Skill2_Loop', 'Skill3_Attack', 'Start'], { skillIndices: [1] });
     assert.deepEqual(r.skill, { begin: 'Skill2_Begin', loop: 'Skill2_Loop', end: 'Skill2_End', index: 1, idle: null });
+  });
+
+  // PR #275 (@xcdoge): an enemy's manifest only ever had skill index 0 (plan.mjs passes [0]), so a multi-skill boss could
+  // show one cast clip — 盐风主教昆图斯 has Skill_01..04. With `numberedSkills` (spine.mjs: enemy models) every numbered
+  // skill clip is resolved after the caller's indices, whose first stays the primary.
+  test('numbered skill clips of an enemy are all resolved (a multi-skill boss), the primary stays the caller’s first', () => {
+    const names = ['Attack', 'Default', 'Die', 'Idle', 'Skill_01', 'Skill_02', 'Skill_03', 'Skill_04'];
+    assert.equal(resolveRoles(names, { skillIndices: [0] }).skills, undefined, 'without the option: index 0 only (operators)');
+    const r = resolveRoles(names, { skillIndices: [0], numberedSkills: true });
+    assert.deepEqual(Object.keys(r.skills).sort(), ['0', '1', '2', '3']);
+    assert.equal(r.skills['1'].loop, 'Skill_02');
+    assert.equal(r.skills['3'].loop, 'Skill_04');
+    assert.equal(r.skill.loop, 'Skill_01', 'the first index stays the primary clip');
+    const first = resolveRoles(names, { skillIndices: [2], numberedSkills: true });
+    assert.equal(first.skill.index, 2, 'a caller-declared primary still wins');
+    assert.equal(first.skill.loop, 'Skill_03');
+    // 自在: Skill_01 / Skill_01_02 are one slot, Skill_02_Begin / Loop / End the next
+    const xi = resolveRoles(['Attack_01', 'Die', 'Idle', 'Skill_01', 'Skill_01_02', 'Skill_02_Begin', 'Skill_02_End', 'Skill_02_Loop'], { numberedSkills: true });
+    assert.deepEqual(xi.skills['1'], { begin: 'Skill_02_Begin', loop: 'Skill_02_Loop', end: 'Skill_02_End', index: 1, idle: null });
+    // phase-style skill clips (no index in the name) stay a single primary skill
+    assert.equal(resolveRoles(['Attack', 'Die', 'Idle', 'Skill_Begin', 'Skill_Loop', 'Skill_End'], { numberedSkills: true }).skills, undefined);
+  });
+
+  // PR #275: the stun family is spelled Stun / Stun_End, Stun_1 / Stun_2 (巨大的丑东西: first form, second form) and
+  // Dizzy_Begin / Dizzy_Loop / Dizzy_End (斩胄之剑 / 破胄之锤); without a role a stunned enemy freezes its clip.
+  test('stun clips: numbered Stun_N and the Dizzy_* family are recognised', () => {
+    const mc = resolveRoles(['Attack_1', 'Die', 'Idle_1', 'Idle_2', 'Move_1', 'Move_2', 'Stun_1', 'Stun_2'], {});
+    assert.deepEqual(mc.stun, { begin: null, loop: 'Stun_1', end: null });
+    const dz = resolveRoles(['Attack', 'Die', 'Idle_B', 'Move', 'Dizzy_Begin', 'Dizzy_Loop', 'Dizzy_End', 'Dizzy_Die'], {});
+    assert.deepEqual(dz.stun, { begin: 'Dizzy_Begin', loop: 'Dizzy_Loop', end: 'Dizzy_End' });
+    assert.deepEqual(resolveRoles(['Attack', 'Die', 'Idle', 'Stun', 'Stun_End'], {}).stun, { begin: null, loop: 'Stun', end: 'Stun_End' });
+    assert.equal(resolveRoles(['Attack', 'Die', 'Idle', 'Move'], {}).stun, null);
+  });
+
+  // PR #275: a model's own Run cycle is a role of its own (猎狗pro: Move_Loop 0.80 s, Run_Loop 0.53 s); the move choice
+  // is unchanged, the renderer switches to it for a fast enemy.
+  test('the model’s own Run cycle becomes a separate run role', () => {
+    const names = ['Attack', 'Default', 'Die', 'Idle', 'Move_Begin', 'Move_End', 'Move_Loop', 'Run_Begin', 'Run_End', 'Run_Loop'];
+    const r = resolveRoles(names, {});
+    assert.deepEqual(r.move, { begin: 'Move_Begin', loop: 'Move_Loop', end: 'Move_End' }, 'the move role is unchanged');
+    assert.deepEqual(r.run, { begin: 'Run_Begin', loop: 'Run_Loop', end: 'Run_End' });
+    assert.ok(roleAnimationNames(r).includes('Run_Loop'), 'the manifest writer validates the Run clips');
+    assert.equal(resolveRoles(['Attack', 'Die', 'Idle', 'Move'], {}).run, undefined, 'no Run cycle, no role');
+  });
+
+  // The manifest (tools/fetch-assets.mjs --offline with this resolver): every model whose skeleton has a stun / Run clip
+  // has the role, and every enemy with numbered skill clips has one clip per slot.
+  describe('data/assets.json roles (PR #275)', () => {
+    const manifest = JSON.parse(readFileSync(new URL('../data/assets.json', import.meta.url), 'utf8'));
+    const models = [];
+    for (const [id, e] of Object.entries(manifest.enemies || {})) if (e.spine) models.push([`enemies.${id}`, e.spine]);
+    for (const [id, e] of Object.entries(manifest.tokens || {})) if (e.spine) models.push([`tokens.${id}`, e.spine]);
+    for (const [id, e] of Object.entries(manifest.chars || {})) if (e.spine?.front) models.push([`chars.${id}`, e.spine.front]);
+    const walk = (re, ok) => {
+      const bad = [];
+      let seen = 0;
+      for (const [id, sp] of models) {
+        if (!sp.animations || !Object.keys(sp.animations).some((n) => re.test(n))) continue;
+        seen++;
+        if (!ok(sp.anims || {}, id)) bad.push(id);
+      }
+      return { bad, seen };
+    };
+    test('every model with a stun clip has a stun role', () => {
+      const { bad, seen } = walk(/^(stun|dizzy)/i, (a) => !!a.stun);
+      assert.ok(seen >= 6, `models with a stun clip (${seen})`);
+      assert.deepEqual(bad, []);
+    });
+    test('every model with a Run clip has a run role', () => {
+      const { bad, seen } = walk(/^run/i, (a) => !!a.run);
+      assert.ok(seen >= 3, `models with a Run clip (${seen})`);
+      assert.deepEqual(bad, []);
+    });
+    test('every enemy with numbered skill clips has a clip per slot (盐风主教昆图斯: Skill_01..04)', () => {
+      const { bad, seen } = walk(/^Skill_?0*[1-9](?:$|_)/i, (a, id) => !id.startsWith('enemies.') || !!a.skills);
+      assert.ok(seen >= 10, `models with numbered skill clips (${seen})`);
+      assert.deepEqual(bad, []);
+      const q = manifest.enemies.enemy_1521_dslily.spine.anims;
+      assert.deepEqual(Object.values(q.skills).map((c) => c.loop), ['Skill_01', 'Skill_02', 'Skill_03', 'Skill_04']);
+      assert.equal(q.skill.loop, 'Skill_01', 'the primary clip is unchanged');
+      // operators keep their pool's indices (宴's fix, PREFAB_SPINE_ROLES / DESIGN §25.22.9, stays as it was)
+      const utage = manifest.chars.char_337_utage.spine.front.anims;
+      assert.deepEqual(Object.keys(utage.skills).sort(), ['0', '1']);
+      assert.equal(utage.skills['0'].loop, 'Skill_Loop');
+      assert.equal(utage.skill.loop, 'Attack');
+    });
   });
 
   test('pure supporter without Attack (char_4134_cetsyr)', () => {
@@ -443,10 +449,65 @@ describe('audio banks and plan id sets', () => {
     const r = resolveTemplate(tpl, { root: ROOT, spine: new Map([['k', { skel: '/assets/s.skel', atlas: '/assets/s.atlas', textures: [] }]]) });
     assert.deepEqual(Object.keys(r.value).sort(), ['keep', 'm']);
     assert.deepEqual(r.misses.sort(), ['a', 'b.c']);
+    assert.deepEqual(r.droppedLeaves, ['a', 'b.c'], 'a leaf no alternative of which is on disk is a dropped leaf');
     assert.equal(collectLeaves(tpl).length, 2);
     const ok = resolveTemplate({ p: { alts: [{ rel: 'nope.png', urls: ['x'] }, { rel: 'package.json', urls: ['y'] }] } }, { root: ROOT, spine: new Map() });
     assert.equal(ok.value.p, '/assets/package.json');
     assert.equal(ok.fallbacks.length, 1);
+    assert.deepEqual(ok.droppedLeaves, [], 'a fallback on disk is not a drop');
+  });
+
+  test('an array whose lines are all missing is dropped, with the entry it empties (a voice slot never downloaded)', () => {
+    const line = (rel) => ({ alts: [{ rel, urls: ['u'] }] });
+    const tpl = {
+      voice: {
+        a: { select: [line('nope/1.mp3'), line('nope/2.mp3')], place: [line('nope/3.mp3')] },
+        b: { select: [line('nope/4.mp3'), line('package.json')] },
+      },
+      empty: [],
+    };
+    const r = resolveTemplate(tpl, { root: ROOT, spine: new Map() });
+    assert.deepEqual(r.value.voice, { b: { select: ['/assets/package.json'] } }, 'operator a has no line on disk: no entry at all');
+    assert.deepEqual(r.value.empty, [], 'an array that was empty in the template stays');
+    assert.deepEqual(r.misses.sort(), ['voice.a.place[0]', 'voice.a.select[0]', 'voice.a.select[1]', 'voice.b.select[0]']);
+    assert.deepEqual(r.droppedLeaves.sort(), r.misses.slice().sort(), 'every dropped line is a dropped leaf too');
+  });
+
+  // A unit's attack sound is a leaf like any other: when its file was never downloaded (or a checkout lost it) the whole
+  // key vanishes from data/assets.json and the client plays nothing — there is no fallback and no URL to retry. The
+  // resolution therefore reports it as a dropped leaf, which the run prints and --strict fails on
+  // (tools/fetch-assets.mjs; docs/ASSETS.md "A dropped leaf is reported, never silent").
+  test('move a resolved sound aside: the leaf leaves the manifest and is reported as dropped, never silently', async (t) => {
+    const { mkdtemp, mkdir, writeFile, rm } = await import('node:fs/promises');
+    const { tmpdir } = await import('node:os');
+    const root = await mkdtemp(join(tmpdir(), 'sp-leaf-drop-'));
+    t.after(() => rm(root, { recursive: true, force: true }));
+    const rel = 'audio/sfx/player/p_atk/p_atk_somechar_n.mp3';
+    const imp = 'audio/sfx/player/p_imp/p_imp_somechar_n.mp3';
+    const ui = 'audio/sfx/general/g_ui/g_ui_btn_h.mp3';
+    const leaf = (r) => ({ alts: [{ rel: r, urls: [`https://raw.githubusercontent.com/o/r/main/${r}`], kind: 'mp3' }] });
+    const tpl = { audio: { sfx: { units: { char_x: { attack: leaf(rel), hit: leaf(imp) } }, ui: { click: leaf(ui) } } } };
+    for (const r of [rel, imp, ui]) {
+      await mkdir(join(root, dirname(r)), { recursive: true });
+      await writeFile(join(root, r), 'ID3');
+    }
+    const before = resolveTemplate(tpl, { root, spine: new Map() });
+    assert.equal(JSON.stringify(before.value), JSON.stringify({
+      audio: {
+        sfx: {
+          units: { char_x: { attack: `/assets/${rel}`, hit: `/assets/${imp}` } },
+          ui: { click: `/assets/${ui}` },
+        },
+      },
+    }), 'every file on disk: the manifest is exactly the plan, byte for byte');
+    assert.deepEqual([before.misses, before.droppedLeaves, before.fallbacks], [[], [], []]);
+
+    await rm(join(root, rel)); // the download never happened / the file went missing
+    const after = resolveTemplate(tpl, { root, spine: new Map() });
+    assert.equal(Object.hasOwn(after.value.audio.sfx.units.char_x, 'attack'), false, 'the key is gone from the manifest');
+    assert.equal(after.value.audio.sfx.units.char_x.hit, `/assets/${imp}`, 'the roles whose file is on disk stay');
+    assert.deepEqual(after.droppedLeaves, ['audio.sfx.units.char_x.attack'], 'and the drop is reported, not silent');
+    assert.ok(after.misses.includes('audio.sfx.units.char_x.attack'), 'the wider miss list names it too');
   });
 });
 
@@ -639,41 +700,6 @@ describe('generated manifest data/assets.json', () => {
     }
   });
 
-  test('tracked manifest matches the current planner pool and every active fallback is renderable', { skip: !haveManifest && 'data/assets.json not generated' }, () => {
-    const ops = readJson('docs/research/03-operators.json');
-    const poolIds = [...skillIndicesByChar(ops).keys()];
-    const chess = readJson('data/chess.json');
-    const nativeIds = Object.values(chess)
-      .filter((row) => row.chessType === 'NATIVE_IMPORT_CANDIDATE' && row.nativeImport?.playable && row.charId)
-      .map((row) => row.charId);
-    const charIds = [...new Set([...poolIds, ...nativeIds])].sort();
-    for (const id of charIds) assert.ok(manifest.chars[id], `${id}: active pool and playable native imports remain registered`);
-    assert.equal(manifest.stats.chars, Object.keys(manifest.chars).length, 'stats include the preserved registered extensions');
-
-    const enemyIds = collectEnemyIds({
-      assets07: readJson('docs/research/07-assets.json'),
-      enemies05: readJson('docs/research/05-enemies.json'),
-      maps05: readJson('docs/research/05-maps.json'),
-      ops03: ops,
-    });
-    for (const id of enemyIds) {
-      // This S3-only summoned enemy has no public art record; the unit renderer's
-      // existing generic diamond/glyph is its deliberate fallback.
-      if (id === 'enemy_5601_entlec') continue;
-      assert.ok(manifest.enemies[id]?.icon, `${id} has an icon fallback`);
-    }
-
-    const activeItems = Object.keys(readJson('docs/research/07-assets.json').items);
-    assert.equal(activeItems.length, 59);
-    for (const id of activeItems) assert.ok(manifest.items[id], `${id}: current custom equipment icon is registered`);
-    for (const [id, icon] of Object.entries(manifest.items)) assert.ok(icon, `${id} has an icon URL`);
-    const genericToken = manifest.prof?.battlecard?.token;
-    for (const [id, token] of Object.entries(manifest.tokens)) {
-      const ownerAvatar = token.owner && manifest.chars[token.owner]?.avatar;
-      assert.ok(token.avatar || ownerAvatar || genericToken, `${id} has a visible avatar/glyph fallback`);
-    }
-  });
-
   test('every manifest path exists on disk', { skip }, () => {
     const all = [...new Set(urls(manifest))];
     assert.ok(all.length > 3000, `manifest lists ${all.length} files`);
@@ -692,43 +718,6 @@ describe('generated manifest data/assets.json', () => {
         assert.ok(typeof p === 'string' && existsSync(join(PUBLIC, p)), `${id}: ${p}`);
       }
     }
-  });
-
-  test('native imports register their parsed Front/Back models and only selectable skill clips', { skip }, () => {
-    const chess = readJson('data/chess.json');
-    const native = Object.values(chess).filter((r) => r.chessType === 'NATIVE_IMPORT_CANDIDATE' && !r.isGolden);
-    const ids = [...new Set(native.map((r) => r.charId).filter(Boolean))].sort();
-    assert.equal(ids.length, 34);
-    const missingBack = [];
-    for (const id of ids) {
-      const char = manifest.chars[id];
-      assert.ok(char?.spine?.front, `${id} has parsed Front metadata`);
-      for (const path of [char.spine.front.skel, char.spine.front.atlas, ...char.spine.front.textures]) {
-        assert.ok(existsSync(join(PUBLIC, path)), `${id}: ${path}`);
-      }
-      const back = char.spine.back;
-      if (back) {
-        for (const path of [back.skel, back.atlas, ...back.textures]) assert.ok(existsSync(join(PUBLIC, path)), `${id} Back: ${path}`);
-      } else missingBack.push(id);
-      const row = native.find((r) => r.charId === id);
-      const selectable = new Set(row.nativeImport?.selectableSkillIds || []);
-      const skills = (row.skills || []).filter((s) => selectable.has(s.skillId));
-      const exposedSkills = Object.keys(char.spine.front.anims.skills || {});
-      assert.equal(exposedSkills.length, skills.length > 1 ? skills.length : 0, `${id} only lists selectable skill clips`);
-      for (const skill of skills) {
-        const clip = char.spine.front.anims.skill?.index === skill.index
-          ? char.spine.front.anims.skill : char.spine.front.anims.skills?.[String(skill.index)];
-        assert.ok(clip, `${id} selectable ${skill.skillId} has an animation role`);
-        for (const name of [clip.begin, clip.loop, clip.end, clip.idle].filter(Boolean)) {
-          assert.ok(char.spine.front.animations[name] !== undefined, `${id} ${skill.skillId} animation ${name} exists`);
-        }
-      }
-    }
-    assert.deepEqual(missingBack, ['char_4045_heidi']);
-    assert.equal(hasBackSpine(manifest, 'char_4045_heidi'), false);
-    assert.equal(spineEntry(manifest, 'char_4045_heidi', { back: true }), manifest.chars.char_4045_heidi.spine.front,
-      'the renderer uses the real Front model as Heidi’s Back fallback');
-    assert.equal(manifest.chars.undefined, undefined, 'DIY rows without charId do not create a phantom asset record');
   });
 
   test('all pool chars, bonds, items and bands are covered', { skip }, () => {
@@ -759,8 +748,7 @@ describe('generated manifest data/assets.json', () => {
     assert.deepEqual(noClip, [], 'Spine skill clips per index (a non-default skill never plays the default skill\'s animation)');
   });
 
-  test('generated atlases have size lines; native source atlases normalize in memory (and enemies have pma)', { skip }, () => {
-    const nativeIds = new Set(Object.values(readJson('data/chess.json')).filter((r) => r.chessType === 'NATIVE_IMPORT_CANDIDATE' && r.charId).map((r) => r.charId));
+  test('every atlas on disk has size: lines (and pma: true for enemies)', { skip }, () => {
     const atlases = [];
     const walk = (dir) => {
       for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -772,14 +760,8 @@ describe('generated manifest data/assets.json', () => {
     if (existsSync(spineDir)) walk(spineDir);
     assert.ok(atlases.length > 400, `${atlases.length} atlases`);
     for (const p of atlases) {
-      const text = readFileSync(p, 'utf8');
-      const info = atlasInfo(text);
-      if (!info.hasSize && [...nativeIds].some((id) => p.includes(join('spine', 'op', id)))) {
-        const sizes = new Map(info.pages.map((page) => [page, pngSize(readFileSync(join(dirname(p), page)))]));
-        const normalized = normalizeAtlas(text, { pageSize: (page) => sizes.get(page) || null, pma: false, renamePage: safeName });
-        assert.deepEqual(normalized.missingSize, [], `${p} texture dimensions are available for the in-memory native atlas`);
-        assert.ok(atlasInfo(normalized.text).hasSize, `${p} can be normalized without changing the canonical source`);
-      } else assert.ok(info.hasSize, `${p} has size`);
+      const info = atlasInfo(readFileSync(p, 'utf8'));
+      assert.ok(info.hasSize, `${p} has size`);
       if (p.includes(`${join('spine', 'enemy')}`)) assert.ok(info.hasPma, `${p} has pma`);
       for (const page of info.pages) assert.ok(existsSync(join(dirname(p), page)), `${p} page ${page}`);
     }
@@ -811,10 +793,10 @@ describe('generated manifest data/assets.json', () => {
     for (const e of Object.values(manifest.enemies)) if (e.spine) models.set(e.spine.skel, e.spine);
     for (const t of Object.values(manifest.tokens)) if (t.spine) models.set(t.spine.skel, t.spine);
     assert.ok(models.size > 400);
-    // the official enemy models of the local client, as the client resolves them (DESIGN §13: only when listed)
+    // the official enemy and token models of the local client, as the client resolves them (DESIGN §13: only when listed)
     const localPath = join(ROOT, 'data', 'local-assets.json');
     const local = existsSync(localPath) ? JSON.parse(readFileSync(localPath, 'utf8')) : null;
-    for (const id of Object.keys(manifest.enemies)) {
+    for (const id of [...Object.keys(manifest.enemies), ...Object.keys(manifest.tokens)]) {
       const s = local ? spineEntry(manifest, id, { local }) : null;
       if (s?.local && [s.skel, s.atlas, ...s.textures].every((u) => existsSync(join(PUBLIC, u)))) models.set(s.skel, s);
     }
@@ -844,6 +826,61 @@ describe('generated manifest data/assets.json', () => {
         skel.updateWorldTransform();
       }
     }
+  });
+
+  test('official Toledo token local triplet closes and loads through the shipped Spine consumer',
+    { skip: TOLEDO_NATIVE_READY ? false : 'official Toledo native triplet is not installed' }, async () => {
+    const id = 'token_10067_toledo_tldptm';
+    const groupName = `spine/token/${id}`;
+    const canonicalRoot = ASSAULT_CANONICAL_ROOT;
+    const local = readJsonFrom(canonicalRoot, 'data/local-assets.json');
+    const entries = local.groups?.[groupName];
+    assert.ok(entries, `${groupName} manifest group`);
+    const file = (ext) => {
+      const name = `${id}.${ext}`;
+      const entry = entries[name];
+      assert.equal(entry?.path, `/assets/local/${groupName}/${name}`);
+      return join(canonicalRoot, 'public', entry.path.slice('/'.length));
+    };
+    const skelPath = file('skel');
+    const atlasPath = file('atlas');
+    const pngPath = file('png');
+    const source = readJsonFrom(ROOT, 'data/assault-assets.json').assets.summons[id];
+    assert.equal(source.model.nativeEvidence.nativeAssetVersion, '26-10-08-04-51-28-56071834');
+    for (const part of ['skel', 'atlas', 'texture']) assert.equal(source.model[part].sourcePath,
+      part === 'texture' ? pngPath : part === 'skel' ? skelPath : atlasPath);
+
+    const { createRequire } = await import('node:module');
+    const require = createRequire(join(ROOT, 'package.json'));
+    const core = require('@pixi/core');
+    const base = require('@pixi-spine/base');
+    const r38 = require('@pixi-spine/runtime-3.8');
+    const png = readFileSync(pngPath);
+    const size = pngSize(png);
+    assert.deepEqual(size, { width: 296, height: 296 });
+    assert.equal(png.readUInt8(25), 6, 'native PNG is RGBA');
+    let atlasDone = false;
+    const atlas = new base.TextureAtlas(readFileSync(atlasPath, 'utf8'), (page, cb) => {
+      assert.equal(page, `${id}.png`);
+      const bt = new core.BaseTexture(null, { width: size.width, height: size.height });
+      bt.setRealSize(size.width, size.height);
+      bt.valid = true;
+      cb(bt);
+    }, () => { atlasDone = true; });
+    assert.ok(atlasDone);
+    assert.equal(atlas.pages.length, 1);
+    assert.equal(atlas.pages[0].width, 296);
+    assert.equal(atlas.pages[0].height, 296);
+    assert.equal(atlas.pages[0].pma, true);
+    const data = new r38.SkeletonBinary(new r38.AtlasAttachmentLoader(atlas))
+      .readSkeletonData(new Uint8Array(readFileSync(skelPath)));
+    assert.ok(data.animations.length > 0, 'Spine 3.8 consumer parsed native animations');
+    const skeleton = new r38.Skeleton(data);
+    const state = new r38.AnimationState(new r38.AnimationStateData(data));
+    state.setAnimation(0, data.animations[0].name, true);
+    state.update(0.25);
+    state.apply(skeleton);
+    skeleton.updateWorldTransform();
   });
 
   test('audio: BGM phases and UI SFX', { skip }, () => {

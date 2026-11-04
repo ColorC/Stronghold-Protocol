@@ -4,9 +4,10 @@
 // auto-close rule.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { publicResourcePath, resolveStylesheetHref } from '../helpers/public-resources.mjs';
 
 import { checkLoadout, MODULE_NONE } from '../../shared/protocol.js';
 import { PHASE } from '../../shared/constants.js';
@@ -43,7 +44,8 @@ test('parseStored: tolerant of junk, keeps structurally valid entries; toStored 
 test('exportPayload / serializeExport: versioned envelope, entries copied; parseImport round trip', () => {
   const entries = { [INSIDE]: { skill: 0 }, [SWIRE]: { module: SWIRE_ALT } };
   const p = exportPayload(entries, { now: Date.UTC(2026, 9, 3, 4, 5, 6) });
-  assert.deepEqual(Object.keys(p).sort(), ['count', 'entries', 'exportedAt', 'kind', 'v'], 'exactly the envelope, no unused field');
+  assert.deepEqual(Object.keys(p).sort(), ['count', 'entries', 'exportedAt', 'kind', 'ops', 'v'], 'exactly the envelope (0.2.2: + the 潜能 / 练度 ops), no unused field');
+  assert.deepEqual(p.ops, {}, 'no settings: an empty map (an import then resets the settings to the defaults)');
   assert.equal(p.kind, LOADOUT_EXPORT_KIND);
   assert.equal(p.v, LOADOUT_VERSION);
   assert.equal(p.count, 2);
@@ -262,7 +264,7 @@ test('sync: welcome sends the sanitised loadout; edits are debounced; identical 
   const s = installLoadoutSync({ net, timers: T, target, getChessReady: async () => CHESS, lookupChess: get });
   net.emit('welcome', {});
   await T.advance(100);
-  assert.deepEqual(net.sent, [{ t: 'room.loadout', entries: { [INSIDE]: { skill: 0 } } }], 'stale entry dropped');
+  assert.deepEqual(net.sent, [{ t: 'room.loadout', entries: { [INSIDE]: { skill: 0 } }, ops: {} }], 'stale entry dropped (no 潜能 / 练度 set: ops {})');
   assert.equal(target.get().sync, 'synced');
   target.set({ entries: { [INSIDE]: { skill: 0 }, [SWIRE]: { module: SWIRE_ALT } } });
   target.set({ entries: { [INSIDE]: { skill: 0 }, [SWIRE]: { module: MODULE_NONE } } });
@@ -365,7 +367,10 @@ test('untimed phases show no countdown: the "无倒计时" placeholder of Countd
   const css = readFileSync(path.join(ROOT, 'public/css/screens/loadout.css'), 'utf8');
   assert.match(css, /\.countdown\[aria-label="无倒计时"\]\s*\{\s*display:\s*none;/);
   const html = readFileSync(path.join(ROOT, 'public/index.html'), 'utf8');
-  assert.match(html, /<link rel="stylesheet" href="\/css\/screens\/loadout\.css" \/>/, 'loaded on every page');
+  const href = html.match(/<link rel="stylesheet" href="([^"]*loadout\.css)" \/>/)?.[1];
+  const resolved = resolveStylesheetHref(href, 'css/screens/loadout.css');
+  assert.deepEqual(resolved, { root: '/css/screens/loadout.css', mounted: '/stronghold/assault/css/screens/loadout.css', resource: 'css/screens/loadout.css' }, 'relative URL resolves at root and under the application mount');
+  assert.ok(existsSync(publicResourcePath(resolved.resource)), 'the stylesheet exists in the public asset tree');
   // contract with ui/components.js: a missing deadline renders the Countdown with exactly that aria-label (or nothing)
   const comp = readFileSync(path.join(ROOT, 'public/js/ui/components.js'), 'utf8');
   const fn = comp.slice(comp.indexOf('export function Countdown'), comp.indexOf('export function Countdown') + 2500);
@@ -480,7 +485,7 @@ test('sync: an empty loadout is sent without loading chess.json (no 1.6 MB downl
   const s = installLoadoutSync({ net, timers: T, target, getChessReady: async () => { loads++; return CHESS; }, lookupChess: get, notify: () => {} });
   net.emit('welcome', {});
   await T.advance(100);
-  assert.deepEqual(net.sent, [{ t: 'room.loadout', entries: {} }]);
+  assert.deepEqual(net.sent, [{ t: 'room.loadout', entries: {}, ops: {} }]);
   assert.equal(loads, 0);
   await net.reply();
   target.set({ entries: { [INSIDE]: { skill: 0 } } });

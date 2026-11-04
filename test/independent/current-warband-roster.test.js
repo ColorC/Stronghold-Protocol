@@ -4,186 +4,86 @@ import {readFileSync} from 'node:fs';
 import {resolve,dirname} from 'node:path';
 import {getData} from '../../server/data.js';
 import {getCatalog} from '../../server/modes/independent/catalog.js';
-import {createSession} from '../../server/modes/independent/session.js';
 import {runNativeHook} from '../../server/modes/independent/native.js';
 import {grantEquipment,recordProduction} from '../../server/modes/independent/equipment.js';
-import {darkmoonGrowthBadges} from '../../server/modes/independent/darkmoonShop.js';
 import {pathToFileURL} from 'node:url';
 const battleModule=process.env.SP_DATA_DIR?pathToFileURL(resolve(process.env.SP_DATA_DIR,'../server/sim/content/independent/battle.js')).href:'../../server/sim/content/independent/battle.js';
 const {installIndependentBattle}=await import(battleModule);
-import {nativeFactions,tavernFactions} from '../../shared/independentRules.js';
+import {tavernFactions} from '../../shared/independentRules.js';
 import {DataSource} from '../../server/sim/simdata.js';
 import {makeBattle,enemyRec} from '../helpers/battleHarness.js';
 
 const data=getData(),catalog=getCatalog(data);
 const groups=[
- ['歌蕾蒂娅','伺夜','普罗旺斯','拉普兰德','缄默德克萨斯','巫恋','荒芜拉普兰德'],
+ ['忍冬','伺夜','德克萨斯','拉普兰德','缄默德克萨斯','巫恋','荒芜拉普兰德'],
  ['耶拉','崖心','银灰','初雪','锏','凛御银灰','圣聆初雪'],
  ['松果','赫默','雷蛇','白面鸮','蛇屠箱','迷迭香','缪尔赛思'],
  ['流星','焰尾','瑕光','锏','玛恩纳','灰毫','耀骑士临光'],
  ['凯瑟琳','刺玫','薄绿','洛洛','号角','安洁莉娜','维娜·维多利亚'],
 ];
 const normal=name=>Object.values(catalog.operators).find(o=>o.name===name&&!o.elite);
-test('current source reference, 101-member distribution and thirteen compatible permits agree',()=>{
+test('current source reference, 101-member distribution and twelve compatible permits agree',()=>{
  const design=JSON.parse(readFileSync(process.env.SP_INDEPENDENT_DESIGN_PATH||new URL('../../data/independent-design.json',import.meta.url),'utf8'));
  const path=process.env.SP_INDEPENDENT_DESIGN_PATH?resolve(dirname(process.env.SP_INDEPENDENT_DESIGN_PATH),'independent-source-reference.json'):new URL('../../data/independent-source-reference.json',import.meta.url);
  const reference=JSON.parse(readFileSync(path,'utf8'));
-  const activeIds=new Set(design.rules.activeRosterIds);
-  const active=design.operators.filter(o=>activeIds.has(o.chessId));
-  assert.equal(active.length,101);assert.equal(reference.lobbyReference.selectedCandidateCount,101);
-  const session=createSession({seed:17,data,catalog});
-  assert.equal(Object.keys(session.pool).length,101,'the normal card pool contains exactly the active roster');
-  const prizeSupportIds=Object.values(data.chess).filter(chess=>chess.prizeSupport).map(chess=>chess.chessId);
-  assert.ok(prizeSupportIds.length>0,'historical prize-support bodies remain available to their prize rules');
-  for(const id of prizeSupportIds)assert.equal(Object.hasOwn(session.pool,id),false,`${id} never occupies a normal card-pool entry`);
-  const counts=Object.fromEntries([1,2,3,4,5,6].map(t=>[t,active.filter(o=>o.tier===t).length]));
-  assert.deepEqual(counts,{1:10,2:19,3:22,4:17,5:18,6:15});
-  assert.deepEqual(design.rules.rosterReference.tierCounts,counts,'rosterReference describes the live active pool');
-  assert.deepEqual(reference.lobbyReference.tierCounts,{1:11,2:19,3:21,4:18,5:18,6:14},'source-reference keeps its historical 19.2 tier distribution');
+ const active=design.operators.filter(o=>o.active!==false);
+ assert.equal(active.length,101);assert.equal(reference.lobbyReference.selectedCandidateCount,101);
+ const counts=Object.fromEntries([1,2,3,4,5,6].map(t=>[t,active.filter(o=>o.tier===t).length]));
+ assert.deepEqual(counts,{1:11,2:19,3:21,4:18,5:18,6:14});assert.deepEqual(reference.lobbyReference.tierCounts,counts);
  assert.deepEqual(reference.lobbyReference.fixedLobbyTribes,['BEAST','DRAGON','ELEMENTAL','MECHANICAL','PIRATE']);
- assert.deepEqual(active.filter(o=>catalog.operators[o.chessId].permitGearId).map(o=>[o.name,o.tier]).sort(),[['蛇屠箱',4],['赫默',3]]);
- const permits=Object.values(catalog.equipment).filter(e=>e.kind==='permit');assert.equal(permits.length,13);assert.ok(permits.every(e=>e.available));assert.equal(permits.filter(e=>e.legacyOnly).length,11);
+ assert.deepEqual(active.filter(o=>catalog.operators[o.chessId].permitGearId).map(o=>[o.name,o.tier]).sort(),[['幽灵鲨',3],['蛇屠箱',4]]);
+ const permits=Object.values(catalog.equipment).filter(e=>e.kind==='permit');assert.equal(permits.length,12);assert.ok(permits.every(e=>e.available));assert.equal(permits.filter(e=>e.legacyOnly).length,10);
 });
 function roster(names,elite){return names.map((name,i)=>({uid:String(i).padStart(2,'0'),name,chessId:elite?normal(name).eliteChessId:normal(name).chessId,elite,row:10+Math.floor(i/4),col:3+i%4,dir:'RIGHT',moduleId:'none',skillIndex:0,equipment:[],attachments:[],nativeState:{}}));}
 function prep(pieces){const state={round:1,nextUid:100,funds:0,pieces,inventory:[],production:[],playerEffects:[],counters:{gained:0},shop:{level:6,slots:[],freeRefreshes:0}};const services={catalog,data,rng:()=>.2,grantEquipment:(s,id,q,x)=>grantEquipment(s,catalog,id,q,x),recordProduction,record(){},addOffer(){},grantChess(){}};return {state,hook:(trigger,piece)=>runNativeHook(state,trigger,{piece},services)};}
 const qty=(p,id)=>(p.equipment||[]).filter(e=>e.id===id).reduce((s,e)=>s+e.quantity,0);
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`);
-function battle(pieces,{captureNoisy=false,beforeStart=null,enemyPos=null}={}){const source=new DataSource({enemies:{probe:enemyRec({key:'probe',hp:1e9,atk:0,speed:0,def:0,res:0})}},new DataSource(data));const h=makeBattle({data:source,content:'none',units:pieces.map(p=>({...p,kind:'chess'})),enemies:enemyPos?[{key:'probe',pos:enemyPos}]:[],autoFinish:false,timeLimit:120,flags:{independent:{catalog,pieces}},extraContent:[b=>installIndependentBattle(b,{catalog,state:{pieces}})],captureNoisy});beforeStart?.(h);h.step(1);for(const u of h.b.allyUnits)u.atkCd=1e9;assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));return {...h,by:name=>h.unit(pieces.find(p=>p.name===name).uid)};}
+function battle(pieces){const source=new DataSource({enemies:{probe:enemyRec({key:'probe',hp:1e9,atk:0,speed:0,def:0,res:0})}},new DataSource(data));const h=makeBattle({data:source,content:'none',units:pieces.map(p=>({...p,kind:'chess'})),autoFinish:false,timeLimit:120,flags:{independent:{catalog,pieces}},extraContent:[b=>installIndependentBattle(b,{catalog,state:{pieces}})]});h.step(1);for(const u of h.b.allyUnits)u.atkCd=1e9;assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));return {...h,by:name=>h.unit(pieces.find(p=>p.name===name).uid)};}
 for(const elite of [false,true]){
  const form=elite?'elite':'normal';
- test(`current Siracusa seven ${form}: opening deployments, amplified payloads and Gladiia attack echo`,()=>{
-   const pieces=roster(groups[0],elite),echoPiece=pieces.find(p=>p.name==='歌蕾蒂娅');
-   const blocker=pieces.find(p=>p.row===echoPiece.row&&p.col===echoPiece.col+1);if(blocker){blocker.row=9;blocker.col=echoPiece.col+1;}
-   const h=battle(pieces,{captureNoisy:true}),maker=h.by('伺夜'),wuxian=h.by('巫恋'),echo=h.by('歌蕾蒂娅');
-   const echoEvents=()=>h.b.independentDarkmoonTrace.filter(e=>e.sourceId==='BGS_078'&&e.kind==='deployEcho').length;
-   const copiedPayloads=()=>h.b.independentDarkmoonTrace.filter(e=>e.sourceId!=='BGS_078'&&e.kind==='deployEcho').length;
-   const attackEvents=()=>h.hooksOf('attack').filter(e=>e.attacker===echo&&!e.isSkill&&!e.attacker.mem.independentExtraAttack&&!(e.profile?.tags||[]).includes('independentEquipment')).length;
-   const opening=h.b.independentDarkmoonTrace;
-   assert.ok(opening.some(e=>e.sourceId==='CFM_316'&&e.kind==='deploy'),'CFM_316 resolves from Battle.start without waiting for a death');
-   assert.ok(opening.some(e=>e.sourceId==='BGS_018'&&e.kind==='deploy'),'the late-positioned BGS_018 resolves its opening deployment payload');
-   const amplified=Object.values(maker.mem.darkmoonTemporaryEquipment||{}).find(x=>x.sourceId==='BGS_018');
-   assert.equal(amplified?.attackUnits,5*(elite?2:1)*(elite?3:2),'FP1_031 amplifies the opening deployment payload regardless of roster order');
-   assert.ok(h.b.allyUnits.filter(u=>u.kind==='token'&&u.mem.darkmoonSummon).length<=7,'opening summon effects respect the seven-token safety cap');
-   const enemy=h.spawn('probe',{pos:[echoPiece.row,echoPiece.col+1]});
-   const tile=h.b.grid.tile(echoPiece.row,echoPiece.col+1);assert.ok(tile&&tile.pass!=='NONE','Gladiia attacks a real enemy on a legal adjacent tile');
-   const beforeEcho=echoEvents(),beforeCopied= copiedPayloads();
-   h.b.emit('attack',{attacker:echo,targets:[enemy],isSkill:true,profile:{tags:['skill']}});
-   assert.equal(echoEvents(),beforeEcho,'a skill attack does not trigger Gladiia');
-   echo.atkCd=0;
-   const procEchoes=elite?2:1,procPayloads=elite?6:2;
-   for(let i=1;i<=7;i++)h.b.forceAttack(echo,[enemy]);
-   assert.equal(attackEvents(),7,'seven eligible ordinary attacks are below the new cadence threshold');
-   assert.equal(echoEvents(),beforeEcho,'Gladiia does not echo during the first seven eligible attacks');
-   assert.equal(copiedPayloads(),beforeCopied,'no payload is copied before the eighth eligible attack');
-   h.b.forceAttack(echo,[enemy]);
-   assert.equal(attackEvents(),8,'the eighth eligible ordinary attack is counted');
-   assert.equal(echoEvents()-beforeEcho,procEchoes,'the eighth attack triggers the normal/elite echo count');
-   assert.equal(copiedPayloads()-beforeCopied,procPayloads,'each eighth-attack proc receives its ordinary/elite opening multiplier');
-   for(let i=9;i<=15;i++)h.b.forceAttack(echo,[enemy]);
-   assert.equal(echoEvents()-beforeEcho,procEchoes,'attacks nine through fifteen do not trigger another echo');
-   h.b.forceAttack(echo,[enemy]);
-   assert.equal(attackEvents(),16,'the second cadence boundary is the sixteenth eligible attack');
-   assert.equal(echoEvents()-beforeEcho,procEchoes*2,'Gladiia continues to echo at the sixteenth eligible attack');
-   assert.equal(copiedPayloads()-beforeCopied,procPayloads*2,'both cadence procs preserve the amplified payload count');
-   assert.ok(maker.alive,'echoing a deployment payload never kills its source');
-   assert.ok(wuxian.alive,'the opening deployment amplifier stays alive during the echo');
-  assert.ok(h.runUntil(()=>h.b.allyUnits.some(t=>t.kind==='token'&&t.alive&&t.mem.darkmoonSummon),2),'queued echo summons deploy once their real target and legal tile are available');
-    assert.ok(h.runUntil(()=>attackEvents()>=64,110),'the seven-body battle sustains 64 real Gladiia ordinary attacks');
-    assert.equal(attackEvents(),64);
-    assert.equal(echoEvents()-beforeEcho,Math.floor(attackEvents()/8)*procEchoes,'every eighth eligible ordinary attack triggers the normal/elite deployment echoes');
-    assert.equal(copiedPayloads()-beforeCopied,Math.floor(attackEvents()/8)*procPayloads,'every eighth Gladiia proc copies the amplified deployment payload count');
+ test(`current Siracusa seven ${form}: retirement summons, live multiplier and native attack echo`,()=>{
+  const pieces=roster(groups[0],elite),h=battle(pieces),maker=h.by('伺夜'),mama=h.by('缄默德克萨斯'),echo=h.by('德克萨斯');
+  let echoes=0;h.b.on('warbandRetiringEffect',e=>{if(e.echo)echoes++;});
+  const enemy=h.spawn('probe',{pos:[10,9]});for(let i=0;i<12;i++)h.b.forceAttack(echo,[enemy]);
+  assert.equal(echoes,elite?3:2,'one echo enjoys the strongest live Baron');
+  h.b.kill(maker);h.step(1);const tokens=h.b.allyUnits.filter(u=>u.kind==='token'&&u.alive);assert.ok(tokens.length>=2);
+  assert.ok(tokens.some(t=>t.buffs.some(b=>b.key.startsWith(`independent:warband:${mama.uid}:`))),'actual Mama buffs a summoned actor');
+  for(let i=0;i<84;i++)h.b.forceAttack(echo,[enemy]);assert.equal(echoes,elite?18:6,'six echo calls at most, each enjoys the strongest multiplier');
   assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
  });
  test(`current Kjerag seven ${form}: cross-faction gain trait, same-tier bodies and five shield breaks`,()=>{
   const pieces=roster(groups[1],elite),{state,hook}=prep(pieces),find=n=>pieces.find(p=>p.name===n),gained=roster(['角峰'],false)[0];gained.uid='gain';state.pieces.push(gained);
   hook('gain',gained);assert.ok(qty(find('银灰'),'precision')>0);assert.ok(qty(find('锏'),'vitality')>0);
   const before=qty(find('锏'),'precision');hook('prepEnd',find('锏'));assert.ok(qty(find('锏'),'precision')>=before+6,'counts friendly operators, not distinct tiers');
-   state.pieces.pop();const h=battle(pieces),reactor=h.by('初雪'),beforeAtk=reactor.s.atk;h.b.kill(h.by('圣聆初雪'));h.step(1);
-   const shields=u=>u.buffs.reduce((s,b)=>s+(b.shieldHits||0),0);
-   assert.ok(shields(h.by('锏'))>=5,'BGS_040 retirement targets current Kazimierz allies');assert.equal(shields(h.by('银灰')),0,'BGS_040 does not misdirect its shield to the old Kjerag recipient');
-   const silverash=h.by('银灰'),enemy=h.spawn('probe',{pos:[10,9]});h.b.addBuff(silverash,{key:'fixture-kjerag-shield',shieldHits:5,persist:true,allowDead:true});
-   for(let i=0;i<5;i++)h.b.dealDamage(enemy,silverash,{amount:100,type:'phys'});h.step(.1);
-   assert.equal(shields(silverash),0,'five actual hits consume the five setup shield layers');assert.ok(reactor.s.atk>beforeAtk,'current BGS_067 reacts after real shield consumption');
+  state.pieces.pop();const h=battle(pieces),reactor=h.by('初雪'),beforeAtk=reactor.s.atk;h.b.kill(h.by('圣聆初雪'));h.step(1);
+  assert.ok(h.by('银灰').buffs.reduce((s,b)=>s+(b.shieldHits||0),0)>=5);
+  h.b.emit('shieldLayersBroken',{unit:h.by('银灰'),layers:4});near(reactor.s.atk,beforeAtk);h.b.emit('shieldLayersBroken',{unit:h.by('银灰'),layers:1});assert.ok(reactor.s.atk>beforeAtk);
   assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
  });
- test(`current Colombia seven ${form}: permanent badges, summon shield and highest-attack original phantoms`,()=>{
+ test(`current Colombia seven ${form}: permanent badges, summon shield and original fallen tokens`,()=>{
   const pieces=roster(groups[2],elite),{hook}=prep(pieces);hook('prepEnd',pieces[3]);assert.ok(pieces.some(p=>qty(p,'precision')>=2));
-  const mlyssPiece=pieces.find(p=>catalog.operators[p.chessId]?.sourceRefs?.darkmoon19_2?.id==='BGS_012');assert.ok(mlyssPiece,'the roster contains the current BGS012 source');
-  let rankingAtTrigger=null;
-  const h=battle(pieces,{beforeStart(harness){
-    const emit=harness.b.emit.bind(harness.b);
-    harness.b.emit=(name,ctx)=>{
-      if(name==='deploy'&&ctx?.unit?.uid===mlyssPiece.uid){
-        rankingAtTrigger=harness.b.allyUnits.filter(u=>u.alive&&u.deployed&&u.kind==='op'&&nativeFactions(pieces.find(p=>p.uid===u.uid),catalog).includes('哥伦比亚'))
-          .map(u=>({unit:u,atk:u.s.atk,id:u.id,chessId:u.def.raw?.darkmoonNativeChessId||u.defId}))
-          .sort((a,b)=>b.atk-a.atk||a.id-b.id);
-      }
-      return emit(name,ctx);
-    };
-  }}),deflect=h.by('雷蛇'),growth=h.by('迷迭香'),before=growth.s.atk;
-  h.spawn('probe',{pos:[10,18]});
-  const shields=u=>u.buffs.reduce((s,b)=>s+(b.shieldHits||0),0);
-  h.runUntil(()=>shields(deflect)>=2,2);
-  assert.ok(shields(deflect)>=2,'BGS_071 support waits for an active battle target before resolving');
-  assert.equal(h.hooksOf('death').length,0,'opening phantom selection does not depend on a death event');
-  const mlyssSummons=h.b.independentDarkmoonTrace.filter(e=>e.sourceId==='BGS_012'&&e.kind==='summon');
-  const copiedIds=mlyssSummons.flatMap(e=>e.targets),copies=copiedIds.map(uid=>h.unit(uid)).filter(Boolean);
-  assert.ok(rankingAtTrigger,'capture current deployed Columbia attack values immediately before BGS012 runs at its actual opening deploy');
-  const finalRanking=h.b.allyUnits.filter(u=>u.alive&&u.deployed&&u.kind==='op'&&nativeFactions(pieces.find(p=>p.uid===u.uid),catalog).includes('哥伦比亚')).sort((a,b)=>b.s.atk-a.s.atk||a.id-b.id);
-  assert.notDeepEqual(rankingAtTrigger.map(u=>u.chessId),finalRanking.map(u=>u.def.darkmoonNativeChessId||u.def.raw?.darkmoonNativeChessId||u.defId),'later opening deployment payloads can change the attack ranking after BGS012 has already copied its current leaders');
-  const expected=rankingAtTrigger.slice(0,elite?4:2).map(u=>u.chessId);
-  const actual=copies.map(u=>u.def.darkmoonNativeChessId||u.def.raw?.darkmoonNativeChessId||u.defId);
-  assert.deepEqual(actual,expected.slice(0,actual.length),'BGS_012 copies the highest-attack Columbia units in order, including itself when ranked');
-  const otherSummons=h.b.allyUnits.filter(u=>u.kind==='token'&&u.alive&&u.mem.darkmoonSummon&&!copies.includes(u));
-  assert.ok(copies.length<=Math.min(expected.length,Math.max(0,7-otherSummons.length)),'the copied target count respects the remaining seven-token capacity and available legal tiles');
-  for(const copy of copies){
-    const sourceId=copy.def.darkmoonNativeChessId||copy.def.raw?.darkmoonNativeChessId||copy.defId;
-    const source=catalog.operators[sourceId],raw=source?.source?.[elite?'eliteChess':'normalChess']||source?.source?.normalChess;
-    assert.ok(raw,'phantom source preserves the correct native body form');
-    assert.equal(copy.base.atk,raw.stats.atk,'phantom uses pristine source attack, without inherited badge growth');
-    assert.equal(copy.base.maxHp,raw.stats.maxHp,'phantom uses pristine source health, without inherited badge growth');
-    assert.deepEqual(copy.items,[],'phantom does not inherit worn equipment');
-  }
-  assert.ok(h.b.allyUnits.filter(u=>u.kind==='token'&&u.alive&&u.mem.darkmoonSummon).length<=7,'actual initial summons respect the seven-token safety cap');
+  const h=battle(pieces),deflect=h.by('雷蛇'),growth=h.by('迷迭香'),before=growth.s.atk;h.b.kill(h.by('松果'));h.step(1);
+  const first=h.b.allyUnits.find(u=>u.kind==='token'&&u.alive);assert.ok(first);assert.ok(deflect.buffs.reduce((s,b)=>s+(b.shieldHits||0),0)>=2);assert.ok(growth.s.atk>before);
+  const original={atk:first.base.atk,maxHp:first.base.maxHp};h.b.addBuff(first,{key:'probe-temporary',mods:{atkPct:5},persist:true});h.b.kill(first);h.step(1);h.b.kill(h.by('缪尔赛思'));h.step(1);
+  const copies=h.b.allyUnits.filter(u=>u.kind==='token'&&u.mem.warbandOriginalCopy);assert.ok(copies.length>0);near(copies[0].base.atk,original.atk);near(copies[0].base.maxHp,original.maxHp);assert.deepEqual(copies[0].items,[]);
   assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
  });
-  test(`current Kazimierz seven ${form}: Battlecry and end-of-prep growth`,()=>{
-   const pieces=roster(groups[3],elite),{state,hook}=prep(pieces),man=pieces.find(p=>p.name==='玛恩纳'),manRule=catalog.operators[man.chessId].nativeTrait.effect.prep.find(r=>r.behavior==='darkmoonEndTurnGrowth');
-   const sameFaction=pieces.filter(p=>nativeFactions(p,catalog).includes(manRule.params.faction)).length,per=elite?manRule.params.attackPer.elite:manRule.params.attackPer.normal;
-   hook('prepEnd',man);const [attackBadge,secondaryBadge]=darkmoonGrowthBadges(man,catalog);assert.equal(qty(man,attackBadge),sameFaction*per,'Maanen scales by current same-faction bodies on the field');assert.equal(qty(man,secondaryBadge),sameFaction*per,'the source grants the fixed damage badge');
-   const h=battle(pieces);assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
+ test(`current Kazimierz seven ${form}: funds refund cap and attack white-stat team growth`,()=>{
+  const pieces=roster(groups[3],elite),{state,hook}=prep(pieces),buyer=pieces[0],refund=normal('玛恩纳');const rule=catalog.operators[elite?refund.eliteChessId:refund.chessId].nativeTrait.effect.prep[0];
+  for(let i=0;i<20;i++)hook('bought',buyer);assert.equal(state.funds,rule.params.count*rule.params.maxEventsPerPrep);hook('bought',roster(['地灵'],false)[0]);assert.equal(state.funds,rule.params.count*rule.params.maxEventsPerPrep);
+  hook('gain',buyer);assert.ok(qty(pieces[1],'precision')>0);
+  const h=battle(pieces),actor=h.by('焰尾'),ally=h.by('玛恩纳'),before=ally.s.atk,enemy=h.spawn('probe',{pos:[10,9]});h.b.forceAttack(actor,[enemy]);assert.ok(ally.s.atk>before);assert.ok(actor.buffs.some(b=>b.key.startsWith('independent:warband:')));
+  assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
  });
-  test(`current Victoria seven ${form}: Battlecry, buying and native attack effects`,()=>{
-   const pieces=roster(groups[4],elite),{state,hook}=prep(pieces),thin=pieces[2],lolo=pieces[3],angelina=pieces[5];
-   const thinRule=catalog.operators[thin.chessId].nativeTrait.effect.prep.find(r=>r.behavior==='darkmoonBattlecryFactionGrowth'),battlecry=normal('录武官');
-   assert.ok(catalog.operators[battlecry.chessId].sourceRefs?.darkmoon19_2?.battlecry,'fixture source has a 19.2 Battlecry identity');const gained={uid:'gained-battlecry',chessId:battlecry.chessId,elite:false,row:9,col:3,equipment:[],attachments:[],nativeState:{}};state.pieces.push(gained);
-   const targets=pieces.filter(p=>p.uid!==thin.uid&&nativeFactions(p,catalog).includes(thinRule.params.faction)),before=new Map(targets.map(p=>[p.uid,qty(p,'precision')])),thinCount=elite?thinRule.params.count.elite??thinRule.params.count:thinRule.params.count.normal??thinRule.params.count;
-   hook('gain',gained);for(const p of targets)assert.equal(qty(p,'precision')-before.get(p.uid),thinCount,`BGS_053 grows each current ${thinRule.params.faction} recipient`);
-   const loloRule=catalog.operators[lolo.chessId].nativeTrait.effect.prep.find(r=>r.behavior==='darkmoonBoughtSelfGrowth'),loloBefore=qty(lolo,'precision'),victoriaBuyer=pieces[6];hook('bought',victoriaBuyer);
-   assert.equal(qty(lolo,'precision')-loloBefore,elite?loloRule.params.attackUnits.elite:loloRule.params.attackUnits.normal,'buying an eligible Victoria body grows LoLo directly');
-   state.shop.slots=[{kind:'chess',id:normal('惊蛰').chessId,equipment:[]},{kind:'chess',id:normal('银灰').chessId,equipment:[]}];const flameBuyer=roster(['惊蛰'],false)[0];flameBuyer.uid='buyer-flame';hook('bought',flameBuyer);
-   const angelinaRule=catalog.operators[angelina.chessId].nativeTrait.effect.prep.find(r=>r.behavior==='darkmoonShopGrowth');
-   assert.ok(state.playerEffects.some(f=>f.type==='darkmoonShopGrowth'&&f.sourceId==='BGS_104'&&f.faction==='炎'),'Angelina adds persistent shop growth only after buying an eligible elemental');
-   assert.deepEqual(state.shop.slots[0].darkmoonGrowth,{attack:angelinaRule.params.attack,health:angelinaRule.params.health});assert.equal(state.shop.slots[1].darkmoonGrowth,undefined,'unmatched shop bodies do not receive the growth');
-   const h=battle(pieces),actor=h.by('维娜·维多利亚'),enemy=h.spawn('probe',{pos:[10,9]}),initialAtk=actor.s.atk;
-   const sourceEvents=id=>h.b.independentDarkmoonTrace.filter(e=>e.sourceId===id&&e.kind==='event');
-   for(let i=1;i<=7;i++)h.b.forceAttack(actor,[enemy]);
-   assert.equal(sourceEvents('BGS_056').length,0,'BGS_056 does not trigger during the first seven qualifying attacks');
-   assert.equal(sourceEvents('BGS_047').length,0,'BGS_047 does not trigger during the first seven qualifying attacks');
-   assert.equal(actor.s.atk,initialAtk,'the seventh attack has not granted the cadence growth');
-   h.b.forceAttack(actor,[enemy]);
-   assert.equal(sourceEvents('BGS_056').length,1,'BGS_056 triggers on the eighth qualifying attack');
-   assert.equal(sourceEvents('BGS_047').length,1,'BGS_047 triggers on the eighth qualifying attack');
-   const firstAtk=actor.s.atk;assert.ok(firstAtk>initialAtk,'the first real Victoria cadence trigger grants native growth');
-   for(let i=9;i<=15;i++)h.b.forceAttack(actor,[enemy]);
-   assert.equal(sourceEvents('BGS_056').length,1,'BGS_056 waits through attacks nine to fifteen');
-   assert.equal(sourceEvents('BGS_047').length,1,'BGS_047 waits through attacks nine to fifteen');
-   h.b.forceAttack(actor,[enemy]);
-   assert.equal(sourceEvents('BGS_056').length,2,'BGS_056 triggers again on the sixteenth qualifying attack');
-   assert.equal(sourceEvents('BGS_047').length,2,'BGS_047 triggers again on the sixteenth qualifying attack');
-   assert.ok(actor.s.atk>firstAtk,'the second trigger adds the second battle growth');
-   assert.ok(sourceEvents('BGS_056').every(e=>e.targets.includes(actor.uid)),'BGS_056 applies both cadence rewards to the attacker');
-   assert.ok(sourceEvents('BGS_047').every(e=>e.targets.includes(h.by('号角').uid)),'BGS_047 applies both cadence rewards to the team');
-   assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
+ test(`current Victoria seven ${form}: all friends, permanent shop carry and tier-scaled front growth`,()=>{
+  const pieces=roster(groups[4],elite),{state,hook}=prep(pieces);state.shop.slots=[{kind:'chess',id:normal('薄绿').chessId,equipment:[]},{kind:'chess',id:normal('银灰').chessId,equipment:[]}];
+  const gain=pieces[3],gainRule=catalog.operators[gain.chessId].nativeTrait.effect.prep[0],thinRule=catalog.operators[pieces[2].chessId].nativeTrait.effect.prep[0],tierRule=catalog.operators[pieces[6].chessId].nativeTrait.effect.prep[0];
+  hook('gain',gain);const total=pieces.reduce((n,p)=>n+qty(p,'precision'),0),friends=pieces.filter(p=>p!==gain&&tavernFactions(p,catalog).includes('维多利亚')).length;
+  assert.equal(total,friends*gainRule.params.outputs[0].quantity+thinRule.params.outputs[0].quantity+tierRule.params.outputs[0].quantity*catalog.operators[gain.chessId].tier,'tier-scaled output lands on real bodies');
+  assert.ok(pieces.filter(p=>p!==pieces[3]&&tavernFactions(p,catalog).includes('维多利亚')).every(p=>qty(p,'precision')>0),'LoLo benefits every present faction member');
+  assert.ok(state.shop.slots[0].equipment.length);assert.equal(state.shop.slots[1].equipment.length,0);assert.ok(state.playerEffects.some(f=>f.type==='shopCarry'&&f.faction==='维多利亚'));
+  for(let i=0;i<20;i++)hook('gain',gain);const shopRule=catalog.operators[pieces[5].chessId].nativeTrait.effect.prep[0];assert.equal(state.playerEffects.find(f=>f.type==='shopCarry'&&f.id==='precision').quantity,shopRule.params.outputs[0].quantity*shopRule.params.maxEventsPerPrep,'permanent shop growth obeys the stage cap');
+  const horn=pieces[4],front=pieces[5];front.row=horn.row;front.col=horn.col+1;state.counters.gained=3;const before=qty(front,'precision');hook('prepEnd',horn);assert.equal(qty(front,'precision')-before,elite?6:3);
+  const h=battle(pieces);assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
  });
 }

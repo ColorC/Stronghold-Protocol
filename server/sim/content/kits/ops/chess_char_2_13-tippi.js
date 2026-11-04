@@ -70,11 +70,7 @@ export default {
           if (s2 && sk && sk.ready && !sk.active && unit.canAct && !unit.s.flags.silence && sk.activate('TAKE_DAMAGE')) dodged = dodgeable;
           else if (dodgeable && st > 0 && battle.time - last + 1e-9 >= st && battle.rng.chance(p)) dodged = true;
           last = battle.time;
-          if (dodged) {
-            dmg.cancel = true;
-            battle.fx('dodge', { x: unit.x, y: unit.y, id: unit.id });
-            battle.emit('dodge', { source: ctx.source, target: unit, dmg });
-          }
+          if (dodged) { dmg.cancel = true; battle.fx('dodge', { x: unit.x, y: unit.y, id: unit.id }); }
         }, 5);
       } }],
     };

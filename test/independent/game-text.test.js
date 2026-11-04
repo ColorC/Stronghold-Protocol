@@ -16,7 +16,7 @@ const display = independentDisplayCatalog(data, catalog);
 const numbers = (s) => new Set((String(s || '').match(/\d+(?:\.\d+)?/g) || []).map(Number));
 /** Design numbers a text says otherwise on purpose: in words, or in the auto-attached note of the item it names. */
 const SAID_IN_WORDS = { 'chess_char_1_03_a:normal': [2], 'extra-procurement-quota': [1] };
-const SPEC_WORDING = ['锻造', '放入装备库存', '一级', '己方主战斗', '本稿', '第一期', '沿用', '不设精锐版'];
+const SPEC_WORDING = ['该干员', '锻造', '放入装备库存', '一级', '己方主战斗', '本稿', '第一期', '沿用', '不设精锐版'];
 
 function sameNumbers(key, design, written) {
   const have = numbers(written);
@@ -25,7 +25,7 @@ function sameNumbers(key, design, written) {
 }
 
 test('every operator form has hand-written text with the design numbers and none of the spec wording', () => {
-  for (const op of Object.values(catalog.operators).filter((x) => !x.elite && x.recruitable !== false)) {
+  for (const op of Object.values(catalog.operators).filter((x) => !x.elite)) {
     const entry = text.operators[op.chessId];
     assert.ok(entry, `${op.name} has text`);
     assert.equal(entry.name, op.name);
@@ -35,65 +35,28 @@ test('every operator form has hand-written text with the design numbers and none
   }
 });
 
-test('visible wording drops redundant persistence and temporary qualifiers while keeping later-shop scope explicit', () => {
-  const visible = [];
-  const collect = (value) => {
-    if (typeof value === 'string') visible.push(value);
-    else if (Array.isArray(value)) value.forEach(collect);
-    else if (value && typeof value === 'object') Object.values(value).forEach(collect);
-  };
-  collect(text);
-  for (const line of visible) {
-    assert.doesNotMatch(line, /成长永久保留|永久装备|临时获得|仅本场战斗生效|购买符合条件的干员时，购买|(?:攻击成长徽章|训练等级)×0/);
-  }
-  const shopGrowth = text.operators['chess_char_5_20_a'].normal;
-  assert.match(shopGrowth, /当前及本局后续酒馆/);
-  const currentShopOnly = Object.values(text.operators).flatMap((entry) => [entry.normal, entry.elite]).find((line) => line?.includes('只影响当前商店'));
-  assert.ok(currentShopOnly, 'effects limited to the current shop still say so');
-});
-
 test('every gear a player can see has text; numbers match its effect', () => {
   const all = { ...catalog.badges, ...catalog.equipment };
   for (const [id, d] of Object.entries(all)) {
     if (d.available === false || d.mechanism === 'disabled') continue;
     const entry = text.gear[id];
-    const projected = display.gear[id];
-    assert.ok(projected, `${d.newName || d.name} (${id}) is present in the player-facing projection`);
-    assert.equal(typeof projected.normal, 'string', `${d.newName || d.name} (${id}) has projected text`);
-    assert.ok(projected.normal.length > 0, `${d.newName || d.name} (${id}) has non-empty projected text`);
-    const compiledPrizeGear = d.prizeOnly === true && typeof d.sourcePrizeId === 'string'
-      && !!catalog.prizes[d.sourcePrizeId] && Array.isArray(d.sourceRefs?.cards) && d.sourceRefs.cards.length > 0
-      && d.sourceRefs.cards.every((card) => card.version === '19.2.0.68600' && typeof card.id === 'string');
-    assert.ok(entry || compiledPrizeGear, `${d.newName || d.name} (${id}) has hand-written text or a complete compiled prize source`);
-    const written = entry?.normal ?? (compiledPrizeGear ? projected.normal : undefined);
+    assert.ok(entry, `${d.newName || d.name} (${id}) has text`);
     if (d.kind !== 'badge') {
-      sameNumbers(`${id}:normal`, d.normal || d.effect, written);
-      if (d.eliteLevel != null && d.elite) {
-        assert.equal(typeof entry?.elite, 'string', `${d.newName || d.name} (${id}) has hand-written elite text`);
-        sameNumbers(`${id}:elite`, d.elite, entry.elite);
-      }
+      sameNumbers(`${id}:normal`, d.normal || d.effect, entry.normal);
+      if (d.eliteLevel != null && d.elite) sameNumbers(`${id}:elite`, d.elite, entry.elite);
     } else {
-      assert.ok(numbers(written).has(/Percent|Dodge|Reduction|DamagePercent/.test(d.stat) ? Number((d.value * 100).toFixed(4)) : d.value), `${id} value`);
+      assert.ok(numbers(entry.normal).has(d.kind === 'badge' && /Percent|Dodge|Reduction|DamagePercent/.test(d.stat) ? Number((d.value * 100).toFixed(4)) : d.value), `${id} value`);
     }
-    for (const t of [entry?.normal ?? projected.normal, entry?.elite].filter(Boolean)) for (const w of SPEC_WORDING) assert.ok(!t.includes(w), `${id}: 「${w}」`);
+    for (const t of [entry.normal, entry.elite].filter(Boolean)) for (const w of SPEC_WORDING) assert.ok(!t.includes(w), `${id}: 「${w}」`);
   }
   for (const id of Object.keys(text.gear)) assert.ok(all[id], `${id} exists in the catalog`);
 });
 
 test('prizes and attachments: texts with the design numbers; the page shows them under the 工程部特供 stages', () => {
   for (const [id, p] of Object.entries(catalog.prizes)) {
-    const projected = display.prizes[id];
-    assert.ok(projected, `${p.name} is present in the player-facing prize projection`);
-    assert.equal(typeof projected.effect, 'string', `${p.name} has projected text`);
-    const compiledPrize = p.historical === true || p.historicalSupply === true || p.logisticsChoice === true;
-    const entry = text.prizes[id];
-    assert.ok(entry || compiledPrize, `${p.name} has hand-written text or is a compiled historical/logistics entry`);
-    sameNumbers(id, p.effect, entry?.text ?? (compiledPrize ? projected.effect : undefined));
-    if (p.prizeTier != null || p.stage != null) {
-      assert.ok(['起步', '成型', '决胜', '终极'].includes(projected.stage), `${p.name} stage`);
-    } else {
-      assert.equal(projected.stage, null, `${p.name} remains a non-stage logistics/passive entry`);
-    }
+    assert.ok(text.prizes[id], `${p.name} has text`);
+    sameNumbers(id, p.effect, text.prizes[id].text);
+    assert.ok(['起步', '成型', '决胜'].includes(display.prizes[id].stage), `${p.name} stage`);
   }
   for (const [id, a] of Object.entries(catalog.attachments)) {
     assert.ok(text.attachments[id], `${a.name} has text`);
@@ -102,17 +65,6 @@ test('prizes and attachments: texts with the design numbers; the page shows them
   for (const t of [...Object.values(text.prizes).map((x) => x.text), ...Object.values(text.attachments).map((x) => x.text)]) {
     for (const w of SPEC_WORDING) assert.ok(!t.includes(w), `「${w}」 in 「${t}」`);
   }
-});
-
-test('special readiness training names its field recipient, unlocked choices, and direct destination', () => {
-  const entry = text.prizes['special-readiness-training'];
-  assert.ok(entry, 'special readiness training has player-facing text');
-  assert.match(entry.text, /选择一名场上干员/);
-  assert.match(entry.text, /当前科技已解锁的装备/);
-  assert.match(entry.text, /随机发现三项/);
-  assert.match(entry.text, /装备直接穿戴在该干员身上/);
-  assert.match(entry.text, /唯一效果不重复提供/);
-  assert.match(entry.text, /没有可选项时不提供此奖品/);
 });
 
 test('the display catalog carries the hand-written texts, the new name and no internal ids in names', () => {

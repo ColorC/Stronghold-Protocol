@@ -1,5 +1,5 @@
 // Player report after 0.1.0, client part: "隐藏boss还没打就出了造成50%伤害播报". Besides the server's share (fixed in
-// server/match/Match.js, test/match/bosshit-ticker.test.js) the ticker strip plays its queue in order, TICKER_MS (5.2 s)
+// server/match/match/bossRounds.js, test/match/bosshit-ticker.test.js) the ticker strip plays its queue in order, TICKER_MS (5.2 s)
 // per line and up to QUEUE_MAX (4) lines behind: in a headless-Chrome run the Final Assault's "超过20%" / "超过80%"
 // lines played 2–8 s into the Hidden Core with its leader at 96 % / 53 %. A leader-damage line (BOSS_HIT) now plays
 // only during the round it came in, and a player's newer BOSS_HIT line of the round supersedes their older one, queued
@@ -187,4 +187,23 @@ test('main.js stamps every ticker line with its type, player and round; the stri
   assert.match(comp, /useStore\(\(s\) => s\.match\?\.public\?\.round/, 'the strip follows m.public.round');
   for (const fn of ['enqueueTickerLines(', 'pruneTickerLines(', 'nextTickerLine(']) assert.ok(comp.includes(fn), `the strip uses ${fn})`);
   assert.match(comp, /\}, \[round\]\);/, 'a round change re-filters the queue and the line on screen');
+});
+
+test('a status line (`replaces`, Assault\'s current phase) takes the place of the older one of its kind on screen and in the queue at once', () => {
+  const phase = (text) => ({ id: ++ids, text, replaces: 'assault-phase' });
+  const news = line('SHOP_LEVEL', null, '某博士将调度中心等级提升为6级');
+  assert.equal(tickerSupersedes(phase('战斗中'), phase('战斗准备')), true);
+  assert.equal(tickerSupersedes(phase('战斗中'), news), false, 'another kind of line is not replaced');
+  assert.equal(tickerSupersedes(news, phase('战斗准备')), false);
+  assert.equal(tickerSupersedes(line('A', null), line('B', null)), false, 'lines without the key are untouched');
+  // the older phase line is on screen: the newer one replaces it there, the queue is untouched
+  let r = enqueueTickerLines([news], phase('战斗准备'), [phase('战斗中')]);
+  assert.equal(r.cur.text, '战斗中');
+  assert.deepEqual(texts(r.queue), ['某博士将调度中心等级提升为6级']);
+  // phases passed through quickly while another line plays: only the last of them waits, news keeps its place
+  r = enqueueTickerLines([], news, [phase('选择路线'), phase('补给'), phase('战斗准备'), phase('战斗中')]);
+  assert.deepEqual(texts(r.queue), ['战斗中']);
+  assert.equal(r.cur, news);
+  r = enqueueTickerLines(r.queue, news, [news].map(() => line('SHOP_LEVEL', null, '另一条')));
+  assert.deepEqual(texts(r.queue), ['战斗中', '另一条']);
 });

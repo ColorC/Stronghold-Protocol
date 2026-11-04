@@ -13,6 +13,30 @@ const approx = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) <= eps, `${a} ≈
 const guard = (o = {}) => chessRec({ id: 't_guard', profession: 'WARRIOR', stats: { atk: 300, blockCnt: 2 }, skill: null, ...o });
 const walker = (o = {}) => enemyRec({ key: 'enemy_walker', hp: 1e6, speed: 1, ...o });
 
+test('shieldAbsorbed observer reports numeric shield and layer prevention only when subscribed',()=>{
+  const h=makeBattle({defs:{chess:{a:guard({id:'a',stats:{maxHp:1000,atk:0,def:0,res:0,bat:1,blockCnt:1},skill:null})}},units:[{chessId:'a',row:9,col:5}],content:'none'});
+  h.step();
+  const unit=h.unit('a'),enemy=h.spawn('shield-observer',{pos:[unit.y,unit.x+1],def:enemyRec({key:'shield-observer',hp:1e6,atk:0,def:0,res:0,speed:0})});
+  const observed=[];h.b.on('shieldAbsorbed',event=>observed.push({amount:event.amount,kind:event.kind,layers:event.layers,buff:event.buff.key}));
+  const hp=unit.hp;
+  h.b.addBuff(unit,{key:'observer-hp-shield',shield:50});
+  h.b.dealDamage(enemy,unit,{amount:30,type:'phys',canDodge:false});
+  assert.equal(unit.hp,hp);
+  assert.equal(unit.buffs.find(row=>row.key==='observer-hp-shield').shield,20);
+  assert.deepEqual(observed.map(({amount,kind})=>({amount,kind})),[{amount:30,kind:'shield'}]);
+  h.b.addBuff(unit,{key:'observer-hit-layer',shieldHits:1});
+  h.b.dealDamage(enemy,unit,{amount:40,type:'phys',canDodge:false});
+  assert.equal(unit.hp,hp,'a one-hit layer prevents the entire hit');
+  assert.deepEqual(observed.map(({amount,kind})=>({amount,kind})),[{amount:30,kind:'shield'},{amount:40,kind:'layer'}]);
+  h.b.dealDamage(enemy,unit,{amount:40,type:'phys',canDodge:false});
+  assert.equal(unit.buffs.find(row=>row.key==='observer-hp-shield')?.shield??0,0);
+  assert.equal(unit.hp,hp-20,'only the amount left after the remaining shield reaches HP');
+  assert.equal(observed.at(-1).amount,20);
+  const count=observed.length;
+  h.b.dealDamage(enemy,unit,{amount:10,type:'phys',canDodge:false});
+  assert.equal(observed.length,count,'hits without a shield emit no observer event');
+});
+
 test('initial deployment order: by column from the left, top to bottom within a column (PRTS 从上到下>从左到右 as a scan); the right boss side from its own left', () => {
   // PRTS 卫戍协议/帮助 §作战阶段 "按从上到下>从左到右的顺序部署" (since 2026-03-14; act 1: "从左到右>从下到上") — down each column,
   // the columns from the left: the order PRTS gives the 阿戈尔 devour ("更靠左和靠上"). Until 0.1.3: the top row first
@@ -68,6 +92,18 @@ test('battle.redeploy(unit) is instant and free; retreat() keeps respawn timers'
   assert.equal(h.result().perPlayer.p1.deaths, 0, 'retreat is not a death');
   assert.equal(h.b.redeploy(g), true);
   assert.equal(g.alive, true);
+});
+
+test('retreating event preserves whether removal is a dying retreat', () => {
+  const h = makeBattle({ defs: { chess: { t_guard: guard() } }, units: [{ chessId: 't_guard', row: 9, col: 5 }], content: 'none' });
+  h.step();
+  const g = h.unit('t_guard');
+  let payload = null;
+  h.b.on('retreating', (event) => { payload = event; });
+  h.b.retreat(g, { reason: 'retreat', dying: true });
+  assert.equal(payload?.unit, g);
+  assert.equal(payload?.reason, 'retreat');
+  assert.equal(payload?.dying, true);
 });
 
 test('pathing: enemies walk around crates and re-path when a crate is destroyed', () => {
@@ -375,10 +411,8 @@ test('snapshot / event wire format (DESIGN §8.2)', () => {
   const kinds = new Set(Object.values(EV));
   for (const ev of allEv) assert.ok(kinds.has(ev[0]), `known event ${ev[0]}`);
   const spawn = allEv.find((e) => e[0] === 'spawn');
-  for (const key of ['avatar', 'defId', 'dir', 'facing', 'golden', 'id', 'kind', 'maxHp', 'name', 'ownerId', 'side', 'spine', 'tier', 'x', 'y']) {
-    assert.notEqual(spawn[1][key], undefined, `required UnitInfo field ${key}`);
-  }
-  assert.ok(Number.isInteger(spawn[1].row) && Number.isInteger(spawn[1].col), 'upstream board tile metadata retained');
+  assert.deepEqual(Object.keys(spawn[1]).filter((k) => spawn[1][k] !== undefined).slice(0, 15).sort(),
+    ['avatar', 'defId', 'dir', 'facing', 'golden', 'id', 'kind', 'maxHp', 'name', 'ownerId', 'side', 'spine', 'tier', 'x', 'y'].sort());
   assert.ok(['UP', 'RIGHT', 'DOWN', 'LEFT'].includes(spawn[1].dir), 'UnitInfo.dir is a direction');
   // ['atk', src, tgt, projKind, attackId, isSkill 0|1] / ['dmg', tgt, amount, type, sourceId|null, attackId]: the fields
   // after projKind / type are appended (shared/protocol.js EV; the renderer's FX registry); a hit carries its attack's id

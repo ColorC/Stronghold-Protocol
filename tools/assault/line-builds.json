@@ -1,0 +1,336 @@
+{
+  "schema": "assault-line-builds/v3",
+  "source": "bazaar-adaptation.md §7; same-line signature/talent event families",
+  "adjacencyLinks": {
+    "char_140_whitew": {
+      "profession": "WARRIOR"
+    },
+    "char_253_greyy": {
+      "profession": "CASTER"
+    },
+    "char_332_archet": {
+      "ammo": true
+    },
+    "char_128_plosis": {},
+    "char_1021_kroos2": {
+      "ammo": true
+    },
+    "char_190_clour": {
+      "profession": "SNIPER"
+    },
+    "char_440_pinecn": {
+      "profession": "SNIPER"
+    },
+    "char_242_otter": {},
+    "char_4017_puzzle": {
+      "profession": "PIONEER"
+    },
+    "char_102_texas": {
+      "profession": "PIONEER"
+    },
+    "char_222_bpipe": {
+      "profession": "PIONEER"
+    },
+    "char_107_liskam": {},
+    "char_155_tiger": {
+      "profession": "WARRIOR",
+      "resource": "attack"
+    },
+    "char_127_estell": {
+      "profession": "WARRIOR",
+      "resource": "heal"
+    }
+  },
+  "acceptanceLinks": {
+    "char_358_lisa": {
+      "kind": "aura",
+      "reason": "狐假虎威按原范围内停顿目标提供脆弱，控制标签是光环选择条件。"
+    },
+    "char_4079_haini": {
+      "kind": "aura",
+      "reason": "原范围普通敌人脆弱；击杀强化属于签名技能，不是第二条事件连线。"
+    },
+    "char_393_toledo": {
+      "kind": "aura",
+      "reason": "原范围被阻挡目标脆弱；阻挡是光环选择条件。"
+    },
+    "char_4114_harold": {
+      "kind": "aura",
+      "reason": "范围内重症友军元素保护；元素损伤门槛是光环选择条件。"
+    },
+    "char_4222_taraxa": {
+      "kind": "aura",
+      "reason": "范围内飞行友军庇护及阻挡；飞行是光环选择条件。"
+    },
+    "char_1012_skadi2": {
+      "kind": "aura",
+      "reason": "覆盖友军时的自攻增益由持续范围选择决定，不是召唤事件触发。"
+    },
+    "char_4056_titi": {
+      "kind": "aura",
+      "reason": "原天赋为米诺斯及萨尔贡攻速光环；梦醒及梦境次数属于签名技能。"
+    },
+    "char_2026_yu": {
+      "kind": "aura",
+      "reason": "对阻挡敌人持续法伤与灼燃、自身庇护；火墙次数属于签名技能。"
+    },
+    "char_1001_amiya2": {
+      "kind": "aura",
+      "reason": "全队攻防光环，施放后加倍；击杀属性属于一次本场状态技能。"
+    },
+    "char_1016_agoat2": {
+      "kind": "aura",
+      "reason": "全队生命及元素损伤保护；治疗标签属于技能配对，不是额外事件扳机。"
+    }
+  },
+  "lines": {
+    "director_svash2": {
+      "line": "redeploy",
+      "faction": "kjerag",
+      "producers": [
+        "char_127_estell",
+        "char_237_gravel",
+        "char_154_morgan",
+        "char_155_tiger",
+        "char_143_ghost",
+        "char_173_slchan",
+        "char_4036_forcer",
+        "char_1028_texas2",
+        "char_1033_swire2",
+        "char_474_glady",
+        "char_437_mizuki",
+        "char_264_f12yin",
+        "char_4037_demetr",
+        "char_4082_qiubai",
+        "char_4145_ulpia",
+        "char_4116_blkkgt",
+        "char_1014_nearl2",
+        "char_263_skadi",
+        "char_4000_jnight",
+        "char_346_aosta",
+        "char_341_sntlla",
+        "char_446_aroma",
+        "char_4013_kjera",
+        "char_4211_snhunt",
+        "char_174_slbell",
+        "char_4032_provs",
+        "char_4019_ncdeer",
+        "char_4027_heyak",
+        "char_1046_sbell2",
+        "char_291_aglina",
+        "char_385_finlpp",
+        "char_102_texas",
+        "char_349_chiave",
+        "char_496_wildmn",
+        "char_4222_taraxa",
+        "char_112_siege",
+        "char_4026_vulpis",
+        "char_479_sleach",
+        "char_420_flamtl",
+        "char_4087_ines"
+      ],
+      "consumers": [
+        "char_337_utage",
+        "char_356_broca",
+        "char_002_amiya",
+        "char_290_vigna",
+        "char_171_bldsk",
+        "char_222_bpipe",
+        "char_1001_amiya2"
+      ],
+      "finishers": [
+        "char_140_whitew",
+        "char_4191_tippi",
+        "char_4064_mlynar",
+        "char_4137_udflow",
+        "char_220_grani"
+      ],
+      "moduleKeywords": [
+        "redeploy",
+        "charge",
+        "cold",
+        "firstTriggers"
+      ]
+    },
+    "director_ironmn": {
+      "line": "workshop",
+      "faction": "victoria",
+      "producers": [
+        "char_451_robin",
+        "char_4016_kazema",
+        "char_4048_doroth",
+        "char_1019_siege2",
+        "char_1014_nearl2",
+        "char_484_robrta",
+        "char_344_beewax",
+        "char_242_otter",
+        "char_254_vodfox",
+        "char_4162_cathy",
+        "char_391_rosmon",
+        "char_1035_wisdel",
+        "char_4117_ray",
+        "char_2015_dusk",
+        "char_1012_skadi2",
+        "char_393_toledo",
+        "char_108_silent",
+        "char_427_vigil",
+        "char_249_mlyss",
+        "char_4179_monstr",
+        "char_1034_jesca2"
+      ],
+      "consumers": [
+        "char_451_robin",
+        "char_4016_kazema",
+        "char_437_mizuki",
+        "char_4048_doroth",
+        "char_4082_qiubai",
+        "char_4116_blkkgt",
+        "char_469_indigo",
+        "char_440_pinecn",
+        "char_183_skgoat",
+        "char_204_platnm",
+        "char_1021_kroos2",
+        "char_346_aosta",
+        "char_242_otter",
+        "char_1035_wisdel",
+        "char_4117_ray",
+        "char_358_lisa",
+        "char_1047_halo2",
+        "char_1012_skadi2",
+        "char_196_sunbr",
+        "char_349_chiave",
+        "char_4042_lumen",
+        "char_4056_titi",
+        "char_423_blemsh"
+      ],
+      "finishers": [
+        "char_154_morgan",
+        "char_155_tiger",
+        "char_451_robin",
+        "char_4016_kazema",
+        "char_437_mizuki",
+        "char_4048_doroth",
+        "char_4082_qiubai",
+        "char_4116_blkkgt",
+        "char_1019_siege2",
+        "char_1014_nearl2",
+        "char_4051_akkord",
+        "char_469_indigo",
+        "char_440_pinecn",
+        "char_1021_kroos2",
+        "char_346_aosta",
+        "char_344_beewax",
+        "char_388_mint",
+        "char_4040_rockr",
+        "char_391_rosmon",
+        "char_1035_wisdel",
+        "char_4117_ray",
+        "char_2015_dusk",
+        "char_196_sunbr",
+        "char_423_blemsh",
+        "char_4039_horn",
+        "char_1034_jesca2"
+      ],
+      "moduleKeywords": [
+        "summonReturn",
+        "summonCharge",
+        "summon",
+        "charge"
+      ],
+      "members": [
+        "char_154_morgan",
+        "char_155_tiger",
+        "char_451_robin",
+        "char_4016_kazema",
+        "char_437_mizuki",
+        "char_4048_doroth",
+        "char_4082_qiubai",
+        "char_4116_blkkgt",
+        "char_1019_siege2",
+        "char_1014_nearl2",
+        "char_4051_akkord",
+        "char_469_indigo",
+        "char_440_pinecn",
+        "char_183_skgoat",
+        "char_484_robrta",
+        "char_204_platnm",
+        "char_1021_kroos2",
+        "char_346_aosta",
+        "char_344_beewax",
+        "char_388_mint",
+        "char_4040_rockr",
+        "char_242_otter",
+        "char_254_vodfox",
+        "char_4162_cathy",
+        "char_4045_heidi",
+        "char_391_rosmon",
+        "char_1035_wisdel",
+        "char_4117_ray",
+        "char_2015_dusk",
+        "char_358_lisa",
+        "char_1047_halo2",
+        "char_1012_skadi2",
+        "char_2023_ling",
+        "char_4072_ironmn",
+        "char_393_toledo",
+        "char_196_sunbr",
+        "char_349_chiave",
+        "char_4017_puzzle",
+        "char_108_silent",
+        "char_4114_harold",
+        "char_494_vendla",
+        "char_112_siege",
+        "char_222_bpipe",
+        "char_479_sleach",
+        "char_427_vigil",
+        "char_249_mlyss",
+        "char_4042_lumen",
+        "char_1020_reed2",
+        "char_4056_titi",
+        "char_4179_monstr",
+        "char_423_blemsh",
+        "char_4039_horn",
+        "char_1034_jesca2",
+        "char_220_grani"
+      ]
+    },
+    "director_angel2": {
+      "line": "ammo",
+      "faction": "laterano",
+      "producers": [
+        "char_1032_excu2",
+        "char_4231_clemnt",
+        "char_1021_kroos2",
+        "char_498_inside",
+        "char_4193_lemuen",
+        "char_1035_wisdel",
+        "char_1040_blaze2",
+        "char_401_elysm",
+        "char_497_ctable",
+        "char_4042_lumen",
+        "char_1034_jesca2",
+        "char_4194_rmixer"
+      ],
+      "consumers": [
+        "char_235_jesica",
+        "char_126_shotst",
+        "char_190_clour",
+        "char_366_acdrop",
+        "char_4100_caper",
+        "char_204_platnm",
+        "char_279_excu",
+        "char_103_angel",
+        "char_430_fartth"
+      ],
+      "finishers": [
+        "char_145_prove"
+      ],
+      "moduleKeywords": [
+        "ammo",
+        "reload",
+        "healing",
+        "ammoCapacity"
+      ]
+    }
+  }
+}

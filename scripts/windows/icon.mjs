@@ -1,16 +1,16 @@
-// scripts/windows/icon.mjs — the Workshop icon as a Windows .ico, drawn from the same shape as the page favicon.
+// scripts/windows/icon.mjs — the 进击 (assault) icon as a Windows .ico: the Workshop release's hexagon in the assault colours.
 //
-// public/independent.html uses an inline SVG favicon: a #101216 square (viewBox 24×24) with the #ff9a2e hexagon
-// `M12 3 21 8v8l-9 5-9-5V8z`. The launcher exe and the installers need an .ico, and the repo has no binary icon, so the
-// polygon is rasterised here (supersampled for anti-aliasing) instead of committing a binary that could drift from it.
+// The shape is the hexagon `M12 3 21 8v8l-9 5-9-5V8z` (viewBox 24×24) of the Workshop favicon, here red #e5484d on the
+// assault page's #0d1214 (public/assault.html theme-color), so the two installed products tell apart. The launcher
+// exe and the installers need an .ico, and the repo has no binary icon, so the polygon is rasterised here (supersampled for anti-aliasing) instead of committing a binary that could drift from it.
 //
 // Every size below 256 is stored as a classic 32-bit DIB (what every icon consumer understands); 256×256 is stored
 // as PNG, which Windows Vista+ expects for that size and which keeps the file small.
 
 import zlib from 'node:zlib';
 
-const BACKGROUND = [0x10, 0x12, 0x16];
-const HEXAGON = [0xff, 0x9a, 0x2e];
+const BACKGROUND = [0x0d, 0x12, 0x14];
+const HEXAGON = [0xe5, 0x48, 0x4d];
 /** Hexagon vertices in the favicon's 24×24 viewBox. */
 const POLYGON = [[12, 3], [21, 8], [21, 16], [12, 21], [3, 16], [3, 8]];
 export const ICON_SIZES = Object.freeze([16, 20, 24, 32, 40, 48, 64, 256]);
@@ -94,7 +94,7 @@ function dib(size, rgba) {
 }
 
 /** The complete .ico file. */
-export function workshopIco(sizes = ICON_SIZES) {
+export function productIco(sizes = ICON_SIZES) {
   const images = sizes.map((size) => (size >= 256 ? png(size, renderIcon(size, 4)) : dib(size, renderIcon(size))));
   const dir = Buffer.alloc(6 + 16 * sizes.length);
   dir.writeUInt16LE(1, 2); dir.writeUInt16LE(sizes.length, 4);
@@ -110,6 +110,6 @@ export function workshopIco(sizes = ICON_SIZES) {
 }
 
 /** A standalone PNG of the icon, to look at the shape without an icon viewer. */
-export function workshopPng(size = 256) {
+export function productPng(size = 256) {
   return png(size, renderIcon(size, 4));
 }

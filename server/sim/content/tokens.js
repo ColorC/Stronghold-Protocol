@@ -88,7 +88,7 @@
 // TOKEN_IDS; mapCharTalents and touchGospel (Touch's 攫升 / 超脱 and 恳切福音, shared with the Touch 补位 stand-in kit,
 // kits/ops/standin-acmedc.js).
 
-import { COLS, ROWS, MOVE_SCALE, FORCED_EXIT, BLOCK_RADIUS_SQ } from '../constants.js';
+import { COLS, ROWS, MOVE_SCALE, FORCED_EXIT } from '../constants.js';
 import { absoluteRangeKeys, sortEnemyTargets, canTargetEnemy } from '../targeting.js';
 import { bodyInKeys, bodyOnTile } from '../body.js';
 import { hasHp } from '../damage.js';
@@ -98,9 +98,6 @@ import { normDir, localOrder } from '../dir.js';
 import { SKILL_SUMMON_START_DEPLOY } from '../../../shared/constants.js';
 import { hypot } from '../detmath.js';
 import { atPotential } from '../../../shared/potential.js';
-import { Unit } from '../units.js';
-import { acquireTargets } from '../ai.js';
-import { resolveProfile } from '../professions.js';
 
 const num = (v, d = 0) => (typeof v === 'number' && Number.isFinite(v) ? v : (typeof v === 'string' && v.trim() !== '' && Number.isFinite(+v) ? +v : d));
 const GRID_3X3 = Object.freeze([[1, -1], [1, 0], [1, 1], [0, -1], [0, 0], [0, 1], [-1, -1], [-1, 0], [-1, 1]]);
@@ -371,8 +368,7 @@ function deployDocked(battle, u) {
   const stock = u.ownerUnit?.mem.summonStock;
   if (!stock || !(stock[u.defId] > 0) || u.alive || u.removed || battle.finished || !u.ownerUnit.alive) return false;
   const wait = u.mem.readyAt - battle.time;
-  const engagementReady = !battle.flags.independent || (u.tileR != null && tokenCanEngageAt(battle, u.ownerUnit, u.def, u.tileR, u.tileC));
-  if (wait > 1e-9 || !engagementReady || !battle.redeploy(u, { free: true })) {
+  if (wait > 1e-9 || !battle.redeploy(u, { free: true })) {
     if (!u.mem.dockRetry) {
       u.mem.dockRetry = true;
       battle.after(Math.max(wait, DOCK_RETRY), () => { u.mem.dockRetry = false; deployDocked(battle, u); }, { owner: u });
@@ -407,9 +403,7 @@ function inRectTile(battle, r, c) { return Number.isInteger(r) && Number.isInteg
  * unit's tile).
  */
 export function tileFree(battle, r, c) {
-  if (!inRectTile(battle, r, c) || battle.isReservedTile(r, c)) return false;
-  const occupant = battle._occ?.[r * COLS + c];
-  return !(occupant?.alive) && !battle.downOn?.(r, c);
+  return inRectTile(battle, r, c) && !battle.isReservedTile(r, c);
 }
 
 function mostAdvancedEnemy(battle) {
@@ -443,8 +437,7 @@ function countNear(list, r, c, rad = 1) {
 export function findSummonTile(battle, owner, placement = 'melee', opts = {}) {
   if (!owner || owner.tileR == null) return null;
   let keys;
-  if (opts.allBoard) keys = Array.from({ length: ROWS * COLS }, (_, index) => index);
-  else if (placement === 'adjacent') keys = absoluteRangeKeys(GRID_3X3, owner.tileR, owner.tileC, owner.dir, 0);
+  if (placement === 'adjacent') keys = absoluteRangeKeys(GRID_3X3, owner.tileR, owner.tileC, owner.dir, 0);
   else if (placement === 'plus') keys = absoluteRangeKeys(GRID_PLUS, owner.tileR, owner.tileC, owner.dir, 0);
   else if (opts.grid) keys = absoluteRangeKeys(opts.grid, owner.tileR, owner.tileC, owner.dir, 0);
   else keys = owner.rangeKeys || [];
@@ -460,7 +453,6 @@ export function findSummonTile(battle, owner, placement = 'melee', opts = {}) {
     const r = (k / COLS) | 0, c = k % COLS;
     if (!tileFree(battle, r, c)) continue;
     if (!battle.grid.canStand(r, c, { ranged: !melee })) continue;
-    if (opts.canUseTile && !opts.canUseTile(r, c)) continue;
     const gp = battle.grid.groundPassable(r, c, true) ? 1 : 0;
     if (placement === 'path' && !gp) continue;
     let cover = 0;
@@ -483,64 +475,6 @@ export function summonToken(battle, owner, tokenId, placement = 'melee', opts = 
   const tile = opts.tile ?? findSummonTile(battle, owner, placement, opts);
   if (!tile) return null;
   return battle.spawnToken(owner, tokenId, tile[0], tile[1], opts.spawn ?? {});
-}
-
-/** Return whether this exact token definition can select an active enemy from a candidate tile. */
-export function tokenCanEngageAt(battle, owner, def, r, c, dir = owner?.dir) {
-  if (!battle.enemies.some(e => e.alive && e.deployed)) return false;
-  const projected = tokenEngagementDef(def, owner);
-  const probe = new Unit({id:-1,side:'ally',kind:'token',def:projected,defId:def.id,ownerId:owner.ownerId,ownerUnit:owner,x:c,y:r,tileR:r,tileC:c,dir:dir||owner.dir,base:{...(projected.stats||{}),maxHp:projected.stats?.maxHp||1,atk:projected.stats?.atk||0,blockCnt:projected.stats?.blockCnt||0}});
-  probe.rangeGrid = projected.rangeGrid || [[0,0]];
-  probe.alive=true; probe.deployed=true; probe.ground=battle.grid.isLow(r,c); probe.blocking=[]; probe.kit={};
-  probe.profile=resolveProfile(def, def.profileTrait || null);
-  battle._refreshRange(probe);
-  const support=probe.profile?.noAttack||probe.profile?.dmgType==='heal';
-  if (support) return battle.enemies.some(e=>e.alive&&e.deployed);
-  if (acquireTargets(battle,probe,probe.profile).length) return true;
-  if(probe.s.blockCnt<=0)return false;
-  return battle.enemies.some(enemy=>{
-    if(!enemy.alive||!enemy.deployed||enemy.hidden||enemy.blockedBy)return false;
-    const flags=enemy.s.flags;
-    if(flags.unblockable||flags.levitate||flags.fear||flags.sleep)return false;
-    const r0=Math.round(enemy.y),c0=Math.round(enemy.x);
-    if(r<r0-1||r>r0+1||c< c0-1||c>c0+1||(!enemy.isFlying&&r!==r0&&c!==c0))return false;
-    const w=enemy.blockWeight??1;
-    if(!battle._blockerFor(probe,enemy,w))return false;
-    const dx=enemy.x-c,dy=enemy.y-r,k=enemy.isFlying?1+(probe.s.blockRadiusScale||0):1;
-    const radiusSq=enemy.isFlying?BLOCK_RADIUS_SQ.fly*k*k:BLOCK_RADIUS_SQ.ground;
-    if(!(dx*dx+dy*dy<radiusSq))return false;
-    // _checkBlock would set blockedBy before the normal target filter runs. Give only that target query a
-    // non-mutating blocked view so stealth is evaluated in the state the real collision creates.
-    const blockedView=Object.create(enemy);blockedView.blockedBy=probe;
-    return canTargetEnemy(probe,blockedView,probe.profile);
-  });
-}
-
-/** Queue a combat summon until a real target and legal tile exist; only deployment emits summon effects. */
-export function summonWhenEngageable(battle,owner,tokenId,def,opts={}) {
-  const placement=opts.placement||'near', support=!!opts.support;
-  const generation=owner.deploySeq;
-  const retainedEvent=!!opts.allowInactiveOwner;
-  let timer=null,done=false;
-  const attempt=()=>{
-    if(done)return null;
-    if(!retainedEvent&&(owner.removed||owner.deploySeq!==generation||!owner.alive||!owner.deployed)){done=true;timer?.cancel();return null;}
-    const hasEnemy=battle.enemies.some(e=>e.alive&&e.deployed);
-    if(!hasEnemy)return null;
-    const canUseTile=support?()=>true:(r,c)=>tokenCanEngageAt(battle,owner,def,r,c);
-    const tile=findSummonTile(battle,owner,placement,{allBoard:true,melee:def.position!=='RANGED',canUseTile});
-    if(!tile)return null;
-    const token=opts.onDeploy ? opts.onDeploy(tile) : battle.spawnToken(owner,tokenId,tile[0],tile[1],{...opts.spawn,def,anySource:true});
-    if(!token)return null;
-    done=true;timer?.cancel();
-    return token;
-  };
-  const immediate=attempt(); if(immediate)return immediate;
-  // Event-generated requests (for example a death payload) belong to the event,
-  // not the body that raised it. A null scheduler owner keeps that request alive
-  // through removal or a later deployment generation change.
-  timer=battle.every(0.1,attempt,{owner:retainedEvent?null:owner});
-  return null;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -754,25 +688,6 @@ const WOLF_RETURN_RETRY = 0.25;
 /** The 狼群领袖 talent of a 狼群 def (its 狼影 stack talent), else its first talent. */
 const wolfLeader = (def) => talentWith(def, 'vigil_wolf_t_1_enhance[trigger].max_stack_cnt') ?? def?.talents?.[0] ?? null;
 
-/** Pure pre-deploy projection of a wolf pack's initial shadow block; shared with its deploy effect. */
-export function wolfInitialBlock(def, owner) {
-  const leader = wolfLeader(def);
-  const bb = leader?.bb ?? {};
-  const perBlock = num(bb['vigil_wolf_t_1_enhance[trigger].block_cnt'] ?? bb.block_cnt, 1);
-  const mMax = String(leader?.description ?? '').match(/至多(\d+)只/);
-  const maxShadows = mMax ? +mMax[1] : 1 + num(bb['vigil_wolf_t_1_enhance[trigger].max_stack_cnt'], 0);
-  const text = (owner?.def?.talents || []).map((t) => t.description || '').join(' ');
-  const initial = text.match(/初始(两|二|\d+)只/);
-  const shadows = Math.max(1, Math.min(maxShadows, initial ? (/\d/.test(initial[1]) ? +initial[1] : 2) : maxShadows - 1));
-  return shadows * perBlock;
-}
-
-function tokenEngagementDef(def, owner) {
-  if (def?.id !== TOKEN_IDS.wolfPack) return def;
-  const blockCnt = Math.max(num(def.stats?.blockCnt, 0), wolfInitialBlock(def, owner));
-  return { ...def, stats: { ...def.stats, blockCnt } };
-}
-
 /**
  * “狼影” recovery time of a 狼群 def: its 狼群领袖 talent interval ("每25秒增加一只"; data — 25 s for both 伺夜 chess). The
  * growth cycle and the length of the 战术点形态. 0 when the data has none.
@@ -866,7 +781,9 @@ function wolfPack(bb, raw, def) {
     install(battle, unit) {
       unit.mem.wolfCapacity = maxShadows; // (b.snap `wolves`, snapshot.js wolfView: the pips under the HP bar)
       // initial shadows: 伺夜's talent text ("初始两只"), else one below the maximum
-      const initShadows = Math.max(1, Math.min(maxShadows, wolfInitialBlock(def, ownerOf(unit)) / perBlock));
+      const ot = (ownerOf(unit)?.def?.talents || []).map((t) => t.description || '').join(' ');
+      const mi = ot.match(/初始(两|二|\d+)只/);
+      const initShadows = Math.max(1, Math.min(maxShadows, mi ? (/\d/.test(mi[1]) ? +mi[1] : 2) : maxShadows - 1));
       onDeploy(battle, unit, () => {
         // back from its 战术点形态 (wolfReturnNow): 1 狼影 (PRTS 狼群 "从战术点形态转变为召唤物形态后拥有1只“狼影”") and a
         // fresh growth cycle; any other deployment: the initial count
@@ -886,7 +803,7 @@ function wolfPack(bb, raw, def) {
           }, { owner: unit });
         }
         const o = ownerOf(unit);
-        if (o && o.profile?.sub === 'tactician' && !unit.def?.raw?.darkmoonPrototypeTokenId) o.trait.reinforcement = unit;
+        if (o && o.profile?.sub === 'tactician') o.trait.reinforcement = unit;
       }, 20);
       // fatal with more than one 狼影: one is lost, full HP; on the last one the knock-out goes through — 战术点形态
       battle.on('fatal', (ctx) => {
@@ -1129,7 +1046,9 @@ function manifold(bb, raw, def) {
  * and a medic healed a hurt one.
  */
 export function champagneHold(battle, bomb) {
-  battle.addBuff(bomb, { key: 'token:champagneHold', flags: { noHeal: true, healFree: true }, persist: true, allowDead: true });
+  // PRTS 香槟炸弹: entity type 装置, not selected by ordinary auras/talents. The internal selection barrier has no
+  // visible status icon; it does not change the owner's explosion or the established HP protection (#476).
+  battle.addBuff(bomb, { key: 'token:champagneHold', flags: { noHeal: true, healFree: true, isolated: true }, persist: true, allowDead: true });
   battle.on('hit', (ctx) => { if (ctx.target === bomb) ctx.dmg.cancel = true; }, { owner: bomb, priority: 1000 });
   battle.on('elementHit', (ctx) => { if (ctx.target === bomb) ctx.dmg.cancel = true; }, { owner: bomb, priority: 1000 });
   battle.on('damaged', (ctx) => { if (ctx.target === bomb && bomb.alive) bomb.hp = bomb.s.maxHp; }, { owner: bomb, priority: 1000 });
@@ -1647,9 +1566,11 @@ function touchKit(bb, raw, def) {
 
 /**
  * Spawn a band map character (char_605_cmedic 预备干员-医疗 / char_613_acmedc Touch) at its stage position on the
- * player's half (data/stages.json `mapChars`; `_multi_only` positions only with a partner). Returns the unit or null.
+ * player's half (data/stages.json `mapChars`; `_multi_only` positions only with a partner). A prepared character may
+ * supply `preBattleAggroSeq` so its targeting order precedes the ordinary battle-start deployment. Returns the unit
+ * or null.
  */
-export function spawnMapChar(battle, playerId, tokenId, { alias = null } = {}) {
+export function spawnMapChar(battle, playerId, tokenId, { alias = null, preBattleAggroSeq = null } = {}) {
   const list = battle.stage?.raw?.mapChars ?? battle.stage?.mapChars ?? [];
   const ps = battle.getPlayer(playerId);
   const multi = battle.players.length > 1;
@@ -1666,7 +1587,7 @@ export function spawnMapChar(battle, playerId, tokenId, { alias = null } = {}) {
   for (const m of cands) {
     if (!tileFree(battle, m.pos[0], m.pos[1])) continue;
     // stage positions are field tiles: their direction is taken as it is (default RIGHT)
-    const u = battle.spawnToken(playerId, tokenId, m.pos[0], m.pos[1], { dir: normDir(m.dir) });
+    const u = battle.spawnToken(playerId, tokenId, m.pos[0], m.pos[1], { dir: normDir(m.dir), preBattleAggroSeq });
     if (u) return u;
   }
   return null;
@@ -1772,7 +1693,7 @@ export function tacticalPoint(battle, owner) {
 /** Make sure a tactician's 援军 is its real talent token (board piece, or a fresh summon on a tactical point). */
 function ensureReinforcement(battle, owner, tokenId) {
   // (split 流形 clones — this file's `isClone`, the 缪尔赛思 kit's `mlyssClone` — are never the 援军)
-  const mine = battle.allyUnits.filter((t) => t.kind === 'token' && t.defId === tokenId && t.ownerUnit === owner && !t.mem.isClone && !t.mem.mlyssClone && !t.def?.raw?.darkmoonPrototypeTokenId);
+  const mine = battle.allyUnits.filter((t) => t.kind === 'token' && t.defId === tokenId && t.ownerUnit === owner && !t.mem.isClone && !t.mem.mlyssClone);
   const live = mine.find((t) => t.alive);
   if (live) { owner.trait.reinforcement = live; return live; }
   // a 狼群 in its 战术点形态 is still the 援军 on the field: it comes back by its own timer (a 【移动】 of the owner fires
@@ -1809,10 +1730,10 @@ export function install(battle) {
   // deploy limit per owner (data deployLimit): a new summon withdraws the oldest one of the same kind
   battle.on('deploy', (ctx) => {
     const u = ctx.unit;
-    if (!u || u.kind !== 'token' || !u.ownerUnit || u.mem.isClone || u.def?.raw?.darkmoonPrototypeTokenId || !u.kit?.fromTokens || SKILL_SUMMON_UNCAPPED.has(u.defId)) return;
+    if (!u || u.kind !== 'token' || !u.ownerUnit || u.mem.isClone || !u.kit?.fromTokens || SKILL_SUMMON_UNCAPPED.has(u.defId)) return;
     const lim = deployLimitOf(u);
     if (!(lim >= 1) || !Number.isFinite(lim)) return;
-    const same = battle.allyUnits.filter((t) => t.alive && t.kind === 'token' && t.defId === u.defId && t.ownerUnit === u.ownerUnit && !t.mem.isClone && !t.def?.raw?.darkmoonPrototypeTokenId && t.kit?.fromTokens);
+    const same = battle.allyUnits.filter((t) => t.alive && t.kind === 'token' && t.defId === u.defId && t.ownerUnit === u.ownerUnit && !t.mem.isClone && t.kit?.fromTokens);
     if (same.length <= lim) return;
     same.sort((a, b) => a.deploySeq - b.deploySeq);
     for (const t of same.slice(0, same.length - lim)) {
@@ -1837,7 +1758,6 @@ export function install(battle) {
     // tactician 援军 = its talent token: board piece first; replaces the engine's generic 援军 when that one is in use
     const tac = toks.find((t) => TACTICIAN_TOKENS.has(t));
     if (tac && owner.profile?.sub === 'tactician') {
-      if (battle.flags.independent) owner.mem.nativeTacticianSummonTokenId = tac;
       const engineDefault = !!(owner.profile.install && owner.profile.install.name === 'installTactician');
       battle.on('deploy', (ctx) => {
         if (ctx.unit !== owner) return;

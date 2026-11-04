@@ -19,7 +19,7 @@ const TICKER_MS = 5200;
 const QUEUE_MAX = 4;
 
 /**
- * @typedef {{ id: number, text: string, at?: number, type?: string|null, playerId?: string|null, round?: number|null, priority?: number }} TickerLine
+ * @typedef {{ id: number, text: string, at?: number, type?: string|null, playerId?: string|null, round?: number|null, priority?: number, replaces?: string|null }} TickerLine
  */
 
 /**
@@ -34,13 +34,17 @@ export function tickerLineLive(line, round) {
 }
 
 /**
- * Whether `line` makes `old` redundant: both BOSS_HIT lines of the same (known) player from the same round. The newer one
- * names the higher threshold.
+ * Whether `line` makes `old` redundant: both BOSS_HIT lines of the same (known) player from the same round (the newer one
+ * names the higher threshold), or both status lines with the same `replaces` key.
  * @param {TickerLine|null} line
  * @param {TickerLine|null} old
  */
 export function tickerSupersedes(line, old) {
-  return !!line && !!old && line.type === 'BOSS_HIT' && old.type === 'BOSS_HIT'
+  if (!line || !old) return false;
+  // a status line (`replaces`: Assault's current phase) is news only while it is current: the newer one of its kind
+  // takes its place on screen and in the queue at once instead of waiting behind it
+  if (line.replaces != null && line.replaces === old.replaces) return true;
+  return line.type === 'BOSS_HIT' && old.type === 'BOSS_HIT'
     && line.playerId != null && line.playerId === old.playerId && line.round === old.round;
 }
 

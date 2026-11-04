@@ -52,7 +52,10 @@ export class BattlePlayers {
       try {
         const unit = this._createAllyFromInput(ps, u);
         if (unit && unit.kind === 'token' && !unit.ownerUnit && u.ownerUid != null) late.push([unit, u]);
-      } catch (e) { this._internalError('createUnit', e); }
+      } catch (e) {
+        if (this.assaultStrict) throw e;
+        this._internalError('createUnit', e);
+      }
     }
     // a token piece listed before its owner (board order is top→bottom) is linked once every unit exists, and takes
     // the owner-level variant (elite owners: `_b` stats) of the owner's loadout (DESIGN §16)
@@ -60,8 +63,7 @@ export class BattlePlayers {
       const owner = ps.units.find((x) => x.kind === 'op' && x.uid === inp.ownerUid);
       if (!owner) continue;
       t.ownerUnit = owner;
-      t.nativeOwnerGrowth = inp.ownerGrowth ?? owner.nativeGrowthStatus ?? null;
-      const def = inp.def ? null : this._tokenDef(inp.tokenId ?? inp.chessId, owner, null, t.nativeOwnerGrowth);
+      const def = inp.def ? null : this._tokenDef(inp.tokenId ?? inp.chessId, owner, null);
       if (!def || def === t.def) continue;
       const st = def.stats;
       t.def = def; t.defId = def.id; t.name = def.name; t.rangeGrid = def.rangeGrid;
@@ -86,7 +88,7 @@ export class BattlePlayers {
    * rows 2–5, the mirrored right half of a pair (whatever coordinates the player's input uses). Never the hand / 临时
    * 整备区 rows of a boss field (rows 0–1, inside BOSS_RECT) nor the other half of a 联防 or boss field. Moves that must
    * stay where the player could deploy read it (乌尔比安's S3 【移动】, kits/ops/chess_char_5_05-ulpia.js); the 突袭
-   * landing reads onFieldBoard (any player of this field).
+   * landing reads onFieldBoard (any player of this field), with a Raid-only multiplayer boss/hidden exception (§29.13).
    */
   onOwnBoard(ps, r, c) {
     if (!ps) return false;
@@ -105,7 +107,8 @@ export class BattlePlayers {
    * the players whose units this battle holds (a teammate eliminated before it or playing another field is not one).
    * Both halves on the two-helper 联防 field and on a Final Assault / Hidden Core pair field; the own half only for a
    * lone 联防 helper and on a solo boss field; never a boss field's hand / 临时整备区 rows. The 突袭 landing reads it
-   * (bonds/addon/battle.js raidTile — the owner's decision of 2026-10-07, DESIGN §26.1).
+   * (bonds/addon/battle.js raidTile — the owner's decision of 2026-10-07, DESIGN §26.1), then separately admits the
+   * empty deployment half in multiplayer boss/hidden battles only (§29.13); this general method is unchanged.
    */
   onFieldBoard(r, c) {
     for (const ps of this.players) if (this.onOwnBoard(ps, r, c)) return true;
@@ -138,12 +141,9 @@ export class BattlePlayers {
     const dir = this.mapDir(ps, inp.dir, !!inp.abs);
     if (inp.kind === 'token') {
       const owner = inp.ownerUid != null ? ps.units.find((x) => x.uid === inp.ownerUid) : null;
-      const def = this._tokenDef(inp.tokenId ?? inp.chessId, owner, inp.def, inp.ownerGrowth ?? owner?.nativeGrowthStatus ?? null);
+      const def = this._tokenDef(inp.tokenId ?? inp.chessId, owner, inp.def);
       if (!def) { this.log(`unknown token ${inp.tokenId}`); return null; }
-      const u = this._makeAlly(ps, def, 'token', r, c, { uid: inp.uid, ownerUnit: owner, dir, nativeOwnerGrowth: inp.ownerGrowth ?? owner?.nativeGrowthStatus ?? null });
-      u.ownerChessId = inp.ownerChessId ?? owner?.defId ?? null;
-      u.summonSourceText = inp.summonSourceText || null;
-      u.mem.independentSummon = inp.independentSummon === true;
+      const u = this._makeAlly(ps, def, 'token', r, c, { uid: inp.uid, ownerUnit: owner, dir });
       u.carry = inp.carryState ?? null;
       return u;
     }
@@ -156,16 +156,16 @@ export class BattlePlayers {
     if (inp.standIn === true) lo.standIn = true;
     if (inp.diy && typeof inp.diy === 'object') lo.diy = inp.diy;
     if (inp.standIn !== true && isPotential(inp.potential)) lo.potential = inp.potential;
-    const def = this.data.getChess(inp.chessId, lo);
+    const def = this.assaultStrict ? this.data.getChess(inp.chessId) : this.data.getChess(inp.chessId, lo);
     if (!def) { this.log(`unknown chess ${inp.chessId}${lo.diy ? ' (illegal 自选 pick)' : ''}`); return null; }
     // a DIY slot has no body of its own (甄选干员): it fights only as a 自选 piece (its `diy` pick)
     if (def.raw?.isDiy && !def.diyFor) { this.log(`自选 slot ${inp.chessId} without a pick`); return null; }
-    const u = this._makeAlly(ps, def, 'op', r, c, { uid: inp.uid, dir, nativeGrowthStatus: inp.nativeGrowthStatus ?? null });
+    const u = this._makeAlly(ps, def, 'op', r, c, { uid: inp.uid, dir });
     u.items = [...(inp.items ?? [])];
     u.carry = inp.carryState ?? null;
     // 练度 (自持有, 0.2.2): the owned operator's ×ATK / ×DEF / ×max HP (units.js Πmul) — never a 补位 stand-in's nor a
     // prototype 自选 pick's (another character than the one the player owns)
-    if (isCultivate(inp.cultivate) && !def.standInFor && !def.raw?.diyProto) {
+    if (!this.assaultStrict && isCultivate(inp.cultivate) && !def.standInFor && !def.raw?.diyProto) {
       const mul = typeof this.data.cultivateMul === 'function' ? this.data.cultivateMul(inp.cultivate) : null;
       if (mul) { u.cultivate = inp.cultivate; u.cultMul = Object.freeze({ ...mul }); u.markDirty(); }
     }
@@ -177,14 +177,12 @@ export class BattlePlayers {
    * for the owner — `owner` = the owning ally unit (its chess and its selected skill / module: getToken(id,
    * owner.defId, owner.def.loadout), DESIGN §16), a chess id, or null.
    */
-  _tokenDef(tokenId, owner, inline, ownerGrowth = null) {
+  _tokenDef(tokenId, owner, inline) {
     if (inline) return normalizeToken(tokenId, inline);
     if (!this.data.getToken) return null;
-    if (owner && typeof owner === 'object') {
-      const ownerChessId = owner.def?.raw?.darkmoonNativeChessId ?? owner.defId ?? null;
-      return this.data.getToken(tokenId, ownerChessId, owner.def?.loadout ?? null, ownerGrowth ?? owner.nativeGrowthStatus ?? null);
-    }
-    return this.data.getToken(tokenId, owner ?? null, null, ownerGrowth);
+    if (this.assaultStrict) return this.data.getToken(tokenId);
+    if (owner && typeof owner === 'object') return this.data.getToken(tokenId, owner.defId ?? null, owner.def?.loadout ?? null);
+    return this.data.getToken(tokenId, owner ?? null);
   }
 
   _makeAlly(ps, def, kind, r, c, extra = {}) {
@@ -192,7 +190,6 @@ export class BattlePlayers {
     const u = new Unit({
       id: ++this._idSeq, side: 'ally', kind, def, defId: def.id, name: def.name, ownerId: ps ? ps.playerId : null,
       uid: extra.uid ?? null, ownerUnit: extra.ownerUnit ?? null, x: c, y: r, tileR: r, tileC: c,
-      nativeGrowthStatus: extra.nativeGrowthStatus ?? null, nativeOwnerGrowth: extra.nativeOwnerGrowth ?? null,
       dir: extra.dir != null ? normDir(extra.dir) : extra.facing != null ? normDir(extra.facing) : ps ? ps.dir : 'RIGHT',
       base: {
         maxHp: st.maxHp, atk: st.atk, def: st.def, res: st.res, aspd: st.aspd, bat: st.bat, blockCnt: st.blockCnt,
@@ -213,8 +210,13 @@ export class BattlePlayers {
 
   /** Resolve kit/profile/skill for a unit (called by content/index.js; safe to call again). */
   _setupUnit(u, kit = null) {
+    if (this.assaultStrict && kit != null) throw new Error('assault unit kits must be resolved from opts.assault.kits');
     if (!kit) {
-      try { kit = setupUnitKit(this, u, this.contentMode); } catch (e) { this._internalError('setupUnitKit', e); kit = null; }
+      try { kit = setupUnitKit(this, u, this.contentMode); } catch (e) {
+        if (this.assaultStrict) throw e;
+        this._internalError('setupUnitKit', e);
+        kit = null;
+      }
     }
     u.kit = kit || {};
     u.profile = resolveProfile(u.def, u.kit.trait || null);
@@ -244,7 +246,7 @@ export class BattlePlayers {
     // shape a kit already owns (`reason: 'kit'`), and the kits whose line it DOES take over (the two REA-Y ones) had
     // their hand-written copy deleted in the same change. Calling it before kit.install would let a kit's own buff and
     // this rule both land on the same unit.
-    this._safe(() => installTraitAttackSpeed(this, u), 'traitMods.attackSpeed', u);
+    if (!this.assaultStrict) this._safe(() => installTraitAttackSpeed(this, u), 'traitMods.attackSpeed', u);
     return u.kit;
   }
 }

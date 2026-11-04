@@ -5,18 +5,25 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { getData } from '../server/data.js';
+import { DATA_FILES, getData } from '../server/data.js';
 import { BADGE_IDS, getCatalog } from '../server/modes/independent/catalog.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ENTRY = path.join(ROOT, 'server', 'modes', 'independent', 'session.js');
+const CONTENT_ROOT = path.join(ROOT, 'server', 'sim', 'content');
+const ASSAULT_ROOT = path.join(CONTENT_ROOT, 'assault') + path.sep;
 function filesUnder(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const target = path.join(directory, entry.name);
     return entry.isDirectory() ? filesUnder(target) : (entry.isFile() && entry.name.endsWith('.js') ? [target] : []);
   });
 }
-const EXTRA_ENTRIES = [path.join(ROOT, 'server', 'modes', 'independent', 'display.js'), ...filesUnder(path.join(ROOT, 'server', 'sim', 'content'))];
+// Independent mode uses the old sim's native kits and token/domain helpers. The new assault mode is a separate
+// client/API DTO and must not be pulled into this generated workshop engine through the shared content barrel.
+const EXTRA_ENTRIES = [
+  path.join(ROOT, 'server', 'modes', 'independent', 'display.js'),
+  ...filesUnder(CONTENT_ROOT).filter((file) => !file.startsWith(ASSAULT_ROOT)),
+];
 const CATALOG_ENTRY = path.join(ROOT, 'server', 'modes', 'independent', 'catalog.js');
 const OUTPUT = path.join(ROOT, 'public', 'js', 'independent', 'engine');
 const DATA_DIR = process.env.SP_DATA_DIR ? path.resolve(process.env.SP_DATA_DIR) : path.join(ROOT, 'data');
@@ -32,15 +39,8 @@ function parseArgs(argv) {
   return path.resolve(args.out);
 }
 
-function inside(child, parent) {
-  const rel = path.relative(parent, child);
-  return rel === '' || (!rel.startsWith(`..${path.sep}`) && rel !== '..' && !path.isAbsolute(rel));
-}
-
 function assertPlainPath(target) {
-  const productionRoot = path.join(ROOT, 'public', 'js', 'independent');
-  const fixtureRoot = path.join(ROOT, '.omni', 'tmp');
-  if (!inside(target, productionRoot) && !inside(target, fixtureRoot)) throw new Error(`输出目录必须位于 ${productionRoot} 或 ${fixtureRoot} 下`);
+  if (target !== OUTPUT) throw new Error(`输出目录必须是 ${OUTPUT}`);
   let current = ROOT;
   const relative = path.relative(ROOT, target);
   for (const part of relative.split(path.sep)) {
@@ -59,14 +59,38 @@ function specifiers(source) {
   return out;
 }
 
+function projectedSource(file, source) {
+  const rel = path.relative(ROOT, file).split(path.sep).join('/');
+  if (rel === 'server/sim/simdata.js') {
+    const nodeFlag = "const IS_NODE = typeof process !== 'undefined' && !!(process && process.versions && process.versions.node);";
+    const nodeLoader = `if (IS_NODE) {\n  try {\n    nodeLoader = await import('./nodeData.js');\n    generatedCache = await nodeLoader.loadGenerated();\n  } catch {\n    nodeLoader = null;\n  }\n}`;
+    if (source.split(nodeFlag).length !== 2 || source.split(nodeLoader).length !== 2) {
+      throw new Error(`无法安全投影 simdata.js 的 Node-only loader：${file}`);
+    }
+    return source.replace(nodeFlag, 'const IS_NODE = false;').replace(nodeLoader, '/* Node-only data loader omitted from the browser projection. */');
+  }
+  if (rel !== 'server/sim/content/index.js') return source;
+  const assaultImport = "import { buildAssaultKit, installAssaultContent } from './assault/index.js';\n";
+  if (!source.includes(assaultImport)) throw new Error(`旧工坊 content/index.js 缺少预期的 assault 分支：${file}`);
+  const withoutAssault = source.replace(assaultImport, '');
+  const projected = withoutAssault.replace("  if (mode === 'assault') return buildAssaultKit(battle, unit);\n", '');
+  const start = projected.indexOf("  if (mode === 'assault') {");
+  const end = projected.indexOf("  try {\n    const view = withUnitLoadouts", start);
+  if (start < 0 || end <= start) throw new Error(`无法安全投影旧工坊 content/index.js：${file}`);
+  return `// Generated independent-engine projection: the separate attack mode is served by its own API/DTO.\n` +
+    projected.slice(0, start) + projected.slice(end);
+}
+
 function dataShim() {
   const data = {};
-  for (const name of fs.readdirSync(DATA_DIR).filter((x) => x.endsWith('.json')).sort()) {
-    const key = name.slice(0, -5);
-    data[key] = JSON.parse(fs.readFileSync(path.join(DATA_DIR, name), 'utf8'));
+  // Keep the browser engine's source surface explicit. Never embed assault runtime/assets/coverage or source-analysis
+  // JSON merely because server/data.js tolerates every JSON in the data directory.
+  for (const name of [...DATA_FILES, 'independent-game-text']) {
+    if (!fs.existsSync(path.join(DATA_DIR, `${name}.json`))) continue;
+    const key = name;
+    data[key] = JSON.parse(fs.readFileSync(path.join(DATA_DIR, `${name}.json`), 'utf8'));
   }
   for (const [key, configured] of [
-    ['independent-design', process.env.SP_INDEPENDENT_DESIGN_PATH],
     ['independent-game-text', process.env.SP_INDEPENDENT_GAME_TEXT_PATH],
   ]) if (configured) data[key] = JSON.parse(fs.readFileSync(path.resolve(configured), 'utf8'));
   return `// Generated by tools/build-client-engine.mjs from this checkout's data/*.json.\n` +
@@ -112,7 +136,7 @@ function main() {
     copied.add(file);
     if (file === CATALOG_ENTRY) continue;
     const rel = path.relative(ROOT, file).split(path.sep).join('/');
-    const source = fs.readFileSync(file, 'utf8');
+    const source = projectedSource(file, fs.readFileSync(file, 'utf8'));
     for (const spec of specifiers(source)) {
       if (!spec.startsWith('.')) throw new Error(`引擎闭包含非相对模块，拒绝写入：${rel} -> ${spec}`);
       const dep = path.resolve(path.dirname(file), spec);
@@ -128,7 +152,7 @@ function main() {
     const rel = path.relative(ROOT, source);
     const target = path.join(outDir, rel);
     fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.copyFileSync(source, target);
+    fs.writeFileSync(target, projectedSource(source, fs.readFileSync(source, 'utf8')), 'utf8');
   }
   fs.writeFileSync(path.join(outDir, 'server', 'data.js'), dataShim(), 'utf8');
   const catalogTarget = path.join(outDir, 'server', 'modes', 'independent', 'catalog.js');

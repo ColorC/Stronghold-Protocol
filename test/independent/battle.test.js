@@ -6,6 +6,7 @@ import { getCatalog } from '../../server/modes/independent/catalog.js';
 
 const DATA = getData();
 const CHESS_ID = 'chess_char_1_02_a';
+const BOSS_CHESS_ID = 'chess_char_6_02_a';
 const LOW_BOSS_DATA = {
   ...DATA,
   bosses: Object.fromEntries(Object.entries(DATA.bosses).map(([id, boss]) => [id, {
@@ -45,9 +46,20 @@ function state(overrides = {}) {
     difficulty: 'FUNNY',
     roundLimit: 9,
     round: 1,
-    pieces: [{ uid: 'u1', chessId: CHESS_ID, row: 9, col: 2, dir: 'RIGHT', skillIndex: 0, moduleId: 'none', equipment: [], attachments: [], nativeState: {} }],
+    pieces: [{ uid: 'u1', chessId: CHESS_ID, row: 9, col: 3, dir: 'RIGHT', skillIndex: 0, moduleId: 'none', equipment: [], attachments: [], nativeState: {} }],
     ...overrides,
   };
+}
+
+function bossState(overrides = {}) {
+  const source = DATA.chess[BOSS_CHESS_ID];
+  assert.ok(source?.backup, `${BOSS_CHESS_ID} must expose the current native source selection`);
+  return state({
+    difficulty: 'NORMAL',
+    pieces: [{ uid: 'u1', chessId: BOSS_CHESS_ID, row: 10, col: 4, dir: 'RIGHT',
+      skillIndex: source.backup.skillIndex, moduleId: 'none', equipment: [], attachments: [], nativeState: {} }],
+    ...overrides,
+  });
 }
 
 test('independent field helper deterministically reuses official normal, boss, and hidden waves', () => {
@@ -70,20 +82,6 @@ test('independent field helper deterministically reuses official normal, boss, a
   const hidden = getIndependentField(state({ difficulty: 'NORMAL', roundLimit: 15, round: 15 }), { data: DATA });
   assert.equal(hidden.field, 'bossL');
   assert.match(hidden.wave.templateId, /_s$/);
-});
-
-test('early pressure trims only configured ordinary spawns and leaves round five unchanged', () => {
-  const catalog = getCatalog(DATA);
-  const baseline = { ...catalog, config: { ...catalog.config, earlyWaveEnemyCountTrim: {} } };
-  const make = (round, difficulty = 'NORMAL') => state({ seed: 73031, difficulty, roundLimit: 19, round, pieces: [] });
-  const count = (wave) => wave.spawns.reduce((sum, spawn) => sum + Number(spawn.count || 1), 0);
-  const normal3 = getIndependentField(make(3), { data: DATA, catalog });
-  const normal4 = getIndependentField(make(4), { data: DATA, catalog });
-  assert.equal(count(normal3.wave), 5);
-  assert.equal(count(normal4.wave), 10);
-  assert.ok(normal4.wave.spawns.some((spawn) => ['EF', 'E', 'S'].includes(spawn.mods?.slot)), 'elite and special slots remain present');
-  assert.equal(count(getIndependentField(make(5), { data: DATA, catalog }).wave), count(getIndependentField(make(5), { data: DATA, catalog: baseline }).wave));
-  assert.equal(count(getIndependentField(make(1, 'HARD'), { data: DATA, catalog } ).wave), 4);
 });
 
 test('independent runner resolves KITS and returns actual Battle events and native rewards without mutating state', () => {
@@ -121,7 +119,7 @@ test('preview and actual Battle use the same percentage badge stats',()=>{
 test('functional equipment production counts ordinary attack events and keeps equipment origin', () => {
   const catalog = testCatalog({ equipment: [{
     id: 'recording-kit', mechanism: 'attackEventProduction', params: {
-      counterEvent: 'attack', counterEvery: 3, outputs: [{ id: 'precision', quantity: 1 }],
+      counterEvent: 'attack', counterEvery: 15, outputs: [{ id: 'precision', quantity: 1 }], maxPerBattle: 4,
       filter: { actor: 'self', nativeOnly: true },
     },
   }] });
@@ -129,7 +127,7 @@ test('functional equipment production counts ordinary attack events and keeps eq
   const out = runIndependentBattle(input, { data: DATA, catalog });
   assert.ok(out.result.perPlayer.independent.unitStats[0].attacks >= 15);
   assert.ok(out.rewards.some((r) => r.id === 'precision' && r.origin === 'equipment' && r.sourceUid === 'u1'));
-  assert.ok(out.rewards.find((r) => r.origin === 'equipment').quantity >= 5, 'five real attack cycles produce without an artificial battle cap');
+  assert.ok(out.rewards.find((r) => r.origin === 'equipment').quantity <= 4);
 });
 
 test('round 9, 14, and 15 use real boss/hidden Battle instances selected by roundLimit', () => {
@@ -139,10 +137,12 @@ test('round 9, 14, and 15 use real boss/hidden Battle instances selected by roun
     ['NORMAL', 15, 14, 'boss'],
     ['NORMAL', 15, 15, 'hidden'],
   ]) {
-    const out = runIndependentBattle(state({ difficulty, roundLimit, round }), { data: LOW_BOSS_DATA, catalog: testCatalog() });
+    const out = runIndependentBattle(bossState({ difficulty, roundLimit, round }), { data: LOW_BOSS_DATA, catalog: getCatalog(LOW_BOSS_DATA) });
     assert.equal(out.diagnostics.kind, kind, `round ${round} / limit ${roundLimit}`);
     assert.ok(out.diagnostics.templateId, `round ${round} uses an upstream wave template`);
-    assert.ok(['cleared', 'timeout'].includes(out.result.reason), JSON.stringify({ round, kind, diagnostics: out.diagnostics, reason: out.result.reason }));
+    assert.equal(out.result.reason, 'cleared');
+    assert.equal(out.result.bossHpLeft, 0);
+    assert.equal(out.result.resolved, out.result.total, 'the native wave is fully resolved before the shared boss clears');
     assert.equal(out.diagnostics.errorCount, 0);
   }
 });

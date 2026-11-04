@@ -5,15 +5,85 @@
 
 import { COLS } from '../constants.js';
 import { unitInfo } from '../snapshot.js';
+import { bodyOnTile, nonOccupyingTokenAt } from '../body.js';
 import { fin } from './util.js';
 
 export class BattleDeploy {
+  registerAssaultDeployAnchor(owner, spec) {
+    if (!this.assaultStrict || !this.allyUnits.includes(owner) || owner.kind !== 'op'
+      || !spec || spec.kind !== 'deployAnchor' || typeof spec.name !== 'string' || !spec.name
+      || !Number.isFinite(spec.deployCost) || spec.deployCost < 0
+      || spec.combatant !== false || spec.population !== 0 || spec.attackable !== false || spec.healable !== false) {
+      throw new TypeError('invalid noncombatant Assault deployment anchor');
+    }
+    this.assaultDeployAnchors ??= new Map();
+    const id = `${owner.uid}:${spec.name}`;
+    const anchor = Object.freeze({ id, kind: 'deployAnchor', name: spec.name, ownerUid: owner.uid, ownerId: owner.ownerId,
+      sourceTemplateId: spec.sourceTemplateId ?? null, deployCost: spec.deployCost,
+      combatant: false, population: 0, attackable: false, healable: false });
+    this.assaultDeployAnchors.set(id, anchor);
+    return anchor;
+  }
+
+  assaultDeploymentArea(ownerId) {
+    const operators = this.allyUnits.filter((unit) => unit.kind === 'op' && unit.ownerId === ownerId && !unit.removed);
+    const entries = operators.map((unit, index) => ({ kind: 'operator', unit, uid: unit.uid,
+      deployCost: this.assaultDeploymentCost(unit), formationIndex: index }));
+    for (const anchor of this.assaultDeployAnchors?.values() ?? []) {
+      if (anchor.ownerId !== ownerId) continue;
+      const index = operators.findIndex((unit) => unit.uid === anchor.ownerUid);
+      if (index >= 0) entries.push({ ...anchor, formationIndex: index + .5 });
+    }
+    return entries.sort((a, b) => a.deployCost - b.deployCost || a.formationIndex - b.formationIndex);
+  }
+
+  assaultDeployAnchorRelations(unit) {
+    if (!this.assaultStrict || unit.kind !== 'op') return [];
+    const area = this.assaultDeploymentArea(unit.ownerId);
+    const index = area.findIndex((entry) => entry.unit === unit);
+    return area.filter((entry) => entry.kind === 'deployAnchor').map((anchor) => ({
+      anchor, leftOfAnchor: index >= 0 && index < area.indexOf(anchor), self: anchor.ownerUid === unit.uid,
+      active: this.allyUnits.some((owner) => owner.uid === anchor.ownerUid && owner.alive && owner.deployed && !owner.removed),
+    }));
+  }
+
+  assaultDeploymentOrder() {
+    if (!this.assaultStrict || !this.assaultDeployAnchors?.size) return this.allyUnits;
+    const ordered = [...this.allyUnits];
+    for (const player of this.players) {
+      const positions = ordered.flatMap((unit, index) => unit.kind === 'op' && unit.ownerId === player.playerId ? [index] : []);
+      const units = this.assaultDeploymentArea(player.playerId).filter((entry) => entry.kind === 'operator').map((entry) => entry.unit);
+      const rank = new Map(units.map((unit, index) => [unit, index]));
+      const group = positions.map((index) => ordered[index]).sort((a, b) => (rank.get(a) ?? Infinity) - (rank.get(b) ?? Infinity));
+      positions.forEach((index, ordinal) => { ordered[index] = group[ordinal]; });
+    }
+    return ordered;
+  }
+
   /**
    * Deploy `u` on its home tile, or on `tile` ([r, c]: a one-off landing tile — the home stays the board tile; an
    * operator that left the field comes back on its body tile, restTile). `keepSp` = { sp, charges }
    * restored right after the skill reset, before the `deploy` hook fires.
    */
-  _deploy(u, { initial = false, carry = null, tile = null, keepSp = null } = {}) {
+  assaultDeploymentCost(unit) {
+    const cost = Number(unit?.base?.cost ?? 0);
+    const delta = Number(unit?.mem?.assaultCostDelta ?? 0);
+    const baseCost = Math.max(0, (Number.isFinite(cost) ? cost : 0) + (Number.isFinite(delta) ? delta : 0));
+    const resolver = this.assaultCostResolver;
+    let resolved = typeof resolver === 'function' ? resolver(this, unit, baseCost) : baseCost;
+    if (!Number.isFinite(resolved) || resolved < 0) throw new TypeError('Invalid assault deployment cost');
+    if (this.assaultStrict && this._hooks.assaultDeploymentCost) {
+      // A quote is side-effect free: one-shot resources are consumed only by
+      // the subsequent successful deploy hook, never by affordability checks.
+      const quote = { battle: this, unit, baseCost, amount: resolved };
+      this.emit('assaultDeploymentCost', quote);
+      resolved = quote.amount;
+      if (!Number.isFinite(resolved) || resolved < 0) throw new TypeError('Invalid assault deployment cost');
+    }
+    return resolved;
+  }
+
+  _deploy(u, { initial = false, carry = null, tile = null, keepSp = null, preBattleAggroSeq = null, free = false, assaultPaid = false, paidAmount = 0, assaultRedeploy = null } = {}) {
     if ((u.alive && u.deployed) || u._removing) return false;
     const R0 = tile ? tile[0] : u.homeR, C0 = tile ? tile[1] : u.homeC;
     if (!this.grid.inRect(R0, C0)) {
@@ -21,29 +91,63 @@ export class BattleDeploy {
       if (!tile) u.removed = true;
       return false;
     }
-    if (this.flags.independent && u.kind === 'token' && u.uid != null && u.mem?.independentSummon === true && u.ownerUnit
-      && !this._nativeSummonTile(u, [R0, C0], true)) {
-      this._queueIndependentNativeSummon(u, { kind: 'board', preferred: [R0, C0], initial });
-      u.mem.nativeEngagementPending = true;
-      return true; // accepted for retry; do not let callers issue a duplicate summon
-    }
     const k = R0 * COLS + C0;
     const occ = this._occ[k];
-    if (occ && occ !== u && occ.alive && occ.deployed) { this.log(`tile ${R0},${C0} occupied; ${u} not deployed`); return false; }
+    const battle = /** @type {any} */ (this);
+    const tokenAt = nonOccupyingTokenAt(battle.allyUnits, R0, C0, u);
+    const sharedOwnerOperator = u.occupiesTile === false && occ?.alive && occ.deployed && occ.side === 'ally'
+      && occ.kind === 'op' && u.ownerId != null && occ.ownerId === u.ownerId;
+    if (tokenAt && !(u.kind === 'op' && (tokenAt.ownerId ?? tokenAt.ownerUnit?.ownerId) != null && (tokenAt.ownerId ?? tokenAt.ownerUnit?.ownerId) === u.ownerId)) return false;
+    if (u.occupiesTile === false) {
+      const constraints = u.def?.raw?.sourceTemplate ?? u.def?.raw ?? u.def ?? {};
+      const placement = constraints.assaultPlacementClass ?? (constraints.rangedTilesOnly ? 'high' : String(u.def?.position ?? 'MELEE').toLowerCase());
+      const ranged = ['ranged', 'all', 'high'].includes(placement);
+      const terrain = this.grid.tile(R0, C0);
+      const waiting = battle.allyUnits.some((other) => {
+        if (other === u || other.alive || other.removed || (other.kind !== 'op' && other.kind !== 'token')) return false;
+        const [rr, cc] = this.restTile(other); return rr === R0 && cc === C0;
+      });
+      if (u.kind !== 'token' || u.ownerId == null || !this.grid.canStand(R0, C0, { ranged })
+        || (placement === 'high' && terrain.height !== 'HIGH' && terrain.build !== 'RANGED')
+        || this.grid.isObstacle(R0, C0) || this.downOn(R0, C0, u)
+        || battle.enemies.some((enemy) => enemy.alive && enemy.deployed && bodyOnTile(enemy, R0, C0))
+        || (u.player && !this.onOwnBoard(u.player, R0, C0))
+        || waiting) return false;
+    }
+    if (occ && occ !== u && occ.alive && occ.deployed && !sharedOwnerOperator) { this.log(`tile ${R0},${C0} occupied; ${u} not deployed`); return false; }
     // "倒地干员所在地块视为可部署，但所有我方单位在此处的部署行为将被阻止" (PRTS 卫戍协议/帮助 §作战阶段 单位部署)
     if (this.downOn(R0, C0, u)) { this.log(`a knocked-out operator lies on ${R0},${C0}; ${u} not deployed`); return false; }
+    let actualPaid = this.assaultStrict && assaultPaid ? paidAmount : 0;
+    // PRTS 卫戍协议/帮助 (research 01 §4.3): the units on the field at battle start all deploy for free, top to bottom then
+    // left to right; the DP is spent on redeploys only. A one-shot fee waiver stays armed for the first paid entry.
+    if (this.assaultStrict && !free && !assaultPaid && !initial) {
+      const player = this.getPlayer(u.ownerId);
+      const cost = u.mem.assaultSkillFree ? 0 : this.assaultDeploymentCost(u);
+      if (!player || player.dp + 1e-9 < cost) {
+        u.mem.assaultPendingEntry = true;
+        return false;
+      }
+      actualPaid = cost;
+      player.dp = Math.max(0, player.dp - cost);
+      u.mem.assaultPendingEntry = false;
+      u.mem.assaultSkillFree = false;
+    }
     const first = u.deploySeq === 0;
     u.alive = true;
     u.deployed = true;
     u.removed = false;
     u.hidden = false;
     u.body = null;
+    if (this.assaultStrict) u.mem.assaultPendingEntry = false;
+    if (this.assaultStrict && !initial) u.mem.assaultSkillFree = false;
     u.countdown = null; // a countdown summon's content starts its new life in the deploy hook (content/tokens.js startCountdown)
     u.downAtHome = false; // a new deployment: a later knock-out lies where it falls again (Battle._layBody)
     u.x = C0; u.y = R0; u.tileR = R0; u.tileC = C0;
     u.blocking = [];
     u.deploySeq = ++this._deploySeq;
-    u.aggroSeq = u.deploySeq;
+    // A prepared map character is instantiated after the board deployment but keeps an earlier target order.
+    // Its deploySeq remains the identity of this actual deployment for scheduled effects and redeploy checks.
+    u.aggroSeq = preBattleAggroSeq ?? u.deploySeq;
     u.deployedAt = this.time;
     u.atkCd = 0;
     u.lastAttackAt = -Infinity;
@@ -52,13 +156,14 @@ export class BattleDeploy {
     u.markDirty();
     u.hp = u.s.maxHp;
     // 联防 carry (PRTS 卫戍协议/帮助 §联防阶段 "将对应单位的生命比例、技力修改至与上一阶段结束时相同（召唤物仅修改技力…）"):
-    // an operator's HP ratio here, the SP in skill.reset and again after the `deploy` hook (below) — a summon's SP only
+    // an operator restores HP/SP, a summon SP only; actual 联防 opening restoration is deferred until Battle.start ends
     const cs = initial || (first && this._startDeploying) ? (carry ?? u.carry) : null;
-    if (cs && u.kind === 'op' && Number.isFinite(cs.hpPct)) u.hp = Math.max(1, u.s.maxHp * Math.max(0.01, Math.min(1, cs.hpPct)));
-    this._occ[k] = u;
+    const restoreLater = this.kind === 'unite' && this._startDeploying;
+    if (!restoreLater && cs && u.kind === 'op' && Number.isFinite(cs.hpPct) && cs.hpPct > 0) u.hp = u.s.maxHp * Math.min(1, cs.hpPct);
+    if (u.occupiesTile !== false) this._occ[k] = u;
     this._refreshRange(u); // also rebuilds baseRangeKeys (initial range incl. permanent rangeExtend)
     if (!u.skill) this._setupUnit(u);
-    u.skill.reset(cs);
+    u.skill.reset(restoreLater ? null : cs);
     const sk = u.skill;
     // "自动操作具有3s冷却，在完成一次操作或作战开始时部署的单位将进入冷却" (PRTS 卫戍协议/帮助; skills.js)
     if (initial) sk.opReadyAt = this.time + this.flags.startOpCooldown;
@@ -73,15 +178,24 @@ export class BattleDeploy {
     }
     if (first) this._ev(['spawn', unitInfo(u)]);
     this._ev(['deploy', u.id]);
-    if (this._hooks.deploy) this.emit('deploy', { unit: u, initial });
+    if (this._hooks.deploy) this.emit('deploy', { unit: u, initial, ...(this.assaultStrict ? {
+      actualPaid, skillEntry: assaultRedeploy?.skill === true, deployAnchors: this.assaultDeployAnchorRelations(u),
+    } : null) });
     // 联防: "部署完成后，将对应单位的…技力修改至与上一阶段结束时相同" — the carried SP is set again once the deployment is
     // done, so a deploy-time SP gift (独行, 黄沙罗盘 …) does not come on top of it; later redeploys keep those gifts
-    if (cs && Number.isFinite(cs.sp) && u.alive && u.skill) u.skill.setSpTotal(cs.sp);
+    if (!restoreLater && cs && Number.isFinite(cs.sp) && u.alive && u.skill) u.skill.setSpTotal(cs.sp);
+    if (this.assaultStrict && !first && u.kind === 'op') {
+      const details = assaultRedeploy ?? {};
+      this.assaultRuntime.publish('redeploy', {
+        source: u, sourceUid: u.uid ?? u.id, target: u, targetUid: u.uid ?? u.id,
+        alive: false, skill: !!details.skill, free: !!details.free, actualPaid,
+      }, { cause: details.cause ?? this.assaultRuntime.currentCause });
+    }
     return true;
   }
 
   /** Mark `unit` dead (hp reached 0). Fires `kill` then `death`. */
-  kill(unit, killer = null) {
+  kill(unit, killer = null, damage = null) {
     if (!unit || !unit.alive) return;
     unit.hp = 0;
     if (this._hooks.kill) this.emit('kill', { killer, victim: unit });
@@ -92,7 +206,31 @@ export class BattleDeploy {
       return;
     }
     unit.hp = 0; // NaN / negative writes from handlers
-    this._remove(unit, 'killed', killer);
+    this._remove(unit, 'killed', killer, false, false, damage);
+  }
+
+  skillRedeploy(unit, { cause = null } = {}) {
+    if (!this.assaultStrict || !unit || unit.side !== 'ally' || unit.kind !== 'op' || unit.removed) return false;
+    const wasAlive = unit.alive && unit.deployed;
+    let ok = false;
+    if (wasAlive) {
+      unit.hp = unit.s.maxHp;
+      ok = true;
+    } else {
+      const [r, c] = this.restTile(unit);
+      const k = r * COLS + c;
+      const occ = this._occ[k];
+      if (!this.grid.inRect(r, c) || (occ && occ.alive && occ !== unit) || this.downOn(r, c, unit)) return false;
+      ok = this._deploy(unit, {
+        initial: false, tile: r === unit.homeR && c === unit.homeC ? null : [r, c], free: true,
+        assaultRedeploy: { skill: true, free: true, cause },
+      });
+    }
+    if (ok && wasAlive) this.assaultRuntime.publish('redeploy', {
+      source: unit, sourceUid: unit.uid ?? unit.id, target: unit, targetUid: unit.uid ?? unit.id,
+      alive: true, skill: true, free: true, actualPaid: 0,
+    }, { cause: cause ?? this.assaultRuntime.currentCause });
+    return ok;
   }
 
   /**
@@ -107,9 +245,7 @@ export class BattleDeploy {
     this._remove(unit, reason, null, permanent, dying);
   }
 
-  _remove(unit, reason, killer = null, permanent = false, dying = false) {
-    this._forgetIndependentNativeSummon?.(unit);
-    this._cancelPendingNativeSummonsForOwner?.(unit);
+  _remove(unit, reason, killer = null, permanent = false, dying = false, damage = null) {
     this._cutAttackStand(unit);
     unit.alive = false;
     unit.removeReason = reason;
@@ -168,6 +304,16 @@ export class BattleDeploy {
     if (reason !== 'leak') this._ev(['die', unit.id, reason]);
     if (this._hooks.death) this.emit('death', { unit, reason, killer, dying: !!dying });
     if (unit.removed) this._toRelease.push(unit);
+    if (this.assaultStrict && reason === 'killed') {
+      const payload = {
+        source: killer, sourceUid: killer?.uid ?? killer?.id ?? null, target: unit, targetUid: unit.uid ?? unit.id,
+        amount: damage?.amount ?? null, damageType: damage?.type ?? null, attackId: damage?.attackId ?? null,
+        skillId: damage?.isSkill ? killer?.skill?.evSkillId ?? null : null,
+        sourceClass: damage?.isSkill ? 'skill' : (damage?.isAttack ? 'attack' : 'effect'), reason, unitKind: unit.kind,
+      };
+      this.assaultRuntime.publish('kill', payload, { sourceUid: payload.sourceUid });
+      this.assaultRuntime.publish('death', payload, { sourceUid: payload.sourceUid });
+    }
   }
 
   /**
@@ -181,6 +327,7 @@ export class BattleDeploy {
     for (const u of this._toRelease) if (u.removed && !u.alive) set.add(u);
     this._toRelease = [];
     if (!set.size) return;
+    if (this.assaultRuntime) for (const unit of set) this.assaultRuntime.offOwner(unit);
     for (const name of Object.keys(this._hooks)) {
       const list = this._hooks[name];
       let w = 0;
@@ -219,7 +366,7 @@ export class BattleDeploy {
     if (occ && occ.alive && occ !== unit) return false;
     if (at && this.downOn(at[0], at[1], unit)) return false;
     const ps = this.getPlayer(unit.ownerId);
-    const cost = unit.base.cost;
+    const cost = this.assaultStrict ? (unit.mem.assaultSkillFree ? 0 : this.assaultDeploymentCost(unit)) : unit.base.cost;
     let paid = 0;
     if (!free) {
       if (!ps || ps.dp + 1e-9 < cost) return false;
@@ -228,7 +375,7 @@ export class BattleDeploy {
     }
     const sk = unit.skill;
     const keep = keepSp && sk && !sk.noSkill && sk.kind !== 'passive' ? { sp: sk.sp, charges: sk.charges } : null;
-    if (this._deploy(unit, { initial: false, tile: at, keepSp: keep })) return true;
+    if (this._deploy(unit, { initial: false, tile: at, keepSp: keep, free, ...(this.assaultStrict ? { assaultPaid: !free, paidAmount: paid } : null) })) return true;
     if (paid > 0 && ps) ps.dp = Math.min(this.flags.dpMax, ps.dp + paid);
     return false;
   }
@@ -239,25 +386,32 @@ export class BattleDeploy {
    * is free and its player has the DP.
    */
   _checkRedeploys() {
-    for (const u of this.allyUnits) {
-      if (u.alive || u.removed || u.kind !== 'op') continue;
-      if (this.time + 1e-9 < u.respawnAt) continue;
+    for (const u of this.assaultDeploymentOrder()) {
+      if (u.alive || u.removed || (u.kind !== 'op' && !(this.assaultStrict && u.mem.assaultPendingEntry))) continue;
+      const assaultPending = this.assaultStrict && u.mem.assaultPendingEntry;
+      if (!assaultPending && this.time + 1e-9 < u.respawnAt) continue;
       // the DP first: an operator past its timer mostly waits for DP, and the tile checks scan every ally
       const ps = this.getPlayer(u.ownerId);
-      const cost = u.base.cost;
+      const cost = this.assaultStrict ? (u.mem.assaultSkillFree ? 0 : this.assaultDeploymentCost(u)) : u.base.cost;
       if (!ps || ps.dp + 1e-9 < cost) continue;
       const [r, c] = this.restTile(u);
       const occ = this._occ[r * COLS + c];
       if (occ && occ.alive && occ !== u) continue;
       if (this.downOn(r, c, u)) continue;
-      ps.dp = Math.max(0, ps.dp - cost);
-      this._deploy(u, { initial: false, tile: r === u.homeR && c === u.homeC ? null : [r, c] });
+      if (!this.assaultStrict) ps.dp = Math.max(0, ps.dp - cost);
+      this._deploy(u, { initial: false, tile: r === u.homeR && c === u.homeC ? null : [r, c], ...(this.assaultStrict ? null : { assaultPaid: true }) });
     }
   }
 
   /** Leak: an enemy reached its goal. */
   leak(e) {
     if (!e || !e.alive || e.side !== 'enemy') return;
+    // Content may adjust only this leak's loss before it is recorded. With no listeners this preserves the native path.
+    if (this._hooks.beforeEnemyLeak) {
+      const event = { enemy: e, loss: e.lpr ?? 1 };
+      this.emit('beforeEnemyLeak', event);
+      e.lpr = event.loss;
+    }
     this._recordLeak(e, false);
     this._remove(e, 'leak');
     this._ev(['leak', e.id]);

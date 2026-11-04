@@ -1,8 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFile as execFileCb } from 'node:child_process';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { promisify } from 'node:util';
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createSession as createNode, applyAction as actNode, viewSession as viewNode } from '../../server/modes/independent/session.js';
@@ -10,23 +8,23 @@ import { getData as getNodeData } from '../../server/data.js';
 import { getCatalog as getNodeCatalog } from '../../server/modes/independent/catalog.js';
 import { independentDisplayCatalog as displayNodeCatalog } from '../../server/modes/independent/display.js';
 import { grantEquipment } from '../../server/modes/independent/equipment.js';
-const execFile = promisify(execFileCb);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const fixtureRoot = await (async () => {
-  const base = path.join(ROOT, '.omni', 'tmp', 'client-compute-test-engine');
-  await mkdir(base, { recursive: true });
-  return path.join(base, `engine-${process.pid}-${Date.now()}`);
-})();
-await execFile(process.execPath, [path.join(ROOT, 'tools', 'build-client-engine.mjs'), '--out', fixtureRoot], { cwd: ROOT, windowsHide: true });
-const engineManifest = JSON.parse(await readFile(path.join(fixtureRoot, 'engine-build.json'), 'utf8'));
+const engineRoot = path.join(ROOT, 'public', 'js', 'independent', 'engine');
+const engineManifestPath = path.join(engineRoot, 'engine-build.json');
+try {
+  await access(engineManifestPath);
+} catch {
+  assert.fail(`formal browser engine is missing at ${engineRoot}; root must build it with: node tools/build-client-engine.mjs --out ${engineRoot}`);
+}
+const engineManifest = JSON.parse(await readFile(engineManifestPath, 'utf8'));
 assert.equal(typeof engineManifest.sourceRevision, 'string');
 assert.equal(typeof engineManifest.sourceDirty, 'boolean');
 assert.ok(engineManifest.modules.some((item) => item.path === 'server/modes/independent/session.js' && item.bytes > 0));
 assert.ok(engineManifest.totalBytes > 0);
-const clientSession = await import(pathToFileURL(path.join(fixtureRoot, 'server', 'modes', 'independent', 'session.js')).href);
-const clientDataModule = await import(pathToFileURL(path.join(fixtureRoot, 'server', 'data.js')).href);
-const clientCatalogModule = await import(pathToFileURL(path.join(fixtureRoot, 'server', 'modes', 'independent', 'catalog.js')).href);
-const clientDisplayModule = await import(pathToFileURL(path.join(fixtureRoot, 'server', 'modes', 'independent', 'display.js')).href);
+const clientSession = await import(pathToFileURL(path.join(engineRoot, 'server', 'modes', 'independent', 'session.js')).href);
+const clientDataModule = await import(pathToFileURL(path.join(engineRoot, 'server', 'data.js')).href);
+const clientCatalogModule = await import(pathToFileURL(path.join(engineRoot, 'server', 'modes', 'independent', 'catalog.js')).href);
+const clientDisplayModule = await import(pathToFileURL(path.join(engineRoot, 'server', 'modes', 'independent', 'display.js')).href);
 const { createSession: createClient, applyAction: actClient } = clientSession;
 const getClientData = clientDataModule.getData;
 const getClientCatalog = clientCatalogModule.getCatalog;
@@ -69,6 +67,41 @@ function deltaBytes(before, after) {
   return Buffer.byteLength(JSON.stringify({ expectedRevision: before.revision, changes: topLevelDelta(before, after) }));
 }
 
+const FULL_GAME_ROSTER = [
+  ['chess_char_5_03_a', 'skchr_blaze2_1'],
+  ['chess_char_6_02_a', 'skchr_sbell2_3'],
+  ['chess_char_4_16_a', 'skchr_texas2_2'],
+  ['chess_char_5_19_a', 'skchr_mlynar_1'],
+  ['chess_char_5_07_a', 'skchr_surtr_3'],
+  ['chess_char_5_13_a', 'skchr_ghost2_3'],
+  ['chess_char_5_05_a', 'skchr_ulpia_3'],
+  ['chess_char_4_18_a', 'skchr_mudrok_3'],
+];
+
+function parityRoster(catalog) {
+  return FULL_GAME_ROSTER.map(([chessId, skillId], i) => {
+    const op = catalog.operators[chessId];
+    const source = op?.source?.normalChess;
+    const skill = source?.skills?.find((x) => x.skillId === skillId);
+    assert.ok(source && skill, `${chessId} must expose source skill ${skillId}`);
+    return {
+      uid: `fixture-${i}`, chessId, elite: false, row: null, col: null, dir: 'RIGHT', skillIndex: skill.index, moduleId: 'none',
+      equipment: [{ uid: `fixture-${i}-precision`, id: 'precision', quantity: 10, state: {} },
+        { uid: `fixture-${i}-assault`, id: 'assault', quantity: 10, state: {} }],
+      attachments: [], nativeState: { preferences: { productionBadge: 'precision' } }, bodyPenaltyApplied: false, poolCopies: 1,
+    };
+  });
+}
+
+function installParityRoster(state, catalog) {
+  const roster = parityRoster(catalog);
+  state.pieces = roster;
+  for (const piece of roster) if (state.pool[piece.chessId]) state.pool[piece.chessId].left -= 1;
+  state.counters.gained = roster.length;
+  state.totals = { ...(state.totals || {}), gained: roster.length };
+  return state;
+}
+
 function sampleActionDeltaProfile() {
   let node = createNode({ seed: 20261007, difficulty: 'NORMAL', roundLimit: 9, data: nodeData, catalog: nodeCatalog });
   let client = createClient({ seed: 20261007, difficulty: 'NORMAL', roundLimit: 9, data: clientData, catalog: clientCatalog });
@@ -79,7 +112,7 @@ function sampleActionDeltaProfile() {
     const advanced = actNode(node, action, { data: nodeData, catalog: nodeCatalog });
     const mirrored = actClient(client, action, { data: clientData, catalog: clientCatalog });
     assert.deepEqual(mirrored, advanced, `${name} delta fixture stays engine-equal`);
-    assert.equal(advanced.ok, true, `${name} action fixture should succeed: ${advanced.error?.code || ''}`);
+    assert.equal(advanced.ok, true, `${name} action fixture should succeed`);
     records[name] = { requestBytes: deltaBytes(before, advanced.state), changedKeys: Object.keys(topLevelDelta(before, advanced.state)) };
     node = advanced.state; client = mirrored.state;
     return advanced;
@@ -90,11 +123,11 @@ function sampleActionDeltaProfile() {
   const piece = view.pieces[0];
   const [row, col] = piece.legalTiles[0].split(',').map(Number);
   perform('move', { type: 'move', uid: piece.uid, row, col });
-  const itemId = 'precision'; // Unrestricted basic ATK badge; retained legacy gear may have a recipient restriction.
+  const itemId = Object.keys(nodeCatalog.equipment).find((id) => nodeCatalog.equipment[id]?.available !== false && nodeCatalog.equipment[id]?.mechanism !== 'disabled');
   grantEquipment(node, nodeCatalog, itemId, 1, { origin: 'fixture', phase: 'test' });
   grantEquipment(client, clientCatalog, itemId, 1, { origin: 'fixture', phase: 'test' });
   assert.deepEqual(client, node);
-  const itemUid = node.inventory.find(item => item.id === itemId).uid;
+  const itemUid = node.inventory[0].uid;
   perform('equip', { type: 'equip', itemUid, targetUid: piece.uid });
   perform('refresh', { type: 'refresh' });
   const battle = perform('battle', { type: 'ready' });
@@ -131,6 +164,8 @@ async function compareFullGame(roundLimit) {
   const seed = roundLimit === 9 ? 20261007 : 20261015;
   let node = createNode({ seed, difficulty: roundLimit === 9 ? 'FUNNY' : 'NORMAL', roundLimit, data: nodeData, catalog: nodeCatalog });
   let client = createClient({ seed, difficulty: roundLimit === 9 ? 'FUNNY' : 'NORMAL', roundLimit, data: clientData, catalog: clientCatalog });
+  installParityRoster(node, nodeCatalog);
+  installParityRoster(client, clientCatalog);
   // This is a fixture for rule parity across the full round schedule; the deterministic session actions stay native.
   node.lp = client.lp = 100_000;
   node.funds = client.funds = 30;
@@ -187,35 +222,9 @@ async function compareFullGame(roundLimit) {
   assert.deepEqual(client, node);
   assert.ok(replayRounds.includes(1));
   assert.ok(replayRounds.includes(roundLimit === 9 ? 9 : 14), 'leader round should be recorded');
+  if (roundLimit === 15) assert.ok(replayRounds.includes(15), 'hidden round should be recorded');
   assert.ok(Buffer.byteLength(JSON.stringify(node)) < 2 * 1024 * 1024, 'complete native session must fit the bounded checkpoint body');
   return { replayRounds, roundMatrix };
-}
-
-function compareHiddenRoundFixture() {
-  let node = createNode({ seed: 20261015, difficulty: 'NORMAL', roundLimit: 15, data: nodeData, catalog: nodeCatalog });
-  let client = createClient({ seed: 20261015, difficulty: 'NORMAL', roundLimit: 15, data: clientData, catalog: clientCatalog });
-  // Explicit parity fixture: enter the hidden-round preparation state directly, then use normal session actions
-  // to buy, deploy, and resolve a real round-15 battle. This tests hidden-round simulation parity, not its unlock.
-  node.round = client.round = 15;
-  node.lp = client.lp = 100_000;
-  node.funds = client.funds = 30;
-  assert.deepEqual(client, node, 'hidden-round fixture begins from the same state');
-  const slot = node.shop.slots.findIndex((x) => x.kind === 'chess' && x.id && !x.sold);
-  assert.ok(slot >= 0, 'hidden-round fixture has a recruit');
-  [node, client] = advancePair(node, client, { type: 'buy', slot });
-  const piece = node.pieces[0];
-  const view = viewNode(node, { data: nodeData, catalog: nodeCatalog });
-  const deployment = view.pieces.find((x) => x.uid === piece.uid);
-  assert.ok(deployment?.legalTiles.length, 'hidden-round fixture has a legal deployment tile');
-  const [row, col] = deployment.legalTiles[0].split(',').map(Number);
-  [node, client] = advancePair(node, client, { type: 'move', uid: piece.uid, row, col });
-  const ready = actNode(node, { type: 'ready' }, { data: nodeData, catalog: nodeCatalog });
-  const clientReady = actClient(client, { type: 'ready' }, { data: clientData, catalog: clientCatalog });
-  assert.deepEqual(clientReady, ready, 'hidden round Node/client battle results match');
-  assert.equal(ready.ok, true, ready.error?.code || 'hidden round should resolve');
-  assert.equal(ready.replay.round, 15, 'hidden round should be recorded');
-  assert.equal(ready.replay.field?.fieldId, 'independent-r15');
-  return { replayRound: ready.replay.round, fieldId: ready.replay.field?.fieldId };
 }
 
 test('browser engine and Node engine deep-equal through a complete leader and hidden-round session', async () => {
@@ -224,17 +233,16 @@ test('browser engine and Node engine deep-equal through a complete leader and hi
     displayNodeCatalog(nodeData, nodeCatalog, nodeData['independent-game-text']), 'worker display catalog matches the server catalog exactly');
   const short = await compareFullGame(9);
   assert.deepEqual(short.replayRounds, Array.from({ length: 9 }, (_, i) => i + 1));
-  const full = await compareFullGame(14);
+  const full = await compareFullGame(15);
   const rounds = full.replayRounds;
   assert.ok(rounds.includes(14));
-  const hidden = compareHiddenRoundFixture();
-  assert.equal(hidden.replayRound, 15, 'explicit hidden fixture records round 15');
+  assert.ok(rounds.includes(15));
   const footprint = { measurement: 'UTF-8 JSON serialization of native checkpoint delta requests, full session state, and settled replay',
     maxCheckpointBytes: measured.maxStateBytes, maxCheckpointAtRound: measured.maxStateAtRound,
     estimated50MaxCheckpointsBytes: measured.maxStateBytes * 50, maxBrowserReplayBytes: measured.maxReplayBytes,
     maxBrowserReplayAtRound: measured.maxReplayAtRound, browserReplayRetentionBytes: 32 * 1024 * 1024,
     deltaProfile: sampleActionDeltaProfile(),
-    roundMatrix: [{ roundLimit: 9, rounds: short.roundMatrix }, { roundLimit: 14, rounds: full.roundMatrix }, { roundLimit: 15, fixture: hidden }] };
+    roundMatrix: [{ roundLimit: 9, rounds: short.roundMatrix }, { roundLimit: 15, rounds: full.roundMatrix }] };
   await mkdir(path.dirname(footprintPath), { recursive: true });
   await writeFile(footprintPath, `${JSON.stringify(footprint, null, 2)}\n`);
   console.log(JSON.stringify({ footprintPath, ...footprint }));

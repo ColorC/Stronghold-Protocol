@@ -50,4 +50,24 @@ describe('mediaUrl: 音频地址去掉扩展名（躲开下载器嗅探）', () 
     assert.equal(mediaUrl('/assets/audio/bgm/a.mp3'), '/media/bgm/a', '相对地址本来就同源');
     assert.equal(mediaUrl('https://other.example/assets/audio/a.mp3'), 'https://other.example/assets/audio/a.mp3');
   });
+
+  test('挂载页面把 /media 重写到当前页面目录，根页面保持根路径', () => {
+    const previousLocation = Object.getOwnPropertyDescriptor(globalThis, 'location');
+    Object.defineProperty(globalThis, 'location', {
+      configurable: true,
+      value: { origin: ORIGIN, href: `${ORIGIN}/stronghold/assault/assault.html` },
+    });
+    try {
+      assert.equal(mediaUrl('/assets/audio/bgm/a.mp3'), '/stronghold/assault/media/bgm/a');
+      assert.equal(mediaUrl('/assets/audio/bgm/a.mp3?v=2'), '/stronghold/assault/media/bgm/a?v=2');
+      Object.defineProperty(globalThis, 'location', {
+        configurable: true,
+        value: { origin: ORIGIN, href: `${ORIGIN}/` },
+      });
+      assert.equal(mediaUrl('/assets/audio/bgm/a.mp3'), '/media/bgm/a');
+    } finally {
+      if (previousLocation) Object.defineProperty(globalThis, 'location', previousLocation);
+      else delete globalThis.location;
+    }
+  });
 });

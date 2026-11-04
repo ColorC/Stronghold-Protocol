@@ -1,5 +1,4 @@
 import { getData } from '../../data.js';
-import { independentRoundPlan, independentRoundScale } from '../../../shared/independentEconomy.js';
 import { GameData } from '../../match/gamedata.js';
 import { modeIdFor } from '../../../shared/constants.js';
 import { Battle } from '../../sim/Battle.js';
@@ -12,7 +11,6 @@ import { installIndependentBattle } from '../../sim/content/independent/battle.j
 import { getCatalog } from './catalog.js';
 import { independentEnemyBalance, balanceIndependentWave } from './enemyBalance.js';
 import { unitStatsEntry } from '../../../shared/protocol.js';
-import { operatorGrowthInfo } from '../../../shared/independentGrowth.js';
 
 const PLAYER_ID = 'independent';
 const SAMPLE_LIMIT = 24;
@@ -42,45 +40,27 @@ function modeOf(state) {
 function prepare(state, data, catalog = null) {
   const round = roundOf(state);
   const modeId = modeOf(state);
-  const roundLimit = Number(state.roundLimit ?? 18);
-  const plan = independentRoundPlan(roundLimit, round);
+  const roundLimit = Number(state.roundLimit ?? 14);
+  if (![9, 14, 15].includes(roundLimit)) throw new RangeError(`unsupported independent roundLimit: ${roundLimit}`);
   const gd = new GameData(data, modeId);
-  const waveBase = plan.long && modeId === 'mode_single_funny' ? new GameData(data, modeIdFor('solo', 'NORMAL')) : gd;
-  const waveGd = Object.create(waveBase);
-  waveGd.enemyScale = () => independentRoundScale(gd, round, roundLimit);
-  const setup = setupMatchWaves(waveBase, createRng(deriveSeed(Number(state.seed) >>> 0, 'world')));
-  const isHiddenRound = plan.kind === 'hidden';
-  const isBossRound = plan.kind !== 'normal';
+  const setup = setupMatchWaves(gd, createRng(deriveSeed(Number(state.seed) >>> 0, 'world')));
+  const isHiddenRound = roundLimit === 15 && round === 15;
+  const isBossRound = (roundLimit === 9 && round === 9) || ((roundLimit === 14 || roundLimit === 15) && round === 14) || isHiddenRound;
   const field = isBossRound ? 'bossL' : 'normal';
   const rng = createRng(deriveSeed(Number(state.seed) >>> 0, `independent:wave:${round}:${modeId}`));
   const bossId = isHiddenRound ? setup.hiddenBossId : setup.bossId;
   const sourceWave = isBossRound
-    ? buildBossWave(waveGd, rng, setup, plan.waveRound, { bossId, solo: true })
-    : buildNormalWave(waveGd, rng, setup, plan.waveRound);
+    ? buildBossWave(gd, rng, setup, round, { bossId, solo: true })
+    : buildNormalWave(gd, rng, setup, round);
   const tuning = independentEnemyBalance(state, catalog);
   const wave = balanceIndependentWave(sourceWave, tuning);
-  const earlyTrim = Number(catalog?.config?.earlyWaveEnemyCountTrim?.[modeId]?.[String(round)] ?? 0);
-  if (earlyTrim > 0) {
-    // Keep elite/special spawns intact and remove only members from the largest ordinary groups.
-    let remaining = Math.floor(earlyTrim);
-    const spawns = wave.spawns.map((spawn, index) => ({ ...spawn, _trimIndex: index }));
-    const candidates = spawns.filter((spawn) => Number(spawn.count ?? 1) > 1 && !['E', 'EF', 'S', 'B'].includes(String(spawn.mods?.slot || '').toUpperCase()))
-      .sort((a, b) => Number(b.count ?? 1) - Number(a.count ?? 1) || a._trimIndex - b._trimIndex);
-    for (const spawn of candidates) {
-      if (!remaining) break;
-      const removable = Math.min(remaining, Number(spawn.count ?? 1) - 1);
-      spawn.count = Number(spawn.count ?? 1) - removable;
-      remaining -= removable;
-    }
-    wave.spawns = spawns.filter((spawn) => { delete spawn._trimIndex; return Number(spawn.count ?? 1) > 0; });
-  }
   const stageId = setup.stageId ?? wave.templateId ?? null;
   const stage = gd.stage(stageId);
   if (!stage) throw new Error(`independent wave ${round} has no resolvable stage (stageId=${stageId ?? 'null'})`);
   if (!wave.templateId) throw new Error(`independent wave ${round} has no upstream wave template`);
   if (isBossRound && (!bossId || !gd.boss(bossId))) throw new Error(`independent boss wave ${round} has no upstream boss`);
   const kind = isHiddenRound ? 'hidden' : isBossRound ? 'boss' : 'normal';
-  return { gd, round, waveRound: plan.waveRound, modeId, setup, field, wave, stageId, stage, bossId, roundLimit, kind, tuning };
+  return { gd, round, modeId, setup, field, wave, stageId, stage, bossId, roundLimit, kind, tuning };
 }
 
 /** Resolve the deterministic upstream field and legal placement map used by both prep and battle. */
@@ -98,25 +78,7 @@ export function getIndependentField(state, { data = null, catalog = null } = {})
   };
 }
 
-function summonSourceText(data, owner, tokenId, catalog) {
-  const token = data?.tokens?.[tokenId];
-  const base = catalog?.operators?.[owner?.chessId];
-  const ownerChessId = owner?.elite ? base?.eliteChessId || owner?.chessId : owner?.chessId;
-  const variant = token?.variants?.[ownerChessId] || token?.variants?.[String(owner?.chessId || '').replace(/_b$/, '_a')];
-  const selected = variant?.bySkill?.[owner?.skillIndex] || variant;
-  const sources = Array.isArray(selected?.sources) ? selected.sources : [];
-  const raw = owner?.elite ? (base?.source?.eliteChess || base?.source?.normalChess) : base?.source?.normalChess;
-  const triggers = [];
-  if (sources.includes('skill') && raw?.skills?.[owner?.skillIndex]?.name) triggers.push(`技能「${raw.skills[owner.skillIndex].name}」`);
-  if (sources.includes('talent')) {
-    const talent = (raw?.talents || []).find((x) => x?.name);
-    if (talent?.name) triggers.push(`天赋「${talent.name}」`);
-  }
-  if (sources.includes('module')) triggers.push('模组');
-  return `由${base?.name || '干员'}${triggers.length ? `的${triggers.join('、')}` : ''}召唤`;
-}
-
-export function battleUnits(state, catalog, data) {
+function battleUnits(state) {
   const pieces = Array.isArray(state?.pieces) ? state.pieces : [];
   const units = [];
   for (const piece of pieces) {
@@ -131,18 +93,7 @@ export function battleUnits(state, catalog, data) {
       dir: piece.dir ?? 'RIGHT',
       skillIndex: piece.skillIndex ?? 0,
       moduleId: piece.moduleId ?? 'none',
-      ...(state.growthMode==='levels'?{nativeGrowthStatus:(({phase,level})=>({phase,level}))(operatorGrowthInfo({...piece,growthMode:'levels',growthLevel:piece.growthLevel||1},catalog))}:{}),
     });
-  }
-  for (const token of Array.isArray(state?.summons) ? state.summons : []) {
-    if (!token || token.row == null || token.col == null) continue;
-    if (!Number.isInteger(Number(token.row)) || !Number.isInteger(Number(token.col)) || Number(token.count || 1) !== 1) continue;
-    const owner = pieces.find((p) => p.uid === token.ownerUid);
-    if (!owner || owner.row == null || owner.col == null) continue;
-    units.push({ uid: token.uid, kind: 'token', tokenId: token.tokenId, row: Number(token.row), col: Number(token.col),
-      dir: token.dir ?? 'RIGHT', ownerUid: token.ownerUid, ownerChessId: owner.elite ? catalog?.operators?.[owner.chessId]?.eliteChessId || owner.chessId : owner.chessId,
-      ownerGrowth: state.growthMode === 'levels' ? (({ phase, level }) => ({ phase, level }))(operatorGrowthInfo({...owner,growthMode:'levels',growthLevel:owner.growthLevel||1}, catalog)) : undefined,
-      summonSourceText: summonSourceText(data, owner, token.tokenId, catalog), independentSummon: true });
   }
   return units;
 }
@@ -174,9 +125,7 @@ function sampleBattle(battle) {
  */
 function buildBattle(input, source, catalog, { preview = false } = {}) {
   const prepared = prepare(input, source, catalog);
-  const units = battleUnits(input,catalog,source);
-  const supportChess=Object.fromEntries(Object.entries(catalog?.operators||{}).filter(([,op])=>op?.darkmoonSupport&&op.source?.normalChess).map(([id,op])=>[id,op.source.normalChess]));
-  const battleData=Object.keys(supportChess).length?{...source,chess:{...(source.chess||{}),...supportChess}}:source;
+  const units = battleUnits(input);
   const sharedBoss = preview || prepared.kind === 'normal' ? null : new SharedBossPool(Math.round(bossPoolHp(prepared.gd, prepared.bossId, 1) * (prepared.tuning?.bossHpMul ?? 1)));
   const battle = new Battle({
     seed: deriveSeed(Number(input.seed) >>> 0, `independent:${preview ? 'preview' : 'battle'}:${prepared.round}:${prepared.modeId}`),
@@ -195,7 +144,7 @@ function buildBattle(input, source, catalog, { preview = false } = {}) {
       independent: { catalog, pieces: input.pieces, counters: input.counters ?? {}, round: prepared.round, roundLimit: prepared.roundLimit },
     },
     fieldId: `independent-r${prepared.round}`,
-    data: battleData,
+    data: source,
     content: 'independent',
     recordEvents: !preview,
     logger: { warn() {}, error() {}, info() {}, log() {} },
@@ -239,8 +188,7 @@ export function runIndependentBattle(state, { data = null, catalog = null } = {}
   const statsChanges = () => {
     const out = {};
     for (const u of battle.units) {
-      const liveAlly = u?.side === 'ally' && (u.kind === 'op' || u.kind === 'token');
-      if (!u || (!liveAlly && u.side !== 'enemy') || !u.alive) continue;
+      if (!u || (u.kind !== 'op' && u.side !== 'enemy') || !u.alive) continue;
       const entry = unitStatsEntry(u, u.s); const key = JSON.stringify(entry);
       if (lastStats.get(u.id) !== key) { lastStats.set(u.id, key); out[u.id] = entry; }
     }
@@ -274,7 +222,6 @@ export function runIndependentBattle(state, { data = null, catalog = null } = {}
   const diagnostics = {
     modeId: prepared.modeId,
     round: prepared.round,
-    waveRound: prepared.waveRound,
     kind: prepared.kind,
     stageId: prepared.stageId,
     templateId: prepared.wave.templateId,
@@ -292,7 +239,5 @@ export function runIndependentBattle(state, { data = null, catalog = null } = {}
     bossId: prepared.bossId ?? null, tick: TICK, snapEvery: REPLAY_SNAP_EVERY, duration: Math.round(battle.time * 100) / 100,
     field, frames,
   };
-  return { result, rewards, pieceStates, samples, diagnostics, replay,
-    darkmoonResults: structuredClone(battle.independentDarkmoonResults ?? {growth:[],recruits:[],coins:[]}),
-    darkmoonTrace: structuredClone(battle.independentDarkmoonTrace ?? []) };
+  return { result, rewards, pieceStates, samples, diagnostics, replay };
 }

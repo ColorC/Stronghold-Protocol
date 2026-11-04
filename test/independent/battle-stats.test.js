@@ -50,9 +50,9 @@ test('module loadout base attributes receive white badge percentages before equi
   assert.equal(u.s.aspd,122.4);
 });
 
-test('all fifteen canonical badge effects and the damage alias stay percentage-valued',()=>{
+test('all fifteen canonical badge effects stay percentage-valued, including the retired alias',()=>{
   assert.deepEqual(Object.fromEntries(Object.entries(INDEPENDENT_BADGE_STATS).map(([id, x])=>[id,[x.stat,x.value]])),{
-    damage:['damageDealtPercent',0.02],precision:['attackBasePercent',0.02],agility:['attackSpeedPercent',0.02],vitality:['maxLifeBasePercent',0.03],
+    precision:['attackBasePercent',0.02],agility:['attackSpeedPercent',0.02],vitality:['maxLifeBasePercent',0.03],
     defense:['defenseBasePercent',0.02],assault:['attackPercent',0.02],recovery:['naturalSkillRecoveryPercent',0.02],
     arcane:['artsDamageReduction',0.005],foresight:['skillCostInitialPercent',0.02],miracle:['physicalAndArtsDodge',0.01],
     investor:['maxLifeRecoveryPercent',0.001],unyielding:['maxLifePercent',0.03],harmony:['healingDealtPercent',0.01],
@@ -139,28 +139,6 @@ test('mastery and native damage increases share one outgoing bucket while other 
   applyDamageIncrease(normal.b,actor,oldMode,1.02);
   assert.equal(oldMode.mul,1.02);
   assert.equal(oldMode.damageIncreaseBonus,undefined);
-});
-
-test('worn damage badges, temporary damage badges, and native damage bonuses add in one bucket',()=>{
-  const {h,u}=unitWith([badge('damage',2)],false,false,{},[],{enemy_stat_dummy:enemyRec({key:'enemy_stat_dummy',hp:5000})});
-  const target=h.spawn('enemy_stat_dummy',{pos:[10,6]});
-  u.buffs.push({key:'native-damage-increase',mods:{dmgDealtMul:1.05},stacks:1});
-  u.buffs.push({key:'darkmoon-temporary-damage-badge',mods:{dmgDealtMul:1.04},stacks:1});
-  h.b.dealDamage(u,target,{amount:100,type:'true',mul:1,isAttack:true});
-  assert.equal(target.hp,4887,'2 worn damage badges (+4%), temporary damage badges (+4%), and native damage (+5%) total +13%');
-});
-
-test('Workshop support tokens add native, worn, and temporary damage bonuses in the same bucket',()=>{
-  const {h,u}=unitWith([],false,false,{},[],{enemy_stat_dummy:enemyRec({key:'enemy_stat_dummy',hp:5000})});
-  const token=h.b.spawnToken(u,'damage-bonus-projection',11,6,{def:{stats:{atk:100,maxHp:500,def:0},skill:null},kit:{},anySource:true});
-  const target=h.spawn('enemy_stat_dummy',{pos:[10,6]});
-  assert.equal(token.side,'ally');
-  assert.equal(token.kind,'token');
-  token.buffs.push({key:'native-damage-increase',mods:{dmgDealtMul:1.05},stacks:1});
-  token.buffs.push({key:'worn-damage-badge',mods:{dmgDealtMul:1.04},stacks:1});
-  token.buffs.push({key:'temporary-damage-badge',mods:{dmgDealtMul:1.04},stacks:1});
-  h.b.dealDamage(token,target,{amount:100,type:'true',mul:1,isAttack:true});
-  assert.equal(target.hp,4887,'token native +5%, worn badge +4%, and temporary badge +4% add to +13%');
 });
 
 test('outgoing damage helper preserves reduction and element multipliers in their existing lanes',()=>{

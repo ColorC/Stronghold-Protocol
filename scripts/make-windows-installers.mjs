@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// scripts/make-windows-installers.mjs — the Windows release files of the Workshop Lite build (docs/WINDOWS.md).
+// scripts/make-windows-installers.mjs — the Windows release files of the 进击 (assault) Lite build (docs/WINDOWS.md).
 //
 //   node scripts/make-windows-installers.mjs [--out <dir>] [--cache <dir>] [--makensis <exe>] [--bundle <dir>] [--keep-stage]
 //
 // Produces, in --out (default <repo parent>/Stronghold-Protocol-Windows-Installers):
-//   Stronghold-Protocol-Windows-Lite-workshop-v<version>.zip   portable bundle: unpack, double-click 启动游戏.exe
-//   Stronghold-Protocol-Workshop-<version>.msi                 per-user MSI (WiX 5, scripts/windows/installer.wxs)
-//   Stronghold-Protocol-Workshop-Setup-<version>.exe           per-user setup (NSIS 3, scripts/windows/installer.nsi)
+//   Stronghold-Protocol-Assault-Windows-<version>.zip   portable bundle: unpack, double-click 启动游戏.exe
+//   Stronghold-Protocol-Assault-<version>.msi           per-user MSI (WiX 5, scripts/windows/installer.wxs)
+//   Stronghold-Protocol-Assault-Setup-<version>.exe     per-user setup (NSIS 3, scripts/windows/installer.nsi)
 //   SHA256SUMS.txt
 //
 // All three carry the same payload, `make-windows-bundle.mjs --lite`: the launcher, the portable Node, game code and
@@ -33,7 +33,7 @@ import zlib from 'node:zlib';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { extractZip, findBatchFiles, noticePoints, numericVersion, outDirIsUnsafe } from './make-windows-bundle.mjs';
-import { workshopIco, crc32 } from './windows/icon.mjs';
+import { productIco, crc32 } from './windows/icon.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const IS_WIN = process.platform === 'win32';
@@ -64,15 +64,15 @@ export const TOOLS = Object.freeze({
 });
 
 /** Folder name inside the zip (earlier releases unpacked to this folder too). */
-const ZIP_TOP = 'Stronghold-Protocol-Windows-Lite';
+const ZIP_TOP = 'Stronghold-Protocol-Assault-Windows';
 const WXS = path.join(ROOT, 'scripts', 'windows', 'installer.wxs');
 const NSI = path.join(ROOT, 'scripts', 'windows', 'installer.nsi');
 
 export function artifactNames(version) {
   return {
-    zip: `Stronghold-Protocol-Windows-Lite-workshop-v${version}.zip`,
-    msi: `Stronghold-Protocol-Workshop-${version}.msi`,
-    exe: `Stronghold-Protocol-Workshop-Setup-${version}.exe`,
+    zip: `Stronghold-Protocol-Assault-Windows-${version}.zip`,
+    msi: `Stronghold-Protocol-Assault-${version}.msi`,
+    exe: `Stronghold-Protocol-Assault-Setup-${version}.exe`,
   };
 }
 
@@ -93,7 +93,7 @@ function parseArgs(argv) {
   return o;
 }
 
-const HELP = `node scripts/make-windows-installers.mjs — 生成工坊 Windows 轻量包 zip、MSI 与安装程序 exe
+const HELP = `node scripts/make-windows-installers.mjs — 生成进击 Windows 轻量包 zip、MSI 与安装程序 exe
 
   --out <dir>      产物目录（默认 <仓库上一级>/Stronghold-Protocol-Windows-Installers）
   --cache <dir>    WiX / NSIS 下载缓存（默认 <仓库>/.cache/windows-installer-tools）
@@ -178,11 +178,11 @@ function makensisVersion(makensis) {
 /** The text of the installers' notice page (MSI license dialog, NSIS license page). */
 export function installerNotice() {
   return [
-    '卫戍协议：工坊 · 使用前须知',
+    '卫戍协议：进击 · 使用前须知',
     '安装后在这台电脑上开服，并在浏览器里游玩。首次启动需要联网下载游戏资源，窗口会显示下载进度；下载完成后可以离线游玩。',
     ...noticePoints({ lite: true }).map((p) => `• ${plain(p)}`),
     '本程序自己编写的代码按 GPL-3.0-or-later 授权，全文见安装目录里的 LICENSE；内置 Node.js 等第三方组件的许可见 THIRD-PARTY-NOTICES.md。',
-    '工坊存档保存在 %LOCALAPPDATA%\\Stronghold-Protocol-Workshop，卸载时保留；游戏下载的资源随卸载一起删除。',
+    '进击与工坊的存档保存在 %LOCALAPPDATA%\\Stronghold-Protocol-Assault，卸载时保留；游戏下载的资源随卸载一起删除。',
   ];
 }
 
@@ -288,7 +288,7 @@ async function main() {
   if (outDirIsUnsafe(out)) { console.error(`✖ --out 不能指向仓库本身或它的上级目录：${out}`); return 1; }
   const cacheDir = path.resolve(o.cache || path.join(ROOT, '.cache', 'windows-installer-tools'));
   const stage = path.join(out, '.stage');
-  console.log(`\n卫戍协议：工坊 · Windows 安装包 ${version}（MSI ProductVersion ${msiVersion}）\n  源仓库：${ROOT}\n  产物：  ${out}\n`);
+  console.log(`\n卫戍协议：进击 · Windows 安装包 ${version}（MSI ProductVersion ${msiVersion}）\n  源仓库：${ROOT}\n  产物：  ${out}\n`);
 
   const dotnetMajor = dotnetRuntimeMajor();
   if (dotnetMajor < 6) { console.error('✖ 需要 PATH 里的 dotnet 和 .NET 6 或更高的运行时来运行 WiX 5（https://dotnet.microsoft.com/download）。'); return 1; }
@@ -329,10 +329,10 @@ async function main() {
   if (!fs.existsSync(wixDll)) throw new Error(`工具包里没有 ${wixDll}`);
 
   // 3) Shared inputs
-  const icon = path.join(stage, 'workshop.ico');
+  const icon = path.join(stage, 'assault.ico');
   const license = path.join(stage, 'notice.rtf');
   const nsh = path.join(stage, 'payload.nsh');
-  await fsp.writeFile(icon, workshopIco());
+  await fsp.writeFile(icon, productIco());
   await fsp.writeFile(license, toRtf(installerNotice()), 'ascii');
   await fsp.writeFile(nsh, payloadNsh(top), 'utf8');
 

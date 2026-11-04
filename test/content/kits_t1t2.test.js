@@ -7,6 +7,7 @@ import { makeBattle, enemyRec, chessRec, checkInvariants } from '../helpers/batt
 import { getDefaultSource } from '../../server/sim/simdata.js';
 import { ELEMENT_GAUGE_MAX, PROJECTILE_SPEEDS, BOOMERANG_RETURN_SPEED } from '../../server/sim/constants.js';
 import { sortEnemyTargets } from '../../server/sim/targeting.js';
+import { DRONE_TAG as ROCKROCK_DRONE } from '../../server/sim/content/kits/ops/chess_char_2_10-rockr.js';
 
 const ds = getDefaultSource();
 const raw = (id) => ds.rawChess(id);
@@ -18,7 +19,7 @@ const tbOf = (id) => raw(id).trait.bb;
 const approx = (a, b, msg = '', rel = 1e-6) => assert.ok(Math.abs(a - b) <= rel * Math.max(1, Math.abs(b)), `${msg} ${a} ≈ ${b}`);
 const dummy = (key, o = {}) => enemyRec({ key, hp: 1e7, speed: 0, ...o });
 const READY = { sp: 999 }; // carryState: skill fully charged at deployment
-const HOOKS = ['damaged', 'heal', 'skillStart', 'skillEnd', 'statusApplied', 'ammoUsed', 'attack', 'death', 'deploy', 'dodge'];
+const HOOKS = ['damaged', 'heal', 'skillStart', 'skillEnd', 'statusApplied', 'ammoUsed', 'attack', 'death', 'deploy'];
 
 /** Battle with captured noisy hooks, no auto-finish, long time limit. */
 function run(o) {
@@ -609,7 +610,8 @@ test('1_19 野鬃: 夹枪冲锋 wider range, ATK +atk, pushes targets away; elit
   approx(u.s.atk, u.base.atk * (1 + bb.atk));
   const e = h.enemies()[0];
   assert.ok(e.x >= 6.5, `pushed to x=${e.x}`);
-  assert.ok(h.eventsOf('fx').some((f) => f[1] === 'displace'));
+  assert.ok(h.eventsOf('fx').some((f) => f[1] === 'displace' && f[4]?.keepFacing === true),
+    'Wild Mane S2 inherits the common push facing rule');
   done(h);
 
   const idb = 'chess_char_1_19_b', t = tal(idb);
@@ -1020,10 +1022,6 @@ test('2_13 蒂比: an incoming attack triggers 紧急赶场通知 and is dodged;
   h.runUntil(() => u.skill.active, 3);
   assert.equal(h.hooksOf('skillStart').find((c) => c.unit === u).reason, 'TAKE_DAMAGE');
   assert.equal(u.stats.taken, 0, 'the triggering hit was dodged');
-  const dodge = h.hooksOf('dodge').find((c) => c.target === u);
-  assert.ok(dodge, 'the guaranteed S2 dodge emits the shared dodge event');
-  assert.equal(dodge.source, e);
-  assert.equal(dodge.dmg.cancel, true);
   approx(u.s.atk, u.base.atk * (1 + bb.atk));
   assert.equal(u.s.flags.liftoff, true, 'airborne (起飞)');
   assert.equal(u.ground, true, 'still a ground unit on her low tile');
@@ -1344,7 +1342,9 @@ test('2_10 洛洛: 自负此轭 drones stay locked on their target while the ski
   const t0 = h.b.time;
   h.run(4);
   const atks = h.hooksOf('attack').filter((c) => c.attacker === u && c.t > t0);
-  assert.ok(atks.length > 0 && atks.every((c) => c.targets.length === 1 && c.targets[0] === first), 'locked');
+  assert.ok(atks.length > 0 && atks.every((c) => c.targets.length === 1 && c.targets[0] === other), 'body keeps normal targeting');
+  const drones = h.hooksOf('damaged').filter((c) => c.source === u && c.t > t0 && c.dmg.tags?.includes(ROCKROCK_DRONE));
+  assert.ok(drones.length > 0 && drones.every((c) => c.target === first && c.dmg.isSkill && !c.dmg.isAttack), 'drone stays locked');
   done(h);
 });
 

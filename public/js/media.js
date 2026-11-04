@@ -9,14 +9,15 @@
 //
 //     /assets/audio/bgm/act1.mp3   →   /media/bgm/act1
 //
-// `server/index.js` resolves /media/… back to the real file under public/assets/audio and still answers with
+// `server/http/media.js` resolves /media/… back to the real file under public/assets/audio and still answers with
 // `Content-Type: audio/mpeg` + range support; Web Audio sniffs the container, so the URL is all the same to it.
 // A host that does not implement /media/ keeps working: `audio.js` falls back to the original URL whenever the
 // /media/ response is unusable (a 404, or a 200 that is not audio at all — some static hosts answer a missing
 // path with the SPA's index.html).
 import { MEDIA_PREFIX, AUDIO_EXTS } from '../../shared/media.js';
+import { pageResourcePath } from './resourceBase.js';
 
-const AUDIO_PATH = /^(.*)\/assets\/audio\/(.+)$/i;
+const AUDIO_PATH = /^\/assets\/audio\/(.+)$/i;
 
 /**
  * Rewrite an audio URL to its extension-less `/media/…` form.
@@ -38,13 +39,11 @@ export function mediaUrl(url, origin = globalThis.location?.origin) {
   if (origin ? u.origin !== origin : absolute) return url;
   const m = AUDIO_PATH.exec(u.pathname);
   if (!m) return url;
-  const prefix = m[1];
-  let rest = m[2];
-  if (prefix && (!prefix.startsWith('/') || prefix.slice(1).split('/').some((s) => !s || s === '.' || s === '..' || s.startsWith('.')))) return url;
+  let rest = m[1];
   const ext = AUDIO_EXTS.find((e) => rest.toLowerCase().endsWith(e));
   if (!ext) return url;             // not a file we serve as audio (e.g. "x.mp3.bak") — leave it alone
   rest = rest.slice(0, -ext.length);
   const segments = rest.split('/');
   if (!rest || segments.some((s) => !s || s === '.' || s === '..' || s.startsWith('.'))) return url;
-  return `${prefix}${MEDIA_PREFIX}${rest}${u.search}`;
+  return pageResourcePath(`${MEDIA_PREFIX}${rest}${u.search}`);
 }

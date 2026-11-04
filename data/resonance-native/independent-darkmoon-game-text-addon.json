@@ -1,0 +1,2633 @@
+{
+  "schema": "stronghold.darkmoon-game-text-addon/v1",
+  "sourceBuild": "19.2.0.68600",
+  "basedOnGameText": "independent-game-text.json",
+  "operators": {
+    "塞雷娅": {
+      "sourceId": "BGS_006",
+      "name": "斯尼德的伐木机",
+      "nameEn": "Sneed's Old Shredder",
+      "normal": "退场时召唤1名随机六星干员的作战投影。",
+      "elite": "退场时召唤2名随机六星干员的作战投影。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_006",
+            "name": "斯尼德的伐木机",
+            "nameEn": "Sneed's Old Shredder",
+            "tier": 5,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>亡语：</b>随机召唤一个<b>传说</b>随从。",
+            "textElite": "<b>亡语：</b>随机召唤两个<b>传说</b>随从。"
+          }
+        ]
+      },
+      "normalLevels": "退场时召唤1名随机六星干员的作战投影。",
+      "eliteLevels": "退场时召唤2名随机六星干员的作战投影。"
+    },
+    "裁度": {
+      "sourceId": "BGS_008",
+      "name": "阴森巨蟒",
+      "nameEn": "Ghastcoiler",
+      "normal": "退场时召唤2名随机带有退场效果干员的作战投影。",
+      "elite": "退场时召唤4名随机带有退场效果干员的作战投影。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_008",
+            "name": "阴森巨蟒",
+            "nameEn": "Ghastcoiler",
+            "tier": 6,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>亡语：</b>随机召唤\n两个<b>亡语</b>随从。",
+            "textElite": "<b>亡语：</b>随机召唤\n四个<b>亡语</b>随从。"
+          }
+        ]
+      },
+      "normalLevels": "退场时召唤2名随机带有退场效果干员的作战投影。",
+      "eliteLevels": "退场时召唤4名随机带有退场效果干员的作战投影。"
+    },
+    "浊心斯卡蒂": {
+      "sourceId": "BGS_009",
+      "name": "光牙执行者",
+      "nameEn": "Lightfang Enforcer",
+      "normal": "每回合休整结束时，每个阵营各一名随机友方干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+      "elite": "每回合休整结束时，每个阵营各一名随机友方干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_009",
+            "name": "光牙执行者",
+            "nameEn": "Lightfang Enforcer",
+            "tier": 5,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "在你的回合结束时，随机使每个随从类型的各一个友方随从获得+2/+2。",
+            "textElite": "在你的回合结束时，随机使每个随从类型的各一个友方随从获得+4/+4。"
+          }
+        ]
+      },
+      "normalLevels": "每回合休整结束时，每个阵营各一名随机友方干员获得训练等级×4；成长永久保留。",
+      "eliteLevels": "每回合休整结束时，每个阵营各一名随机友方干员获得训练等级×8；成长永久保留。"
+    },
+    "缪尔赛思": {
+      "sourceId": "BGS_012",
+      "name": "坎格尔的学徒",
+      "nameEn": "Kangor's Apprentice",
+      "normal": "退场时召回本场战斗中最先倒下的2名哥伦比亚友方干员的作战投影。",
+      "elite": "退场时召回本场战斗中最先倒下的4名哥伦比亚友方干员的作战投影。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_012",
+            "name": "坎格尔的学徒",
+            "nameEn": "Kangor's Apprentice",
+            "tier": 6,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>亡语</b>：召唤本场战斗中最先死亡的两个友方机械。",
+            "textElite": "<b>亡语</b>：召唤本场战斗中最先死亡的四个友方机械。"
+          }
+        ]
+      },
+      "normalLevels": "退场时召回本场战斗中最先倒下的2名哥伦比亚友方干员的作战投影。",
+      "eliteLevels": "退场时召回本场战斗中最先倒下的4名哥伦比亚友方干员的作战投影。"
+    },
+    "波登可": {
+      "sourceId": "BGS_017",
+      "name": "族群领袖",
+      "nameEn": "Pack Leader",
+      "normal": "每当其他友方叙拉古干员新获得或首次上阵时，该干员获得攻击成长徽章×2；成长永久保留。\n战斗中召唤叙拉古支援单位时，该支援单位获得攻击徽章×2；仅本场战斗生效。",
+      "elite": "每当其他友方叙拉古干员新获得或首次上阵时，该干员获得攻击成长徽章×4；成长永久保留。\n战斗中召唤叙拉古支援单位时，该支援单位获得攻击徽章×4；仅本场战斗生效。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_017",
+            "name": "族群领袖",
+            "nameEn": "Pack Leader",
+            "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "每当你召唤一个野兽，使其获得+2\n攻击力。",
+            "textElite": "每当你召唤一个野兽，使其获得+4\n攻击力。"
+          }
+        ]
+      },
+      "normalLevels": "每当其他友方叙拉古干员新获得或首次上阵时，该干员获得训练等级×2；成长永久保留。\n战斗中召唤叙拉古支援单位时，该支援单位获得训练等级×2；仅本场战斗生效。",
+      "eliteLevels": "每当其他友方叙拉古干员新获得或首次上阵时，该干员获得训练等级×4；成长永久保留。\n战斗中召唤叙拉古支援单位时，该支援单位获得训练等级×4；仅本场战斗生效。"
+    },
+    "荒芜拉普兰德": {
+      "sourceId": "BGS_018",
+      "name": "巨狼戈德林",
+      "nameEn": "Goldrinn, the Great Wolf",
+      "normal": "退场时使叙拉古友方临时获得攻击徽章×5与职业副属性徽章×5。",
+      "elite": "退场时使叙拉古友方临时获得攻击徽章×10与职业副属性徽章×10。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_018",
+            "name": "巨狼戈德林",
+            "nameEn": "Goldrinn, the Great Wolf",
+            "tier": 6,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>亡语：</b>使你的野兽获得+5/+5。",
+            "textElite": "<b>亡语：</b>使你的野兽获得+10/+10。"
+          }
+        ]
+      },
+      "normalLevels": "退场时使叙拉古友方临时获得训练等级×10。",
+      "eliteLevels": "退场时使叙拉古友方临时获得训练等级×20。"
+    },
+    "正义骑士号": {
+      "sourceId": "BGS_019",
+      "name": "红色雏龙",
+      "nameEn": "Red Whelp",
+      "normal": "首批敌人入场时，随机造成一次法术伤害，每次为自身基础攻击的40%乘以己方卡西米尔干员数量。",
+      "elite": "首批敌人入场时，随机造成两次法术伤害，每次为自身基础攻击的40%乘以己方卡西米尔干员数量。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_019",
+            "name": "红色雏龙",
+            "nameEn": "Red Whelp",
+            "tier": 1,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>战斗开始时：</b>随机对一个敌方随从造成等同于友方龙的数量的\n伤害。",
+            "textElite": "<b>战斗开始时：</b>随机对一个敌方随从造成等同于友方龙的数量的伤害，触发两次。"
+          }
+        ]
+      },
+      "normalLevels": "首批敌人入场时，随机造成一次法术伤害，每次为自身基础攻击的40%乘以己方卡西米尔干员数量。",
+      "eliteLevels": "首批敌人入场时，随机造成两次法术伤害，每次为自身基础攻击的40%乘以己方卡西米尔干员数量。"
+    },
+    "铃兰": {
+      "sourceId": "BGS_021",
+      "name": "熊妈妈",
+      "nameEn": "Mama Bear",
+      "normal": "每当其他友方叙拉古干员新获得或首次上阵时，该干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。\n战斗中召唤叙拉古支援单位时，该支援单位获得攻击徽章×4与职业副属性徽章×4；仅本场战斗生效。",
+      "elite": "每当其他友方叙拉古干员新获得或首次上阵时，该干员获得攻击成长徽章×8与职业副属性成长徽章×8；成长永久保留。\n战斗中召唤叙拉古支援单位时，该支援单位获得攻击徽章×8与职业副属性徽章×8；仅本场战斗生效。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_021",
+            "name": "熊妈妈",
+            "nameEn": "Mama Bear",
+            "tier": 5,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "每当你召唤一个野兽，使其获得+4/+4。",
+            "textElite": "每当你召唤一个野兽，使其获得+8/+8。"
+          }
+        ]
+      },
+      "normalLevels": "每当其他友方叙拉古干员新获得或首次上阵时，该干员获得训练等级×8；成长永久保留。\n战斗中召唤叙拉古支援单位时，该支援单位获得训练等级×8；仅本场战斗生效。",
+      "eliteLevels": "每当其他友方叙拉古干员新获得或首次上阵时，该干员获得训练等级×16；成长永久保留。\n战斗中召唤叙拉古支援单位时，该支援单位获得训练等级×16；仅本场战斗生效。"
+    },
+    "圣约送葬人": {
+      "sourceId": "BGS_022",
+      "name": "扎普·斯里维克",
+      "nameEn": "Zapp Slywick",
+      "normal": "攻击后追加1次普通攻击；每3秒最多触发一轮。优先攻击当前可攻击范围内攻击力最低的敌人。",
+      "elite": "攻击后追加3次普通攻击；每3秒最多触发一轮。优先攻击当前可攻击范围内攻击力最低的敌人。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_022",
+            "name": "扎普·斯里维克",
+            "nameEn": "Zapp Slywick",
+            "tier": 6,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>风怒</b>\n该随从总会攻击攻击力最低的敌方随从。",
+            "textElite": "<b>超级风怒</b>\n该随从总会攻击攻击力最低的敌方随从。"
+          }
+        ]
+      },
+      "normalLevels": "攻击后追加1次普通攻击；每3秒最多触发一轮。优先攻击当前可攻击范围内攻击力最低的敌人。",
+      "eliteLevels": "攻击后追加3次普通攻击；每3秒最多触发一轮。优先攻击当前可攻击范围内攻击力最低的敌人。"
+    },
+    "梅尔": {
+      "sourceId": "BGS_023",
+      "name": "载人收割机",
+      "nameEn": "Piloted Shredder",
+      "normal": "退场时召唤1名随机二星干员的作战投影。",
+      "elite": "退场时召唤2名随机二星干员的作战投影。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_023",
+            "name": "载人收割机",
+            "nameEn": "Piloted Shredder",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>亡语：</b>随机召唤一个法力值消耗为（2）的随从。",
+            "textElite": "<b>亡语：</b>随机召唤两个法力值消耗为（2）的随从。"
+          }
+        ]
+      },
+      "normalLevels": "退场时召唤1名随机二星干员的作战投影。",
+      "eliteLevels": "退场时召唤2名随机二星干员的作战投影。"
+    },
+    "香草": {
+      "sourceId": "BGS_027",
+      "name": "微型战斗机甲",
+      "nameEn": "Micro Machine",
+      "normal": "每回合休整开始时，自身永久装备精准徽章×1。",
+      "elite": "每回合休整开始时，自身永久装备精准徽章×2。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_027",
+            "name": "微型战斗机甲",
+            "nameEn": "Micro Machine",
+            "tier": 1,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "在每个回合开始时，获得+1攻击力。",
+            "textElite": "在每个回合开始时，获得+2攻击力。"
+          }
+        ]
+      },
+      "normalLevels": "每回合休整开始时，自身永久装备训练等级×1。",
+      "eliteLevels": "每回合休整开始时，自身永久装备训练等级×2。"
+    },
+    "焰尾": {
+      "sourceId": "BGS_032",
+      "name": "火焰传令官",
+      "nameEn": "Herald of Flame",
+      "normal": "攻击超杀时对最左侧敌人追加150%基础攻击的法术伤害。",
+      "elite": "攻击超杀时对最左侧敌人追加300%基础攻击的法术伤害。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_032",
+            "name": "火焰传令官",
+            "nameEn": "Herald of Flame",
+            "tier": 4,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>超杀：</b>对最左边的敌方随从造成3点伤害。",
+            "textElite": "<b>超杀：</b>对最左边的敌方随从造成6点伤害。"
+          }
+        ]
+      },
+      "normalLevels": "攻击超杀时对最左侧敌人追加150%基础攻击的法术伤害。",
+      "eliteLevels": "攻击超杀时对最左侧敌人追加300%基础攻击的法术伤害。"
+    },
+    "鞭刃": {
+      "sourceId": "BGS_033",
+      "name": "急饿巨龙",
+      "nameEn": "Hangry Dragon",
+      "normal": "每回合休整开始时，若上一场战斗获胜，自身获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+      "elite": "每回合休整开始时，若上一场战斗获胜，自身获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_033",
+            "name": "急饿巨龙",
+            "nameEn": "Hangry Dragon",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "在你的回合开始时，如果你在上一场战斗中获胜，则获得+2/+2。",
+            "textElite": "在你的回合开始时，如果你在上一场战斗中获胜，则获得+4/+4。"
+          }
+        ]
+      },
+      "normalLevels": "每回合休整开始时，若上一场战斗获胜，自身获得训练等级×4；成长永久保留。",
+      "eliteLevels": "每回合休整开始时，若上一场战斗获胜，自身获得训练等级×8；成长永久保留。"
+    },
+    "白金": {
+      "sourceId": "BGS_034",
+      "name": "青铜守卫",
+      "nameEn": "Bronze Warden",
+      "normal": "招募获得或首次上阵时，自身永久装备护盾发生器×1、不屈盟约×1。",
+      "elite": "招募获得或首次上阵时，自身永久装备护盾发生器×1、不屈盟约×1。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_034",
+            "name": "青铜守卫",
+            "nameEn": "Bronze Warden",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>圣盾，复生</b>",
+            "textElite": "<b>圣盾，复生</b>"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，自身永久装备护盾发生器×1、不屈盟约×1。",
+      "eliteLevels": "招募获得或首次上阵时，自身永久装备护盾发生器×1、不屈盟约×1。"
+    },
+    "协律": {
+      "sourceId": "BGS_035",
+      "name": "蜡烛骑士托瓦格尔",
+      "nameEn": "Waxrider Togwaggle",
+      "normal": "友方击倒敌人（卡西米尔）时，使自身临时获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "elite": "友方击倒敌人（卡西米尔）时，使自身临时获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_035",
+            "name": "蜡烛骑士托瓦格尔",
+            "nameEn": "Waxrider Togwaggle",
+            "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "每当一条友方的龙消灭一个敌人，便获得+2/+2。",
+            "textElite": "每当一条友方的龙消灭一个敌人，便获得+4/+4。"
+          }
+        ]
+      },
+      "normalLevels": "友方击倒敌人（卡西米尔）时，使自身临时获得训练等级×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "eliteLevels": "友方击倒敌人（卡西米尔）时，使自身临时获得训练等级×8。同一效果每3秒最多触发一次，每场最多二十五次。"
+    },
+    "玛恩纳": {
+      "sourceId": "BGS_036",
+      "name": "狂野的拉佐格尔",
+      "nameEn": "Razorgore, the Untamed",
+      "normal": "每回合休整结束时，每名在场友方同阵营干员各结算一次，自身获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。",
+      "elite": "每回合休整结束时，每名在场友方同阵营干员各结算一次，自身获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_036",
+            "name": "狂野的拉佐格尔",
+            "nameEn": "Razorgore, the Untamed",
+            "tier": 5,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "在你的回合结束时，你每有一条龙，便获得+1/+1。",
+            "textElite": "在你的回合结束时，你每有一条龙，便获得+2/+2。"
+          }
+        ]
+      },
+      "normalLevels": "每回合休整结束时，每名在场友方同阵营干员各结算一次，自身获得训练等级×2；成长永久保留。",
+      "eliteLevels": "每回合休整结束时，每名在场友方同阵营干员各结算一次，自身获得训练等级×4；成长永久保留。"
+    },
+    "但书": {
+      "sourceId": "BGS_037",
+      "name": "时间管理者",
+      "nameEn": "Steward of Time",
+      "normal": "出售自身时，使当前酒馆所有未售出的干员累加以下成长：购买后直接获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。只影响当前商店。",
+      "elite": "出售自身时，使当前酒馆所有未售出的干员累加以下成长：购买后直接获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。只影响当前商店。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_037",
+            "name": "时间管理者",
+            "nameEn": "Steward of Time",
+            "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "当你出售该随从时，使鲍勃的酒馆中的所有随从获得+1/+1。",
+            "textElite": "当你出售该随从时，使鲍勃的酒馆中的所有随从获得+2/+2。"
+          }
+        ]
+      },
+      "normalLevels": "出售自身时，使当前酒馆所有未售出的干员累加以下成长：购买后直接获得训练等级×2；成长永久保留。只影响当前商店。",
+      "eliteLevels": "出售自身时，使当前酒馆所有未售出的干员累加以下成长：购买后直接获得训练等级×4；成长永久保留。只影响当前商店。"
+    },
+    "流星": {
+      "sourceId": "BGS_038",
+      "name": "暮光使者",
+      "nameEn": "Twilight Emissary",
+      "normal": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n招募获得或首次上阵时，你选择的一名友方卡西米尔阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+      "elite": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n招募获得或首次上阵时，你选择的一名友方卡西米尔阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_038",
+            "name": "暮光使者",
+            "nameEn": "Twilight Emissary",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>嘲讽，战吼：</b>使一条友方的龙获得+2/+2。",
+            "textElite": "<b>嘲讽，战吼：</b>使一条友方的龙获得+4/+4。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n招募获得或首次上阵时，你选择的一名友方卡西米尔阵营干员获得训练等级×4；成长永久保留。",
+      "eliteLevels": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n招募获得或首次上阵时，你选择的一名友方卡西米尔阵营干员获得训练等级×8；成长永久保留。"
+    },
+    "砾": {
+      "sourceId": "BGS_039",
+      "name": "龙人军官",
+      "nameEn": "Dragonspawn Lieutenant",
+      "normal": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+      "elite": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_039",
+            "name": "龙人军官",
+            "nameEn": "Dragonspawn Lieutenant",
+            "tier": 1,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>嘲讽</b>",
+            "textElite": "<b>嘲讽</b>"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+      "eliteLevels": "招募获得或首次上阵时，自身永久装备坚守盟约×1。"
+    },
+    "圣聆初雪": {
+      "sourceId": "BGS_040",
+      "name": "红衣纳迪娜",
+      "nameEn": "Nadina the Red",
+      "normal": "退场时为卡西米尔友方各增加5层护盾。",
+      "elite": "退场时为卡西米尔友方各增加5层护盾。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_040",
+            "name": "红衣纳迪娜",
+            "nameEn": "Nadina the Red",
+            "tier": 6,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>亡语：</b>使你的龙获得<b>圣盾</b>。",
+            "textElite": "<b>亡语：</b>使你的龙获得<b>圣盾</b>。"
+          }
+        ]
+      },
+      "normalLevels": "退场时为卡西米尔友方各增加5层护盾。",
+      "eliteLevels": "退场时为卡西米尔友方各增加5层护盾。"
+    },
+    "耀骑士临光": {
+      "sourceId": "BGS_041",
+      "name": "奥术守护者卡雷苟斯",
+      "nameEn": "Kalecgos, Arcane Aspect",
+      "normal": "具有获得时效果的友方干员入队时，所有友方卡西米尔阵营干员各获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。",
+      "elite": "具有获得时效果的友方干员入队时，所有友方卡西米尔阵营干员各获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_041",
+            "name": "奥术守护者卡雷苟斯",
+            "nameEn": "Kalecgos, Arcane Aspect",
+            "tier": 6,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "在你使用一张<b>战吼</b>随从牌后，使你的龙获得+1/+1。",
+            "textElite": "在你使用一张<b>战吼</b>随从牌后，使你的所有龙获得+2/+2。"
+          }
+        ]
+      },
+      "normalLevels": "具有获得时效果的友方干员入队时，所有友方卡西米尔阵营干员各获得训练等级×2；成长永久保留。",
+      "eliteLevels": "具有获得时效果的友方干员入队时，所有友方卡西米尔阵营干员各获得训练等级×4；成长永久保留。"
+    },
+    "远牙": {
+      "sourceId": "BGS_043",
+      "name": "姆诺兹多",
+      "nameEn": "Murozond",
+      "normal": "招募获得或首次上阵时，从上一回合友方阵容中随机招募一名干员；以普通形态加入，保留其原生效果。",
+      "elite": "招募获得或首次上阵时，从上一回合友方阵容中随机招募一名干员；以进阶形态加入，保留其原生效果。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_043",
+            "name": "姆诺兹多",
+            "nameEn": "Murozond",
+            "tier": 5,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>战吼：</b>将你上一个对手的战队中的一个随从置入你的手牌。",
+            "textElite": "<b>战吼：</b>将你上一个对手的战队中的一个随从置入你的手牌，并使其变为金色！"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，从上一回合友方阵容中随机招募一名干员；以普通形态加入，保留其原生效果。",
+      "eliteLevels": "招募获得或首次上阵时，从上一回合友方阵容中随机招募一名干员；以进阶形态加入，保留其原生效果。"
+    },
+    "野鬃": {
+      "sourceId": "BGS_045",
+      "name": "雕文护卫者",
+      "nameEn": "Glyph Guardian",
+      "normal": "每次攻击临时提高攻击倍率20%，最多叠加至额外200%；同一效果每3秒最多触发一次。",
+      "elite": "每次攻击临时提高攻击倍率30%，最多叠加至额外300%；同一效果每3秒最多触发一次。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_045",
+            "name": "雕文护卫者",
+            "nameEn": "Glyph Guardian",
+            "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "每当该随从攻击，便使其攻击力翻倍。",
+            "textElite": "每当该随从攻击，便使其攻击力变为\n三倍。"
+          }
+        ]
+      },
+      "normalLevels": "每次攻击临时提高攻击倍率20%，最多叠加至额外200%；同一效果每3秒最多触发一次。",
+      "eliteLevels": "每次攻击临时提高攻击倍率30%，最多叠加至额外300%；同一效果每3秒最多触发一次。"
+    },
+    "推进之王": {
+      "sourceId": "BGS_046",
+      "name": "“钓鱼王”纳特·帕格",
+      "nameEn": "Nat Pagle, Extreme Angler",
+      "normal": "普通攻击击倒敌人后，随机将1名原始干员加入整备区；每场最多触发一次。",
+      "elite": "普通攻击击倒敌人后，随机将2名原始干员加入整备区；每场最多触发一次。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_046",
+            "name": "“钓鱼王”纳特·帕格",
+            "nameEn": "Nat Pagle, Extreme Angler",
+            "tier": 5,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "当该随从攻击并消灭一个随从时，随机将一张随从牌置入你的\n手牌。",
+            "textElite": "当该随从攻击并消灭一个随从时，随机将两张随从牌置入你的\n手牌。"
+          }
+        ]
+      },
+      "normalLevels": "普通攻击击倒敌人后，随机将1名原始干员加入整备区；每场最多触发一次。",
+      "eliteLevels": "普通攻击击倒敌人后，随机将2名原始干员加入整备区；每场最多触发一次。"
+    },
+    "维娜·维多利亚": {
+      "sourceId": "BGS_047",
+      "name": "亡灵舰长伊丽扎",
+      "nameEn": "Dread Admiral Eliza",
+      "normal": "友方攻击（维多利亚）时，使所有友方临时获得攻击徽章×2与职业副属性徽章×1。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "elite": "友方攻击（维多利亚）时，使所有友方临时获得攻击徽章×4与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_047",
+            "name": "亡灵舰长伊丽扎",
+            "nameEn": "Dread Admiral Eliza",
+            "tier": 6,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "每当一个友方海盗攻击时，使所有友方随从获得+2/+1。",
+            "textElite": "每当一个友方海盗攻击时，使所有友方随从获得+4/+2。"
+          }
+        ]
+      },
+      "normalLevels": "友方攻击（维多利亚）时，使所有友方临时获得训练等级×3。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "eliteLevels": "友方攻击（维多利亚）时，使所有友方临时获得训练等级×6。同一效果每3秒最多触发一次，每场最多二十五次。"
+    },
+    "海蒂": {
+      "sourceId": "BGS_048",
+      "name": "南海勇夫",
+      "nameEn": "Southsea Strongarm",
+      "normal": "每购买一名维多利亚阵营干员，你选择的一名友方维多利亚干员获得攻击成长徽章×1与职业副属性成长徽章×1；按本局已购买的维多利亚干员数量累加，永久保留。",
+      "elite": "每购买一名维多利亚阵营干员，你选择的一名友方维多利亚干员获得攻击成长徽章×2与职业副属性成长徽章×2；按本局已购买的维多利亚干员数量累加，永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_048",
+            "name": "南海勇夫",
+            "nameEn": "Southsea Strongarm",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>战吼：</b>在本回合中，你每购买过一个海盗，使一个友方海盗获得+1/+1。",
+            "textElite": "<b>战吼：</b>在本回合中，你每购买过一个海盗，使一个友方海盗获得+2/+2。"
+          }
+        ]
+      },
+      "normalLevels": "每购买一名维多利亚阵营干员，你选择的一名友方维多利亚干员获得训练等级×2；按本局已购买的维多利亚干员数量累加，永久保留。",
+      "eliteLevels": "每购买一名维多利亚阵营干员，你选择的一名友方维多利亚干员获得训练等级×4；按本局已购买的维多利亚干员数量累加，永久保留。"
+    },
+    "格拉尼": {
+      "sourceId": "BGS_049",
+      "name": "白赚赌徒",
+      "nameEn": "Freedealing Gambler",
+      "normal": "出售时获得2枚金币。",
+      "elite": "出售时获得5枚金币。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_049",
+            "name": "白赚赌徒",
+            "nameEn": "Freedealing Gambler",
+            "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "出售该随从可以获得3枚铸币。",
+            "textElite": "出售该随从可以获得6枚铸币。"
+          }
+        ]
+      },
+      "normalLevels": "出售时获得2枚金币。",
+      "eliteLevels": "出售时获得5枚金币。"
+    },
+    "薄绿": {
+      "sourceId": "BGS_053",
+      "name": "血帆炮手",
+      "nameEn": "Bloodsail Cannoneer",
+      "normal": "具有获得时效果的友方干员入队时，除自身外的所有友方维多利亚阵营干员各获得攻击成长徽章×3；成长永久保留。",
+      "elite": "具有获得时效果的友方干员入队时，除自身外的所有友方维多利亚阵营干员各获得攻击成长徽章×6；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_053",
+            "name": "血帆炮手",
+            "nameEn": "Bloodsail Cannoneer",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>战吼：</b>使你的其他海盗获得+3攻击力。",
+            "textElite": "<b>战吼：</b>使你的其他海盗获得+6攻击力。"
+          }
+        ]
+      },
+      "normalLevels": "具有获得时效果的友方干员入队时，除自身外的所有友方维多利亚阵营干员各获得训练等级×3；成长永久保留。",
+      "eliteLevels": "具有获得时效果的友方干员入队时，除自身外的所有友方维多利亚阵营干员各获得训练等级×6；成长永久保留。"
+    },
+    "凯瑟琳": {
+      "sourceId": "BGS_055",
+      "name": "甲板杂兵",
+      "nameEn": "Deck Swabbie",
+      "normal": "招募获得或首次上阵时，下次酒馆升级费用减少1金币；每回合最多触发3次。",
+      "elite": "招募获得或首次上阵时，下次酒馆升级费用减少2金币；每回合最多触发3次。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_055",
+            "name": "甲板杂兵",
+            "nameEn": "Deck Swabbie",
+            "tier": 1,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>战吼：</b>提升酒馆等级所需的铸币减少（1）枚。",
+            "textElite": "<b>战吼：</b>提升酒馆等级所需的铸币减少\n（2）枚。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，下次酒馆升级费用减少1金币；每回合最多触发3次。",
+      "eliteLevels": "招募获得或首次上阵时，下次酒馆升级费用减少2金币；每回合最多触发3次。"
+    },
+    "号角": {
+      "sourceId": "BGS_056",
+      "name": "撕心狼队长",
+      "nameEn": "Ripsnarl Captain",
+      "normal": "友方攻击（维多利亚）时，使触发效果的友方临时获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "elite": "友方攻击（维多利亚）时，使触发效果的友方临时获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_056",
+            "name": "撕心狼队长",
+            "nameEn": "Ripsnarl Captain",
+            "tier": 4,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "每当其他友方海盗攻击时，使其获得+2/+2。",
+            "textElite": "每当其他友方海盗攻击时，使其获得+4/+4。"
+          }
+        ]
+      },
+      "normalLevels": "友方攻击（维多利亚）时，使触发效果的友方临时获得训练等级×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "eliteLevels": "友方攻击（维多利亚）时，使触发效果的友方临时获得训练等级×8。同一效果每3秒最多触发一次，每场最多二十五次。"
+    },
+    "谜图": {
+      "sourceId": "BGS_060",
+      "name": "喊号食人魔",
+      "nameEn": "Yo-Ho-Ogre",
+      "normal": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n受到敌人攻击并存活后立即反击一次；每3秒最多触发一次，反击不再次触发自身反击。",
+      "elite": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n受到敌人攻击并存活后立即反击一次；每3秒最多触发一次，反击不再次触发自身反击。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_060",
+            "name": "喊号食人魔",
+            "nameEn": "Yo-Ho-Ogre",
+            "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>嘲讽</b>\n在该随从受到攻击并没有死亡后，立即发起攻击。",
+            "textElite": "<b>嘲讽</b>\n在该随从受到攻击并没有死亡后，立即发起攻击。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n受到敌人攻击并存活后立即反击一次；每3秒最多触发一次，反击不再次触发自身反击。",
+      "eliteLevels": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n受到敌人攻击并存活后立即反击一次；每3秒最多触发一次，反击不再次触发自身反击。"
+    },
+    "刺玫": {
+      "sourceId": "BGS_061",
+      "name": "海盗无赖",
+      "nameEn": "Scallywag",
+      "normal": "退场时召唤维多利亚作战支援单位1个；每个攻击120、生命350。",
+      "elite": "退场时召唤维多利亚作战支援单位1个；每个攻击240、生命700。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_061",
+            "name": "海盗无赖",
+            "nameEn": "Scallywag",
+            "tier": 1,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>亡语：</b>召唤一个1/1的海盗并使其立即发起攻击。",
+            "textElite": "<b>亡语：</b>召唤一个2/2的海盗并使其立即发起攻击。"
+          }
+        ]
+      },
+      "normalLevels": "退场时召唤维多利亚作战支援单位1个；每个攻击120、生命350。",
+      "eliteLevels": "退场时召唤维多利亚作战支援单位1个；每个攻击240、生命700。"
+    },
+    "摩根": {
+      "sourceId": "BGS_066",
+      "name": "掘金者",
+      "nameEn": "Goldgrubber",
+      "normal": "每回合休整结束时，仅当阵容中有进阶干员时，自身获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+      "elite": "每回合休整结束时，仅当阵容中有进阶干员时，自身获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_066",
+            "name": "掘金者",
+            "nameEn": "Goldgrubber",
+            "tier": 4,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "在你的回合结束时，你每有一个金色友方随从，便获得+2/+2。",
+            "textElite": "在你的回合结束时，你每有一个金色友方随从，便获得+4/+4。"
+          }
+        ]
+      },
+      "normalLevels": "每回合休整结束时，仅当阵容中有进阶干员时，自身获得训练等级×4；成长永久保留。",
+      "eliteLevels": "每回合休整结束时，仅当阵容中有进阶干员时，自身获得训练等级×8；成长永久保留。"
+    },
+    "瑕光": {
+      "sourceId": "BGS_067",
+      "name": "龙人执行者",
+      "nameEn": "Drakonid Enforcer",
+      "normal": "友方累计破裂五层护盾时，使自身临时获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "elite": "友方累计破裂五层护盾时，使自身临时获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_067",
+            "name": "龙人执行者",
+            "nameEn": "Drakonid Enforcer",
+            "tier": 4,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "在一个友方随从失去<b>圣盾</b>后，获得+2/+2。",
+            "textElite": "在一个友方随从失去<b>圣盾</b>后，获得+4/+4。"
+          }
+        ]
+      },
+      "normalLevels": "友方累计破裂五层护盾时，使自身临时获得训练等级×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "eliteLevels": "友方累计破裂五层护盾时，使自身临时获得训练等级×8。同一效果每3秒最多触发一次，每场最多二十五次。"
+    },
+    "雷蛇": {
+      "sourceId": "BGS_071",
+      "name": "偏折机器人",
+      "nameEn": "Deflect-o-Bot",
+      "normal": "招募获得或首次上阵时，自身永久装备护盾发生器×1。\n召唤友方支援单位（哥伦比亚）时，使自身临时获得攻击徽章×1及护盾层数+5。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "elite": "招募获得或首次上阵时，自身永久装备护盾发生器×1。\n召唤友方支援单位（哥伦比亚）时，使自身临时获得攻击徽章×2及护盾层数+5。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_071",
+            "name": "偏折机器人",
+            "nameEn": "Deflect-o-Bot",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>圣盾</b>\n在战斗阶段中，每当你召唤一个机械，便获得+1攻击力和<b>圣盾</b>。",
+            "textElite": "<b>圣盾</b>\n在战斗阶段中，每当你召唤一个机械，便获得+2攻击力和<b>圣盾</b>。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，自身永久装备护盾发生器×1。\n召唤友方支援单位（哥伦比亚）时，使自身临时获得训练等级×1及护盾层数+5。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "eliteLevels": "招募获得或首次上阵时，自身永久装备护盾发生器×1。\n召唤友方支援单位（哥伦比亚）时，使自身临时获得训练等级×2及护盾层数+5。同一效果每3秒最多触发一次，每场最多二十五次。"
+    },
+    "白铁": {
+      "sourceId": "BGS_072",
+      "name": "霍格船长",
+      "nameEn": "Cap'n Hoggarr",
+      "normal": "购买维多利亚阵营干员时，获得1枚金币。",
+      "elite": "购买维多利亚阵营干员时，获得2枚金币。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_072",
+            "name": "霍格船长",
+            "nameEn": "Cap'n Hoggarr",
+            "tier": 5,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "在你购买一个海盗后，在本回合中获得一枚铸币。",
+            "textElite": "在你购买一个海盗后，在本回合中获得两枚铸币。"
+          }
+        ]
+      },
+      "normalLevels": "购买维多利亚阵营干员时，获得1枚金币。",
+      "eliteLevels": "购买维多利亚阵营干员时，获得2枚金币。"
+    },
+    "阿罗玛": {
+      "sourceId": "BGS_075",
+      "name": "暴怒的巨蜥",
+      "nameEn": "Rabid Saurolisk",
+      "normal": "每有一名带有退场效果的友方干员新获得或首次上阵，自身获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。",
+      "elite": "每有一名带有退场效果的友方干员新获得或首次上阵，自身获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_075",
+            "name": "暴怒的巨蜥",
+            "nameEn": "Rabid Saurolisk",
+            "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "在你使用一张<b>亡语</b>随从牌后，获得+1/+1。",
+            "textElite": "在你使用一张<b>亡语</b>随从牌后，获得+2/+2。"
+          }
+        ]
+      },
+      "normalLevels": "每有一名带有退场效果的友方干员新获得或首次上阵，自身获得训练等级×2；成长永久保留。",
+      "eliteLevels": "每有一名带有退场效果的友方干员新获得或首次上阵，自身获得训练等级×4；成长永久保留。"
+    },
+    "贾维": {
+      "sourceId": "BGS_078",
+      "name": "巨大的金刚鹦鹉",
+      "nameEn": "Monstrous Macaw",
+      "normal": "普通攻击后随机触发另一名在场友方的退场效果；每六秒一次，每场最多三次。",
+      "elite": "普通攻击后随机触发另一名在场友方的退场效果，随机两次；每六秒一次，每场最多三次。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_078",
+            "name": "巨大的金刚鹦鹉",
+            "nameEn": "Monstrous Macaw",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "在该随从攻击后，随机触发一个友方随从的<b>亡语</b>。",
+            "textElite": "在该随从攻击后，触发一个友方随从的<b>亡语</b>，随机两次。"
+          }
+        ]
+      },
+      "normalLevels": "普通攻击后随机触发另一名在场友方的退场效果；每六秒一次，每场最多三次。",
+      "eliteLevels": "普通攻击后随机触发另一名在场友方的退场效果，随机两次；每六秒一次，每场最多三次。"
+    },
+    "佩佩": {
+      "sourceId": "BGS_079",
+      "name": "海浪剃刀号",
+      "nameEn": "The Tide Razor",
+      "normal": "退场时召唤3个随机维多利亚干员的作战投影。",
+      "elite": "退场时召唤6个随机维多利亚干员的作战投影。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_079",
+            "name": "海浪剃刀号",
+            "nameEn": "The Tide Razor",
+            "tier": 6,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>亡语：</b>随机召唤三个海盗。",
+            "textElite": "<b>亡语：</b>随机召唤六个海盗。"
+          }
+        ]
+      },
+      "normalLevels": "退场时召唤3个随机维多利亚干员的作战投影。",
+      "eliteLevels": "退场时召唤6个随机维多利亚干员的作战投影。"
+    },
+    "风笛": {
+      "sourceId": "BGS_080",
+      "name": "破浪巨人",
+      "nameEn": "Seabreaker Goliath",
+      "normal": "攻击后追加1次普通攻击；每3秒最多触发一轮。攻击超杀时使其他维多利亚友方临时获得攻击徽章×2与职业副属性徽章×2。",
+      "elite": "攻击后追加3次普通攻击；每3秒最多触发一轮。攻击超杀时使其他维多利亚友方临时获得攻击徽章×4与职业副属性徽章×4。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_080",
+            "name": "破浪巨人",
+            "nameEn": "Seabreaker Goliath",
+            "tier": 5,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>风怒，超杀：</b>使你的其他海盗获得+2/+2。",
+            "textElite": "<b>超级风怒，超杀：</b>使你的其他海盗获得+4/+4。"
+          }
+        ]
+      },
+      "normalLevels": "攻击后追加1次普通攻击；每3秒最多触发一轮。攻击超杀时使其他维多利亚友方临时获得训练等级×4。",
+      "eliteLevels": "攻击后追加3次普通攻击；每3秒最多触发一轮。攻击超杀时使其他维多利亚友方临时获得训练等级×8。"
+    },
+    "洛洛": {
+      "sourceId": "BGS_081",
+      "name": "海上掠夺者",
+      "nameEn": "Salty Looter",
+      "normal": "购买符合条件的干员时，购买维多利亚阵营干员时，自身获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。",
+      "elite": "购买符合条件的干员时，购买维多利亚阵营干员时，自身获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_081",
+            "name": "海上掠夺者",
+            "nameEn": "Salty Looter",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "每当你使用一张海盗牌时，获得+1/+1。",
+            "textElite": "每当你使用一张海盗牌时，获得+2/+2。"
+          }
+        ]
+      },
+      "normalLevels": "购买符合条件的干员时，购买维多利亚阵营干员时，自身获得训练等级×2；成长永久保留。",
+      "eliteLevels": "购买符合条件的干员时，购买维多利亚阵营干员时，自身获得训练等级×4；成长永久保留。"
+    },
+    "调香师": {
+      "sourceId": "BGS_082",
+      "name": "展馆茶杯",
+      "nameEn": "Menagerie Mug",
+      "normal": "招募获得或首次上阵时，3名不同阵营的随机友方干员获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。",
+      "elite": "招募获得或首次上阵时，3名不同阵营的随机友方干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_082",
+            "name": "展馆茶杯",
+            "nameEn": "Menagerie Mug",
+            "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>战吼：</b>随机使三个不同类型的友方随从获得+1/+1。",
+            "textElite": "<b>战吼：</b>随机使三个不同类型的友方随从获得+2/+2。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，3名不同阵营的随机友方干员获得训练等级×2；成长永久保留。",
+      "eliteLevels": "招募获得或首次上阵时，3名不同阵营的随机友方干员获得训练等级×4；成长永久保留。"
+    },
+    "莫斯提马": {
+      "sourceId": "BGS_083",
+      "name": "展馆茶壶",
+      "nameEn": "Menagerie Jug",
+      "normal": "招募获得或首次上阵时，3名不同阵营的随机友方干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+      "elite": "招募获得或首次上阵时，3名不同阵营的随机友方干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_083",
+            "name": "展馆茶壶",
+            "nameEn": "Menagerie Jug",
+            "tier": 4,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>战吼：</b>随机使三个不同类型的友方随从获得+2/+2。",
+            "textElite": "<b>战吼：</b>随机使三个不同类型的友方随从获得+4/+4。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，3名不同阵营的随机友方干员获得训练等级×4；成长永久保留。",
+      "eliteLevels": "招募获得或首次上阵时，3名不同阵营的随机友方干员获得训练等级×8；成长永久保留。"
+    },
+    "重岳": {
+      "sourceId": "BGS_100",
+      "name": "小拉格",
+      "nameEn": "Lil' Rag",
+      "normal": "每次购买炎阵营干员时，选择一名友方干员；效果触发1次，每次使其获得与所购干员星级等量的攻击成长徽章和职业副属性成长徽章，永久保留。",
+      "elite": "每次购买炎阵营干员时，选择一名友方干员；效果触发2次，每次使其获得与所购干员星级等量的攻击成长徽章和职业副属性成长徽章，永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_100",
+            "name": "小拉格",
+            "nameEn": "Lil' Rag",
+            "tier": 6,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "在你使用一张元素牌后，使一个友方随从获得等同于该元素等级的属性值。",
+            "textElite": "在你使用一张元素牌后，使一个友方随从获得等同于该元素等级的属性值，触发两次。"
+          }
+        ]
+      },
+      "normalLevels": "每次购买炎阵营干员时，选择一名友方干员；效果触发1次，每次使其获得与所购干员星级等量的攻击成长徽章和职业副属性成长徽章，永久保留。",
+      "eliteLevels": "每次购买炎阵营干员时，选择一名友方干员；效果触发2次，每次使其获得与所购干员星级等量的攻击成长徽章和职业副属性成长徽章，永久保留。"
+    },
+    "安洁莉娜": {
+      "sourceId": "BGS_104",
+      "name": "“厨房煞星”诺米",
+      "nameEn": "Nomi, Kitchen Nightmare",
+      "normal": "在场时，每购买一名炎阵营干员，使当前及本局后续酒馆中的炎阵营干员累加以下成长：购买后直接获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。",
+      "elite": "在场时，每购买一名炎阵营干员，使当前及本局后续酒馆中的炎阵营干员累加以下成长：购买后直接获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_104",
+            "name": "“厨房煞星”诺米",
+            "nameEn": "Nomi, Kitchen Nightmare",
+            "tier": 5,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "在你使用一张元素牌后，鲍勃的酒馆中的元素在本局对战的剩余时间内获得+1/+1。",
+            "textElite": "在你使用一张元素牌后，鲍勃的酒馆中的元素在本局对战的剩余时间内获得+2/+2。"
+          }
+        ]
+      },
+      "normalLevels": "在场时，每购买一名炎阵营干员，使当前及本局后续酒馆中的炎阵营干员累加以下成长：购买后直接获得训练等级×2；成长永久保留。",
+      "eliteLevels": "在场时，每购买一名炎阵营干员，使当前及本局后续酒馆中的炎阵营干员累加以下成长：购买后直接获得训练等级×4；成长永久保留。"
+    },
+    "诗怀雅": {
+      "sourceId": "BGS_105",
+      "name": "管理者埃克索图斯",
+      "nameEn": "Majordomo Executus",
+      "normal": "每回合休整结束时，最左侧友方干员获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。",
+      "elite": "每回合休整结束时，最左侧友方干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_105",
+            "name": "管理者埃克索图斯",
+            "nameEn": "Majordomo Executus",
+            "tier": 4,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "在你的回合结束时，使你最左边的随从获得+1/+1。在本回合中你每使用过一张元素牌，就重复一次。",
+            "textElite": "在你的回合结束时，使你最左边的随从获得+2/+2。在本回合中你每使用过一张元素牌，就重复一次。"
+          }
+        ]
+      },
+      "normalLevels": "每回合休整结束时，最左侧友方干员获得训练等级×2；成长永久保留。",
+      "eliteLevels": "每回合休整结束时，最左侧友方干员获得训练等级×4；成长永久保留。"
+    },
+    "深靛": {
+      "sourceId": "BGS_106",
+      "name": "克苏恩的侍僧",
+      "nameEn": "Acolyte of C'Thun",
+      "normal": "招募获得或首次上阵时，自身永久装备坚守盟约×1、不屈盟约×1。",
+      "elite": "招募获得或首次上阵时，自身永久装备坚守盟约×1、不屈盟约×1。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_106",
+            "name": "克苏恩的侍僧",
+            "nameEn": "Acolyte of C'Thun",
+            "tier": 1,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>复生</b>，<b>嘲讽</b>",
+            "textElite": "<b>嘲讽</b>，<b>复生</b>"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，自身永久装备坚守盟约×1、不屈盟约×1。",
+      "eliteLevels": "招募获得或首次上阵时，自身永久装备坚守盟约×1、不屈盟约×1。"
+    },
+    "休谟斯": {
+      "sourceId": "BGS_110",
+      "name": "帝国之手",
+      "nameEn": "Arm of the Empire",
+      "normal": "友方受到攻击（需要坚守盟约）时，使触发效果的友方临时获得攻击徽章×3。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "elite": "友方受到攻击（需要坚守盟约）时，使触发效果的友方临时获得攻击徽章×6。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_110",
+            "name": "帝国之手",
+            "nameEn": "Arm of the Empire",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "每当一个友方<b>嘲讽</b>随从受到攻击时，使其获得+3攻击力。",
+            "textElite": "每当一个友方<b>嘲讽</b>随从受到攻击时，使其获得+6攻击力。"
+          }
+        ]
+      },
+      "normalLevels": "友方受到攻击（需要坚守盟约）时，使触发效果的友方临时获得训练等级×3。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "eliteLevels": "友方受到攻击（需要坚守盟约）时，使触发效果的友方临时获得训练等级×6。同一效果每3秒最多触发一次，每场最多二十五次。"
+    },
+    "水月": {
+      "sourceId": "BGS_111",
+      "name": "亚煞极的勇士",
+      "nameEn": "Champion of Y'Shaarj",
+      "normal": "友方受到攻击（需要坚守盟约）时，使自身永久获得攻击徽章×1与职业副属性徽章×1。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "elite": "友方受到攻击（需要坚守盟约）时，使自身永久获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_111",
+            "name": "亚煞极的勇士",
+            "nameEn": "Champion of Y'Shaarj",
+            "tier": 4,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "每当一个友方<b>嘲讽</b>随从受到攻击时，便永久获得+1/+1。",
+            "textElite": "每当一个友方<b>嘲讽</b>随从受到攻击时，便永久获得+2/+2。"
+          }
+        ]
+      },
+      "normalLevels": "友方受到攻击（需要坚守盟约）时，使自身永久获得训练等级×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "eliteLevels": "友方受到攻击（需要坚守盟约）时，使自身永久获得训练等级×4。同一效果每3秒最多触发一次，每场最多二十五次。"
+    },
+    "寒芒克洛丝": {
+      "sourceId": "BGS_112",
+      "name": "其拉传令官",
+      "nameEn": "Qiraji Harbinger",
+      "normal": "友方退场（需要坚守盟约）时，使退场干员附近的友方临时获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "elite": "友方退场（需要坚守盟约）时，使退场干员附近的友方临时获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_112",
+            "name": "其拉传令官",
+            "nameEn": "Qiraji Harbinger",
+            "tier": 4,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "在一个友方<b>嘲讽</b>随从死亡后，使其相邻的随从获得+2/+2。",
+            "textElite": "在一个友方<b>嘲讽</b>随从死亡后，使其相邻的随从获得+4/+4。"
+          }
+        ]
+      },
+      "normalLevels": "友方退场（需要坚守盟约）时，使退场干员附近的友方临时获得训练等级×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "eliteLevels": "友方退场（需要坚守盟约）时，使退场干员附近的友方临时获得训练等级×8。同一效果每3秒最多触发一次，每场最多二十五次。"
+    },
+    "缄默德克萨斯": {
+      "sourceId": "BGS_113",
+      "name": "无面酒客",
+      "nameEn": "Faceless Taverngoer",
+      "normal": "招募获得或首次上阵时，选择一名未售出的酒馆干员；将该格干员转化为普通形态并招募。",
+      "elite": "招募获得或首次上阵时，选择一名未售出的酒馆干员；将该格干员转化为进阶形态并招募。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_113",
+            "name": "无面酒客",
+            "nameEn": "Faceless Taverngoer",
+            "tier": 5,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>战吼：</b>选择一个鲍勃的酒馆中的随从，变形成为它的原始版\n复制。",
+            "textElite": "<b>战吼：</b>选择一个鲍勃的酒馆中的随从，变形成为它的金色复制。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，选择一名未售出的酒馆干员；将该格干员转化为普通形态并招募。",
+      "eliteLevels": "招募获得或首次上阵时，选择一名未售出的酒馆干员；将该格干员转化为进阶形态并招募。"
+    },
+    "九色鹿": {
+      "sourceId": "BGS_115",
+      "name": "商贩元素",
+      "nameEn": "Sellemental",
+      "normal": "出售时，将1个炎阵营元素支援单位（每个攻击240、生命700）加入整备区手牌；可部署，本体不可商店招募。",
+      "elite": "出售时，将2个炎阵营元素支援单位（每个攻击240、生命700）加入整备区手牌；可部署，本体不可商店招募。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_115",
+            "name": "商贩元素",
+            "nameEn": "Sellemental",
+            "tier": 1,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "当你出售该随从时，将一张2/2的元素牌置入你的手牌。",
+            "textElite": "当你出售该随从时，将两张2/2的元素牌置入你的手牌。"
+          }
+        ]
+      },
+      "normalLevels": "出售时，将1个炎阵营元素支援单位（每个攻击240、生命700）加入整备区手牌；可部署，本体不可商店招募。",
+      "eliteLevels": "出售时，将2个炎阵营元素支援单位（每个攻击240、生命700）加入整备区手牌；可部署，本体不可商店招募。"
+    },
+    "清流": {
+      "sourceId": "BGS_116",
+      "name": "刷新畸体",
+      "nameEn": "Refreshing Anomaly",
+      "normal": "招募获得或首次上阵时，立即免费刷新酒馆1次。",
+      "elite": "招募获得或首次上阵时，立即免费刷新酒馆2次。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_116",
+            "name": "刷新畸体",
+            "nameEn": "Refreshing Anomaly",
+            "tier": 1,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>战吼：</b>你下一次<b>刷新</b>酒馆的消耗为（0）枚铸币。",
+            "textElite": "<b>战吼：</b>你下两次<b>刷新</b>酒馆的消耗为（0）枚铸币。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，立即免费刷新酒馆1次。",
+      "eliteLevels": "招募获得或首次上阵时，立即免费刷新酒馆2次。"
+    },
+    "惊蛰": {
+      "sourceId": "BGS_119",
+      "name": "爆裂飓风",
+      "nameEn": "Crackling Cyclone",
+      "normal": "招募获得或首次上阵时，自身永久装备护盾发生器×1。\n攻击后追加1次普通攻击；每3秒最多触发一轮。",
+      "elite": "招募获得或首次上阵时，自身永久装备护盾发生器×1。\n攻击后追加3次普通攻击；每3秒最多触发一轮。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_119",
+            "name": "爆裂飓风",
+            "nameEn": "Crackling Cyclone",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>圣盾，风怒</b>",
+            "textElite": "<b>圣盾，超级风怒</b>"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，自身永久装备护盾发生器×1。\n攻击后追加1次普通攻击；每3秒最多触发一轮。",
+      "eliteLevels": "招募获得或首次上阵时，自身永久装备护盾发生器×1。\n攻击后追加3次普通攻击；每3秒最多触发一轮。"
+    },
+    "风絮": {
+      "sourceId": "BGS_120",
+      "name": "派对元素",
+      "nameEn": "Party Elemental",
+      "normal": "每有一名炎阵营干员新获得或首次上阵，选择一名其他友方炎阵营干员，使其获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。",
+      "elite": "每有一名炎阵营干员新获得或首次上阵，选择一名其他友方炎阵营干员，使其获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_120",
+            "name": "派对元素",
+            "nameEn": "Party Elemental",
+            "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "在你使用一张元素牌后，随机使另一个友方元素获得+1/+1。",
+            "textElite": "在你使用一张元素牌后，随机使另一个友方元素获得+1/+1，触发两次。"
+          }
+        ]
+      },
+      "normalLevels": "每有一名炎阵营干员新获得或首次上阵，选择一名其他友方炎阵营干员，使其获得训练等级×2；成长永久保留。",
+      "eliteLevels": "每有一名炎阵营干员新获得或首次上阵，选择一名其他友方炎阵营干员，使其获得训练等级×4；成长永久保留。"
+    },
+    "令": {
+      "sourceId": "BGS_121",
+      "name": "温和的灯神",
+      "nameEn": "Gentle Djinni",
+      "normal": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n退场时召唤1个随机炎干员的作战投影，并将对应干员的原始复制加入整备区。",
+      "elite": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n退场时召唤2个随机炎干员的作战投影，并将对应干员的原始复制加入整备区。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_121",
+            "name": "温和的灯神",
+            "nameEn": "Gentle Djinni",
+            "tier": 6,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>嘲讽，亡语：</b>随机召唤一个其他元素，并将召唤的元素的复制置入你的手牌。",
+            "textElite": "<b>嘲讽，亡语：</b>随机召唤两个其他元素，并将召唤的元素的复制置入你的手牌。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n退场时召唤1个随机炎干员的作战投影，并将对应干员的原始复制加入整备区。",
+      "eliteLevels": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n退场时召唤2个随机炎干员的作战投影，并将对应干员的原始复制加入整备区。"
+    },
+    "万顷": {
+      "sourceId": "BGS_122",
+      "name": "静滞元素",
+      "nameEn": "Stasis Elemental",
+      "normal": "招募获得或首次上阵时，将1名随机炎阵营干员加入酒馆并冻结。",
+      "elite": "招募获得或首次上阵时，将2名随机炎阵营干员加入酒馆并冻结。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_122",
+            "name": "静滞元素",
+            "nameEn": "Stasis Elemental",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>战吼：</b>随机在鲍勃的酒馆中添加一个其他元素并使其<b>冻结</b>。",
+            "textElite": "<b>战吼：</b>随机在鲍勃的酒馆中添加两个其他元素并使其<b>冻结</b>。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，将1名随机炎阵营干员加入酒馆并冻结。",
+      "eliteLevels": "招募获得或首次上阵时，将2名随机炎阵营干员加入酒馆并冻结。"
+    },
+    "夕": {
+      "sourceId": "BGS_123",
+      "name": "酒馆旋风",
+      "nameEn": "Tavern Tempest",
+      "normal": "招募获得或首次上阵时，生成1次随机炎阵营干员的招募选择，供整备时选择。",
+      "elite": "招募获得或首次上阵时，生成2次随机炎阵营干员的招募选择，供整备时选择。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_123",
+            "name": "酒馆旋风",
+            "nameEn": "Tavern Tempest",
+            "tier": 5,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>战吼：</b>随机将一张其他元素牌置入你的\n手牌。",
+            "textElite": "<b>战吼：</b>随机将两张其他元素牌置入你的\n手牌。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，生成1次随机炎阵营干员的招募选择，供整备时选择。",
+      "eliteLevels": "招募获得或首次上阵时，生成2次随机炎阵营干员的招募选择，供整备时选择。"
+    },
+    "黍": {
+      "sourceId": "BGS_124",
+      "name": "炎魔副官加尔",
+      "nameEn": "Lieutenant Garr",
+      "normal": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n每有一名炎阵营干员新获得或首次上阵，自身获得攻击成长徽章×0及职业副属性成长徽章×1；按在场炎阵营干员数累加，永久保留。",
+      "elite": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n每有一名炎阵营干员新获得或首次上阵，自身获得攻击成长徽章×0及职业副属性成长徽章×2；按在场炎阵营干员数累加，永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_124",
+            "name": "炎魔副官加尔",
+            "nameEn": "Lieutenant Garr",
+            "tier": 6,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>嘲讽</b>\n在你使用一张元素牌后，你每有一个元素，便获得+1生命值。",
+            "textElite": "<b>嘲讽</b>\n在你使用一张元素牌后，你每有一个元素，便获得+2生命值。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n每有一名炎阵营干员新获得或首次上阵，自身获得训练等级×0及训练等级×1；按在场炎阵营干员数累加，永久保留。",
+      "eliteLevels": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n每有一名炎阵营干员新获得或首次上阵，自身获得训练等级×0及训练等级×2；按在场炎阵营干员数累加，永久保留。"
+    },
+    "仇白": {
+      "sourceId": "BGS_126",
+      "name": "野火元素",
+      "nameEn": "Wildfire Elemental",
+      "normal": "攻击击倒敌人时，把超过其生命的伤害传递给目标附近一个随机敌人。",
+      "elite": "攻击击倒敌人时，把超过其生命的伤害传递给目标附近所有敌人。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_126",
+            "name": "野火元素",
+            "nameEn": "Wildfire Elemental",
+            "tier": 4,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "在该随从攻击并消灭一个随从后，随机对一个相邻的随从造成超过目标生命值的伤害。",
+            "textElite": "在该随从攻击并消灭一个随从后，对相邻的随从均造成超过目标生命值的伤害。"
+          }
+        ]
+      },
+      "normalLevels": "攻击击倒敌人时，把超过其生命的伤害传递给目标附近一个随机敌人。",
+      "eliteLevels": "攻击击倒敌人时，把超过其生命的伤害传递给目标附近所有敌人。"
+    },
+    "小满": {
+      "sourceId": "BGS_127",
+      "name": "熔融岩石",
+      "nameEn": "Molten Rock",
+      "normal": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n购买符合条件的干员时，购买炎阵营干员时，自身获得职业副属性成长徽章×1；成长永久保留。",
+      "elite": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n购买符合条件的干员时，购买炎阵营干员时，自身获得职业副属性成长徽章×2；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_127",
+            "name": "熔融岩石",
+            "nameEn": "Molten Rock",
+            "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>嘲讽</b>\n在你使用一张元素牌后，获得+1生命值。",
+            "textElite": "<b>嘲讽</b>\n在你使用一张元素牌后，获得+2生命值。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n购买符合条件的干员时，购买炎阵营干员时，自身获得训练等级×1；成长永久保留。",
+      "eliteLevels": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n购买符合条件的干员时，购买炎阵营干员时，自身获得训练等级×2；成长永久保留。"
+    },
+    "录武官": {
+      "sourceId": "BGS_128",
+      "name": "奥术助手",
+      "nameEn": "Arcane Assistant",
+      "normal": "具有获得时效果的友方干员入队时，除自身外的所有友方炎阵营干员各获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。",
+      "elite": "具有获得时效果的友方干员入队时，除自身外的所有友方炎阵营干员各获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_128",
+            "name": "奥术助手",
+            "nameEn": "Arcane Assistant",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>战吼：</b>使你的其他元素获得+1/+1。",
+            "textElite": "<b>战吼：</b>使你的其他元素获得+2/+2。"
+          }
+        ]
+      },
+      "normalLevels": "具有获得时效果的友方干员入队时，除自身外的所有友方炎阵营干员各获得训练等级×2；成长永久保留。",
+      "eliteLevels": "具有获得时效果的友方干员入队时，除自身外的所有友方炎阵营干员各获得训练等级×4；成长永久保留。"
+    },
+    "妮芙": {
+      "sourceId": "BGS_131",
+      "name": "致命的孢子",
+      "nameEn": "Deadly Spore",
+      "normal": "招募获得或首次上阵时，自身永久装备精准盟约×1。",
+      "elite": "招募获得或首次上阵时，自身永久装备精准盟约×1。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_131",
+            "name": "致命的孢子",
+            "nameEn": "Deadly Spore",
+            "tier": 5,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>剧毒</b>",
+            "textElite": "<b>剧毒</b>"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，自身永久装备精准盟约×1。",
+      "eliteLevels": "招募获得或首次上阵时，自身永久装备精准盟约×1。"
+    },
+    "幽灵鲨": {
+      "sourceId": "BGS_200",
+      "name": "古神的卫士",
+      "nameEn": "Warden of Old",
+      "normal": "退场时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+      "elite": "退场时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_200",
+            "name": "古神的卫士",
+            "nameEn": "Warden of Old",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>亡语：</b>将一枚铸币置入你的手牌。",
+            "textElite": "<b>亡语：</b>将两枚铸币置入你的手牌。"
+          }
+        ]
+      },
+      "normalLevels": "退场时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+      "eliteLevels": "退场时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币。"
+    },
+    "泡泡": {
+      "sourceId": "BGS_201",
+      "name": "被折磨的祭师",
+      "nameEn": "Tormented Ritualist",
+      "normal": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n友方受到攻击时，使自身附近的友方临时获得攻击徽章×1与职业副属性徽章×1。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "elite": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n友方受到攻击时，使自身附近的友方临时获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_201",
+            "name": "被折磨的祭师",
+            "nameEn": "Tormented Ritualist",
+            "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>嘲讽</b>\n每当该随从受到攻击时，使相邻的随从获得+1/+1。",
+            "textElite": "<b>嘲讽</b>\n每当该随从受到攻击时，使相邻的随从获得+2/+2。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n友方受到攻击时，使自身附近的友方临时获得训练等级×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "eliteLevels": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n友方受到攻击时，使自身附近的友方临时获得训练等级×4。同一效果每3秒最多触发一次，每场最多二十五次。"
+    },
+    "塑心": {
+      "sourceId": "BGS_202",
+      "name": "拆解者米斯拉克斯",
+      "nameEn": "Mythrax the Unraveler",
+      "normal": "每回合休整结束时，每个不同友方阵营各结算一次，自身获得攻击成长徽章×1与职业副属性成长徽章×2；成长永久保留。",
+      "elite": "每回合休整结束时，每个不同友方阵营各结算一次，自身获得攻击成长徽章×2与职业副属性成长徽章×4；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_202",
+            "name": "拆解者米斯拉克斯",
+            "nameEn": "Mythrax the Unraveler",
+            "tier": 5,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "在你的回合结束时，你每控制一个随从类型的随从，便获得+1/+2。",
+            "textElite": "在你的回合结束时，你每控制一个随从类型的随从，便获得+2/+4。"
+          }
+        ]
+      },
+      "normalLevels": "每回合休整结束时，每个不同友方阵营各结算一次，自身获得训练等级×3；成长永久保留。",
+      "eliteLevels": "每回合休整结束时，每个不同友方阵营各结算一次，自身获得训练等级×6；成长永久保留。"
+    },
+    "史尔特尔": {
+      "sourceId": "BGS_205",
+      "name": "永恒者艾丽斯特拉",
+      "nameEn": "Elistra the Immortal",
+      "normal": "招募获得或首次上阵时，自身永久装备护盾发生器×1、不屈盟约×1。\n敌人准备攻击携带坚守盟约的其他友方时，替其承受攻击；需要自身可被该敌人攻击。",
+      "elite": "招募获得或首次上阵时，自身永久装备护盾发生器×1、不屈盟约×1。\n敌人准备攻击携带坚守盟约的其他友方时，替其承受攻击；需要自身可被该敌人攻击。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_205",
+            "name": "永恒者艾丽斯特拉",
+            "nameEn": "Elistra the Immortal",
+            "tier": 6,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>圣盾</b>，<b>复生</b>\n每当一个友方<b>嘲讽</b>随从受到攻击时，改为该随从受到攻击。",
+            "textElite": "<b>圣盾</b>，<b>复生</b>\n每当一个友方<b>嘲讽</b>随从受到攻击时，改为该随从受到攻击。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，自身永久装备护盾发生器×1、不屈盟约×1。\n敌人准备攻击携带坚守盟约的其他友方时，替其承受攻击；需要自身可被该敌人攻击。",
+      "eliteLevels": "招募获得或首次上阵时，自身永久装备护盾发生器×1、不屈盟约×1。\n敌人准备攻击携带坚守盟约的其他友方时，替其承受攻击；需要自身可被该敌人攻击。"
+    },
+    "罗宾": {
+      "sourceId": "BOT_218",
+      "name": "安保巡游者",
+      "nameEn": "Security Rover",
+      "normal": "受到伤害后召唤一个哥伦比亚机械支援单位（攻击240、生命1050），并赋予坚守盟约；每3秒最多触发一次，每场最多7次。",
+      "elite": "受到伤害后召唤一个哥伦比亚机械支援单位（攻击480、生命2100），并赋予坚守盟约；每3秒最多触发一次，每场最多7次。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BOT_218",
+            "name": "安保巡游者",
+            "nameEn": "Security Rover",
+            "tier": 4,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "每当该随从受到伤害，召唤一个2/3并具有<b>嘲讽</b>的机械。",
+            "textElite": "每当该随从受到伤害，召唤一个4/6并具有<b>嘲讽</b>的机械。"
+          }
+        ]
+      },
+      "normalLevels": "受到伤害后召唤一个哥伦比亚机械支援单位（攻击240、生命1050），并赋予坚守盟约；每3秒最多触发一次，每场最多7次。",
+      "eliteLevels": "受到伤害后召唤一个哥伦比亚机械支援单位（攻击480、生命2100），并赋予坚守盟约；每3秒最多触发一次，每场最多7次。"
+    },
+    "赫默": {
+      "sourceId": "BOT_312",
+      "name": "量产型恐吓机",
+      "nameEn": "Replicating Menace",
+      "normal": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其亡语附加给你选择的一名友方哥伦比亚干员，并使其获得攻击成长徽章×3及职业副属性成长徽章×1；本体不进入阵容。\n退场时召唤3个哥伦比亚机械支援单位；每个攻击120、生命350。",
+      "elite": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其亡语附加给你选择的一名友方哥伦比亚干员，并使其获得攻击成长徽章×6及职业副属性成长徽章×2；本体不进入阵容。\n退场时召唤3个哥伦比亚机械支援单位；每个攻击240、生命700。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BOT_312",
+            "name": "量产型恐吓机",
+            "nameEn": "Replicating Menace",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>磁力</b>\n<b>亡语：</b>召唤三个1/1的微型机器人。",
+            "textElite": "<b>磁力</b>\n<b>亡语：</b>召唤三个2/2的微型机器人。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其亡语附加给你选择的一名友方哥伦比亚干员，并使其获得训练等级×3及训练等级×1；本体不进入阵容。\n退场时召唤3个哥伦比亚机械支援单位；每个攻击120、生命350。",
+      "eliteLevels": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其亡语附加给你选择的一名友方哥伦比亚干员，并使其获得训练等级×6及训练等级×2；本体不进入阵容。\n退场时召唤3个哥伦比亚机械支援单位；每个攻击240、生命700。"
+    },
+    "多萝西": {
+      "sourceId": "BOT_537",
+      "name": "机械蛋",
+      "nameEn": "Mechano-Egg",
+      "normal": "退场时召唤一个机械支援单位（攻击960、生命2800）。",
+      "elite": "退场时召唤一个机械支援单位（攻击1920、生命5600）。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BOT_537",
+            "name": "机械蛋",
+            "nameEn": "Mechano-Egg",
+            "tier": 4,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>亡语：</b>召唤一个8/8的机械暴龙。",
+            "textElite": "<b>亡语：</b>召唤一个16/16的机械暴龙。"
+          }
+        ]
+      },
+      "normalLevels": "退场时召唤一个机械支援单位（攻击960、生命2800）。",
+      "eliteLevels": "退场时召唤一个机械支援单位（攻击1920、生命5600）。"
+    },
+    "杰西卡": {
+      "sourceId": "BOT_606",
+      "name": "爆爆机器人",
+      "nameEn": "Kaboom Bot",
+      "normal": "退场时对一个随机敌人造成相当于自身基础攻击200%的法术伤害。",
+      "elite": "退场时对一个随机敌人造成相当于自身基础攻击200%的法术伤害，触发两次。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BOT_606",
+            "name": "爆爆机器人",
+            "nameEn": "Kaboom Bot",
+            "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>亡语：</b>随机对一个敌方随从造成4点伤害。",
+            "textElite": "<b>亡语：</b>随机对一个敌方随从造成4点伤害，触发两次。"
+          }
+        ]
+      },
+      "normalLevels": "退场时对一个随机敌人造成相当于自身基础攻击200%的法术伤害。",
+      "eliteLevels": "退场时对一个随机敌人造成相当于自身基础攻击200%的法术伤害，触发两次。"
+    },
+    "蛇屠箱": {
+      "sourceId": "BOT_911",
+      "name": "吵吵模组",
+      "nameEn": "Annoy-o-Module",
+      "normal": "招募获得或首次上阵时，自身永久装备坚守盟约×1、护盾发生器×1。\n招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员永久装备坚守盟约和护盾发生器，并使其获得攻击成长徽章×2及职业副属性成长徽章×4；本体不进入阵容。",
+      "elite": "招募获得或首次上阵时，自身永久装备坚守盟约×1、护盾发生器×1。\n招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员永久装备坚守盟约和护盾发生器，并使其获得攻击成长徽章×4及职业副属性成长徽章×8；本体不进入阵容。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BOT_911",
+            "name": "吵吵模组",
+            "nameEn": "Annoy-o-Module",
+            "tier": 4,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>磁力</b>\n<b>圣盾</b>\n<b>嘲讽</b>",
+            "textElite": "<b>磁力</b>\n<b>圣盾</b>\n<b>嘲讽</b>"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，自身永久装备坚守盟约×1、护盾发生器×1。\n招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员永久装备坚守盟约和护盾发生器，并使其获得训练等级×2及训练等级×4；本体不进入阵容。",
+      "eliteLevels": "招募获得或首次上阵时，自身永久装备坚守盟约×1、护盾发生器×1。\n招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员永久装备坚守盟约和护盾发生器，并使其获得训练等级×4及训练等级×8；本体不进入阵容。"
+    },
+    "红云": {
+      "sourceId": "CFM_315",
+      "name": "雄斑虎",
+      "nameEn": "Alleycat",
+      "normal": "招募获得或首次上阵时，免费将一个猫形支援单位（攻击120、生命350）放入整备区；可部署，本体不可商店招募。",
+      "elite": "招募获得或首次上阵时，免费将一个猫形支援单位（攻击240、生命700）放入整备区；可部署，本体不可商店招募。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "CFM_315",
+            "name": "雄斑虎",
+            "nameEn": "Alleycat",
+            "tier": 1,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>战吼：</b>召唤一个1/1的雌斑虎。",
+            "textElite": "<b>战吼：</b>召唤一头2/2的雌斑虎。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，免费将一个猫形支援单位（攻击120、生命350）放入整备区；可部署，本体不可商店招募。",
+      "eliteLevels": "招募获得或首次上阵时，免费将一个猫形支援单位（攻击240、生命700）放入整备区；可部署，本体不可商店招募。"
+    },
+    "伺夜": {
+      "sourceId": "CFM_316",
+      "name": "瘟疫鼠群",
+      "nameEn": "Rat Pack",
+      "normal": "退场时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击120、生命350。",
+      "elite": "退场时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击240、生命700。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "CFM_316",
+            "name": "瘟疫鼠群",
+            "nameEn": "Rat Pack",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>亡语：</b>召唤若干个1/1的老鼠，数量等同于该随从的攻击力。",
+            "textElite": "<b>亡语：</b>召唤若干个2/2的老鼠，数量等同于该随从的攻击力。"
+          }
+        ]
+      },
+      "normalLevels": "退场时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击120、生命350。",
+      "eliteLevels": "退场时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击240、生命700。"
+    },
+    "海霓": {
+      "sourceId": "CFM_816",
+      "name": "兔妖教头",
+      "nameEn": "Virmen Sensei",
+      "normal": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+      "elite": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "CFM_816",
+            "name": "兔妖教头",
+            "nameEn": "Virmen Sensei",
+            "tier": 4,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>战吼：</b>使一个友方野兽获得+2/+2。",
+            "textElite": "<b>战吼：</b>使一个友方野兽获得+4/+4。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得训练等级×4；成长永久保留。",
+      "eliteLevels": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得训练等级×8；成长永久保留。"
+    },
+    "风丸": {
+      "sourceId": "DAL_575",
+      "name": "卡德加",
+      "nameEn": "Khadgar",
+      "normal": "卡牌效果召唤的支援单位数量变为2倍；不复制装备或成长。",
+      "elite": "卡牌效果召唤的支援单位数量变为3倍；不复制装备或成长。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "DAL_575",
+            "name": "卡德加",
+            "nameEn": "Khadgar",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "你的召唤随从的卡牌召唤数量翻倍。",
+            "textElite": "你的召唤随从的卡牌召唤数量变为三倍。"
+          }
+        ]
+      },
+      "normalLevels": "卡牌效果召唤的支援单位数量变为2倍；不复制装备或成长。",
+      "eliteLevels": "卡牌效果召唤的支援单位数量变为3倍；不复制装备或成长。"
+    },
+    "歌蕾蒂娅": {
+      "sourceId": "DS1_070",
+      "name": "驯兽师",
+      "nameEn": "Houndmaster",
+      "normal": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留，并永久装备坚守盟约。",
+      "elite": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留，并永久装备坚守盟约。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "DS1_070",
+            "name": "驯兽师",
+            "nameEn": "Houndmaster",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>战吼：</b>使一个友方野兽获得+2/+2和<b>嘲讽</b>。",
+            "textElite": "<b>战吼：</b>使一个友方野兽获得+4/+4和<b>嘲讽</b>。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得训练等级×4；成长永久保留，并永久装备坚守盟约。",
+      "eliteLevels": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得训练等级×8；成长永久保留，并永久装备坚守盟约。"
+    },
+    "泥岩": {
+      "sourceId": "EX1_093",
+      "name": "阿古斯防御者",
+      "nameEn": "Defender of Argus",
+      "normal": "招募获得或首次上阵时，相邻友方干员各获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留，并永久装备坚守盟约。",
+      "elite": "招募获得或首次上阵时，相邻友方干员各获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留，并永久装备坚守盟约。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "EX1_093",
+            "name": "阿古斯防御者",
+            "nameEn": "Defender of Argus",
+            "tier": 4,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>战吼：</b>使相邻的随从获得+1/+1和<b>嘲讽</b>。",
+            "textElite": "<b>战吼：</b>使相邻的随从获得+2/+2和<b>嘲讽</b>。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，相邻友方干员各获得训练等级×2；成长永久保留，并永久装备坚守盟约。",
+      "eliteLevels": "招募获得或首次上阵时，相邻友方干员各获得训练等级×4；成长永久保留，并永久装备坚守盟约。"
+    },
+    "普罗旺斯": {
+      "sourceId": "EX1_531",
+      "name": "食腐土狼",
+      "nameEn": "Scavenging Hyena",
+      "normal": "友方退场（叙拉古）时，使自身临时获得攻击徽章×2与职业副属性徽章×1。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "elite": "友方退场（叙拉古）时，使自身临时获得攻击徽章×4与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "EX1_531",
+            "name": "食腐土狼",
+            "nameEn": "Scavenging Hyena",
+            "tier": 1,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "每当一个友方野兽死亡，便获得+2/+1。",
+            "textElite": "每当一个友方野兽死亡，便获得+4/+2。"
+          }
+        ]
+      },
+      "normalLevels": "友方退场（叙拉古）时，使自身临时获得训练等级×3。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "eliteLevels": "友方退场（叙拉古）时，使自身临时获得训练等级×6。同一效果每3秒最多触发一次，每场最多二十五次。"
+    },
+    "布洛卡": {
+      "sourceId": "EX1_534",
+      "name": "长鬃草原狮",
+      "nameEn": "Savannah Highmane",
+      "normal": "退场时召唤2个作战支援单位。",
+      "elite": "退场时召唤2个作战支援单位。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "EX1_534",
+            "name": "长鬃草原狮",
+            "nameEn": "Savannah Highmane",
+            "tier": 4,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>亡语：</b>召唤两只2/2的土狼。",
+            "textElite": "<b>亡语：</b>召唤两只4/4的土狼。"
+          }
+        ]
+      },
+      "normalLevels": "退场时召唤2个作战支援单位。",
+      "eliteLevels": "退场时召唤2个作战支援单位。"
+    },
+    "松果": {
+      "sourceId": "EX1_556",
+      "name": "麦田傀儡",
+      "nameEn": "Harvest Golem",
+      "normal": "退场时召唤1个作战支援单位。",
+      "elite": "退场时召唤1个作战支援单位。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "EX1_556",
+            "name": "麦田傀儡",
+            "nameEn": "Harvest Golem",
+            "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>亡语：</b>召唤一个2/1的损坏的傀儡。",
+            "textElite": "<b>亡语：</b>召唤一个4/2的损坏的傀儡。"
+          }
+        ]
+      },
+      "normalLevels": "退场时召唤1个作战支援单位。",
+      "eliteLevels": "退场时召唤1个作战支援单位。"
+    },
+    "贝洛内": {
+      "sourceId": "FP1_010",
+      "name": "迈克斯纳",
+      "nameEn": "Maexxna",
+      "normal": "招募获得或首次上阵时，自身永久装备精准盟约×1。",
+      "elite": "招募获得或首次上阵时，自身永久装备精准盟约×1。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "FP1_010",
+            "name": "迈克斯纳",
+            "nameEn": "Maexxna",
+            "tier": 6,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>剧毒</b>",
+            "textElite": "<b>剧毒</b>"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，自身永久装备精准盟约×1。",
+      "eliteLevels": "招募获得或首次上阵时，自身永久装备精准盟约×1。"
+    },
+    "蜜蜡": {
+      "sourceId": "FP1_024",
+      "name": "蹒跚的食尸鬼",
+      "nameEn": "Unstable Ghoul",
+      "normal": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n退场时对场上所有单位造成相当于自身基础攻击40%的法术伤害。",
+      "elite": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n退场时对场上所有单位造成相当于自身基础攻击40%的法术伤害，触发两次。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "FP1_024",
+            "name": "蹒跚的食尸鬼",
+            "nameEn": "Unstable Ghoul",
+            "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>嘲讽，亡语：</b>对所有随从造成1点伤害。",
+            "textElite": "<b>嘲讽，亡语：</b>对所有随从造成1点伤害，触发两次。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n退场时对场上所有单位造成相当于自身基础攻击40%的法术伤害。",
+      "eliteLevels": "招募获得或首次上阵时，自身永久装备坚守盟约×1。\n退场时对场上所有单位造成相当于自身基础攻击40%的法术伤害，触发两次。"
+    },
+    "巫恋": {
+      "sourceId": "FP1_031",
+      "name": "瑞文戴尔男爵",
+      "nameEn": "Baron Rivendare",
+      "normal": "友方源卡退场效果触发2次；不增加其他产出。",
+      "elite": "友方源卡退场效果触发3次；不增加其他产出。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "FP1_031",
+            "name": "瑞文戴尔男爵",
+            "nameEn": "Baron Rivendare",
+            "tier": 5,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "你的随从的<b>亡语</b>将触发两次。",
+            "textElite": "你的随从的<b>亡语</b>将触发三次。"
+          }
+        ]
+      },
+      "normalLevels": "友方源卡退场效果触发2次；不增加其他产出。",
+      "eliteLevels": "友方源卡退场效果触发3次；不增加其他产出。"
+    },
+    "白面鸮": {
+      "sourceId": "GVG_027",
+      "name": "钢铁武道家",
+      "nameEn": "Iron Sensei",
+      "normal": "每回合休整结束时，一名随机的其他友方哥伦比亚阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+      "elite": "每回合休整结束时，一名随机的其他友方哥伦比亚阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "GVG_027",
+            "name": "钢铁武道家",
+            "nameEn": "Iron Sensei",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "在你的回合结束时，使另一个友方机械获得+2/+2。",
+            "textElite": "在你的回合结束时，使另一个友方机械获得+4/+4。"
+          }
+        ]
+      },
+      "normalLevels": "每回合休整结束时，一名随机的其他友方哥伦比亚阵营干员获得训练等级×4；成长永久保留。",
+      "eliteLevels": "每回合休整结束时，一名随机的其他友方哥伦比亚阵营干员获得训练等级×8；成长永久保留。"
+    },
+    "酸糖": {
+      "sourceId": "GVG_048",
+      "name": "金刚刃牙兽",
+      "nameEn": "Metaltooth Leaper",
+      "normal": "具有获得时效果的友方干员入队时，除自身外的所有友方哥伦比亚阵营干员各获得攻击成长徽章×2；成长永久保留。",
+      "elite": "具有获得时效果的友方干员入队时，除自身外的所有友方哥伦比亚阵营干员各获得攻击成长徽章×4；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "GVG_048",
+            "name": "金刚刃牙兽",
+            "nameEn": "Metaltooth Leaper",
+            "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>战吼：</b>使你的其他机械获得+2攻击力。",
+            "textElite": "<b>战吼：</b>使你的其他机械获得+4攻击力。"
+          }
+        ]
+      },
+      "normalLevels": "具有获得时效果的友方干员入队时，除自身外的所有友方哥伦比亚阵营干员各获得训练等级×2；成长永久保留。",
+      "eliteLevels": "具有获得时效果的友方干员入队时，除自身外的所有友方哥伦比亚阵营干员各获得训练等级×4；成长永久保留。"
+    },
+    "蒂比": {
+      "sourceId": "GVG_055",
+      "name": "废旧螺栓机甲",
+      "nameEn": "Screwjank Clunker",
+      "normal": "招募获得或首次上阵时，你选择的一名友方哥伦比亚阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+      "elite": "招募获得或首次上阵时，你选择的一名友方哥伦比亚阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "GVG_055",
+            "name": "废旧螺栓机甲",
+            "nameEn": "Screwjank Clunker",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>战吼：</b>使一个友方机械获得+2/+2。",
+            "textElite": "<b>战吼：</b>使一个友方机械获得+4/+4。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，你选择的一名友方哥伦比亚阵营干员获得训练等级×4；成长永久保留。",
+      "eliteLevels": "招募获得或首次上阵时，你选择的一名友方哥伦比亚阵营干员获得训练等级×8；成长永久保留。"
+    },
+    "山": {
+      "sourceId": "GVG_106",
+      "name": "回收机器人",
+      "nameEn": "Junkbot",
+      "normal": "友方退场（哥伦比亚）时，使自身临时获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "elite": "友方退场（哥伦比亚）时，使自身临时获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "GVG_106",
+            "name": "回收机器人",
+            "nameEn": "Junkbot",
+            "tier": 5,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "每当一个友方机械死亡，便获得+2/+2。",
+            "textElite": "每当一个友方机械死亡，便获得+4/+4。"
+          }
+        ]
+      },
+      "normalLevels": "友方退场（哥伦比亚）时，使自身临时获得训练等级×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "eliteLevels": "友方退场（哥伦比亚）时，使自身临时获得训练等级×8。同一效果每3秒最多触发一次，每场最多二十五次。"
+    },
+    "涤火杰西卡": {
+      "sourceId": "GVG_113",
+      "name": "死神4000型",
+      "nameEn": "Foe Reaper 4000",
+      "normal": "招募获得或首次上阵时，自身永久装备巨锤盟约×1。",
+      "elite": "招募获得或首次上阵时，自身永久装备巨锤盟约×1。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "GVG_113",
+            "name": "死神4000型",
+            "nameEn": "Foe Reaper 4000",
+            "tier": 6,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "同时对其攻击目标相邻的随从造成伤害。",
+            "textElite": "同时对其攻击目标相邻的随从造成伤害。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，自身永久装备巨锤盟约×1。",
+      "eliteLevels": "招募获得或首次上阵时，自身永久装备巨锤盟约×1。"
+    },
+    "灰毫": {
+      "sourceId": "ICC_029",
+      "name": "深蓝刃鳞龙人",
+      "nameEn": "Cobalt Scalebane",
+      "normal": "每回合休整结束时，一名随机的其他友方干员获得攻击成长徽章×3；成长永久保留。",
+      "elite": "每回合休整结束时，一名随机的其他友方干员获得攻击成长徽章×6；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "ICC_029",
+            "name": "深蓝刃鳞龙人",
+            "nameEn": "Cobalt Scalebane",
+            "tier": 4,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "在你的回合结束时，随机使另一个友方随从获得+3攻击力。",
+            "textElite": "在你的回合结束时，随机使另一个友方随从获得+6攻击力。"
+          }
+        ]
+      },
+      "normalLevels": "每回合休整结束时，一名随机的其他友方干员获得训练等级×3；成长永久保留。",
+      "eliteLevels": "每回合休整结束时，一名随机的其他友方干员获得训练等级×6；成长永久保留。"
+    },
+    "烛煌": {
+      "sourceId": "ICC_807",
+      "name": "硬壳清道夫",
+      "nameEn": "Strongshell Scavenger",
+      "normal": "招募获得或首次上阵时，所有已装备坚守盟约的友方干员各获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+      "elite": "招募获得或首次上阵时，所有已装备坚守盟约的友方干员各获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "ICC_807",
+            "name": "硬壳清道夫",
+            "nameEn": "Strongshell Scavenger",
+            "tier": 5,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>战吼：</b>使你具有<b>嘲讽</b>的随从获得+2/+2。",
+            "textElite": "<b>战吼：</b>使你具有<b>嘲讽</b>的随从获得+4/+4。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，所有已装备坚守盟约的友方干员各获得训练等级×4；成长永久保留。",
+      "eliteLevels": "招募获得或首次上阵时，所有已装备坚守盟约的友方干员各获得训练等级×8；成长永久保留。"
+    },
+    "空弦": {
+      "sourceId": "ICC_858",
+      "name": "浴火者伯瓦尔",
+      "nameEn": "Bolvar, Fireblood",
+      "normal": "招募获得或首次上阵时，自身永久装备护盾发生器×1。\n友方累计破裂五层护盾时，使自身临时获得攻击徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "elite": "招募获得或首次上阵时，自身永久装备护盾发生器×1。\n友方累计破裂五层护盾时，使自身临时获得攻击徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "ICC_858",
+            "name": "浴火者伯瓦尔",
+            "nameEn": "Bolvar, Fireblood",
+            "tier": 4,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>圣盾</b>\n在一个友方随从失去<b>圣盾</b>后，获得+2攻击力。",
+            "textElite": "<b>圣盾</b>\n在一个友方随从失去<b>圣盾</b>后，获得+4攻击力。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，自身永久装备护盾发生器×1。\n友方累计破裂五层护盾时，使自身临时获得训练等级×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+      "eliteLevels": "招募获得或首次上阵时，自身永久装备护盾发生器×1。\n友方累计破裂五层护盾时，使自身临时获得训练等级×4。同一效果每3秒最多触发一次，每场最多二十五次。"
+    },
+    "奥斯塔": {
+      "sourceId": "KAR_005",
+      "name": "慈祥的外婆",
+      "nameEn": "Kindly Grandmother",
+      "normal": "退场时召唤1个作战支援单位。",
+      "elite": "退场时召唤1个作战支援单位。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "KAR_005",
+            "name": "慈祥的外婆",
+            "nameEn": "Kindly Grandmother",
+            "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>亡语：</b>召唤一只3/2的大灰狼。",
+            "textElite": "<b>亡语：</b>召唤一只6/4的大灰狼。"
+          }
+        ]
+      },
+      "normalLevels": "退场时召唤1个作战支援单位。",
+      "eliteLevels": "退场时召唤1个作战支援单位。"
+    },
+    "隐德来希": {
+      "sourceId": "LOE_077",
+      "name": "布莱恩·铜须",
+      "nameEn": "Brann Bronzebeard",
+      "normal": "在场时，你的获得时效果共触发2次；不重复其他整备效果。",
+      "elite": "在场时，你的获得时效果共触发3次；不重复其他整备效果。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "LOE_077",
+            "name": "布莱恩·铜须",
+            "nameEn": "Brann Bronzebeard",
+            "tier": 5,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "你的<b>战吼</b>会触发\n两次。",
+            "textElite": "你的<b>战吼</b>会触发\n三次。"
+          }
+        ]
+      },
+      "normalLevels": "在场时，你的获得时效果共触发2次；不重复其他整备效果。",
+      "eliteLevels": "在场时，你的获得时效果共触发3次；不重复其他整备效果。"
+    },
+    "拉普兰德": {
+      "sourceId": "LOOT_078",
+      "name": "洞穴多头蛇",
+      "nameEn": "Cave Hydra",
+      "normal": "招募获得或首次上阵时，自身永久装备巨锤盟约×1。",
+      "elite": "招募获得或首次上阵时，自身永久装备巨锤盟约×1。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "LOOT_078",
+            "name": "洞穴多头蛇",
+            "nameEn": "Cave Hydra",
+            "tier": 4,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "同时对其攻击目标相邻的随从造成伤害。",
+            "textElite": "同时对其攻击目标相邻的随从造成伤害。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，自身永久装备巨锤盟约×1。",
+      "eliteLevels": "招募获得或首次上阵时，自身永久装备巨锤盟约×1。"
+    },
+    "因陀罗": {
+      "sourceId": "NEW1_027",
+      "name": "南海船长",
+      "nameEn": "Southsea Captain",
+      "normal": "在场时使其他维多利亚友方获得攻击徽章×1与职业副属性徽章×1；自身退场后失效。",
+      "elite": "在场时使其他维多利亚友方获得攻击徽章×2与职业副属性徽章×2；自身退场后失效。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "NEW1_027",
+            "name": "南海船长",
+            "nameEn": "Southsea Captain",
+            "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "你的其他海盗获得+1/+1。",
+            "textElite": "你的其他海盗获得+2/+2。"
+          }
+        ]
+      },
+      "normalLevels": "在场时使其他维多利亚友方获得训练等级×2；自身退场后失效。",
+      "eliteLevels": "在场时使其他维多利亚友方获得训练等级×4；自身退场后失效。"
+    },
+    "复奏": {
+      "sourceId": "OG_216",
+      "name": "寄生恶狼",
+      "nameEn": "Infested Wolf",
+      "normal": "退场时召唤2个作战支援单位。",
+      "elite": "退场时召唤2个作战支援单位。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "OG_216",
+            "name": "寄生恶狼",
+            "nameEn": "Infested Wolf",
+            "tier": 3,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>亡语：</b>召唤两只1/1的蜘蛛。",
+            "textElite": "<b>亡语：</b>召唤两只2/2的蜘蛛。"
+          }
+        ]
+      },
+      "normalLevels": "退场时召唤2个作战支援单位。",
+      "eliteLevels": "退场时召唤2个作战支援单位。"
+    },
+    "见行者": {
+      "sourceId": "OG_221",
+      "name": "无私的英雄",
+      "nameEn": "Selfless Hero",
+      "normal": "退场时为随机1名友方各增加5层护盾。",
+      "elite": "退场时为随机2名友方各增加5层护盾。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "OG_221",
+            "name": "无私的英雄",
+            "nameEn": "Selfless Hero",
+            "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>亡语：</b>随机使一个友方随从获得<b>圣盾</b>。",
+            "textElite": "<b>亡语：</b>随机使两个友方随从获得<b>圣盾</b>。"
+          }
+        ]
+      },
+      "normalLevels": "退场时为随机1名友方各增加5层护盾。",
+      "eliteLevels": "退场时为随机2名友方各增加5层护盾。"
+    },
+    "华法琳": {
+      "sourceId": "OG_256",
+      "name": "恩佐斯的子嗣",
+      "nameEn": "Spawn of N'Zoth",
+      "normal": "退场时使所有友方临时获得攻击徽章×1与职业副属性徽章×1。",
+      "elite": "退场时使所有友方临时获得攻击徽章×2与职业副属性徽章×2。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "OG_256",
+            "name": "恩佐斯的子嗣",
+            "nameEn": "Spawn of N'Zoth",
+            "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>亡语：</b>使你的所有随从获得+1/+1。",
+            "textElite": "<b>亡语：</b>使你的所有随从获得+2/+2。"
+          }
+        ]
+      },
+      "normalLevels": "退场时使所有友方临时获得训练等级×2。",
+      "eliteLevels": "退场时使所有友方临时获得训练等级×4。"
+    },
+    "斥罪": {
+      "sourceId": "TRL_232",
+      "name": "铁皮恐角龙",
+      "nameEn": "Ironhide Direhorn",
+      "normal": "攻击超杀时召唤一个强力作战支援单位。",
+      "elite": "攻击超杀时召唤一个强力作战支援单位，支援单位的攻击和生命翻倍。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "TRL_232",
+            "name": "铁皮恐角龙",
+            "nameEn": "Ironhide Direhorn",
+            "tier": 5,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>超杀：</b>召唤一个5/5的铁皮小恐龙。",
+            "textElite": "<b>超杀：</b>召唤一个10/10的铁皮小恐龙。"
+          }
+        ]
+      },
+      "normalLevels": "攻击超杀时召唤一个强力作战支援单位。",
+      "eliteLevels": "攻击超杀时召唤一个强力作战支援单位，支援单位的攻击和生命翻倍。"
+    },
+    "罗比菈塔": {
+      "sourceId": "ULD_217",
+      "name": "微型木乃伊",
+      "nameEn": "Micro Mummy",
+      "normal": "招募获得或首次上阵时，自身永久装备不屈盟约×1。\n每回合休整结束时，一名随机的其他友方干员获得攻击成长徽章×1；成长永久保留。",
+      "elite": "招募获得或首次上阵时，自身永久装备不屈盟约×1。\n每回合休整结束时，一名随机的其他友方干员获得攻击成长徽章×2；成长永久保留。",
+      "normalEn": "",
+      "eliteEn": "",
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "ULD_217",
+            "name": "微型木乃伊",
+            "nameEn": "Micro Mummy",
+            "tier": 1,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "text": "<b>复生</b>\n在你的回合结束时，随机使另一个友方随从获得+1攻击力。",
+            "textElite": "<b>复生</b>\n在你的回合结束时，随机使另一个友方随从获得+2攻击力。"
+          }
+        ]
+      },
+      "normalLevels": "招募获得或首次上阵时，自身永久装备不屈盟约×1。\n每回合休整结束时，一名随机的其他友方干员获得训练等级×1；成长永久保留。",
+      "eliteLevels": "招募获得或首次上阵时，自身永久装备不屈盟约×1。\n每回合休整结束时，一名随机的其他友方干员获得训练等级×2；成长永久保留。"
+    }
+  }
+}

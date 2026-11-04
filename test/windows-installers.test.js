@@ -23,7 +23,7 @@ const IS_WIN = process.platform === 'win32';
 describe('Windows 版本号', () => {
   test('预发布序号进第四段；普通版本补 0；写不成四段数字就报错', async () => {
     const { numericVersion } = await mod('scripts/make-windows-bundle.mjs');
-    assert.equal(numericVersion('0.3.0-workshop.1'), '0.3.0.1');
+    assert.equal(numericVersion('0.4.0-assault.1'), '0.4.0.1');
     assert.equal(numericVersion('1.2.3'), '1.2.3.0');
     assert.equal(numericVersion('0.3.0-workshop.12'), '0.3.0.12');
     assert.throws(() => numericVersion('0.3.0-workshop'), /四段数字/);
@@ -35,10 +35,10 @@ describe('Windows 版本号', () => {
 describe('启动器 启动游戏.exe', () => {
   test('BuildInfo 带上启动参数与两种版本号，字符串按 C# 转义', async () => {
     const { launcherBuildInfo } = await mod('scripts/make-windows-bundle.mjs');
-    const cs = launcherBuildInfo({ launchArgs: ['--workshop', 'a"b\\c'], version: '0.3.0-workshop.1' });
-    assert.match(cs, /AssemblyVersion\("0\.3\.0\.1"\)/);
-    assert.match(cs, /AssemblyInformationalVersion\("0\.3\.0-workshop\.1"\)/);
-    assert.ok(cs.includes('LaunchArguments = { "--workshop", "a\\"b\\\\c" }'), cs);
+    const cs = launcherBuildInfo({ launchArgs: ['--assault', 'a"b\\c'], version: '0.4.0-assault.1' });
+    assert.match(cs, /AssemblyVersion\("0\.4\.0\.1"\)/);
+    assert.match(cs, /AssemblyInformationalVersion\("0\.4\.0-assault\.1"\)/);
+    assert.ok(cs.includes('LaunchArguments = { "--assault", "a\\"b\\\\c" }'), cs);
   });
 
   test('包内说明让玩家双击 exe，不再出现 .bat', async () => {
@@ -48,7 +48,7 @@ describe('启动器 启动游戏.exe', () => {
       assert.match(r, /双击 `启动游戏\.exe`/);
       assert.doesNotMatch(r, /\.bat/);
       assert.match(r, /仍要运行/, '没有代码签名，要告诉玩家 SmartScreen 怎么放行');
-      assert.match(r, /%LOCALAPPDATA%\\Stronghold-Protocol-Workshop/, '存档位置要写清');
+      assert.match(r, /%LOCALAPPDATA%\\Stronghold-Protocol-Assault/, '存档位置要写清');
     }
   });
 
@@ -64,7 +64,7 @@ describe('启动器 启动游戏.exe', () => {
     const base = await fsp.mkdtemp(path.join(os.tmpdir(), 'sp-launcher-test-'));
     try {
       const exe = path.join(base, '启动游戏.exe');
-      await compileLauncher(exe, { launchArgs: ['--workshop'], version: '0.3.0-workshop.1' });
+      await compileLauncher(exe, { launchArgs: ['--assault'], version: '0.4.0-assault.1' });
 
       // 没有 app\ 时提示解压，退出码 1（stdin 不是控制台，不等待按键）
       const missing = spawnSync(exe, [], { encoding: 'utf8', input: '' });
@@ -76,16 +76,19 @@ describe('启动器 启动游戏.exe', () => {
       await fsp.mkdir(scripts, { recursive: true });
       const report = path.join(base, 'report.json');
       await fsp.writeFile(path.join(scripts, 'launch.mjs'), `import fs from 'node:fs';
-fs.writeFileSync(${JSON.stringify(report)}, JSON.stringify({ argv: process.argv.slice(2), saves: process.env.SP_INDEPENDENT_DIRECTORY, cwd: process.cwd() }));
+fs.writeFileSync(${JSON.stringify(report)}, JSON.stringify({ argv: process.argv.slice(2), cwd: process.cwd(),
+  saves: [process.env.SP_ASSAULT_RUN_ROOT, process.env.SP_ASSAULT_RECORDING_ROOT, process.env.SP_INDEPENDENT_DIRECTORY] }));
 process.exit(7);
 `);
-      const saves = path.join(base, 'saves dir');
+      // all three save variables set by the user: they win, and nothing is created under %LOCALAPPDATA%
+      const saves = ['runs dir', 'recordings dir', 'workshop dir'].map((n) => path.join(base, n));
       const args = ['--port', '3001', 'a b', 'quote"d', 'trail\\', ''];
-      const r = spawnSync(exe, args, { encoding: 'utf8', input: '', env: { ...process.env, SP_INDEPENDENT_DIRECTORY: saves } });
+      const r = spawnSync(exe, args, { encoding: 'utf8', input: '', env: { ...process.env,
+        SP_ASSAULT_RUN_ROOT: saves[0], SP_ASSAULT_RECORDING_ROOT: saves[1], SP_INDEPENDENT_DIRECTORY: saves[2] } });
       assert.equal(r.status, 7, `退出码应原样返回：${r.stdout}${r.stderr}`);
       const got = JSON.parse(await fsp.readFile(report, 'utf8'));
-      assert.deepEqual(got.argv, ['--workshop', ...args]);
-      assert.equal(got.saves, saves, '用户自己设置的存档目录优先');
+      assert.deepEqual(got.argv, ['--assault', ...args]);
+      assert.deepEqual(got.saves, saves, '用户自己设置的存档目录优先');
       assert.equal(path.resolve(got.cwd).toLowerCase(), path.join(base, 'app').toLowerCase());
     } finally {
       await fsp.rm(base, { recursive: true, force: true });
@@ -144,10 +147,10 @@ describe('make-windows-installers.mjs: zip', () => {
 describe('make-windows-installers.mjs: 安装包文字与卸载清单', () => {
   test('产物文件名跟随 package.json 版本', async () => {
     const { artifactNames } = await mod('scripts/make-windows-installers.mjs');
-    assert.deepEqual(artifactNames('0.3.0-workshop.1'), {
-      zip: 'Stronghold-Protocol-Windows-Lite-workshop-v0.3.0-workshop.1.zip',
-      msi: 'Stronghold-Protocol-Workshop-0.3.0-workshop.1.msi',
-      exe: 'Stronghold-Protocol-Workshop-Setup-0.3.0-workshop.1.exe',
+    assert.deepEqual(artifactNames('0.4.0-assault.1'), {
+      zip: 'Stronghold-Protocol-Assault-Windows-0.4.0-assault.1.zip',
+      msi: 'Stronghold-Protocol-Assault-0.4.0-assault.1.msi',
+      exe: 'Stronghold-Protocol-Assault-Setup-0.4.0-assault.1.exe',
     });
   });
 
@@ -218,10 +221,10 @@ describe('make-windows-installers.mjs: 用哪个 makensis', () => {
   });
 });
 
-describe('Workshop 图标', () => {
+describe('进击图标', () => {
   test('.ico 含 16–256 各尺寸，256 用 PNG，其余是 32 位 DIB', async () => {
-    const { workshopIco, ICON_SIZES } = await mod('scripts/windows/icon.mjs');
-    const ico = workshopIco();
+    const { productIco, ICON_SIZES } = await mod('scripts/windows/icon.mjs');
+    const ico = productIco();
     assert.equal(ico.readUInt16LE(2), 1);
     assert.equal(ico.readUInt16LE(4), ICON_SIZES.length);
     ICON_SIZES.forEach((size, i) => {
@@ -231,5 +234,36 @@ describe('Workshop 图标', () => {
       if (size >= 256) assert.deepEqual([...ico.subarray(off, off + 4)], [0x89, 0x50, 0x4e, 0x47]);
       else assert.equal(ico.readUInt32LE(off), 40);
     });
+  });
+});
+
+describe('进击启动参数与首次下载清单', () => {
+  test('--assault 打开 /assault.html，并给出进击存档与素材目录（已设置的变量优先）', async () => {
+    const { parseLaunchArgs, launchEntryPath, assaultEnv } = await mod('scripts/launch.mjs');
+    const o = parseLaunchArgs(['--assault', '--port', '13010']);
+    assert.equal(o.mode, 'assault');
+    assert.equal(o.port, 13010);
+    assert.equal(launchEntryPath(o), '/assault.html');
+    assert.equal(launchEntryPath(parseLaunchArgs(['--workshop'])), '/independent.html');
+    assert.equal(launchEntryPath(parseLaunchArgs([])), '');
+    const root = path.resolve('/x/app');
+    const env = assaultEnv({}, root);
+    assert.equal(env.SP_ASSAULT_RUN_ROOT, path.join(root, 'runtime', 'assault', 'player-sessions'));
+    assert.equal(env.SP_ASSAULT_ASSETS_DIR, path.join(root, 'runtime', 'assault-assets'));
+    for (const v of Object.values(env)) assert.ok(path.isAbsolute(v), 'server/index.js 只接受绝对路径');
+    assert.equal(assaultEnv({ SP_ASSAULT_RUN_ROOT: 'D:\saves' }, root).SP_ASSAULT_RUN_ROOT, 'D:\saves');
+  });
+
+  test('进击素材清单：每个可下载文件都有 https 来源，按 /assault-assets/ 与 /assets/ 分开，官方 CDN 与本机提取不下载', async () => {
+    const { collectJobs, enemyFiles } = await mod('tools/assault/player-assets.mjs');
+    const manifest = JSON.parse(await fsp.readFile(path.join(ROOT, 'data', 'assault-assets.json'), 'utf8'));
+    const jobs = collectJobs(manifest);
+    assert.ok(jobs.assault.length > 300 && jobs.assets.length > 1000, `${jobs.assault.length} / ${jobs.assets.length}`);
+    for (const j of [...jobs.assault, ...jobs.assets]) {
+      assert.ok(j.urls.length > 0 && j.urls.every((u) => u.startsWith('https://') && !u.includes('ak.hycdn.cn')), j.rel);
+      assert.ok(!j.rel.startsWith('/') && !j.rel.includes('..'), j.rel);
+    }
+    assert.ok(jobs.local.every((u) => u.startsWith('/assets/local/') || u.startsWith('/assault-assets/')), jobs.local.join(','));
+    assert.ok(jobs.enemyIds.length > 0 && enemyFiles(manifest).length >= jobs.enemyIds.length * 2);
   });
 });

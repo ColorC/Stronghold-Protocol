@@ -127,6 +127,7 @@ describe('resolution order', () => {
     for (const ch of REG.FX_CHANNELS) assert.equal(reg.resolve(ch, 'whatever').at(-1), RCP.DEFAULT_RECIPES[ch], `${ch} default`);
     // every archetype FX_KINDS names has a recipe
     for (const [k, s] of Object.entries(RCP.FX_KINDS)) assert.ok(s.a === 'none' || RCP.FX_ARCHETYPES[s.a], `${k}: archetype ${s.a}`);
+    assert.deepEqual(RCP.FX_KINDS.nativeTrap, { a: 'blast', c: 0xffc27a, r: 0.65, pt: true }, 'native trap visuals keep their point-centered blast mapping');
   });
 });
 
@@ -238,6 +239,7 @@ test('the sim appends the skill id to the skill events, attackId / isSkill to th
   const sk = h.events.filter((e) => e[0] === 'skill');
   assert.deepEqual(sk.slice(0, 2).map((e) => [e[1], e[2], e[3]]), [[u.id, 1, 'sk_fx_test'], [u.id, 0, 'sk_fx_test']]);
   const atk = h.events.filter((e) => e[0] === 'atk' && e[1] === u.id);
+  assert.ok(h.runUntil(() => atk.every((e) => h.events.some((d) => d[0] === 'dmg' && d[5] === e[4] && d[4] === e[1] && d[1] === e[2])), 1), 'the recorded attacks landed with their shooter and target');
   assert.ok(atk.some((e) => e[5] === 1) && atk.some((e) => e[5] === 0), 'skill attacks during it, normal ones after');
   for (const e of atk) {
     const hits = h.events.filter((d) => d[0] === 'dmg' && d[5] === e[4]);

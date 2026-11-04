@@ -9,6 +9,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { moduleTypeIconUrl } from '../../public/js/ui/assetUrls.js';
+import { publicResourcePath } from '../helpers/public-resources.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const LOCAL = path.join(ROOT, 'data/local-assets.json');
@@ -69,7 +70,7 @@ describe('module type icons (local-client art, optional)', () => {
     for (const t of types) {
       const url = moduleTypeIconUrl(local, t);
       if (!url) { missing.push(t); continue; }
-      assert.ok(existsSync(path.join(ROOT, 'public', url)), `${t} → ${url} exists`);
+      assert.ok(existsSync(publicResourcePath(url)), `${t} → ${url} exists in the read-only canonical public tree`);
     }
     assert.deepEqual(missing, [], 'every module type has an official icon');
   });

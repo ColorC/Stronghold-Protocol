@@ -5,6 +5,7 @@
 
 import { ROWS, COLS, DOWN_STATE } from '../constants.js';
 import { localOrder, localBefore } from '../dir.js';
+import { bodyOnTile, nonOccupyingTokenAt } from '../body.js';
 
 export class BattleTiles {
   /** Toggle a ground obstacle (enemies re-read their flow field). `kind` 'block' (default, impassable) | 'crate'. */
@@ -17,7 +18,31 @@ export class BattleTiles {
     if (!unit || unit.side !== 'ally' || !unit.alive || !unit.deployed) return false;
     if (!Number.isInteger(r) || !Number.isInteger(c) || !this.grid.inRect(r, c)) return false;
     const k = r * COLS + c;
-    if (this._occ[k] && this._occ[k] !== unit && this._occ[k].alive) return false;
+    const occ = this._occ[k];
+    const battle = /** @type {any} */ (this);
+    const tokenAt = nonOccupyingTokenAt(battle.allyUnits, r, c, unit);
+    if (tokenAt && !(unit.kind === 'op' && (tokenAt.ownerId ?? tokenAt.ownerUnit?.ownerId) != null && (tokenAt.ownerId ?? tokenAt.ownerUnit?.ownerId) === unit.ownerId)) return false;
+    if (unit.occupiesTile === false) {
+      const constraints = unit.def?.raw?.sourceTemplate ?? unit.def?.raw ?? unit.def ?? {};
+      const placement = constraints.assaultPlacementClass ?? (constraints.rangedTilesOnly ? 'high' : String(unit.def?.position ?? 'MELEE').toLowerCase());
+      const ranged = ['ranged', 'all', 'high'].includes(placement);
+      const terrain = this.grid.tile(r, c);
+      if (unit.kind !== 'token' || !unit.ownerId || !this.grid.canStand(r, c, { ranged })
+        || (placement === 'high' && terrain.height !== 'HIGH' && terrain.build !== 'RANGED')
+        || this.grid.isObstacle(r, c) || battle.enemies.some((enemy) => enemy.alive && enemy.deployed && bodyOnTile(enemy, r, c))
+        || (unit.player && !this.onOwnBoard(unit.player, r, c))) return false;
+      const waiting = battle.allyUnits.some((other) => {
+        if (other === unit || other.alive || other.removed || (other.kind !== 'op' && other.kind !== 'token')) return false;
+        const [rr, cc] = this.restTile(other); return rr === r && cc === c;
+      });
+      if (waiting) return false;
+    }
+    const sharedOwnerOperator = unit.occupiesTile === false && occ?.alive && occ.deployed && occ.side === 'ally'
+      && occ.kind === 'op' && unit.ownerId != null && occ.ownerId === unit.ownerId;
+    if (occ && occ !== unit && occ.alive && !sharedOwnerOperator) return false;
+    if (unit.occupiesTile === false && battle.enemies.some((enemy) => enemy.alive && enemy.deployed && bodyOnTile(enemy, r, c))) return false;
+    if (unit.occupiesTile === false && battle.allyUnits.some((other) => other !== unit && other.kind === 'token' && other.occupiesTile === false
+      && other.alive && other.deployed && other.tileR === r && other.tileC === c)) return false;
     if (this.downOn(r, c)) return false;
     const ok = unit.tileR * COLS + unit.tileC;
     if (this._occ[ok] === unit) this._occ[ok] = null;
@@ -25,7 +50,7 @@ export class BattleTiles {
     if (unit.obstacle) this.grid.setObstacle(unit.tileR, unit.tileC, false, unit.obstacleKind);
     unit.tileR = r; unit.tileC = c; unit.x = c; unit.y = r;
     unit.ground = this.grid.isLow(r, c) && !this._elevated?.has(k);
-    this._occ[k] = unit;
+    if (unit.occupiesTile !== false) this._occ[k] = unit;
     if (unit.obstacle) this.grid.setObstacle(r, c, true, unit.obstacleKind);
     this._refreshRange(unit); // current + base range, CUSTOM_RANGE trigger keys
     return true;

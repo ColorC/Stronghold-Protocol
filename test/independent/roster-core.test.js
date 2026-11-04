@@ -1,13 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { loadData } from '../../server/data.js';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { createSession } from '../../server/modes/independent/session.js';
 import { runNativeHook } from '../../server/modes/independent/native.js';
 import { matchesInheritancePermission, nativeFactions, tavernFactions } from '../../shared/independentRules.js';
 
-const data = loadData(process.env.SP_DATA_DIR || 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data', { log: { warn() {}, error() {} } });
-const sourceDesign = JSON.parse((await import('node:fs')).readFileSync(process.env.SP_INDEPENDENT_DESIGN_PATH || 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/independent-design.json', 'utf8'));
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const DATA_DIR = path.resolve(process.env.SP_DATA_DIR || path.join(ROOT, 'data'));
+const DESIGN_PATH = path.resolve(process.env.SP_INDEPENDENT_DESIGN_PATH || path.join(ROOT, 'data', 'independent-design.json'));
+const data = loadData(DATA_DIR, { log: { warn() {}, error() {} } });
+const sourceDesign = JSON.parse((await import('node:fs')).readFileSync(DESIGN_PATH, 'utf8'));
 const structuredCloneJson = (x) => JSON.parse(JSON.stringify(x));
 
 function tailoredDesign() {
@@ -16,7 +21,6 @@ function tailoredDesign() {
   const second = design.operators.find((x) => x !== active);
   design.rules.activeRosterIds = [active.chessId, second.chessId];
   design.rules.tavernFactions = ['萨尔贡', '拉特兰'];
-  design.rules.factionIdentityEquipment = true;
   active.tier = 4;
   active.nativeFactionTags = ['萨尔贡'];
   active.modeEffects = {
@@ -98,7 +102,6 @@ test('inactive operators do not enter a random recruit offer even if an old save
 test('native faction tags replace upstream bonds while identity gear adds a tavern-only tag', () => {
   const { design, active } = tailoredDesign();
   const catalog = getCatalog(data, design);
-  assert.equal(catalog.config.factionIdentityEquipment,true,'this isolated fixture enables the current optional identity-gear mechanic');
   const proxyGear = Object.values(catalog.equipment).find((x) => x.mechanism === 'identityTag');
   const piece = { chessId: active.chessId, equipment: [{ id: proxyGear.id, state: { faction: '炎' } }] };
   assert.deepEqual(nativeFactions(piece, catalog), ['萨尔贡']);

@@ -98,9 +98,14 @@ describe('D4 暴鸰: the drone lets go of its bomb on screen', () => {
   test('render/app.js keeps UnitInfo.form (a field opened after the drop) and hands the atk kind to the view', async () => {
     const src = readFileSync(path.join(ROOT, 'public/js/render/app.js'), 'utf8');
     // addInfo goes through renderInfo, which keeps the form (feedback1 WD: every enemy form, 转译基底·α's too)
-    assert.match(src, /function addInfo\(u\)\s*\{\s*const info = renderInfo\(u\)/);
+    assert.match(src, /function addInfo\(u\)\s*\{\s*const base = renderInfo\(u\)/);
     const { renderInfo } = await import('../../public/js/render/app.js');
-    assert.equal(renderInfo({ id: 7, kind: 'enemy', side: 'enemy', defId: 'enemy_1040_bombd', form: 'bombed' }).form, 'bombed');
+    // the four-mode collection keeps 共鸣's star / floor inputs in app.js; only 共鸣's units and fields carry them
+    const info = renderInfo({ id: 7, kind: 'enemy', side: 'enemy', defId: 'enemy_1040_bombd', form: 'bombed', tier: 4, resonanceStar: 4, resonanceFloors: [{ row: 1, col: 2 }] });
+    assert.equal(info.form, 'bombed');
+    assert.equal(info.tier, 4, 'native tier remains uncapped by the Resonance-only three-star marker');
+    assert.equal(info.resonanceStar, undefined);
+    assert.equal(info.resonanceFloors, undefined);
     assert.match(src, /src\.onAttack\?\.\(tgt, now, e\[3\]\)/);
     assert.match(src, /v\.windUp\(t - upcomingT, e\[3\]\)/);
   });

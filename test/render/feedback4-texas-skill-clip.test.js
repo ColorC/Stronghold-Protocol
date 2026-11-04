@@ -14,9 +14,11 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { installFakePixi } from './fakepixi.js';
+import { assaultAssets } from '../../public/js/assault/model.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const assets = JSON.parse(readFileSync(path.join(ROOT, 'data/assets.json'), 'utf8'));
+const nativeAssets = JSON.parse(readFileSync(path.join(process.env.SP_DATA_DIR || path.join(ROOT, 'data'), 'assets.json'), 'utf8'));
+const assets = process.env.ASSAULT_RULES_ROOT ? assaultAssets(JSON.parse(readFileSync(path.join(process.env.ASSAULT_RULES_ROOT, 'assault-assets.json'), 'utf8')), nativeAssets) : nativeAssets;
 
 let fake, SpineActor;
 before(async () => {
@@ -39,6 +41,46 @@ function actor(charId, skillIndex) {
 }
 const run = (a, s, dt = 1 / 60) => { for (let t = 0; t < s - 1e-9; t += dt) a.update(dt); };
 const names = (a) => a.log.map(([, n]) => n);
+
+test('a same-frame instant cast with an own Idle and no Begin plays its loop once, while a sustained window rests', () => {
+  const a = actor('char_1014_nearl2', 2);
+  a.setSkill(true); a.setSkill(false);
+  assert.equal(a.current, a.roles.skill.loop);
+  assert.match(a.current, /^Skill_3/);
+  run(a, a.dur(a.roles.skill.loop) + .1);
+  assert.equal(a.mode, 'base');
+  assert.equal(a.current, 'Idle');
+  const sustained = actor('char_1014_nearl2', 2);
+  sustained.setSkill(true); run(sustained, 1);
+  assert.equal(sustained.current, 'Skill_3_Idle');
+});
+
+test('Surtr S3 converted to an instant cast keeps its Begin clip when on/off arrive in the same tick', () => {
+  const a = actor('char_350_surtr', 2);
+  assert.equal(a.roles.skill.begin, 'Skill_3_Begin');
+  a.setSkill(true);
+  a.setSkill(false);
+  assert.equal(a.current, 'Skill_3_Begin');
+  assert.equal(a.skillEndPending, true);
+  run(a, a.dur('Skill_3_Begin') / 2);
+  assert.equal(a.current, 'Skill_3_Begin');
+  run(a, a.dur('Skill_3_Begin'));
+  assert.equal(a.mode, 'base');
+  assert.equal(a.current, 'Idle');
+  assert.equal(a.skillOn, false);
+});
+
+test('an interrupted Begin clip still yields to deployment or death rather than resuming a cancelled cast', () => {
+  const a = actor('char_350_surtr', 2);
+  a.setSkill(true); a.setSkill(false); a.deploy();
+  assert.equal(a.mode, 'deploy');
+  run(a, a.dur('Start') + .1);
+  assert.equal(a.current, 'Idle');
+  const dead = actor('char_350_surtr', 2);
+  dead.setSkill(true); dead.setSkill(false); dead.die();
+  assert.equal(dead.mode, 'die');
+  assert.equal(dead.current, 'Die');
+});
 
 test('德克萨斯 S2 剑雨: an instant skill with no Begin clip plays its Skill clip and keeps it for the clip length', () => {
   const a = actor('char_102_texas', 1);
@@ -88,7 +130,7 @@ test('unchanged: a Begin clip still runs into its queued next clip, a skill with
   const n = actor('char_1014_nearl2', 2);   // 耀骑士临光 S3: no Begin, own Idle — plays that idle at once
   n.setSkill(true);
   assert.deepEqual(n.log, [['set', 'Skill_3_Idle', true]]);
-  const u = actor('char_337_utage', 1);     // 宴: Begin → loop, unchanged
+  const u = actor('char_337_utage', 0);     // 宴 S1 分神: Begin → loop, unchanged (her S2 has no skill clip, DESIGN §25.22.9)
   u.setSkill(true);
   assert.deepEqual(u.log, [['set', 'Skill_Start', false], ['queue', 'Skill_Loop', true]]);
 });

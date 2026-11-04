@@ -105,7 +105,7 @@ export default {
           kind: 'instant', trigger: 'SP_FULL',
           onStart({ battle, unit }) {
             const n = num(b1.cost);
-            battle.addDp(unit.ownerId, n);
+            battle.addDp(unit.ownerId, n, { sourceUnitId: unit.id });
             battle.fx('dp', { x: unit.x, y: unit.y, n, id: unit.id });
           },
         },
@@ -113,7 +113,7 @@ export default {
           kind: num(s2?.maxChargeTime, 1) > 1 ? 'charges' : 'instant',
           onStart({ battle, unit }) {
             const n = num(b2.cost);
-            battle.addDp(unit.ownerId, n);
+            battle.addDp(unit.ownerId, n, { sourceUnitId: unit.id });
             battle.fx('dp', { x: unit.x, y: unit.y, n, id: unit.id });
             const keys = absoluteRangeKeys(s2?.rangeGrid ?? X6, unit.tileR, unit.tileC, unit.dir, 0);
             const list = battle.enemiesInKeys(keys, unit, GROUND);
@@ -148,7 +148,7 @@ export default {
             while (st.acc + 1e-9 >= iv && st.got + n <= total + 1e-9) {
               st.acc -= iv;
               st.got += n;
-              battle.addDp(unit.ownerId, n);
+              battle.addDp(unit.ownerId, n, { sourceUnitId: unit.id });
             }
           },
           onEnd({ battle, unit, reason }) {

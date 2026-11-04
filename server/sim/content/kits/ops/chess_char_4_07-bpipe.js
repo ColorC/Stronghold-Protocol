@@ -2,8 +2,8 @@
 // Conventions of the tier-4 kits: ../shared/tier4.js; kit contract and rules: ../README.md.
 
 import { sortEnemyTargets } from '../../../targeting.js';
-import { applyDamageIncrease } from '../../../../../shared/damageIncrease.js';
 import { num, tbb, batFlat, alt, withDefaults } from '../shared/tier4.js';
+import { applyDamageIncrease } from '../../../../../shared/damageIncrease.js';
 
 export default withDefaults({
   // ===== 风笛 (charger) S2 高效冲击 — next attack 145 % ×2 (charges); talents 精密填弹 / 军事传统

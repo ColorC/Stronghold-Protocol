@@ -1,0 +1,104 @@
+import { authoredCard as card, pct } from './core-adaptations.js';
+
+export const CASTER_ADAPTATIONS=Object.freeze({
+  char_002_amiya:card(2,'B','slow',35,1,v=>[
+    `原扩大范围连射${v.hits}次${pct(v.scale)}%真伤，之后强制退场。`,
+    `其他术师每累计施放${v.every}次技能，为自身充能${v.charge}。`,
+  ],{values:{hits:8,scale:3.3,hp:1,every:2,charge:4,attackSP:2,killSP:8},sourceTalent:0,tags:['保留情绪吸收','保留原生退场与再部署计时']}),
+  char_388_mint:card(1,'B','medium',20,99,v=>[
+    `原范围${v.hits}轮${pct(v.scale)}%法伤并拖拽，最后造成${pct(v.finish)}%。`,
+    `技能未开启时，相邻友军防御+${pct(v.aura)}%。`,
+  ],{values:{hits:6,scale:1.3,finish:3,force:1,aura:.1,taunt:-1},sourceTalent:0}),
+  char_4079_haini:card(1,'B','medium',20,2,v=>[
+    `2目标连射${v.hits}次${pct(v.scale)}%法伤，普通敌人减速60%。`,
+    `原范围普通敌人脆弱${pct(v.fragile)}%，施放中击杀逐次强化。`,
+  ],{values:{hits:8,scale:1.5,fragile:.16,step:.5,max:3,slow:.6,duration:6},sourceTalent:0}),
+  char_4032_provs:card(1,'B','medium',20,99,v=>[
+    `原范围${pct(v.open)}%法伤、停顿沉默${v.duration}秒，接续${v.hits}次攻击。`,
+    `部署时，自身及随机卡西米尔友军攻速+${v.aspd}。`,
+  ],{values:{open:3.5,hits:6,scale:1,duration:10,aspd:10},nativeDeploy:true,sourceTalent:0}),
+  char_4122_grabds:card(1,'B','medium',20,3,v=>[
+    `使3名敌人沉睡${v.sleep}秒，醒来后各承受${v.hits}次法术攻击。`,
+    `自身攻速+${v.aspd}；攻击野生动物时，停顿延长${v.extra}秒。`,
+  ],{values:{sleep:5,hits:6,scale:1,extra:.4,aspd:10},sourceTalent:0}),
+  char_213_mostma:card(2,'B','slow',35,99,v=>[
+    `原扩大范围${v.hits}轮${pct(v.scale)}%法伤、击退与45%减速。`,
+    `你的术师自然技力回复每秒+${v.recovery}。`,
+  ],{values:{hits:5,scale:2.7,force:0,slow:.45,nativeSlow:.15,duration:6,recovery:.4},sourceTalent:0,
+    tags:['同类技力光环取最高']}),
+  char_426_billro:card(2,'B','slow',35,99,v=>[
+    `原范围连击${v.hits}轮，攻击逐步升至${pct(1+v.atk)}%；蓄力叠印。`,
+    `相邻术师施放技能时，回复其${pct(v.allyHeal)}%最大生命。`,
+  ],{values:{hits:6,atk:2.8,mark:.2,maxMark:5,heal:.4,chargedHeal:.8,allyHeal:.08,recovery:.6},sourceTalent:0,
+    tags:['自身施放回复40%生命，蓄力时80%','蓄力印记每层伤害+20%，最多5层']}),
+  char_291_aglina:card(2,'B','slow',30,5,v=>[
+    `原扩大范围5目标连击${v.hits}次${pct(v.scale)}%法伤，全场失重${v.duration}秒。`,
+    `全体友军攻速+${v.aspd}，自身未施放技能时每秒再生${v.regen}生命。`,
+  ],{values:{hits:6,scale:2.5,duration:6,aspd:7,regen:20},sourceTalent:0,tags:['保留未开启技能时不普攻']}),
+  char_358_lisa:card(2,'B','slow',35,99,v=>[
+    `原扩大范围敌人停顿${v.duration}秒，友军完成${v.heals}次再生。`,
+    `你的干员攻击范围内停顿目标时，造成${pct(v.fragile)}%脆弱。`,
+  ],{values:{duration:6,heals:6,heal:.2,fragile:.2,skillFragile:.4,recovery:.4},sourceTalent:1,
+    tags:['技能停顿目标脆弱40%','辅助自然技力回复每秒+0.4，同类取最高']}),
+  char_472_pasngr:card(2,'A','slow',30,4,v=>[
+    `在原范围最高生命目标处生成${v.duration}秒雷暴，每${v.interval}秒连锁4名。`,
+    `你的术师命中高于80%生命目标，接续${v.markTime}秒对其伤害+${pct(v.bonus)}%。`,
+  ],{values:{duration:4,interval:.5,scale:1.5,chain:4,sluggish:.5,bonus:.2,markTime:3,threshold:.8,aloneATK:.08},sourceTalent:0,
+    tags:['可储存2次','原x-1雷暴区域，连锁可延伸区域外']}),
+  char_4027_heyak:card(2,'B','slow',35,3,v=>[
+    `发出${v.waves}组三路旋风，首目标浮空${v.lift}秒、最高${pct(v.max)}%法伤。`,
+    `你的干员攻击浮空或飞行敌人时，伤害+${pct(v.air)}%、沉默${v.silence}秒。`,
+  ],{values:{waves:3,min:2.8,max:4.2,lift:2.2,air:.2,silence:3,threshold:.8,flight:5,ramp:1.77},sourceTalent:0,
+    tags:['原三路旋风，5格飞行','原范围生命高于80%的敌人失重']}),
+  char_4133_logos:card(2,'B','slow',35,4,v=>[
+    `原范围4目标连射${v.hits}次${pct(v.scale)}%法伤，积存${v.intercepts}次子弹拦截。`,
+    `自身攻击标记${v.markTime}秒：法抗−${v.res}，受到法伤+${v.flat}。`,
+  ],{values:{hits:6,scale:4,intercepts:6,hold:2,projectileScale:.05,markTime:5,res:10,flat:150,chance:.4,echo:.6,slow:.8},sourceTalent:1,
+    tags:['子弹减速至5%，2秒后清除','保留语汇演化额外攻击与停顿']}),
+});
+
+export const CASTER_CARD_ROLES=Object.freeze({
+  char_002_amiya:{line:'redeploy',produces:[],consumes:['skill'],roles:['direct']},
+  char_388_mint:{line:'workshop',produces:['displacement'],consumes:[],roles:['direct','control','aura']},
+  char_4079_haini:{line:'workshop',produces:[],consumes:['kill'],roles:['direct','aura']},
+  char_4032_provs:{line:'redeploy',produces:['deployment'],consumes:[],roles:['direct','buffOthers','deploy']},
+  char_4122_grabds:{line:'workshop',produces:['control'],consumes:[],roles:['direct','control']},
+  char_213_mostma:{line:'workshop',produces:['displacement'],consumes:[],roles:['direct','control','aura']},
+  char_426_billro:{line:'workshop',produces:['sustain'],consumes:['skill'],roles:['direct']},
+  char_291_aglina:{line:'redeploy',produces:['displacement','sustain'],consumes:[],roles:['direct','control','aura']},
+  char_358_lisa:{line:'workshop',produces:['sustain'],consumes:['control'],roles:['direct','control','aura']},
+  char_472_pasngr:{line:'workshop',produces:[],consumes:[],roles:['direct']},
+  char_4027_heyak:{line:'redeploy',produces:['displacement'],consumes:['displacement'],roles:['direct','control','aura']},
+  char_4133_logos:{line:'workshop',produces:[],consumes:[],roles:['direct']},
+});
+const pair=(key,value,text,linkKey,linkValue,linkText)=>[
+  {sourceKind:'skill',key,value,text},{sourceKind:'talent',key:linkKey,value:linkValue,text:linkText},
+];
+export const CASTER_MODULES=Object.freeze({
+  char_002_amiya:pair('hits',10,'奇美拉提升至10次射击。','charge',6,'情绪吸收连线充能提升至6。'),
+  char_388_mint:pair('hits',8,'聚能涡旋提升至8轮。','aura',.15,'地质学者防御光环提升至+15%。'),
+  char_4079_haini:pair('hits',10,'显色剂提升至10次连射。','fragile',.2,'测绘器材脆弱提升至20%。'),
+  char_4032_provs:pair('open',4.5,'致胜立论开场伤害提升至450%。','aspd',15,'法律专精攻速提升至+15。'),
+  char_4122_grabds:pair('hits',8,'乡音沉沉提升至8次攻击。','extra',.6,'野生动物停顿额外延长0.6秒。'),
+  char_213_mostma:pair('hits',7,'序时之匙提升至7轮。','recovery',.5,'术师技力光环提升至每秒+0.5。'),
+  char_426_billro:pair('hits',8,'食噬之印提升至8轮。','allyHeal',.12,'连线生命回复提升至12%。'),
+  char_291_aglina:pair('hits',8,'反重力模式提升至8次连击。','aspd',10,'加速力场攻速提升至+10。'),
+  char_358_lisa:pair('heals',8,'狐火渺然再生提升至8次。','fragile',.27,'画地为牢脆弱提升至27%。'),
+  char_472_pasngr:pair('scale',1.9,'辉煌裂片每跳提升至190%。','bonus',.3,'机理分析伤害加成提升至30%。'),
+  char_4027_heyak:pair('waves',4,'博览者的狂语提升至4组。','air',.3,'传承终焉连线伤害提升至+30%。'),
+  char_4133_logos:pair('hits',8,'延异视阈提升至8次连射。','flat',220,'剜魂具辞法术伤害追加提升至220。'),
+});
+export const CASTER_INNATES=Object.freeze({
+  char_002_amiya:['奇美拉期间生命上限+100%，完成后强制退场；情绪吸收：普攻技力+2，击杀+8。'],
+  char_388_mint:['每轮原范围攻击后按原力度1向自身拉动，结束造成300%法伤；保留阵法术师技能结束后的防护恢复。'],
+  char_4079_haini:['普通敌人按原定义排除精英与领袖；技能每击杀普通敌人，当前施放内脆弱倍率增加0.5，最多3倍。'],
+  char_4032_provs:['原10秒停顿与沉默完整保留；自身攻速+10，部署时随机卡西米尔友军获得同样攻速。'],
+  char_4122_grabds:['前段3目标沉睡5秒，各次施放独立安排醒来后的攻击；自身攻速+10，野生动物停顿加长0.4秒。'],
+  char_213_mostma:['原范围波纹与力度0轻推，主观缓时保留15%减速；术师技力光环与其他同类光环取最高。'],
+  char_426_billro:['保留原蓄力判定、40%／80%开技回复、技力超上限时每秒额外0.6回复；印记限本次施放结算。'],
+  char_291_aglina:['保留技能未开启时不普攻、全场20生命再生与全场7攻速；失重不改变飞行类别。'],
+  char_358_lisa:['狐火用原扩大范围、全体停顿与每次20%攻击力再生，技能停顿目标脆弱40%；普通停顿脆弱保留20%。'],
+  char_472_pasngr:['雷暴是以目标中心格为中心的原x-1菱形13格，每0.5秒一次，链条4名可延伸到区域外；各次雷暴独立。'],
+  char_4027_heyak:['三股旋风从自身与左右一格出发，以每秒1格行进5格，接触首目标后消失；先浮空再计算空中增伤。'],
+  char_4133_logos:['保留剜魂具辞即时法抗削减与法伤固定追加；语汇演化40%概率60%攻击力额外法伤、停顿0.8秒。'],
+});

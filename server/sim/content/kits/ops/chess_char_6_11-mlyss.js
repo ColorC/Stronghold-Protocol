@@ -104,13 +104,13 @@ function mlyss(bb, chess, def) {
         if (!m) return;
         const iv = Math.max(0.1, bv(bb, 'interval', 1.364)), total = Math.floor(num(bb.fake_cost, 11)), per = bv(bb, 'cost', 1);
         m.acc += dt;
-        while (m.acc + 1e-9 >= iv && m.got < total) { m.acc -= iv; m.got++; battle.addDp(unit.ownerId, per); }
+        while (m.acc + 1e-9 >= iv && m.got < total) { m.acc -= iv; m.got++; battle.addDp(unit.ownerId, per, { sourceUnitId: unit.id }); }
       },
       onEnd({ battle, unit, reason }) {
         const m = unit.mem.mlyDp;
         unit.mem.mlyDp = null;
         const total = Math.floor(num(bb.fake_cost, 11));
-        if (m && reason === 'duration' && m.got < total) battle.addDp(unit.ownerId, (total - m.got) * bv(bb, 'cost', 1));
+        if (m && reason === 'duration' && m.got < total) battle.addDp(unit.ownerId, (total - m.got) * bv(bb, 'cost', 1), { sourceUnitId: unit.id });
       },
     },
     // S2 生态耦合: +cost DP, she and her 流形 ATK +; melee copies regenerate hp ratio / s and take 庇护; ranged copies
@@ -119,7 +119,7 @@ function mlyss(bb, chess, def) {
       kind: 'duration',
       mods: { atkPct: num(bb.atk) },
       onStart({ battle, unit, skill }) {
-        battle.addDp(unit.ownerId, num(bb.cost));
+        battle.addDp(unit.ownerId, num(bb.cost), { sourceUnitId: unit.id });
         battle.fx('dp', { x: unit.x, y: unit.y, id: unit.id, n: num(bb.cost) });
         for (const t of mineLive(battle, unit)) buffManifold(battle, t, skill.timeLeft);
       },
@@ -162,7 +162,7 @@ function mlyss(bb, chess, def) {
       kind: 'duration',
       mods: { atkPct: num(bb.atk) },
       onStart({ battle, unit, skill }) {
-        battle.addDp(unit.ownerId, num(bb.cost));
+        battle.addDp(unit.ownerId, num(bb.cost), { sourceUnitId: unit.id });
         battle.fx('dp', { x: unit.x, y: unit.y, id: unit.id, n: num(bb.cost) });
         const S = unit.mem;
         let ranged = false;

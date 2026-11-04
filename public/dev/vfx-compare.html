@@ -13,13 +13,15 @@
   <style>
     :root { color-scheme: dark; }
     html, body { margin: 0; min-height: 100%; background: #080b0a; color: #d6dfda; font: 14px/1.4 "Noto Sans SC", system-ui, sans-serif; }
-    body { overflow: auto; }
+    body { overflow: auto; user-select: text; }
+    .vc-shell :not(canvas) { user-select: text; }
+    .vc-focused { outline: 2px solid #4ed8af; outline-offset: -2px; }
     .vc-shell { min-height: 100vh; display: flex; flex-direction: column; }
     .vc-top { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 14px 18px; border-bottom: 1px solid #27322d; background: rgba(9, 13, 12, .96); }
     .vc-kicker { color: #4ed8af; font: 11px/1 Bender, Oxanium, monospace; letter-spacing: .12em; }
     h1 { margin: 0; font-size: 19px; font-weight: 700; color: #f4f7f5; }
     .vc-explain { color: #9aa8a1; max-width: 720px; }
-    .vc-top a, .vc-top button, .vc-controls button, .vc-controls select { color: #e9efec; background: #19211e; border: 1px solid #3b4c45; border-radius: 4px; padding: 7px 10px; font: inherit; text-decoration: none; cursor: pointer; }
+    .vc-top a, .vc-top button, .vc-controls button, .vc-controls select, .vc-pane-head button { color: #e9efec; background: #19211e; border: 1px solid #3b4c45; border-radius: 4px; padding: 7px 10px; font: inherit; text-decoration: none; cursor: pointer; }
     .vc-top a:hover, .vc-top button:hover, .vc-controls button:hover { border-color: #4ed8af; }
     .vc-top .vc-link { margin-left: auto; }
     .vc-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 18px; border-bottom: 1px solid #202a25; background: #0d1210; }
@@ -32,7 +34,7 @@
     .vc-pane-title small { display: block; margin-top: 2px; color: #839189; font-size: 11px; font-weight: 400; }
     .vc-stats { color: #8ea198; font: 11px/1.35 ui-monospace, SFMono-Regular, Consolas, monospace; text-align: right; white-space: pre; }
     .vc-field { position: relative; flex: 1; min-height: 500px; }
-    .vc-field canvas { display: block; width: 100%; height: 100%; }
+    .vc-field canvas { position: absolute !important; inset: 0; display: block; width: 100%; height: 100%; }
     .vc-footer { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-height: 42px; padding: 7px 18px; border-top: 1px solid #27322d; background: #0d1210; color: #8e9d95; }
     .vc-status { flex: 1; min-width: 260px; }
     .vc-status strong { color: #4ed8af; }
@@ -45,8 +47,8 @@
     <header class="vc-top">
       <span class="vc-kicker">BATTLE VFX REVIEW</span>
       <h1>实战表现对比</h1>
-      <span class="vc-explain">同一套战斗事件同步播放；右侧只启用反编译动作槽里确认过的角色 VFX，未确认的命中与投射保留基线。</span>
-      <a class="vc-link" href="./vfx-compare.html" target="_blank" rel="noreferrer">单独打开</a>
+      <span class="vc-explain">选择角色和技能，查看两侧的战斗表现。</span>
+      <a class="vc-link" href="./vfx-compare.html" target="_blank" rel="noreferrer">全屏打开</a>
     </header>
     <nav class="vc-controls" aria-label="对比控制">
       <span class="vc-label">角色</span>
@@ -68,12 +70,12 @@
       </select>
     </nav>
     <section class="vc-stage">
-      <article class="vc-pane">
-        <header class="vc-pane-head"><div class="vc-pane-title">加入前<small>原有程序化 FX</small></div><div class="vc-stats" id="before-stats">加载中</div></header>
+      <article class="vc-pane" id="before-pane">
+        <header class="vc-pane-head"><div class="vc-pane-title">原有表现</div><button type="button" data-copy-link="before-pane">复制链接</button><details><summary>查看运行信息</summary><div class="vc-stats" id="before-stats">加载中</div></details></header>
         <div class="vc-field" id="before-field"></div>
       </article>
-      <article class="vc-pane">
-        <header class="vc-pane-head"><div class="vc-pane-title">加入后<small>按原版动作绑定播放的角色 VFX</small></div><div class="vc-stats" id="after-stats">加载中</div></header>
+      <article class="vc-pane" id="after-pane">
+        <header class="vc-pane-head"><div class="vc-pane-title">更新表现</div><button type="button" data-copy-link="after-pane">复制链接</button><details><summary>查看运行信息</summary><div class="vc-stats" id="after-stats">加载中</div></details></header>
         <div class="vc-field" id="after-field"></div>
       </article>
     </section>

@@ -8,7 +8,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { presetCamera, pickTile } from '../../public/js/render/projection.js';
-import { pickOnTile, pickBattle, ENEMY_REACH, AREA_PICK, hitRectAt } from '../../public/js/render/pick.js';
+import { pickOnTile, pickOnTileAll, pickCycleIndex, pickBattle, pickBattleAll, ENEMY_REACH, AREA_PICK, hitRectAt } from '../../public/js/render/pick.js';
 import { hitRect } from '../../server/sim/body.js';
 import { unitDepthKey } from '../../public/js/render/units.js';
 import { TILE_H } from '../../public/js/render/style.js';
@@ -31,6 +31,22 @@ function board(kind, W, H, raised = []) {
 
 /** Spots inside a tile's top face: the centre and near its four edges and corners (0.4 of a tile out). */
 const SPOTS = [[0, 0], [-0.4, 0], [0.4, 0], [0, -0.4], [0, 0.4], [-0.4, -0.4], [0.4, 0.4], [-0.4, 0.4], [0.4, -0.4]];
+
+test('opt-in stacked picking cycles co-located units while the legacy pick stays frontmost', () => {
+  const ground = { row: 4, col: 7, x: 7, y: 4 };
+  const under = { key: 'under', tile: { row: 4, col: 7 }, x: 7, y: 4, depth: 1 };
+  const top = { key: 'top', tile: { row: 4, col: 7 }, x: 7, y: 4, depth: 2 };
+  const ordered = pickOnTileAll([under, top], ground);
+  assert.deepEqual(ordered.map((unit) => unit.key), ['top', 'under']);
+  assert.equal(pickOnTile([under, top], ground)?.key, 'top', 'non-opt-in callers keep the existing frontmost result');
+  const keys = ordered.map((unit) => unit.key);
+  const first = pickCycleIndex(null, keys, 140, 80);
+  const second = pickCycleIndex(first.state, keys, 140, 80);
+  const third = pickCycleIndex(second.state, keys, 140, 80);
+  assert.deepEqual([ordered[first.index].key, ordered[second.index].key, ordered[third.index].key], ['top', 'under', 'top']);
+  assert.equal(pickCycleIndex(second.state, ['top', 'new-layer'], 140, 80).index, 0, 'a changed hit stack restarts at the top');
+  assert.equal(pickCycleIndex(second.state, keys, 150, 80).index, 0, 'moving the pointer restarts at the top');
+});
 
 describe('pickOnTile: a press on a tile selects the unit on that tile (official cameras)', () => {
   for (const [kind, W, H] of CAMS) {
@@ -103,6 +119,13 @@ describe('pickBattle: allies by their tile, walking enemies by their ground posi
   const ally = (key, row, col, depth = 0) => ({ key, tile: { row, col }, x: col, y: row, depth });
   const foe = (key, x, y, depth = 0) => ({ key, tile: null, x, y, depth });
   const at = (x, y) => ({ row: Math.round(y), col: Math.round(x), x, y });
+
+  test('opt-in battle picking exposes the existing eligible stack in legacy order', () => {
+    const A = ally('A', 10, 4), enemy = foe('enemy', 4.3, 10.1);
+    const ordered = pickBattleAll([enemy, A], at(4, 10), 4, 10);
+    assert.deepEqual(ordered.map((unit) => unit.key), ['A', 'enemy']);
+    assert.equal(pickBattle([enemy, A], at(4, 10), 4, 10)?.key, ordered[0].key);
+  });
 
   test('an ally on the tile under the pointer; an empty tile with no enemy near: nothing', () => {
     const A = ally('A', 10, 4);
